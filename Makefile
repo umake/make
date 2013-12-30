@@ -1,5 +1,5 @@
 BIN := Main
-SRC := Main.cpp Token.cpp
+SRC := Main.cpp Token.cpp Grammar.cpp Command.cpp Prog.cpp Sentence.cpp Text.cpp
 OBJ := $(SRC:.cpp=.o)
 
 CC  := gcc

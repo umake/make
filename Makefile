@@ -1,12 +1,12 @@
 BIN := Main
-SRC := Main.cpp Token.cpp Grammar.cpp Command.cpp Prog.cpp Sentence.cpp Text.cpp
+SRC := Main.cpp Token.cpp Grammar.cpp Command.cpp Tokenizer.cpp
 OBJ := $(SRC:.cpp=.o)
 
 CC  := gcc
 CXX := g++
 RM  := rm -f
 
-CFLAGS   := -Wall
+CFLAGS   := -Wall -ansi -pedantic -O2
 CXXFLAGS := -std=gnu++11
 LDFLAGS  := 
 
@@ -17,7 +17,7 @@ $(BIN): $(OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CFLAGS) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	$(RM) *.o

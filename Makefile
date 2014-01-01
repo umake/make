@@ -8,14 +8,13 @@ BIN := Main
 ########################################################################
 ##                              FLAGS                                 ##
 ########################################################################
+						 
 # C Options
 CEXT     := c
-CLIBS    := -Iinclude
 CFLAGS   := -Wall -ansi -pedantic -O2
 
 # C++ Options
 CXXEXT   := C cc cpp cxx c++ tcc
-CXXLIBS  := -Iinclude
 CXXFLAGS := -std=gnu++11
 
 # Linker flags
@@ -37,12 +36,14 @@ SRCDIR := src
 BINDIR := bin
 DEPDIR := dep
 OBJDIR := obj
+INCDIR := include
+LIBDIR := lib
 
 # Path
 VPATH  := $(SRCDIR):$(OBJDIR):$(BINDIR)
 
 ########################################################################
-##                                 FILES                              ##
+##                              FILES                                 ##
 ########################################################################
 
 # Auxiliar function for deep-search in directory tree
@@ -57,20 +58,34 @@ SRCEXT := $(CEXT) $(CXXEXT)
 $(foreach EXT,$(SRCEXT),$(eval SRC += $(call rwildcard,$(SRCDIR),*.$(EXT))))
 SRC := $(patsubst $(SRCDIR)/%,%,$(SRC))
 
-# Object files
+# Object files:
 # 1) Add '.o' suffix for each 'naked' source file name (basename)
 # 2) Prefix the build dir before each name
 OBJ := $(addsuffix .o,$(basename $(SRC)))
 OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
+# Header files:
+# 1) Get all subdirectories of the included dirs
+# 2) Add them as paths to be searched for headers
+INCSUB  := $(foreach I,$(INCDIR),$(sort $(dir $(wildcard $I/*/))))
+CLIBS   := $(patsubst %,-I%,$(INCSUB))
+CXXLIBS := $(patsubst %,-I%,$(INCSUB))
+
+# Library files:
+# 1) Get all subdirectories of the library dirs
+# 2) Add them as paths to be searched for libraries
+LIBSUB := $(foreach I,$(LIBDIR),$(sort $(dir $(wildcard $I/*/))))
+LDLIBS := $(patsubst %,-L%,$(LIBSUB))
+
 ########################################################################
 ##                              BUILD                                 ##
 ########################################################################
+
 .PHONY: all
 all: $(BIN)
 
 $(BIN): $(OBJ) | $(BINDIR)
-	$(CXX) $^ -o $(BINDIR)/$@ $(LDFLAGS)
+	$(CXX) $^ -o $(BINDIR)/$@ $(LDFLAGS) $(LDLIBS)
 
 $(OBJ): | $(OBJDIR)
 
@@ -100,6 +115,21 @@ $$(OBJDIR)/%.o: %.$1 | $$(DEPDIR)
 	$$(CXX) $$(CFLAGS) $$(CXXFLAGS) $$(CXXLIBS) -c $$< -o $$@
 endef
 $(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(EXT))))
+
+# lib%.a: $(OBJDIR)/$(notdir %.o)
+	# $(AR) $(ARFLAGS) $(LIBDIR)/$@ $<
+
+# define sharedlib-c
+# lib%.so: $$(SRCDIR)/%.$1
+	# $$(CC) -fPIC $$(CFLAGS) $$(CLIBS) -c $$< -o $$(OBJDIR)/$$*.o
+	# $$(CC) -o $$(LIBDIR)/$$@ $$(SOFLAGS) $$(OBJDIR)/$$*.o 
+# endef
+
+# define sharedlib-cpp
+# lib%.so: $$(SRCDIR)/%.$1
+	# $$(CXX) -fPIC $$(CFLAGS) $$(CXXFLAGS) $$(CXXLIBS) -c $$< -o $$(OBJDIR)/$$*.o
+	# $$(CXX) -o $$(LIBDIR)/$$@ $$(SOFLAGS) $$(OBJDIR)/$$*.o 
+# endef
 
 # Include dependencies for each src extension
 -include $(foreach EXT,$(SRCEXT),$(SRCS:%.$(EXT)=$(DEPDIR)/%.d))

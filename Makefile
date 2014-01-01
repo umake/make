@@ -96,7 +96,6 @@ $(OBJ): | $(OBJDIR)
 define compile-c
 $$(OBJDIR)/%.o: %.c | $$(DEPDIR)
 	@# Create dependency files
-	# @$$(call make-depend,$$<,$$@,$$(DEPDIR)/$$*.d)
 	@$$(call make-depend,$$<,$$@,$$(DEPDIR)/$$(notdir $$*).d)
 	
 	@# Compile C code
@@ -108,13 +107,16 @@ $(foreach EXT,$(CEXT),$(eval $(call compile-c,$(EXT))))
 define compile-cpp
 $$(OBJDIR)/%.o: %.$1 | $$(DEPDIR)
 	@# Create dependency files
-	@$$(call make-depend,$$<,$$@,$$(DEPDIR)/$$(notdir $$*).d)
+	$$(call make-depend,$$<,$$@,$$(DEPDIR)/$$(notdir $$*).d)
 	
 	@# Compile C++ code
 	@$$(call make-dir,$$(OBJDIR),$$<)
 	$$(CXX) $$(CFLAGS) $$(CXXFLAGS) $$(CXXLIBS) -c $$< -o $$@
 endef
 $(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(EXT))))
+
+# Include dependencies for each src extension
+-include $(DEPDIR)/*.d
 
 # lib%.a: $(OBJDIR)/$(notdir %.o)
 	# $(AR) $(ARFLAGS) $(LIBDIR)/$@ $<
@@ -130,9 +132,6 @@ $(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(EXT))))
 	# $$(CXX) -fPIC $$(CFLAGS) $$(CXXFLAGS) $$(CXXLIBS) -c $$< -o $$(OBJDIR)/$$*.o
 	# $$(CXX) -o $$(LIBDIR)/$$@ $$(SOFLAGS) $$(OBJDIR)/$$*.o 
 # endef
-
-# Include dependencies for each src extension
--include $(foreach EXT,$(SRCEXT),$(SRCS:%.$(EXT)=$(DEPDIR)/%.d))
 
 ########################################################################
 ##                              CLEAN                                 ##

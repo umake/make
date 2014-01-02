@@ -67,14 +67,14 @@ OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 # Header files:
 # 1) Get all subdirectories of the included dirs
 # 2) Add them as paths to be searched for headers
-INCSUB  := $(foreach I,$(INCDIR),$(sort $(dir $(wildcard $I/*/))))
+INCSUB  := $(sort $(dir $(foreach I,$(INCDIR),$(call rwildcard,$I,*))))
 CLIBS   := $(patsubst %,-I%,$(INCSUB))
 CXXLIBS := $(patsubst %,-I%,$(INCSUB))
 
 # Library files:
 # 1) Get all subdirectories of the library dirs
 # 2) Add them as paths to be searched for libraries
-LIBSUB := $(foreach I,$(LIBDIR),$(sort $(dir $(wildcard $I/*/))))
+LIBSUB := $(sort $(dir $(foreach L,$(LIBDIR),$(call rwildcard,$L,*))))
 LDLIBS := $(patsubst %,-L%,$(LIBSUB))
 
 ########################################################################

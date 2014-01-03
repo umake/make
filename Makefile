@@ -2,6 +2,9 @@
 ##                             PROGRAM                                ##
 ########################################################################
 
+# Project setting 
+PROJECT := Robot-Battle
+
 # Program settings
 BIN    := Main
 ARLIB  := 
@@ -38,6 +41,8 @@ RMDIR      := rm -rf
 FIND       := find
 FIND_FLAGS := -type d -print
 ECHO       := echo
+TAR        := tar -cvf
+ZIP        := gzip
 
 ########################################################################
 ##                            DIRECTORIES                             ##
@@ -48,6 +53,7 @@ DEPDIR := dep
 OBJDIR := obj
 INCDIR := include
 LIBDIR := lib
+DISDIR := dist
 
 ########################################################################
 ##                              PATHS                                 ##
@@ -133,11 +139,17 @@ LDLIBS = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(LIBSUB))))
 ########################################################################
 
 .PHONY: all
-all: $(BIN)
+# all: $(BIN)
+
+# .PHONY: dist
+all: $(PROJECT).tar.gz
+
+.PHONY: tar
+tar: $(PROJECT).tar
 
 $(BIN): $(OBJ) | $(ARLIB) $(SHRLIB) $(BINDIR)
 	$(call status,$(MSG_CXX_LINKAGE))
-	$(call check,$M, $(CXX) $^ -o $(BINDIR)/$@ $(LDFLAGS) $(LDLIBS))
+	$(call check, $(CXX) $^ -o $(BINDIR)/$@ $(LDFLAGS) $(LDLIBS) )
 	$(call ok,$(MSG_CXX_LINKAGE))
 
 $(OBJ): | $(OBJDIR)
@@ -146,34 +158,38 @@ $(OBJ): | $(OBJDIR)
 ##                              RULES                                 ##
 ########################################################################
 
-define compile-c
-$$(OBJDIR)/%.o: C_M 	= $$(MSG_C_COMPILE)
-$$(OBJDIR)/%.o: C_FLAGS = 
+%.tar.gz: %.tar
+	$(call status,$(MSG_MAKETGZ))
+	$(call check, $(ZIP) $(DISDIR)/$< )
+	$(call ok,$(MSG_MAKETGZ))
 
+%.tar: $(DISDIR) $(BIN) 
+	$(call status,$(MSG_MAKETAR))
+	$(call check, $(TAR) $(DISDIR)/$@ $(LIBDIR) $(BINDIR) )
+	$(call ok,$(MSG_MAKETAR))
+
+define compile-c
 $$(OBJDIR)/%.o: %.c | $$(DEPDIR)
-	$$(call status,$$(C_M))
+	$$(call status,$$(MSG_C_COMPILE))
 	
-	$$(call check,$$(C_M), $$(call make-depend,$$<,$$@,$$*)          )
-	$$(call check,$$(C_M), $$(call make-dir,$$(OBJDIR),$$<)          )
-	$$(call check,$$(C_M), $$(CC) $$(CFLAGS) $$(CLIBS) -c $$< -o $$@ )
+	$$(call check, $$(call make-depend,$$<,$$@,$$*)          )
+	$$(call check, $$(call make-dir,$$(OBJDIR),$$<)          )
+	$$(call check, $$(CC) $$(CFLAGS) $$(CLIBS) -c $$< -o $$@ )
 	
-	$$(call ok,$$(C_M))
+	$$(call ok,$$(MSG_C_COMPILE))
 endef
 $(foreach EXT,$(CEXT),$(eval $(call compile-c,$(EXT))))
 
 define compile-cpp
-$$(OBJDIR)/%.o: CXX_M     = $$(MSG_CXX_COMPILE)
-$$(OBJDIR)/%.o: CXX_FLAGS = 
-
+$$(OBJDIR)/%.o: CXX_FLAGS = $$(CFLAGS) $$(CXXFLAGS) $$(CXXLIBS) 
 $$(OBJDIR)/%.o: %.$1 | $$(DEPDIR)
-	$$(call status,$$(CXX_M))
+	$$(call status,$$(MSG_CXX_COMPILE))
 	
-	$$(call check,$$(CXX_M), $$(call make-depend,$$<,$$@,$$*.d)   )
-	$$(call check,$$(CXX_M), $$(call make-dir,$$(OBJDIR),$$<)     )
-	$$(call check,$$(CXX_M), \
-		$$(CXX) $$(CFLAGS) $$(CXXFLAGS) $$(CXXLIBS) -c $$< -o $$@ )
+	$$(call check, $$(call make-depend,$$<,$$@,$$*.d)   )
+	$$(call check, $$(call make-dir,$$(OBJDIR),$$<)     )
+	$$(call check, $$(CXX) $$(CXX_FLAGS) -c $$< -o $$@  )
 	
-	$$(call ok,$$(CXX_M))
+	$$(call ok,$$(MSG_CXX_COMPILE))
 endef
 $(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(EXT))))
 
@@ -183,43 +199,34 @@ $(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(EXT))))
 .SECONDARY: $(filter %.o,$(AROBJ))
 lib%.a: $(filter %.o,$(AROBJ)) | $(LIBDIR)
 	$(call status,$(MSG_STATLIB) ...)
-	$(call check, \
-		$(MSG_STATLIB), $(AR) $(ARFLAGS) $(LIBDIR)/$@ $< )
+	$(call check, $(AR) $(ARFLAGS) $(LIBDIR)/$@ $< )
 	$(call ok,$(MSG_STATLIB))
 
 define sharedlib-c
-lib%.so: C_M     = $$(MSG_C_SHRDLIB)
 lib%.so: C_FLAGS = $$(CFLAGS) $$(CLIBS) 
-
 lib%.so: $$(filter %.$1,$$(SHRSRC)) | $$(LIBDIR)
-	$$(call status,$$(C_M))
+	$$(call status,$$(MSG_C_SHRDLIB))
 	
-	$$(call check,$$(C_M), $$(call make-depend,$$<,$$@,$$*)    )
-	$$(call check,$$(C_M), $$(call make-dir,$$(OBJDIR),$$<)    )
-	$$(call check,$$(C_M), \
-		$$(CC) -fPIC $$(C_FLAGS) -c $$< -o $$(OBJDIR)/$$*.o    )
-	$$(call check,$$(C_M), \
-		$$(CC) -o $$(LIBDIR)/$$@ $$(SOFLAGS) $$(OBJDIR)/$$*.o  )
+	$$(call check, $$(call make-depend,$$<,$$@,$$*)    )
+	$$(call check, $$(call make-dir,$$(OBJDIR),$$<)    )
+	$$(call check, $$(CC) -fPIC $$(C_FLAGS) -c $$< -o $$(OBJDIR)/$$*.o   )
+	$$(call check, $$(CC) -o $$(LIBDIR)/$$@ $$(SOFLAGS) $$(OBJDIR)/$$*.o )
 	
-	$$(call ok,$$(C_M))
+	$$(call ok,$$(MSG_C_SHRDLIB))
 endef
 $(foreach EXT,$(CEXT),$(eval $(call sharedlib-c,$(EXT))))
 
 define sharedlib-cpp
-lib%.so: CXX_M     = $$(MSG_CXX_SHRDLIB)
 lib%.so: CXX_FLAGS = $$(CFLAGS) $$(CXXFLAGS) $$(CXXLIBS) 
-
 lib%.so: $$(filter %.$1,$$(SHRSRC)) | $$(LIBDIR)
-	$$(call status,$$(CXX_M))
+	$$(call status,$$(MSG_CXX_SHRDLIB))
 	
-	$$(call check,$$(CXX_M), $$(call make-depend,$$<,$$@,$$*)   )
-	$$(call check,$$(CXX_M), $$(call make-dir,$$(OBJDIR),$$<)   )
-	$$(call check,$$(CXX_M), \
-		$$(CXX) -fPIC $$(CXX_FLAGS) -c $$< -o $$(OBJDIR)/$$*.o  )
-	$$(call check,$$(CXX_M), \
-		$$(CXX) -o $$(LIBDIR)/$$@ $$(SOFLAGS) $$(OBJDIR)/$$*.o  )
+	$$(call check, $$(call make-depend,$$<,$$@,$$*) )
+	$$(call check, $$(call make-dir,$$(OBJDIR),$$<) )
+	$$(call check, $$(CXX) -fPIC $$(CXX_FLAGS) -c $$< -o $$(OBJDIR)/$$*.o )
+	$$(call check, $$(CXX) -o $$(LIBDIR)/$$@ $$(SOFLAGS) $$(OBJDIR)/$$*.o )
 	
-	$$(call ok,$$(CXX_M))
+	$$(call ok,$$(MSG_CXX_SHRDLIB))
 endef
 $(foreach EXT,$(CXXEXT),$(eval $(call sharedlib-cpp,$(EXT))))
 
@@ -233,15 +240,15 @@ clean:
 
 .PHONY: distclean
 distclean: clean
-	$(RMDIR) $(BINDIR) $(DEPDIR) $(LIBDIR)
+	$(RMDIR) $(BINDIR) $(DEPDIR) $(LIBDIR) $(DISDIR)
 
 ########################################################################
 ##                             FUNCIONS                               ##
 ########################################################################
 # Directories
-$(BINDIR) $(OBJDIR) $(DEPDIR) $(LIBDIR):
+$(BINDIR) $(OBJDIR) $(DEPDIR) $(LIBDIR) $(DISDIR):
 	$(call status,$(MSG_MAKEDIR))
-	$(call check,$(MSG_MAKEDIR), $(MKDIR) $@ )
+	$(call check, $(MKDIR) $@ )
 	$(call ok,$(MSG_MAKEDIR))
 
 define make-dir
@@ -263,6 +270,12 @@ endef
 ##                              OUTPUT                                ##
 ########################################################################
 
+# Hide command execution details
+V   ?= 0
+Q_0 := @
+Q_1 :=
+QUIET := $(Q_$(V))
+
 # ANSII Escape Colors
 RED     := \033[1;31m
 GREEN   := \033[1;32m
@@ -271,43 +284,42 @@ BLUE    := \033[1;34m
 PURPLE  := \033[1;35m
 CYAN    := \033[1;36m
 WHITE   := \033[1;37m
-RESTORE := \033[0m
+RES     := \033[0m
 
-MSG_MAKEDIR     = "Creating directory: $@"
-MSG_STATLIB     = "${RED}Generating static library: $@${RESTORE}"
-MSG_C_COMPILE   = "${WHITE}Generating C artifact: $@${RESTORE}"
-MSG_C_LINKAGE   = "${CYAN}Generating C executable: $@${RESTORE}"
-MSG_C_SHRDLIB   = "${RED}Generating C shared library: $@${RESTORE}"
-MSG_CXX_COMPILE = "${WHITE}Generating C++ artifact: $@${RESTORE}"
-MSG_CXX_LINKAGE = "${CYAN}Generating C++ executable: $@${RESTORE}"
-MSG_CXX_SHRDLIB = "${RED}Generating C++ shared library: $@${RESTORE}"
+ifneq ($(strip $(QUIET)),)
+MSG_MAKEDIR     = "${CYAN}Creating directory $@${RES}"
+MSG_STATLIB     = "${RED}Generating static library $@${RES}"
+MSG_MAKETAR     = "${RED}Generating tar file $@${RES}"
+MSG_MAKETGZ     = "${RED}Ziping file $@${RES}"
 
-# Hide command execution details
-QUIET ?= @
+MSG_C_COMPILE   = "Generating C artifact ${WHITE}$@${RES}"
+MSG_C_LINKAGE   = "${BLUE}Generating C executable ${GREEN}$@${RES}"
+MSG_C_SHRDLIB   = "${RED}Generating C shared library $@${RES}"
+
+MSG_CXX_COMPILE = "Generating C++ artifact ${WHITE}$@${RES}"
+MSG_CXX_LINKAGE = "${BLUE}Generating C++ executable ${GREEN}$@${RES}"
+MSG_CXX_SHRDLIB = "${RED}Generating C++ shared library $@${RES}"
+endif
 
 # Check error status
 define check
-	$(QUIET) $2 || $$(call error,$1)
+	$(QUIET) $1 || ($(call Error) && exit 2)
 endef
 
-ifeq ($(strip $(QUIET)),)
-    define status
-    	@$(ECHO) $1 " ..."
-    endef
-else
+ifneq ($(strip $(QUIET)),)
     define status
     	@$(ECHO) -n $1 " ..."
     endef
 endif
 
-define error
-	@$(ECHO) "\r${RED}[ERROR]${RESTORE}" $1 "     "
+define Error
+	$(ECHO) -n "${RED}[ERROR]${RES} "
 endef
 
 define warn
-	@$(ECHO) "\r${YELLOW}[WARNING]${RESTORE}" $1 "     "
+	$(ECHO) " ${YELLOW}[WARNING]${RES} "
 endef
 
 define ok
-	@$(ECHO) "\r${GREEN}[OK]${RESTORE}" $1 "     "
+	@$(ECHO) "\r${GREEN}[OK]${RES}" $1 "     "
 endef

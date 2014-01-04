@@ -15,16 +15,12 @@ SHRLIB := math.cpp
 ########################################################################
 						 
 # C Options
-CEXT     := c
-HEXT     := h
-CFLAGS   := -Wall -ansi -pedantic -O2
+CEXT     := .c
+CFLAGS   := -Wall -ansi -pedantic -O2 -g
 
 # C++ Options
-CXXEXT   := C cc cpp cxx c++ tcc
-HXXEXT   := H hh hpp hxx h++
-CXXFLAGS := -std=gnu++11
-
-# Libraries options
+CXXEXT   := .C .cc .cpp .cxx .c++ .tcc
+CXXFLAGS := $(CFLAGS) -std=gnu++11
 
 # Linker flags
 LDFLAGS  :=
@@ -32,42 +28,58 @@ LDFLAGS  :=
 ########################################################################
 ##                             PROGRAMS                               ##
 ########################################################################
+# Compilation
 AR         := ar
 CC         := gcc
 CXX        := g++
+RANLIB     := ranlib
+
+# File manipulation
+CP 		   := cp -rap
+TAR        := tar -cvf
+ZIP        := gzip
 RM         := rm -f
 MKDIR      := mkdir -p
 RMDIR      := rm -rf
 FIND       := find
 FIND_FLAGS := -type d -print
-ECHO       := echo
-TAR        := tar -cvf
-ZIP        := gzip
+
+TRUE := 1
+
+# Parser and Lexer
+LEX        := $(if TRUE,flex++,flex)
+LEXFLAGS   := 
+YACC       := $(if TRUE,bison++,bison)
+YACCFLAGS  := #-v -t
 
 ########################################################################
 ##                            DIRECTORIES                             ##
 ########################################################################
-SRCDIR := src
-BINDIR := bin
-DEPDIR := dep
-OBJDIR := obj
-INCDIR := include
-LIBDIR := lib
-DISDIR := dist
+SRCDIR  := src
+BINDIR  := bin
+DEPDIR  := dep
+OBJDIR  := build
+INCDIR  := include
+LIBDIR  := lib
+DISTDIR := dist
 
 ########################################################################
 ##                              PATHS                                 ##
 ########################################################################
 
+LEXEXT  := .l
+YACCEXT := .y
+
 # Source extensions
 SRCEXT := $(CEXT) $(CXXEXT)
-INCEXT := $(HEXT) $(HXXEXT)
 
 # Path
-vpath %       $(BINDIR) # All binaries in bindir
-vpath lib%.a  $(LIBDIR) # All static libs in libdir
-vpath lib%.so $(LIBDIR) # All shared libs in libdir
-$(foreach d,$(SRCDIR),$(foreach e,$(SRCEXT),$(eval vpath %.$e $d)))
+vpath %        $(BINDIR) # All binaries in bindir
+vpath lib%.a   $(LIBDIR) # All static libs in libdir
+vpath lib%.so  $(LIBDIR) # All shared libs in libdir
+vpath %.tar    $(DISTDIR) # All tar files in DISTDIR
+vpath %.tar.gz $(DISTDIR) # All tar.gz files in DISTDIR
+$(foreach d,$(SRCDIR),$(foreach e,$(SRCEXT),$(eval vpath %$e $d)))
 
 ########################################################################
 ##                              FILES                                 ##
@@ -79,18 +91,38 @@ $(foreach d,$(SRCDIR),$(foreach e,$(SRCEXT),$(eval vpath %.$e $d)))
 rsubdir   = $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS)))
 rwildcard = $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2)$(filter $(subst *,%,$2),$d)) 
 
+# C and C++ code
+$(foreach E,$(CEXT),  $(eval CSRC   += $(call rwildcard,$(SRCDIR),*$E)))
+$(foreach E,$(CXXEXT),$(eval CXXSRC += $(call rwildcard,$(SRCDIR),*$E)))
+
 # Library files:
 LIB := $(ARLIB) $(SHRLIB)
+
+# Lexical analyzer
+# 1) Find in a directory tree all the lex files (with dir names)
+# 2) Change lex extension to format .yy.c
+$(foreach E,$(LEXEXT),$(eval LEXSRC += $(call rwildcard,$(SRCDIR),*$E)))
+ext     := $(if $(CXXEXT),cc,c)
+LEXSRC  := $(foreach E,$(LEXEXT),$(patsubst %$E,%.yy.$(ext),$(LEXSRC)))
+LDFLAGS += -lfl # Flex default library
+
+# Syntatic analyzer
+# 1) Find in a directory tree all the lex files (with dir names)
+# 2) Change lex extension to format .yy.c
+$(foreach E,$(YACCEXT),$(eval YACCSRC += $(call rwildcard,$(SRCDIR),*$E)))
+ext     := $(if $(CXXEXT),cc,c)
+YACCSRC := $(foreach E,$(YACCEXT),$(patsubst %$E,%.tab.$(ext),$(YACCSRC)))
 
 # Source files:
 # 1) Find in a directory tree all the source files (with dir names)
 # 2) Remove src root directory name from all sources
 # 3) Save complete paths for libraries
 # 3) Remove library paths from ordinary src
-$(foreach EXT,$(SRCEXT),$(eval SRC += $(call rwildcard,$(SRCDIR),*.$(EXT))))
-SRC := $(foreach ROOT,$(SRCDIR),$(patsubst $(ROOT)/%,%,$(SRC)))
+SRC := $(CSRC) $(CXXSRC)
 LIB := $(foreach l,$(LIB),$(filter %$l,$(SRC)))
 SRC := $(foreach l,$(LIB),$(filter-out %$l,$(SRC)))
+SRC += $(LEXSRC) $(YACCSRC)
+SRC := $(foreach ROOT,$(SRCDIR),$(patsubst $(ROOT)/%,%,$(SRC)))
 
 # Static libraries:
 # 1) Set flags to create static lib
@@ -100,7 +132,7 @@ SRC := $(foreach l,$(LIB),$(filter-out %$l,$(SRC)))
 ARFLAGS ?= -rcv
 ARSRC   := $(foreach a,$(ARLIB),$(filter %$(a),$(LIB)))
 AROBJ   := $(patsubst %.c,$(OBJDIR)/%.o,$(ARSRC))
-ARLIB   := $(patsubst %,lib%.a,$(notdir $(basename $(ARSRC))))
+ARLIB   := $(patsubst %,$(LIBDIR)/lib%.a,$(notdir $(basename $(ARSRC))))
 LDFLAGS += $(addprefix -l,$(notdir $(basename $(ARSRC))))
 
 # Dynamic libraries:
@@ -111,7 +143,7 @@ LDFLAGS += $(addprefix -l,$(notdir $(basename $(ARSRC))))
 SOFLAGS += -shared -Wl,-rpath=$(LIBDIR)
 SHRSRC  := $(foreach so,$(SHRLIB),$(filter %$(so),$(LIB)))
 SHROBJ  := $(patsubst %.c,$(OBJDIR)/%.o,$(SHRSRC))
-SHRLIB  := $(patsubst %,lib%.so,$(notdir $(basename $(SHRLIB))))
+SHRLIB  := $(patsubst %,$(LIBDIR)/lib%.so,$(notdir $(basename $(SHRLIB))))
 LDFLAGS += $(addprefix -l,$(notdir $(basename $(SHRSRC))))
 
 # Object files:
@@ -134,23 +166,42 @@ CXXLIBS := $(patsubst %,-I%,$(INCSUB))
 LIBSUB = $(call rsubdir,$(LIBDIR))
 LDLIBS = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(LIBSUB))))
 
+# Binary:
+# 1) Find out if any source is C++ code, and then make this binary
+IS_CXX := $(foreach EXT,$(CXXEXT),$(findstring $(EXT),$(SRC)))
+
 ########################################################################
 ##                              BUILD                                 ##
 ########################################################################
 
 .PHONY: all
-# all: $(BIN)
+all: $(BIN)
 
-# .PHONY: dist
-all: $(PROJECT).tar.gz
+.PHONY: dist
+dist: $(DISTDIR)/$(PROJECT).tar.gz
 
 .PHONY: tar
-tar: $(PROJECT).tar
+tar: $(DISTDIR)/$(PROJECT).tar
 
+.PHONY: test
+test:
+	@echo $(ext)
+	@echo $(SRC)
+	@echo $(OBJ)
+	@echo $(LEXSRC)
+	@echo $(YACCSRC)
+
+ifneq ($(IS_CXX),)
 $(BIN): $(OBJ) | $(ARLIB) $(SHRLIB) $(BINDIR)
 	$(call status,$(MSG_CXX_LINKAGE))
-	$(call check, $(CXX) $^ -o $(BINDIR)/$@ $(LDFLAGS) $(LDLIBS) )
+	$(QUIET) $(CXX) $^ -o $(BINDIR)/$@ $(LDFLAGS) $(LDLIBS)
 	$(call ok,$(MSG_CXX_LINKAGE))
+else
+$(BIN): $(OBJ) | $(ARLIB) $(SHRLIB) $(BINDIR)
+	$(call status,$(MSG_CXX_LINKAGE))
+	$(QUIET) $(CC) $^ -o $(BINDIR)/$@ $(LDFLAGS) $(LDLIBS)
+	$(call ok,$(MSG_CXX_LINKAGE))
+endif
 
 $(OBJ): | $(OBJDIR)
 
@@ -160,34 +211,52 @@ $(OBJ): | $(OBJDIR)
 
 %.tar.gz: %.tar
 	$(call status,$(MSG_MAKETGZ))
-	$(call check, $(ZIP) $(DISDIR)/$< )
+	$(QUIET) $(ZIP) $<
 	$(call ok,$(MSG_MAKETGZ))
 
-%.tar: $(DISDIR) $(BIN) 
-	$(call status,$(MSG_MAKETAR))
-	$(call check, $(TAR) $(DISDIR)/$@ $(LIBDIR) $(BINDIR) )
+%.tar: TARFILE = $(notdir $@)
+%.tar: $(BIN)
+	$(call mkdir,$(dir $@))
+	$(call mkdir,$(TARFILE))
+	$(QUIET) $(CP) $(LIBDIR) $(BINDIR) $(TARFILE)
+	
+	$(call vstatus,$(MSG_MAKETAR))
+	$(QUIET) $(TAR) $@ $(TARFILE)
 	$(call ok,$(MSG_MAKETAR))
+	
+	$(call rmdir,$(TARFILE))
+
+# %.yy.$(if $(IS_CXX),cc,c): %.l $(YACCSRC)
+%.yy.c %.yy.cc: %.l $(YACCSRC)
+	$(call vstatus,$(MSG_YACC))
+	$(QUIET) $(LEX) $(LEXFLAGS) -o$@ $< 
+	$(call ok,$(MSG_YACC))
+	
+%.tab.cc %.tab.c: %.y
+	$(call vstatus,$(MSG_LEX))
+	$(QUIET) $(YACC) $(YACCFLAGS) $< -o $@ 
+	$(call ok,$(MSG_LEX))
 
 define compile-c
-$$(OBJDIR)/%.o: %.c | $$(DEPDIR)
+$$(OBJDIR)/%.o: $$(SRCDIR)/%$1 | $$(DEPDIR)
 	$$(call status,$$(MSG_C_COMPILE))
 	
-	$$(call check, $$(call make-depend,$$<,$$@,$$*)          )
-	$$(call check, $$(call make-dir,$$(OBJDIR),$$<)          )
-	$$(call check, $$(CC) $$(CFLAGS) $$(CLIBS) -c $$< -o $$@ )
+	$$(QUIET) $$(call make-depend,$$<,$$@,$$*)         
+	$$(QUIET) $$(call make-dir,$$(OBJDIR),$$<)         
+	$$(QUIET) $$(CC) $$(CFLAGS) $$(CLIBS) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_C_COMPILE))
 endef
 $(foreach EXT,$(CEXT),$(eval $(call compile-c,$(EXT))))
 
 define compile-cpp
-$$(OBJDIR)/%.o: CXX_FLAGS = $$(CFLAGS) $$(CXXFLAGS) $$(CXXLIBS) 
-$$(OBJDIR)/%.o: %.$1 | $$(DEPDIR)
+$$(OBJDIR)/%.o: CXX_FLAGS = $$(CXXLIBS) $$(CXXFLAGS) 
+$$(OBJDIR)/%.o: $$(SRCDIR)/%$1 | $$(DEPDIR)
 	$$(call status,$$(MSG_CXX_COMPILE))
 	
-	$$(call check, $$(call make-depend,$$<,$$@,$$*.d)   )
-	$$(call check, $$(call make-dir,$$(OBJDIR),$$<)     )
-	$$(call check, $$(CXX) $$(CXX_FLAGS) -c $$< -o $$@  )
+	$$(QUIET) $$(call make-depend,$$<,$$@,$$*.d) 
+	$$(QUIET) $$(call make-dir,$$(OBJDIR),$$<)   
+	$$(QUIET) $$(CXX) $$(CXX_FLAGS) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_CXX_COMPILE))
 endef
@@ -197,34 +266,35 @@ $(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(EXT))))
 -include $(DEPDIR)/*.d
 
 .SECONDARY: $(filter %.o,$(AROBJ))
-lib%.a: $(filter %.o,$(AROBJ)) | $(LIBDIR)
-	$(call status,$(MSG_STATLIB) ...)
-	$(call check, $(AR) $(ARFLAGS) $(LIBDIR)/$@ $< )
+$(LIBDIR)/lib%.a: $(filter %.o,$(AROBJ)) | $(LIBDIR)
+	$(call status,$(MSG_STATLIB))
+	$(QUIET) $(AR) $(ARFLAGS) $@ $<
+	$(QUIET) $(RANLIB) $@
 	$(call ok,$(MSG_STATLIB))
 
 define sharedlib-c
-lib%.so: C_FLAGS = $$(CFLAGS) $$(CLIBS) 
-lib%.so: $$(filter %.$1,$$(SHRSRC)) | $$(LIBDIR)
+$$(LIBDIR)/lib%.so: C_FLAGS = $$(CLIBS) -fPIC $$(CFLAGS)
+$$(LIBDIR)/lib%.so: $$(filter %$1,$$(SHRSRC)) | $$(LIBDIR)
 	$$(call status,$$(MSG_C_SHRDLIB))
 	
-	$$(call check, $$(call make-depend,$$<,$$@,$$*)    )
-	$$(call check, $$(call make-dir,$$(OBJDIR),$$<)    )
-	$$(call check, $$(CC) -fPIC $$(C_FLAGS) -c $$< -o $$(OBJDIR)/$$*.o   )
-	$$(call check, $$(CC) -o $$(LIBDIR)/$$@ $$(SOFLAGS) $$(OBJDIR)/$$*.o )
+	$$(QUIET) $$(call make-depend,$$<,$$@,$$*)
+	$$(QUIET) $$(call make-dir,$$(OBJDIR),$$<)
+	$$(QUIET) $$(CC) $$(C_FLAGS) -c $$< -o $$(OBJDIR)/$$*.o
+	$$(QUIET) $$(CC) $$(SOFLAGS) $$(OBJDIR)/$$*.o -o $$@
 	
 	$$(call ok,$$(MSG_C_SHRDLIB))
 endef
 $(foreach EXT,$(CEXT),$(eval $(call sharedlib-c,$(EXT))))
 
 define sharedlib-cpp
-lib%.so: CXX_FLAGS = $$(CFLAGS) $$(CXXFLAGS) $$(CXXLIBS) 
-lib%.so: $$(filter %.$1,$$(SHRSRC)) | $$(LIBDIR)
+$$(LIBDIR)/lib%.so: CXX_FLAGS = $$(CXXLIBS) -fPIC $$(CXXFLAGS) 
+$$(LIBDIR)/lib%.so: $$(filter %$1,$$(SHRSRC)) | $$(LIBDIR)
 	$$(call status,$$(MSG_CXX_SHRDLIB))
 	
-	$$(call check, $$(call make-depend,$$<,$$@,$$*) )
-	$$(call check, $$(call make-dir,$$(OBJDIR),$$<) )
-	$$(call check, $$(CXX) -fPIC $$(CXX_FLAGS) -c $$< -o $$(OBJDIR)/$$*.o )
-	$$(call check, $$(CXX) -o $$(LIBDIR)/$$@ $$(SOFLAGS) $$(OBJDIR)/$$*.o )
+	$$(QUIET) $$(call make-depend,$$<,$$@,$$*)
+	$$(QUIET) $$(call make-dir,$$(OBJDIR),$$<)
+	$$(QUIET) $$(CXX) $$(CXX_FLAGS) -c $$< -o $$(OBJDIR)/$$*.o
+	$$(QUIET) $$(CXX) $$(SOFLAGS) $$(OBJDIR)/$$*.o -o $$@
 	
 	$$(call ok,$$(MSG_CXX_SHRDLIB))
 endef
@@ -235,21 +305,44 @@ $(foreach EXT,$(CXXEXT),$(eval $(call sharedlib-cpp,$(EXT))))
 ########################################################################
 .PHONY: clean
 clean:
-	$(RM) *.o
-	$(RMDIR) $(OBJDIR)
+	$(call rmdir,$(OBJDIR))
 
 .PHONY: distclean
 distclean: clean
-	$(RMDIR) $(BINDIR) $(DEPDIR) $(LIBDIR) $(DISDIR)
+	$(call rmdir,$(DEPDIR))
+	$(call rmdir,$(LIBDIR))
+	$(call rmdir,$(BINDIR))
+	$(call rmdir,$(DISTDIR))
+
+.PHONY: realclean
+realclean: distclean
+	$(call rm,$(LEXSRC))
+	$(call rm,$(YACCSRC))
 
 ########################################################################
 ##                             FUNCIONS                               ##
 ########################################################################
 # Directories
-$(BINDIR) $(OBJDIR) $(DEPDIR) $(LIBDIR) $(DISDIR):
-	$(call status,$(MSG_MAKEDIR))
-	$(call check, $(MKDIR) $@ )
-	$(call ok,$(MSG_MAKEDIR))
+$(BINDIR) $(OBJDIR) $(DEPDIR) $(LIBDIR):
+	$(call mkdir,$@)
+
+define rm
+	$(call status,$(MSG_RM))
+	$(QUIET) $(RM) $1
+	$(call ok,$(MSG_RM))
+endef
+
+define rmdir
+	$(call status,$(MSG_RMDIR))
+	$(QUIET) $(RMDIR) $1
+	$(call ok,$(MSG_RMDIR))
+endef
+
+define mkdir
+	$(call status,$(MSG_MKDIR))
+	$(QUIET) $(MKDIR) $1
+	$(call ok,$(MSG_MKDIR))
+endef
 
 define make-dir
 	$(MKDIR) $1/$(patsubst $(SRCDIR)/%,%,$(dir $2))
@@ -260,9 +353,8 @@ $(CXX) -MM                     \
 	-MF $(DEPDIR)/$(notdir $3) \
 	-MP                        \
 	-MT $2                     \
-	$(CFLAGS)                  \
-	$(CXXFLAGS)                \
 	$(CXXLIBS)                 \
+	$(CXXFLAGS)                \
 	$1 			
 endef
 
@@ -287,39 +379,36 @@ WHITE   := \033[1;37m
 RES     := \033[0m
 
 ifneq ($(strip $(QUIET)),)
-MSG_MAKEDIR     = "${CYAN}Creating directory $@${RES}"
+MSG_RM          = "${BLUE}Removing $1${RES}"
+MSG_MKDIR       = "${CYAN}Creating directory $1${RES}"
+MSG_RMDIR       = "${BLUE}Removing directory $1${RES}"
+
+MSG_LEX         = "${PURPLE}Generating $(LEX) src $@${RES}"
+MSG_YACC        = "${PURPLE}Generating $(YACC) src $@${RES}"
+
 MSG_STATLIB     = "${RED}Generating static library $@${RES}"
 MSG_MAKETAR     = "${RED}Generating tar file $@${RES}"
 MSG_MAKETGZ     = "${RED}Ziping file $@${RES}"
 
 MSG_C_COMPILE   = "Generating C artifact ${WHITE}$@${RES}"
-MSG_C_LINKAGE   = "${BLUE}Generating C executable ${GREEN}$@${RES}"
+MSG_C_LINKAGE   = "${YELLOW}Generating C executable ${GREEN}$@${RES}"
 MSG_C_SHRDLIB   = "${RED}Generating C shared library $@${RES}"
 
 MSG_CXX_COMPILE = "Generating C++ artifact ${WHITE}$@${RES}"
-MSG_CXX_LINKAGE = "${BLUE}Generating C++ executable ${GREEN}$@${RES}"
+MSG_CXX_LINKAGE = "${YELLOW}Generating C++ executable ${GREEN}$@${RES}"
 MSG_CXX_SHRDLIB = "${RED}Generating C++ shared library $@${RES}"
 endif
 
-# Check error status
-define check
-	$(QUIET) $1 || ($(call Error) && exit 2)
-endef
-
 ifneq ($(strip $(QUIET)),)
     define status
-    	@$(ECHO) -n $1 " ..."
+    	@echo -n $1 "... "
+    endef
+	
+    define vstatus
+    	@echo $1 "... "
     endef
 endif
 
-define Error
-	$(ECHO) -n "${RED}[ERROR]${RES} "
-endef
-
-define warn
-	$(ECHO) " ${YELLOW}[WARNING]${RES} "
-endef
-
 define ok
-	@$(ECHO) "\r${GREEN}[OK]${RES}" $1 "     "
+	@echo "\r${GREEN}[OK]${RES}" $1 "     "
 endef

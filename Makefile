@@ -113,25 +113,26 @@ $(foreach d,$(SRCDIR),$(foreach e,$(SRCEXT),$(eval vpath %$e $d)))
 ##                              FILES                                 ##
 ########################################################################
 
-# Auxiliar functions:
-# * rsubdir  : For listing all subdirectories of a given dir
-# * rwildcard: For wildcard deep-search in the directory tree
+# Auxiliar functions
+# ===================
+# 1) rsubdir: For listing all subdirectories of a given dir
+# 2) rwildcard: For wildcard deep-search in the directory tree
 rsubdir   = $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS)))
 rwildcard = $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2)$(filter $(subst *,%,$2),$d)) 
 
-# C and C++ code
-# $(foreach E,$(CEXT),  $(eval CSRC   += $(call rwildcard,$(SRCDIR),*$E)))
-# $(foreach E,$(CXXEXT),$(eval CXXSRC += $(call rwildcard,$(SRCDIR),*$E)))
-
-# Library files:
+# Library files
+# ==============
+# 1) Remove the laast / if there is a path only
 # 1) Store libraries as being shared and static libs
-# 2) Check if any name is invalid (there is only a suffix)
-LIB := $(ARLIB) $(SHRLIB)
-
-# TODO: Find a better way of remove all this things
+# 3) If there is only a suffix, throw an error. Otherwise, make
+#    the same action as above
+# 4) Remove src root directories from libraries
+#------------------------------------------------------------------[ 1 ]
 ARLIB := $(foreach s,$(ARLIB),$(if $(or $(call not $(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s)))
 SHRLIB := $(foreach s,$(SHRLIB),$(if $(or $(call not $(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s)))
-
+#------------------------------------------------------------------[ 2 ]
+LIB := $(ARLIB) $(SHRLIB)
+#------------------------------------------------------------------[ 3 ]
 LIB := \
 $(foreach s,$(LIB),                                                    \
   $(if $(and                                                           \
@@ -142,9 +143,11 @@ $(foreach s,$(LIB),                                                    \
     $(or $(call not $(dir $s)),$(suffix $s),$(notdir $(basename $s))), \
     $s,$(patsubst %/,%,$s))                                            \
 ))
+#------------------------------------------------------------------[ 4 ]
 LIB := $(patsubst $(SRCDIR)/%,%,$(LIB))
 
 # Lexical analyzer
+# =================
 # 1) Find in a directory tree all the lex files (with dir names)
 # 2) Split C++ and C lexers (to be compiled appropriately)
 # 3) Change lex extension to format .yy.c or .yy.cc (for C/C++ lexers)
@@ -159,6 +162,7 @@ LEXSRC   := $(strip $(CLEXER) $(CXXLEXER))
 LDFLAGS  += -lfl
 
 # Syntatic analyzer
+# ==================
 # 1) Find in a directory tree all the yacc files (with dir names)
 # 2) Split C++ and C parsers (to be compiled appropriately)
 # 3) Change yacc extension to format .tab.c or .tab.cc (for C/C++ parsers)
@@ -171,9 +175,11 @@ CPARSER   := $(patsubst %.y,%.tab.c ,$(CPARSER))
 YACCSRC   := $(strip $(CPARSER) $(CXXPARSER))
 
 # Auto source code
+# =================
 AUTOSRC := $(YACCSRC) $(LEXSRC)
 
-# Source files:
+# Source files
+# =============
 # 1) Find in a directory tree all the source files (with dir names)
 # 2) Remove src root directory name from all sources
 # 3) Save complete paths for libraries
@@ -183,66 +189,90 @@ LIB := $(foreach l,$(LIB),$(or $(filter %$l,$(SRC)),$(SRCDIR)/$l) )
 SRC := $(foreach l,$(LIB),$(filter-out %$l,$(SRC)))
 SRC := $(sort $(foreach ROOT,$(SRCDIR),$(patsubst $(ROOT)/%,%,$(SRC))))
 
-# Static libraries:
-# 1) Set flags to create static lib
-# 2) Get static library paths from all libraries (src)
-# 3) Create analogous object files from it
-# 4) Change names to lib%.a
+# Static libraries
+# =================
+# 1) Set flags to create static libraries
+# 2) Get complete static library paths from all libraries
+# 3) Expand directories to their paths, getting ALL sources without 
+#    root directories
+# 4) Create analogous object files from the above
+# 5) Create library names, with directories, from the source
+# 6) Set libraries to be linked with the binaries
+#------------------------------------------------------------------[ 1 ]
 ARFLAGS ?= -rcv
+#------------------------------------------------------------------[ 2 ]
 ARSRC   := $(foreach a,$(ARLIB),$(filter %$a,$(LIB)))
+#------------------------------------------------------------------[ 3 ]
 ARALL   := $(foreach s,$(ARSRC),$(if $(suffix $s),$s,$(wildcard $s/*)))
 ARALL   := $(patsubst $(SRCDIR)/%,%,$(ARALL))
+#------------------------------------------------------------------[ 4 ]
 AROBJ   := $(patsubst %,$(OBJDIR)/%.o,$(basename $(ARALL)))
+#------------------------------------------------------------------[ 5 ]
 ARLIB   := $(foreach s,$(ARSRC),\
                $(patsubst $(dir $s)%,$(dir $s)lib%,$s))
 ARLIB   := $(patsubst $(SRCDIR)/%,$(LIBDIR)/%,$(ARLIB))
 ARLIB   := $(addsuffix .a,$(basename $(ARLIB)))
+#------------------------------------------------------------------[ 6 ]
 LDFLAGS += $(addprefix -l,$(notdir $(basename $(ARSRC))))
 
-# Dynamic libraries:
-# 1) Set flags to create shared lib
-# 2) Take out last 
-# 2) Get static library paths from all libraries (src)
-# 3) Create analogous object files from it
-# 4) Change names to lib%.so
+# Dynamic libraries
+# ==================
+# 1) Set flags to create shared libraries
+# 2) Get complete static library paths from all libraries
+# 3) Expand directories to their paths, getting ALL sources without 
+#    root directories
+# 4) Create analogous object files from the above
+# 5) Create library names, with directories, from the source
+# 6) Set libraries to be linked with the binaries
+#------------------------------------------------------------------[ 1 ]
 SOFLAGS += -shared 
 LDFLAGS := -Wl,-rpath=$(LIBDIR) $(LDFLAGS)
+#------------------------------------------------------------------[ 2 ]
 SHRSRC  := $(foreach s,$(SHRLIB),$(filter %$s,$(LIB)))
+#------------------------------------------------------------------[ 3 ]
 SHRALL  := $(foreach s,$(SHRSRC),$(if $(suffix $s),$s,$(wildcard $s/*)))
 SHRALL  := $(patsubst $(SRCDIR)/%,%,$(SHRALL))
+#------------------------------------------------------------------[ 4 ]
 SHROBJ  := $(patsubst %,$(OBJDIR)/%.o,$(basename $(SHRALL)))
+#------------------------------------------------------------------[ 5 ]
 SHRLIB  := $(foreach s,$(SHRSRC),\
                $(patsubst $(dir $s)%,$(dir $s)lib%,$s))
 SHRLIB  := $(patsubst $(SRCDIR)/%,$(LIBDIR)/%,$(SHRLIB))
 SHRLIB  := $(addsuffix .so,$(basename $(SHRLIB)))
+#------------------------------------------------------------------[ 6 ]
 LDFLAGS += $(addprefix -l,$(notdir $(basename $(SHRSRC))))
 
-# Object files:
+# Object files
+# =============
 # 1) Add '.o' suffix for each 'naked' source file name (basename)
 # 2) Prefix the build dir before each name
 OBJ := $(addsuffix .o,$(basename $(SRC)))
 OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
-# Header files:
+# Header files
+# =============
 # 1) Get all subdirectories of the included dirs
 # 2) Add them as paths to be searched for headers
 INCSUB  := $(call rsubdir,$(INCDIR))
 CLIBS   := $(patsubst %,-I%,$(INCSUB))
 CXXLIBS := $(patsubst %,-I%,$(INCSUB))
 
-# Library files:
+# Library files
+# ==============
 # 1) Get all subdirectories of the library dirs
 # 2) Add them as paths to be searched for libraries
 LIBSUB = $(call rsubdir,$(LIBDIR))
 LDLIBS = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(LIBSUB))))
 
-# Automated tests:
+# Automated tests
+# ================
 # 1) Get all source files in the test directory
 $(foreach E,$(SRCEXT),$(eval TESTSRC += $(call rwildcard,$(TESTDIR),*_tests$E)))
 TESTOBJ := $(addsuffix .o,$(basename $(TESTSRC)))
 TESTBIN := $(strip $(basename $(TESTSRC)))
 
-# Binary:
+# Binary
+# =======
 # 1) Find out if any source is C++ code, and then make this binary
 IS_CXX := $(foreach EXT,$(CXXEXT),$(findstring $(EXT),$(SRC)))
 
@@ -319,6 +349,13 @@ $(OBJ): $(AUTOSRC) | $(OBJDIR)
 	# $$(QUIET) $$(CXX) $$^ -o $$(BINDIR)/$$@ $$(LDFLAGS) $$(LDLIBS)
 # endef
 
+#======================================================================#
+# Function: lex-factory                                                #
+# @param  $1 Basename of the lex file                                  #
+# @param  $2 Extesion depending on the parser type (C/C++)             #
+# @param  $3 Program to be used depending on the parser type (C/C++)   #
+# @return Target to generate source files according to its type        #
+#======================================================================#
 define lex-factory
 $1.yy.$2: $1.l $$(YACCSRC)
 	$$(call vstatus,$$(MSG_LEX))
@@ -330,6 +367,13 @@ cxx_lbase := $(patsubst %.yy.cc,%,$(CXXLEXER))
 $(foreach s,$(c_lbase)  ,$(eval $(call lex-factory,$s,c,$(LEX))))
 $(foreach s,$(cxx_lbase),$(eval $(call lex-factory,$s,cc,$(LEX_CXX))))
 
+#======================================================================#
+# Function: yacc-factory                                               #
+# @param  $1 Basename of the yacc file                                 #
+# @param  $2 Extesion depending on the parser type (C/C++)             #
+# @param  $3 Program to be used depending on the parser type (C/C++)   #
+# @return Target to generate source files according to its type        #
+#======================================================================#
 define yacc-factory
 $1.tab.$2: $1.y
 	$$(call vstatus,$$(MSG_YACC))
@@ -341,6 +385,11 @@ cxx_pbase := $(patsubst %.tab.cc,%,$(CXXPARSER))
 $(foreach s,$(c_pbase)  ,$(eval $(call yacc-factory,$s,c,$(YACC))))
 $(foreach s,$(cxx_pbase),$(eval $(call yacc-factory,$s,cc,$(YACC_CXX))))
 
+#======================================================================#
+# Function: compile-c                                                  #
+# @param  $1 C extension                                               #
+# @return Target to compile all C files with the given extension       #
+#======================================================================#
 define compile-c
 $$(OBJDIR)/%.o: $$(SRCDIR)/%$1 | $$(DEPDIR)
 	$$(call status,$$(MSG_C_COMPILE))
@@ -353,6 +402,11 @@ $$(OBJDIR)/%.o: $$(SRCDIR)/%$1 | $$(DEPDIR)
 endef
 $(foreach EXT,$(CEXT),$(eval $(call compile-c,$(EXT))))
 
+#======================================================================#
+# Function: compile-cpp                                                #
+# @param  $1 C++ extension                                             #
+# @return Target to compile all C++ files with the given extension     #
+#======================================================================#
 define compile-cpp
 $$(OBJDIR)/%.o: $$(SRCDIR)/%$1 | $$(DEPDIR)
 	$$(call status,$$(MSG_CXX_COMPILE))
@@ -368,24 +422,12 @@ $(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(EXT))))
 # Include dependencies for each src extension
 -include $(DEPDIR)/*.d
 
-# .SECONDARY: $(filter %.o,$(AROBJ))
-# $(LIBDIR)/lib%.a: $(filter %.o,$(AROBJ)) | $(LIBDIR)
-	# $(call status,$(MSG_STATLIB))
-	# $(QUIET) $(AR) $(ARFLAGS) $@ $<
-	# $(QUIET) $(RANLIB) $@
-	# $(call ok,$(MSG_STATLIB))
-
-define link-statlib-linux
-$$(LIBDIR)/$2lib$3.a: $$(AROBJ) | $$(LIBDIR)
-	$$(call status,$$(MSG_STATLIB))
-	$$(QUIET) $$(call mksubdir,$$(LIBDIR),$2)
-	$$(QUIET) $$(AR) $$(ARFLAGS) $$@ $$(call src2obj,$$(wildcard $1$2$3$4*))
-	$$(QUIET) $$(RANLIB) $$@
-	$$(call ok,$$(MSG_STATLIB))
-endef
-$(foreach s,$(ARSRC),\
-    $(eval $(call link-statlib-linux,$(SRCDIR)/,$(patsubst $(SRCDIR)/%,%,$(dir $s)),$(notdir $(basename $s)),$(or $(suffix $s),/))))
-
+#======================================================================#
+# Function: compile-sharedlib-linux-c                                  #
+# @param  $1 File basename                                             #
+# @param  $2 File extension                                            #
+# @return Target to compile the C library file                         #
+#======================================================================#
 define compile-sharedlib-linux-c
 $$(OBJDIR)/$1.o: $$(SRCDIR)/$1$2 | $$(DEPDIR)
 	$$(call status,$$(MSG_C_LIBCOMP))
@@ -401,6 +443,12 @@ $(foreach E,$(CEXT),\
 	    $(eval $(call compile-sharedlib-linux-c,$(basename $s),$E))\
 ))
 
+#======================================================================#
+# Function: compile-sharedlib-linux-cpp                                #
+# @param  $1 File basename                                             #
+# @param  $2 File extension                                            #
+# @return Target to compile the C++ library file                       #
+#======================================================================#
 define compile-sharedlib-linux-cpp
 $$(OBJDIR)/$1.o: $$(SRCDIR)/$1$2 | $$(DEPDIR)
 	$$(call status,$$(MSG_CXX_LIBCOMP))
@@ -416,21 +464,46 @@ $(foreach E,$(CXXEXT),\
         $(eval $(call compile-sharedlib-linux-cpp,$(basename $s),$E))\
 ))
 
+#======================================================================#
+# Function: link-sharedlib-linux                                       #
+# @param  $1 Root dir                                                  #
+# @param  $2 Subdirectories                                            #
+# @param  $3 File/dir basename                                         #
+# @param  $4 File/dir extension                                        #
+# @return Target to create a shared library from objects               #
+#======================================================================#
 define link-sharedlib-linux
 $$(LIBDIR)/$2lib$3.so: $$(SHROBJ) | $$(LIBDIR)
 	$$(call status,$$(MSG_CXX_SHRDLIB))
 	
-	@#echo 
-	@#echo 1:$1 2:$2 3:$3 4:$4
-	@#echo $1$2$3$4
-	@echo $$(wildcard $1$2$3$4*)
 	$$(QUIET) $$(call mksubdir,$$(LIBDIR),$2)
-	$$(QUIET) $$(CXX) $$(SOFLAGS) $$(call src2obj,$$(wildcard $1$2$3$4*)) -o $$@
+	$$(QUIET) $$(CXX) $$(SOFLAGS) -o $$@ \
+				$$(call src2obj,$$(wildcard $1$2$3$4*)) 
 	
 	$$(call ok,$$(MSG_CXX_SHRDLIB))
 endef
 $(foreach s,$(SHRSRC),\
     $(eval $(call link-sharedlib-linux,$(SRCDIR)/,$(patsubst $(SRCDIR)/%,%,$(dir $s)),$(notdir $(basename $s)),$(or $(suffix $s),/))))
+
+#======================================================================#
+# Function: link-statlib-linux                                         #
+# @param  $1 Root dir                                                  #
+# @param  $2 Subdirectories                                            #
+# @param  $3 File/dir basename                                         #
+# @param  $4 File/dir extension                                        #
+# @return Target to create a static library from objects               #
+#======================================================================#
+define link-statlib-linux
+$$(LIBDIR)/$2lib$3.a: $$(AROBJ) | $$(LIBDIR)
+	$$(call status,$$(MSG_STATLIB))
+	$$(QUIET) $$(call mksubdir,$$(LIBDIR),$2)
+	$$(QUIET) $$(AR) $$(ARFLAGS) $$@ \
+				$$(call src2obj,$$(wildcard $1$2$3$4*))
+	$$(QUIET) $$(RANLIB) $$@
+	$$(call ok,$$(MSG_STATLIB))
+endef
+$(foreach s,$(ARSRC),\
+    $(eval $(call link-statlib-linux,$(SRCDIR)/,$(patsubst $(SRCDIR)/%,%,$(dir $s)),$(notdir $(basename $s)),$(or $(suffix $s),/))))
 
 ########################################################################
 ##                              CLEAN                                 ##

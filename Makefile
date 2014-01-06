@@ -237,6 +237,7 @@ tar: $(DISTDIR)/$(PROJECT)-$(VERSION).tar
 .PHONY: check
 check: $(TESTBIN)
 
+# TODO: Remove tests
 .PHONY: test
 test: 
 	@echo "base up:  " $(call src2obj,$(wildcard src/math/math.cpp*))
@@ -286,6 +287,7 @@ $(OBJ): $(AUTOSRC) | $(OBJDIR)
 	
 	$(call rmdir,$(TARFILE))
 
+# TODO: Create test-factory
 # define test-factory
 # $1: $1.o | $$(BINDIR)
 	# $$(QUIET) $$(call mksubdir,$$(OBJDIR),$$<)   

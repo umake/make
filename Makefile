@@ -25,8 +25,8 @@ VESRION := 1.0
 
 # Program settings
 BIN    := Main
-ARLIB  := 
-SHRLIB := math/
+ARLIB  := math
+SHRLIB := 
 
 ########################################################################
 ##                              FLAGS                                 ##
@@ -142,6 +142,7 @@ $(foreach s,$(LIB),                                                    \
     $(or $(call not $(dir $s)),$(suffix $s),$(notdir $(basename $s))), \
     $s,$(patsubst %/,%,$s))                                            \
 ))
+LIB := $(patsubst $(SRCDIR)/%,%,$(LIB))
 
 # Lexical analyzer
 # 1) Find in a directory tree all the lex files (with dir names)
@@ -155,7 +156,7 @@ CLEXER   := $(filter-out $(CXXLEXER),$(LEXSRC))
 CXXLEXER := $(patsubst %.l,%.yy.cc,$(CXXLEXER))
 CLEXER   := $(patsubst %.l,%.yy.c ,$(CLEXER))
 LEXSRC   := $(strip $(CLEXER) $(CXXLEXER))
-LDFLAGS  += -lfl # Flex default library
+LDFLAGS  += -lfl
 
 # Syntatic analyzer
 # 1) Find in a directory tree all the yacc files (with dir names)
@@ -188,9 +189,15 @@ SRC := $(sort $(foreach ROOT,$(SRCDIR),$(patsubst $(ROOT)/%,%,$(SRC))))
 # 3) Create analogous object files from it
 # 4) Change names to lib%.a
 ARFLAGS ?= -rcv
-ARSRC   := $(foreach a,$(ARLIB),$(filter %$(a),$(LIB)))
-AROBJ   := $(patsubst %.c,$(OBJDIR)/%.o,$(ARSRC))
-ARLIB   := $(patsubst %,$(LIBDIR)/lib%.a,$(notdir $(basename $(ARSRC))))
+ARSRC   := $(foreach a,$(ARLIB),$(filter %$a,$(LIB)))
+ARALL   := $(foreach s,$(ARSRC),$(if $(suffix $s),$s,$(wildcard $s/*)))
+ARALL   := $(patsubst $(SRCDIR)/%,%,$(ARALL))
+AROBJ   := $(patsubst %.c,$(OBJDIR)/%.o,$(ARALL))
+# ARLIB   := $(patsubst %,$(LIBDIR)/lib%.a,$(notdir $(basename $(ARSRC))))
+ARLIB   := $(foreach s,$(ARSRC),\
+               $(patsubst $(dir $s)%,$(dir $s)lib%,$s))
+ARLIB   := $(patsubst $(SRCDIR)/%,$(LIBDIR)/%,$(ARLIB))
+ARLIB   := $(addsuffix .so,$(basename $(ARLIB)))
 LDFLAGS += $(addprefix -l,$(notdir $(basename $(ARSRC))))
 
 # Dynamic libraries:
@@ -199,14 +206,16 @@ LDFLAGS += $(addprefix -l,$(notdir $(basename $(ARSRC))))
 # 2) Get static library paths from all libraries (src)
 # 3) Create analogous object files from it
 # 4) Change names to lib%.so
-SOFLAGS += -shared -Wl,-rpath=$(LIBDIR)
+SOFLAGS += -shared 
+LDFLAGS := -Wl,-rpath=$(LIBDIR) $(LDFLAGS)
 SHRSRC  := $(foreach s,$(SHRLIB),$(filter %$s,$(LIB)))
-SHRSRC  := $(foreach s,$(SHRSRC),\
-               $(if $(findstring $(SRCDIR)/,$s),$s,$(SRCDIR)/$s))
 SHRALL  := $(foreach s,$(SHRSRC),$(if $(suffix $s),$s,$(wildcard $s/*)))
 SHRALL  := $(patsubst $(SRCDIR)/%,%,$(SHRALL))
 SHROBJ  := $(patsubst %,$(OBJDIR)/%.o,$(basename $(SHRALL)))
-SHRLIB  := $(patsubst %,$(LIBDIR)/lib%.so,$(notdir $(basename $(SHRLIB))))
+SHRLIB  := $(foreach s,$(SHRSRC),\
+               $(patsubst $(dir $s)%,$(dir $s)lib%,$s))
+SHRLIB  := $(patsubst $(SRCDIR)/%,$(LIBDIR)/%,$(SHRLIB))
+SHRLIB  := $(addsuffix .so,$(basename $(SHRLIB)))
 LDFLAGS += $(addprefix -l,$(notdir $(basename $(SHRSRC))))
 
 # Object files:
@@ -257,17 +266,17 @@ check: $(TESTBIN)
 # TODO: Remove tests
 .PHONY: test
 test: 
-	@echo "base up:  " $(call src2obj,$(wildcard src/math/math.cpp*))
+	@echo "base up:  " $(patsubst $(SRCDIR)/%,%,$(dir src/math))
 	@echo "Src:      " $(SRC)
 	@echo "Lib:      " $(LIB)
-	@echo "shrsrc:   " $(SHRSRC)
-	@echo "shrobj:   " $(SHROBJ)
-	@echo "shrall:   " $(SHRALL)
-	@echo "path:     " $(foreach s,$(SHRSRC),$(dir $s))
-	@echo "main:     " $(foreach s,$(SHRSRC),$(notdir $(basename $s)))
-	@echo "suffix:   " $(foreach s,$(SHRSRC),$(or $(suffix $s),/))
-	@echo "wildcard: " $(foreach s,$(SHRSRC),$(wildcard $s/*))
-	@echo "src2obj:  " $(call src2obj,$(foreach s,$(SHRSRC),$(wildcard $s/*)))
+	@echo "shrsrc:   " $(ARSRC)
+	@echo "shrobj:   " $(AROBJ)
+	@echo "shrlib:   " $(ARLIB)
+	@echo "shrall:   " $(ARALL)
+	@echo "path:     " $(foreach s,$(ARSRC),$(dir $s))
+	@echo "main:     " $(foreach s,$(ARSRC),$(notdir $(basename $s)))
+	@echo "suffix:   " $(foreach s,$(ARSRC),$(or $(suffix $s),/))
+	@echo "wildcard: " $(foreach s,$(ARSRC),$(wildcard $s/*))
 
 ifneq ($(IS_CXX),)
 $(BIN): $(OBJ) | $(ARLIB) $(SHRLIB) $(BINDIR)
@@ -398,16 +407,20 @@ $(foreach E,$(CXXEXT),\
 ))
 
 define link-sharedlib-linux
-$$(LIBDIR)/lib$2.so: LIBOBJ := $$(call src2obj,$$(wildcard $1$2$3/*))
-$$(LIBDIR)/lib$2.so: $$(SHROBJ) | $$(LIBDIR)
+$$(LIBDIR)/$2lib$3.so: $$(SHROBJ) | $$(LIBDIR)
 	$$(call status,$$(MSG_CXX_SHRDLIB))
 	
-	$$(QUIET) $$(CXX) $$(SOFLAGS) $$(LIBOBJ) -o $$@
+	@#echo 
+	@#echo 1:$1 2:$2 3:$3 4:$4
+	@#echo $1$2$3$4
+	@echo $$(wildcard $1$2$3$4*)
+	$$(QUIET) $$(call mksubdir,$$(LIBDIR),$2)
+	$$(QUIET) $$(CXX) $$(SOFLAGS) $$(call src2obj,$$(wildcard $1$2$3$4*)) -o $$@
 	
 	$$(call ok,$$(MSG_CXX_SHRDLIB))
 endef
 $(foreach s,$(SHRSRC),\
-    $(eval $(call link-sharedlib-linux,$(dir $s),$(notdir $(basename $s)),$(or $(suffix $s),/))))
+    $(eval $(call link-sharedlib-linux,$(SRCDIR)/,$(patsubst $(SRCDIR)/%,%,$(dir $s)),$(notdir $(basename $s)),$(or $(suffix $s),/))))
 
 ########################################################################
 ##                              CLEAN                                 ##

@@ -25,7 +25,7 @@ VESRION := 1.0
 
 # Program settings
 BIN    := Main
-ARLIB  := math
+ARLIB  := src/math
 SHRLIB := 
 
 ########################################################################
@@ -192,12 +192,11 @@ ARFLAGS ?= -rcv
 ARSRC   := $(foreach a,$(ARLIB),$(filter %$a,$(LIB)))
 ARALL   := $(foreach s,$(ARSRC),$(if $(suffix $s),$s,$(wildcard $s/*)))
 ARALL   := $(patsubst $(SRCDIR)/%,%,$(ARALL))
-AROBJ   := $(patsubst %.c,$(OBJDIR)/%.o,$(ARALL))
-# ARLIB   := $(patsubst %,$(LIBDIR)/lib%.a,$(notdir $(basename $(ARSRC))))
+AROBJ   := $(patsubst %,$(OBJDIR)/%.o,$(basename $(ARALL)))
 ARLIB   := $(foreach s,$(ARSRC),\
                $(patsubst $(dir $s)%,$(dir $s)lib%,$s))
 ARLIB   := $(patsubst $(SRCDIR)/%,$(LIBDIR)/%,$(ARLIB))
-ARLIB   := $(addsuffix .so,$(basename $(ARLIB)))
+ARLIB   := $(addsuffix .a,$(basename $(ARLIB)))
 LDFLAGS += $(addprefix -l,$(notdir $(basename $(ARSRC))))
 
 # Dynamic libraries:
@@ -369,12 +368,23 @@ $(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(EXT))))
 # Include dependencies for each src extension
 -include $(DEPDIR)/*.d
 
-.SECONDARY: $(filter %.o,$(AROBJ))
-$(LIBDIR)/lib%.a: $(filter %.o,$(AROBJ)) | $(LIBDIR)
-	$(call status,$(MSG_STATLIB))
-	$(QUIET) $(AR) $(ARFLAGS) $@ $<
-	$(QUIET) $(RANLIB) $@
-	$(call ok,$(MSG_STATLIB))
+# .SECONDARY: $(filter %.o,$(AROBJ))
+# $(LIBDIR)/lib%.a: $(filter %.o,$(AROBJ)) | $(LIBDIR)
+	# $(call status,$(MSG_STATLIB))
+	# $(QUIET) $(AR) $(ARFLAGS) $@ $<
+	# $(QUIET) $(RANLIB) $@
+	# $(call ok,$(MSG_STATLIB))
+
+define link-statlib-linux
+$$(LIBDIR)/$2lib$3.a: $$(AROBJ) | $$(LIBDIR)
+	$$(call status,$$(MSG_STATLIB))
+	$$(QUIET) $$(call mksubdir,$$(LIBDIR),$2)
+	$$(QUIET) $$(AR) $$(ARFLAGS) $$@ $$(call src2obj,$$(wildcard $1$2$3$4*))
+	$$(QUIET) $$(RANLIB) $$@
+	$$(call ok,$$(MSG_STATLIB))
+endef
+$(foreach s,$(ARSRC),\
+    $(eval $(call link-statlib-linux,$(SRCDIR)/,$(patsubst $(SRCDIR)/%,%,$(dir $s)),$(notdir $(basename $s)),$(or $(suffix $s),/))))
 
 define compile-sharedlib-linux-c
 $$(OBJDIR)/$1.o: $$(SRCDIR)/$1$2 | $$(DEPDIR)

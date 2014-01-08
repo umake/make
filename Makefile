@@ -261,8 +261,9 @@ CXXLIBS := $(patsubst %,-I%,$(INCSUB))
 # ==============
 # 1) Get all subdirectories of the library dirs
 # 2) Add them as paths to be searched for libraries
-LIBSUB = $(call rsubdir,$(LIBDIR))
-LDLIBS = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(LIBSUB))))
+LIB    := $(ARLIB) $(SHRLIB)
+LIBSUB  = $(if $(strip $(LIB)),$(call rsubdir,$(LIBDIR)))
+LDLIBS  = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(LIBSUB))))
 
 # Automated tests
 # ================
@@ -296,27 +297,28 @@ check: $(TESTBIN)
 .PHONY: test
 test: 
 	@echo $(LDFLAGS)
+	@echo $(LDLIBS)
 	@echo "base up:  " $(patsubst $(SRCDIR)/%,%,$(dir src/math))
 	@echo "Src:      " $(SRC)
 	@echo "Lib:      " $(LIB)
-	@echo "shrsrc:   " $(ARSRC)
-	@echo "shrobj:   " $(AROBJ)
-	@echo "shrlib:   " $(ARLIB)
-	@echo "shrall:   " $(ARALL)
-	@echo "path:     " $(foreach s,$(ARSRC),$(dir $s))
-	@echo "main:     " $(foreach s,$(ARSRC),$(notdir $(basename $s)))
-	@echo "suffix:   " $(foreach s,$(ARSRC),$(or $(suffix $s),/))
-	@echo "wildcard: " $(foreach s,$(ARSRC),$(wildcard $s/*))
+	@echo "shrsrc:   " $(SHRSRC)
+	@echo "shrobj:   " $(SHROBJ)
+	@echo "shrlib:   " $(SHRLIB)
+	@echo "shrall:   " $(SHRALL)
+	@echo "path:     " $(foreach s,$(SHRSRC),$(dir $s))
+	@echo "main:     " $(foreach s,$(SHRSRC),$(notdir $(basename $s)))
+	@echo "suffix:   " $(foreach s,$(SHRSRC),$(or $(suffix $s),/))
+	@echo "wildcard: " $(foreach s,$(SHRSRC),$(wildcard $s/*))
 
 ifneq ($(IS_CXX),)
-$(BIN): $(OBJ) | $(ARLIB) $(SHRLIB) $(BINDIR)
+$(BIN): $(OBJ) $(LIB) | $(BINDIR)
 	$(call status,$(MSG_CXX_LINKAGE))
-	$(QUIET) $(CXX) $^ -o $(BINDIR)/$@ $(LDFLAGS) $(LDLIBS)
+	$(QUIET) $(CXX) $(OBJ) -o $(BINDIR)/$@ $(LDFLAGS) $(LDLIBS)
 	$(call ok,$(MSG_CXX_LINKAGE))
 else
-$(BIN): $(OBJ) | $(ARLIB) $(SHRLIB) $(BINDIR)
+$(BIN): $(OBJ) $(LIB) | $(BINDIR)
 	$(call status,$(MSG_C_LINKAGE))
-	$(QUIET) $(CC) $^ -o $(BINDIR)/$@ $(LDFLAGS) $(LDLIBS)
+	$(QUIET) $(CC) $(OBJ) -o $(BINDIR)/$@ $(LDFLAGS) $(LDLIBS)
 	$(call ok,$(MSG_C_LINKAGE))
 endif
 

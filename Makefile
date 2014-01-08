@@ -292,6 +292,7 @@ tar: $(DISTDIR)/$(PROJECT)-$(VERSION).tar
 
 .PHONY: check
 check: $(TESTBIN)
+	$(if $(strip $^),$(call ok,$(MSG_TEST_SUCCESS)))
 
 # TODO: Remove tests
 .PHONY: test
@@ -348,9 +349,16 @@ $(OBJ): $(AUTOSRC) | $(OBJDIR)
 
 # TODO: Create test-factory
 define test-factory
+.PHONY: $$(BINDIR)/$1
 $$(BINDIR)/$1: $$(OBJDIR)/$1.o | $$(BINDIR)
-	@echo $$^
-	# $$(QUIET) $$(CXX) $$^ -o $$(BINDIR)/$$@ $$(LDFLAGS) $$(LDLIBS)
+	$$(call status,$$(MSG_TEST))
+	
+	$$(QUIET) $$(call mksubdir,$$(BINDIR),$$@)
+	$$(QUIET) $$(CXX) $$^ -o $$@ $$(LDFLAGS) $$(LDLIBS)
+	
+	@./$$@ $$(NO_OUTPUT) || $$(call shell-error,$$(MSG_TEST_FAILURE))
+	
+	$$(call ok,$$(MSG_TEST))
 endef
 $(foreach s,$(basename $(TESTSRC)),$(eval $(call test-factory,$s)))
 
@@ -392,43 +400,49 @@ $(foreach s,$(cxx_pbase),$(eval $(call yacc-factory,$s,cc,$(YACC_CXX))))
 
 #======================================================================#
 # Function: compile-c                                                  #
-# @param  $1 Root source directory                                     #
-# @param  $2 C extension                                               #
+# @param  $1 C extension                                               #
+# @param  $2 Root source directory                                     #
+# @param  $3 Source tree specific path in objdir to put objects        #
 # @return Target to compile all C files with the given extension,      #
 # 		  looking in the right root directory                          #
 #======================================================================#
 define compile-c
-$$(OBJDIR)/%.o: $1%$2 | $$(DEPDIR)
+$$(OBJDIR)/$3%.o: $2%$1 | $$(DEPDIR)
 	$$(call status,$$(MSG_C_COMPILE))
 	
 	$$(QUIET) $$(call make-depend,$$<,$$@,$$*)
-	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$$*$2)
+	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$$@)
 	$$(QUIET) $$(CC) $$(CFLAGS) $$(CLIBS) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_C_COMPILE))
 endef
-$(foreach EXT,$(CEXT),$(eval $(call compile-c,$(SRCDIR)/,$(EXT))))
-# $(foreach EXT,$(CEXT),$(eval $(call compile-c,$(TESTDIR)/,$(EXT))))
+$(foreach E,$(CEXT),\
+    $(eval $(call compile-c,$E,$(SRCDIR)/)))
+$(foreach E,$(CEXT),\
+    $(eval $(call compile-c,$E,$(TESTDIR)/,$(TESTDIR)/)))
 
 #======================================================================#
 # Function: compile-cpp                                                #
-# @param  $1 Root source directory                                     #
-# @param  $2 C++ extension                                             #
+# @param  $1 C++ extension                                             #
+# @param  $2 Root source directory                                     #
+# @param  $3 Source tree specific path in objdir to put objects        #
 # @return Target to compile all C++ files with the given extension     #
 # 		  looking in the right root directory                          #
 #======================================================================#
 define compile-cpp
-$$(OBJDIR)/%.o: $1%$2 | $$(DEPDIR)
+$$(OBJDIR)/$3%.o: $2%$1 | $$(DEPDIR)
 	$$(call status,$$(MSG_CXX_COMPILE))
 	
-	$$(QUIET) $$(call make-depend,$$<,$$@,$$*.d) 
-	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$$*$2)   
+	$$(QUIET) $$(call make-depend,$$<,$$@,$$*.d)
+	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$$@)
 	$$(QUIET) $$(CXX) $$(CXXLIBS) $$(CXXFLAGS) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_CXX_COMPILE))
 endef
-$(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(SRCDIR)/,$(EXT))))
-# $(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(TESTDIR)/,$(EXT))))
+$(foreach E,$(CXXEXT),\
+    $(eval $(call compile-cpp,$E,$(SRCDIR)/)))
+$(foreach E,$(CXXEXT),\
+    $(eval $(call compile-cpp,$E,$(TESTDIR)/,$(TESTDIR)/)))
 
 # Include dependencies for each src extension
 -include $(DEPDIR)/*.d
@@ -572,7 +586,7 @@ define mkdir
 endef
 
 define mksubdir
-	$(MKDIR) $1/$(dir $2)
+	$(MKDIR) $1/$(patsubst $1/%,%,$(dir $2))
 endef
 
 # Function: make-depend
@@ -597,7 +611,13 @@ endef
 V   ?= 0
 Q_0 := @
 Q_1 :=
-QUIET := $(Q_$(V))
+QUIET := $(Q_$V)
+O_0 := 1> /dev/null
+O_1 := 
+NO_OUTPUT := $(O_$V)
+E_0 := 2> /dev/null
+E_1 := 
+NO_ERROR := $(E_$V)
 
 # ANSII Escape Colors
 RED     := \033[1;31m
@@ -619,6 +639,10 @@ MSG_LEX_COMPILE  = "Compiling scanner ${WHITE}$@${RES}"
 MSG_YACC         = "${PURPLE}Generating parser $@${RES}"
 MSG_YACC_NONE    = "${PURPLE}No auto-generated parsers${RES}"
 MSG_YACC_COMPILE = "Compiling parser ${WHITE}$@${RES}"
+
+MSG_TEST         = "${BLUE}Testing ${WHITE}$(notdir $<)${RES}"
+MSG_TEST_FAILURE = "${CYAN}Test $(notdir $@) not passed${RES}"
+MSG_TEST_SUCCESS = "${YELLOW}All tests passed successfully${RES}"
 
 MSG_STATLIB      = "${RED}Generating static library $@${RES}"
 MSG_MAKETAR      = "${RED}Generating tar file $@${RES}"
@@ -643,6 +667,11 @@ ifneq ($(strip $(QUIET)),)
     	@echo $1 "... "
     endef
 endif
+
+define shell-error
+(echo "\r${RED}[FAILURE]${RES}" $1"."\
+	 "${RED}Aborting status: $$?${RES}" && exit 1)
+endef
 
 define ok
 	@echo "\r${GREEN}[OK]${RES}" $1 "     "

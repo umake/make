@@ -25,7 +25,7 @@ VESRION := 1.0
 
 # Program settings
 BIN    := Main
-ARLIB  := src/math
+ARLIB  := 
 SHRLIB := 
 
 ########################################################################
@@ -159,7 +159,7 @@ CLEXER   := $(filter-out $(CXXLEXER),$(LEXSRC))
 CXXLEXER := $(patsubst %.l,%.yy.cc,$(CXXLEXER))
 CLEXER   := $(patsubst %.l,%.yy.c ,$(CLEXER))
 LEXSRC   := $(strip $(CLEXER) $(CXXLEXER))
-LDFLAGS  += -lfl
+$(if $(strip $(LEXSRC)),$(eval LDFLAGS += -lfl))
 
 # Syntatic analyzer
 # ==================
@@ -186,7 +186,7 @@ AUTOSRC := $(YACCSRC) $(LEXSRC)
 # 4) Remove library paths from ordinary src
 $(foreach E,$(SRCEXT),$(eval SRC += $(call rwildcard,$(SRCDIR),*$E)))
 LIB := $(foreach l,$(LIB),$(or $(filter %$l,$(SRC)),$(SRCDIR)/$l) )
-SRC := $(foreach l,$(LIB),$(filter-out %$l,$(SRC)))
+SRC := $(or $(foreach l,$(LIB),$(filter-out %$l,$(SRC))),$(SRC))
 SRC := $(sort $(foreach ROOT,$(SRCDIR),$(patsubst $(ROOT)/%,%,$(SRC))))
 
 # Static libraries
@@ -226,7 +226,6 @@ LDFLAGS += $(addprefix -l,$(notdir $(basename $(ARSRC))))
 # 6) Set libraries to be linked with the binaries
 #------------------------------------------------------------------[ 1 ]
 SOFLAGS += -shared 
-LDFLAGS := -Wl,-rpath=$(LIBDIR) $(LDFLAGS)
 #------------------------------------------------------------------[ 2 ]
 SHRSRC  := $(foreach s,$(SHRLIB),$(filter %$s,$(LIB)))
 #------------------------------------------------------------------[ 3 ]
@@ -241,6 +240,7 @@ SHRLIB  := $(patsubst $(SRCDIR)/%,$(LIBDIR)/%,$(SHRLIB))
 SHRLIB  := $(addsuffix .so,$(basename $(SHRLIB)))
 #------------------------------------------------------------------[ 6 ]
 LDFLAGS += $(addprefix -l,$(notdir $(basename $(SHRSRC))))
+$(if $(strip $(SHRSRC)),$(eval LDFLAGS := -Wl,-rpath=$(LIBDIR) $(LDFLAGS)))
 
 # Object files
 # =============
@@ -295,6 +295,7 @@ check: $(TESTBIN)
 # TODO: Remove tests
 .PHONY: test
 test: 
+	@echo $(LDFLAGS)
 	@echo "base up:  " $(patsubst $(SRCDIR)/%,%,$(dir src/math))
 	@echo "Src:      " $(SRC)
 	@echo "Lib:      " $(LIB)

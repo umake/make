@@ -270,7 +270,7 @@ LDLIBS  = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(LIBSUB))))
 # 1) Get all source files in the test directory
 $(foreach E,$(SRCEXT),$(eval TESTSRC += $(call rwildcard,$(TESTDIR),*_tests$E)))
 TESTOBJ := $(addsuffix .o,$(basename $(TESTSRC)))
-TESTBIN := $(strip $(basename $(TESTSRC)))
+TESTBIN := $(strip $(addprefix $(BINDIR)/,$(basename $(TESTSRC))))
 
 # Binary
 # =======
@@ -296,8 +296,9 @@ check: $(TESTBIN)
 # TODO: Remove tests
 .PHONY: test
 test: 
-	@echo $(LDFLAGS)
-	@echo $(LDLIBS)
+	@echo "testsrc:  " $(TESTSRC)
+	@echo "base ^:   " $(basename $(TESTSRC))
+	@echo "testbin:  " $(TESTBIN)
 	@echo "base up:  " $(patsubst $(SRCDIR)/%,%,$(dir src/math))
 	@echo "Src:      " $(SRC)
 	@echo "Lib:      " $(LIB)
@@ -346,11 +347,12 @@ $(OBJ): $(AUTOSRC) | $(OBJDIR)
 	$(call rmdir,$(TARFILE))
 
 # TODO: Create test-factory
-# define test-factory
-# $1: $1.o | $$(BINDIR)
-	# $$(QUIET) $$(call mksubdir,$$(OBJDIR),$$<)   
+define test-factory
+$$(BINDIR)/$1: $$(OBJDIR)/$1.o | $$(BINDIR)
+	@echo $$^
 	# $$(QUIET) $$(CXX) $$^ -o $$(BINDIR)/$$@ $$(LDFLAGS) $$(LDLIBS)
-# endef
+endef
+$(foreach s,$(basename $(TESTSRC)),$(eval $(call test-factory,$s)))
 
 #======================================================================#
 # Function: lex-factory                                                #
@@ -390,37 +392,43 @@ $(foreach s,$(cxx_pbase),$(eval $(call yacc-factory,$s,cc,$(YACC_CXX))))
 
 #======================================================================#
 # Function: compile-c                                                  #
-# @param  $1 C extension                                               #
-# @return Target to compile all C files with the given extension       #
+# @param  $1 Root source directory                                     #
+# @param  $2 C extension                                               #
+# @return Target to compile all C files with the given extension,      #
+# 		  looking in the right root directory                          #
 #======================================================================#
 define compile-c
-$$(OBJDIR)/%.o: $$(SRCDIR)/%$1 | $$(DEPDIR)
+$$(OBJDIR)/%.o: $1%$2 | $$(DEPDIR)
 	$$(call status,$$(MSG_C_COMPILE))
 	
-	$$(QUIET) $$(call make-depend,$$<,$$@,$$*)         
-	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$$*$1)         
+	$$(QUIET) $$(call make-depend,$$<,$$@,$$*)
+	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$$*$2)
 	$$(QUIET) $$(CC) $$(CFLAGS) $$(CLIBS) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_C_COMPILE))
 endef
-$(foreach EXT,$(CEXT),$(eval $(call compile-c,$(EXT))))
+$(foreach EXT,$(CEXT),$(eval $(call compile-c,$(SRCDIR)/,$(EXT))))
+# $(foreach EXT,$(CEXT),$(eval $(call compile-c,$(TESTDIR)/,$(EXT))))
 
 #======================================================================#
 # Function: compile-cpp                                                #
-# @param  $1 C++ extension                                             #
+# @param  $1 Root source directory                                     #
+# @param  $2 C++ extension                                             #
 # @return Target to compile all C++ files with the given extension     #
+# 		  looking in the right root directory                          #
 #======================================================================#
 define compile-cpp
-$$(OBJDIR)/%.o: $$(SRCDIR)/%$1 | $$(DEPDIR)
+$$(OBJDIR)/%.o: $1%$2 | $$(DEPDIR)
 	$$(call status,$$(MSG_CXX_COMPILE))
 	
 	$$(QUIET) $$(call make-depend,$$<,$$@,$$*.d) 
-	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$$*$1)   
+	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$$*$2)   
 	$$(QUIET) $$(CXX) $$(CXXLIBS) $$(CXXFLAGS) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_CXX_COMPILE))
 endef
-$(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(EXT))))
+$(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(SRCDIR)/,$(EXT))))
+# $(foreach EXT,$(CXXEXT),$(eval $(call compile-cpp,$(TESTDIR)/,$(EXT))))
 
 # Include dependencies for each src extension
 -include $(DEPDIR)/*.d

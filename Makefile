@@ -31,7 +31,7 @@ SHRLIB :=
 ########################################################################
 ##                              FLAGS                                 ##
 ########################################################################
-						 
+
 # C Options
 CFLAGS    := -Wall -ansi -pedantic -O2 -g
 
@@ -55,7 +55,7 @@ CXX        := g++
 RANLIB     := ranlib
 
 # File manipulation
-CP 		   := cp -rap
+CP         := cp -rap
 TAR        := tar -cvf
 ZIP        := gzip
 RM         := rm -f
@@ -404,7 +404,7 @@ $(foreach s,$(cxx_pbase),$(eval $(call yacc-factory,$s,cc,$(YACC_CXX))))
 # @param  $2 Root source directory                                     #
 # @param  $3 Source tree specific path in objdir to put objects        #
 # @return Target to compile all C files with the given extension,      #
-# 		  looking in the right root directory                          #
+#         looking in the right root directory                          #
 #======================================================================#
 define compile-c
 $$(OBJDIR)/$3%.o: $2%$1 | $$(DEPDIR)
@@ -427,7 +427,7 @@ $(foreach E,$(CEXT),\
 # @param  $2 Root source directory                                     #
 # @param  $3 Source tree specific path in objdir to put objects        #
 # @return Target to compile all C++ files with the given extension     #
-# 		  looking in the right root directory                          #
+#         looking in the right root directory                          #
 #======================================================================#
 define compile-cpp
 $$(OBJDIR)/$3%.o: $2%$1 | $$(DEPDIR)
@@ -503,7 +503,7 @@ $$(LIBDIR)/$2lib$3.so: $$(SHROBJ) | $$(LIBDIR)
 	
 	$$(QUIET) $$(call mksubdir,$$(LIBDIR),$2)
 	$$(QUIET) $$(CXX) $$(SOFLAGS) -o $$@ \
-				$$(call src2obj,$$(wildcard $1$2$3$4*)) 
+              $$(call src2obj,$$(wildcard $1$2$3$4*)) 
 	
 	$$(call ok,$$(MSG_CXX_SHRDLIB))
 endef
@@ -523,7 +523,7 @@ $$(LIBDIR)/$2lib$3.a: $$(AROBJ) | $$(LIBDIR)
 	$$(call status,$$(MSG_STATLIB))
 	$$(QUIET) $$(call mksubdir,$$(LIBDIR),$2)
 	$$(QUIET) $$(AR) $$(ARFLAGS) $$@ \
-				$$(call src2obj,$$(wildcard $1$2$3$4*))
+              $$(call src2obj,$$(wildcard $1$2$3$4*))
 	$$(QUIET) $$(RANLIB) $$@
 	$$(call ok,$$(MSG_STATLIB))
 endef
@@ -600,7 +600,7 @@ $(CXX) -MM                     \
 	-MT $2                     \
 	$(CXXLIBS)                 \
 	$(CXXFLAGS)                \
-	$1 			
+	$1
 endef
 
 ########################################################################
@@ -662,7 +662,7 @@ ifneq ($(strip $(QUIET)),)
     define status
     	@echo -n $1 "... "
     endef
-	
+
     define vstatus
     	@echo $1 "... "
     endef
@@ -670,7 +670,7 @@ endif
 
 define shell-error
 (echo "\r${RED}[FAILURE]${RES}" $1"."\
-	 "${RED}Aborting status: $$?${RES}" && exit 1)
+      "${RED}Aborting status: $$?${RES}" && exit 1)
 endef
 
 define ok

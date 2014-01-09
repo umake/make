@@ -347,7 +347,11 @@ $(OBJ): $(AUTOSRC) | $(OBJDIR)
 	
 	$(call rmdir,$(TARFILE))
 
-# TODO: Create test-factory
+#======================================================================#
+# Function: test-factory                                               #
+# @param  $1 Binary name for the unit test module                      #
+# @return Target to generate binary file for the unit test             #
+#======================================================================#
 define test-factory
 .PHONY: $$(BINDIR)/$1
 $$(BINDIR)/$1: $$(OBJDIR)/$1.o | $$(BINDIR)

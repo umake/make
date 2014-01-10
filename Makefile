@@ -114,7 +114,7 @@ vpath lib%.a   $(LIBDIR)  # All static libs in libdir
 vpath lib%.so  $(LIBDIR)  # All shared libs in libdir
 vpath %.tar    $(DISTDIR) # All tar files in DISTDIR
 vpath %.tar.gz $(DISTDIR) # All tar.gz files in DISTDIR
-$(foreach d,$(SRCDIR),$(foreach e,$(SRCEXT),$(eval vpath %$e $d)))
+$(foreach root,$(SRCDIR),$(foreach e,$(SRCEXT),$(eval vpath %$e $(root))))
 
 ########################################################################
 ##                              FILES                                 ##
@@ -131,8 +131,10 @@ rwildcard = $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2)$(filter $(subst
 # ==============
 # 1) Find all assembly files in the source directory
 # 2) Remove source directory root paths from ordinary assembly src
-$(foreach E,$(ASMEXT),$(eval ASMSRC += $(call rwildcard,$(SRCDIR),*$E)))
-ASMSRC := $(sort $(foreach ROOT,$(SRCDIR),$(patsubst $(ROOT)/%,%,$(ASMSRC))))
+$(foreach root,$(SRCDIR),$(foreach E,$(ASMEXT),\
+    $(eval ASMSRC += $(call rwildcard,$(root),*$E))))
+ASMSRC := $(sort $(foreach root,$(SRCDIR),\
+    $(patsubst $(root)/%,%,$(ASMSRC))))
 
 # Library files
 # ==============
@@ -158,7 +160,7 @@ $(foreach s,$(LIB),                                                    \
     $s,$(patsubst %/,%,$s))                                            \
 ))
 #------------------------------------------------------------------[ 4 ]
-LIB := $(patsubst $(SRCDIR)/%,%,$(LIB))
+LIB := $(foreach root,$(SRCDIR),$(patsubst $(root)/%,%,$(LIB)))
 
 # Lexical analyzer
 # =================
@@ -167,7 +169,7 @@ LIB := $(patsubst $(SRCDIR)/%,%,$(LIB))
 # 3) Change lex extension to format .yy.c or .yy.cc (for C/C++ lexers)
 # 4) Join all the C and C++ lexer source names
 # 5) Add lex default library with linker flags
-LEXSRC   := $(call rwildcard,$(SRCDIR),*.l)
+$(foreach root,$(SRCDIR),$(eval LEXSRC += $(call rwildcard,$(root),*.l)))
 CXXLEXER := $(foreach l,$(CXXLEXER),$(filter %$l,$(LEXSRC)))
 CLEXER   := $(filter-out $(CXXLEXER),$(LEXSRC))
 CXXLEXER := $(patsubst %.l,%.yy.cc,$(CXXLEXER))
@@ -181,7 +183,7 @@ $(if $(strip $(LEXSRC)),$(eval LDFLAGS += -lfl))
 # 2) Split C++ and C parsers (to be compiled appropriately)
 # 3) Change yacc extension to format .tab.c or .tab.cc (for C/C++ parsers)
 # 4) Join all the C and C++ parser source names
-YACCSRC   := $(call rwildcard,$(SRCDIR),*.y)
+$(foreach root,$(SRCDIR),$(eval YACCSRC += $(call rwildcard,$(root),*.y)))
 CXXPARSER := $(foreach y,$(CXXPARSER),$(filter %$y,$(YACCSRC)))
 CPARSER   := $(filter-out $(CXXPARSER),$(YACCSRC))
 CXXPARSER := $(patsubst %.y,%.tab.cc,$(CXXPARSER))
@@ -198,10 +200,12 @@ AUTOSRC := $(YACCSRC) $(LEXSRC)
 # 2) Remove src root directory name from all sources
 # 3) Save complete paths for libraries
 # 4) Remove source directory root paths from ordinary src
-$(foreach E,$(SRCEXT),$(eval SRC += $(call rwildcard,$(SRCDIR),*$E)))
-LIB := $(foreach l,$(LIB),$(or $(filter %$l,$(SRC)),$(SRCDIR)/$l) )
+$(foreach root,$(SRCDIR),$(foreach E,$(SRCEXT),\
+    $(eval SRC += $(call rwildcard,$(SRCDIR),*$E))))
+LIB := $(foreach root,$(SRCDIR),$(foreach l,$(LIB),\
+    $(or $(filter %$l,$(SRC)),$(SRCDIR)/$l) ))
 SRC := $(or $(foreach l,$(LIB),$(filter-out %$l,$(SRC))),$(SRC))
-SRC := $(sort $(foreach ROOT,$(SRCDIR),$(patsubst $(ROOT)/%,%,$(SRC))))
+SRC := $(sort $(foreach root,$(SRCDIR),$(patsubst $(root)/%,%,$(SRC))))
 
 # Static libraries
 # =================
@@ -218,13 +222,15 @@ ARFLAGS ?= -rcv
 ARSRC   := $(foreach a,$(ARLIB),$(filter %$a,$(LIB)))
 #------------------------------------------------------------------[ 3 ]
 ARALL   := $(foreach s,$(ARSRC),$(if $(suffix $s),$s,$(wildcard $s/*)))
-ARALL   := $(patsubst $(SRCDIR)/%,%,$(ARALL))
+
+ARALL   := $(foreach root,$(SRCDIR),$(patsubst $(root)/%,%,$(ARALL)))
 #------------------------------------------------------------------[ 4 ]
 AROBJ   := $(patsubst %,$(OBJDIR)/%.o,$(basename $(ARALL)))
 #------------------------------------------------------------------[ 5 ]
 ARLIB   := $(foreach s,$(ARSRC),\
                $(patsubst $(dir $s)%,$(dir $s)lib%,$s))
-ARLIB   := $(patsubst $(SRCDIR)/%,$(LIBDIR)/%,$(ARLIB))
+ARLIB   := $(foreach root,$(SRCDIR),\
+               $(patsubst $(root)/%,$(LIBDIR)/%,$(ARLIB)))
 ARLIB   := $(addsuffix .a,$(basename $(ARLIB)))
 #------------------------------------------------------------------[ 6 ]
 LDFLAGS += $(addprefix -l,$(notdir $(basename $(ARSRC))))
@@ -244,13 +250,14 @@ SOFLAGS += -shared
 SHRSRC  := $(foreach s,$(SHRLIB),$(filter %$s,$(LIB)))
 #------------------------------------------------------------------[ 3 ]
 SHRALL  := $(foreach s,$(SHRSRC),$(if $(suffix $s),$s,$(wildcard $s/*)))
-SHRALL  := $(patsubst $(SRCDIR)/%,%,$(SHRALL))
+SHRALL  := $(foreach root,$(SRCDIR),$(patsubst $(root)/%,%,$(SHRALL)))
 #------------------------------------------------------------------[ 4 ]
 SHROBJ  := $(patsubst %,$(OBJDIR)/%.o,$(basename $(SHRALL)))
 #------------------------------------------------------------------[ 5 ]
 SHRLIB  := $(foreach s,$(SHRSRC),\
                $(patsubst $(dir $s)%,$(dir $s)lib%,$s))
-SHRLIB  := $(patsubst $(SRCDIR)/%,$(LIBDIR)/%,$(SHRLIB))
+SHRLIB  := $(foreach root,$(SRCDIR),\
+               $(patsubst $(root)/%,$(LIBDIR)/%,$(SHRLIB)))
 SHRLIB  := $(addsuffix .so,$(basename $(SHRLIB)))
 #------------------------------------------------------------------[ 6 ]
 LDFLAGS += $(addprefix -l,$(notdir $(basename $(SHRSRC))))
@@ -420,8 +427,9 @@ $$(OBJDIR)/$3%.o: $2%$1 | $$(DEPDIR)
 	
 	$$(call ok,$$(MSG_ASM_COMPILE))
 endef
-$(foreach E,$(ASMEXT),\
-    $(eval $(call compile-asm,$E,$(SRCDIR)/)))
+$(foreach root,$(SRCDIR),\
+    $(foreach E,$(ASMEXT),\
+        $(eval $(call compile-asm,$E,$(root)/))))
 
 #======================================================================#
 # Function: compile-c                                                  #
@@ -441,8 +449,8 @@ $$(OBJDIR)/$3%.o: $2%$1 | $$(DEPDIR)
 	
 	$$(call ok,$$(MSG_C_COMPILE))
 endef
-$(foreach E,$(CEXT),\
-    $(eval $(call compile-c,$E,$(SRCDIR)/)))
+$(foreach root,$(SRCDIR),$(foreach E,$(CEXT),\
+    $(eval $(call compile-c,$E,$(root)/))))
 $(foreach E,$(CEXT),\
     $(eval $(call compile-c,$E,$(TESTDIR)/,$(TESTDIR)/)))
 
@@ -464,8 +472,8 @@ $$(OBJDIR)/$3%.o: $2%$1 | $$(DEPDIR)
 	
 	$$(call ok,$$(MSG_CXX_COMPILE))
 endef
-$(foreach E,$(CXXEXT),\
-    $(eval $(call compile-cpp,$E,$(SRCDIR)/)))
+$(foreach root,$(SRCDIR),$(foreach E,$(CXXEXT),\
+    $(eval $(call compile-cpp,$E,$(SRCDIR)/))))
 $(foreach E,$(CXXEXT),\
     $(eval $(call compile-cpp,$E,$(TESTDIR)/,$(TESTDIR)/)))
 
@@ -479,18 +487,18 @@ $(foreach E,$(CXXEXT),\
 # @return Target to compile the C library file                         #
 #======================================================================#
 define compile-sharedlib-linux-c
-$$(OBJDIR)/$1.o: $$(SRCDIR)/$1$2 | $$(DEPDIR)
+$$(OBJDIR)/$2.o: $1$2$3 | $$(DEPDIR)
 	$$(call status,$$(MSG_C_LIBCOMP))
 	
-	$$(QUIET) $$(call make-depend,$$<,$$@,$(notdir $1).d)
-	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$1)
+	$$(QUIET) $$(call make-depend,$$<,$$@,$(notdir $2).d)
+	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$2)
 	$$(QUIET) $$(CC) -fPIC $$(CLIBS) $$(CFLAGS) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_C_LIBCOMP))
 endef
-$(foreach E,$(CEXT),\
-    $(foreach s,$(filter %$E,$(SHRALL)),\
-	    $(eval $(call compile-sharedlib-linux-c,$(basename $s),$E))\
+$(foreach root,$(SRCDIR),$(foreach E,$(CEXT),\
+    $(foreach s,$(filter %$E,$(SHRALL)),$(eval \
+        $(call compile-sharedlib-linux-c,$(root)/,$(basename $s),$E)))\
 ))
 
 #======================================================================#
@@ -500,18 +508,18 @@ $(foreach E,$(CEXT),\
 # @return Target to compile the C++ library file                       #
 #======================================================================#
 define compile-sharedlib-linux-cpp
-$$(OBJDIR)/$1.o: $$(SRCDIR)/$1$2 | $$(DEPDIR)
+$$(OBJDIR)/$2.o: $1$2$3 | $$(DEPDIR)
 	$$(call status,$$(MSG_CXX_LIBCOMP))
 	
-	$$(QUIET) $$(call make-depend,$$<,$$@,$(notdir $1).d)
-	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$1)
+	$$(QUIET) $$(call make-depend,$$<,$$@,$(notdir $2).d)
+	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$2)
 	$$(QUIET) $$(CXX) -fPIC $$(CXXLIBS) $$(CXXFLAGS) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_CXX_LIBCOMP))
 endef
-$(foreach E,$(CXXEXT),\
-    $(foreach s,$(filter %$E,$(SHRALL)),\
-        $(eval $(call compile-sharedlib-linux-cpp,$(basename $s),$E))\
+$(foreach root,$(SRCDIR),$(foreach E,$(CXXEXT),\
+    $(foreach s,$(filter %$E,$(SHRALL)),$(eval \
+        $(call compile-sharedlib-linux-cpp,$(root)/,$(basename $s),$E)))\
 ))
 
 #======================================================================#
@@ -532,8 +540,8 @@ $$(LIBDIR)/$2lib$3.so: $$(SHROBJ) | $$(LIBDIR)
 	
 	$$(call ok,$$(MSG_CXX_SHRDLIB))
 endef
-$(foreach s,$(SHRSRC),\
-    $(eval $(call link-sharedlib-linux,$(SRCDIR)/,$(patsubst $(SRCDIR)/%,%,$(dir $s)),$(notdir $(basename $s)),$(or $(suffix $s),/))))
+$(foreach root,$(SRCDIR),$(foreach s,$(SHRSRC),\
+    $(eval $(call link-sharedlib-linux,$(root)/,$(patsubst $(root)/%,%,$(dir $s)),$(notdir $(basename $s)),$(or $(suffix $s),/)))))
 
 #======================================================================#
 # Function: link-statlib-linux                                         #
@@ -552,8 +560,8 @@ $$(LIBDIR)/$2lib$3.a: $$(AROBJ) | $$(LIBDIR)
 	$$(QUIET) $$(RANLIB) $$@
 	$$(call ok,$$(MSG_STATLIB))
 endef
-$(foreach s,$(ARSRC),\
-    $(eval $(call link-statlib-linux,$(SRCDIR)/,$(patsubst $(SRCDIR)/%,%,$(dir $s)),$(notdir $(basename $s)),$(or $(suffix $s),/))))
+$(foreach root,$(SRCDIR),$(foreach s,$(ARSRC),\
+    $(eval $(call link-statlib-linux,$(root)/,$(patsubst $(root)/%,%,$(dir $s)),$(notdir $(basename $s)),$(or $(suffix $s),/)))))
 
 #======================================================================#
 # Function: test-factory                                               #
@@ -604,11 +612,12 @@ $(BINDIR) $(OBJDIR) $(DEPDIR) $(LIBDIR):
 	$(call mkdir,$@)
 
 define src2obj
-$(addprefix $(OBJDIR)/,       \
-    $(patsubst $(SRCDIR)/%,%, \
-        $(addsuffix .o,       \
-            $(basename $1     \
-))))
+$(foreach root,$(SRCDIR),         \
+    $(addprefix $(OBJDIR)/,       \
+        $(patsubst $(root)/%,%,   \
+            $(addsuffix .o,       \
+                $(basename $1     \
+)))))
 endef
 
 define rm

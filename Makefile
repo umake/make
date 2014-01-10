@@ -32,6 +32,9 @@ SHRLIB :=
 ##                              FLAGS                                 ##
 ########################################################################
 
+# Assembler flags
+ASFLAGS   := -f elf32
+
 # C Options
 CFLAGS    := -Wall -ansi -pedantic -O2 -g
 
@@ -50,6 +53,7 @@ LDFLAGS   :=
 ########################################################################
 # Compilation
 AR         := ar
+AS         := nasm
 CC         := gcc
 CXX        := g++
 RANLIB     := ranlib
@@ -88,6 +92,9 @@ TESTDIR := test
 ##                              PATHS                                 ##
 ########################################################################
 
+# Assembly extensions
+ASMEXT := .asm .S
+
 # Header extensions
 HEXT   := .h
 HXXEXT := .H .hh .hpp .hxx .h++
@@ -119,6 +126,11 @@ $(foreach d,$(SRCDIR),$(foreach e,$(SRCEXT),$(eval vpath %$e $d)))
 # 2) rwildcard: For wildcard deep-search in the directory tree
 rsubdir   = $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS)))
 rwildcard = $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2)$(filter $(subst *,%,$2),$d)) 
+
+# Assembly files
+# ==============
+# 1) Find all assembly files in the source directory
+$(foreach E,$(ASMEXT),$(eval ASMSRC += $(call rwildcard,$(SRCDIR),*$E)))
 
 # Library files
 # ==============
@@ -297,8 +309,8 @@ check: $(TESTBIN)
 # TODO: Remove tests
 .PHONY: test
 test: 
+	@echo "asm:      " $(ASMSRC)
 	@echo "testsrc:  " $(TESTSRC)
-	@echo "base ^:   " $(basename $(TESTSRC))
 	@echo "testbin:  " $(TESTBIN)
 	@echo "base up:  " $(patsubst $(SRCDIR)/%,%,$(dir src/math))
 	@echo "Src:      " $(SRC)
@@ -348,25 +360,6 @@ $(OBJ): $(AUTOSRC) | $(OBJDIR)
 	$(call rmdir,$(TARFILE))
 
 #======================================================================#
-# Function: test-factory                                               #
-# @param  $1 Binary name for the unit test module                      #
-# @return Target to generate binary file for the unit test             #
-#======================================================================#
-define test-factory
-.PHONY: $$(BINDIR)/$1
-$$(BINDIR)/$1: $$(OBJDIR)/$1.o | $$(BINDIR)
-	$$(call status,$$(MSG_TEST))
-	
-	$$(QUIET) $$(call mksubdir,$$(BINDIR),$$@)
-	$$(QUIET) $$(CXX) $$^ -o $$@ $$(LDFLAGS) $$(LDLIBS)
-	
-	@./$$@ $$(NO_OUTPUT) || $$(call shell-error,$$(MSG_TEST_FAILURE))
-	
-	$$(call ok,$$(MSG_TEST))
-endef
-$(foreach s,$(basename $(TESTSRC)),$(eval $(call test-factory,$s)))
-
-#======================================================================#
 # Function: lex-factory                                                #
 # @param  $1 Basename of the lex file                                  #
 # @param  $2 Extesion depending on the parser type (C/C++)             #
@@ -401,6 +394,27 @@ c_pbase   := $(patsubst %.tab.c, %,$(CPARSER))
 cxx_pbase := $(patsubst %.tab.cc,%,$(CXXPARSER))
 $(foreach s,$(c_pbase)  ,$(eval $(call yacc-factory,$s,c,$(YACC))))
 $(foreach s,$(cxx_pbase),$(eval $(call yacc-factory,$s,cc,$(YACC_CXX))))
+
+#======================================================================#
+# Function: compile-asm                                                #
+# @param  $1 Assembly extension                                        #
+# @param  $2 Root source directory                                     #
+# @param  $3 Source tree specific path in objdir to put objects        #
+# @return Target to compile all Assembly files with the given          #
+#         extension, looking in the right root directory               #
+#======================================================================#
+define compile-asm
+$$(OBJDIR)/$3%.o: $2%$1 | $$(DEPDIR)
+	$$(call status,$$(MSG_ASM_COMPILE))
+	
+	$$(QUIET) $$(call make-depend,$$<,$$@,$$*.d)
+	$$(QUIET) $$(call mksubdir,$$(OBJDIR),$$@)
+	$$(QUIET) $$(AS) $$(ASMFLAGS) $$< -o $$@
+	
+	$$(call ok,$$(MSG_ASM_COMPILE))
+endef
+$(foreach E,$(ASMEXT),\
+    $(eval $(call compile-asm,$E,$(SRCDIR)/)))
 
 #======================================================================#
 # Function: compile-c                                                  #
@@ -534,6 +548,25 @@ endef
 $(foreach s,$(ARSRC),\
     $(eval $(call link-statlib-linux,$(SRCDIR)/,$(patsubst $(SRCDIR)/%,%,$(dir $s)),$(notdir $(basename $s)),$(or $(suffix $s),/))))
 
+#======================================================================#
+# Function: test-factory                                               #
+# @param  $1 Binary name for the unit test module                      #
+# @return Target to generate binary file for the unit test             #
+#======================================================================#
+define test-factory
+.PHONY: $$(BINDIR)/$1
+$$(BINDIR)/$1: $$(OBJDIR)/$1.o | $$(BINDIR)
+	$$(call status,$$(MSG_TEST))
+	
+	$$(QUIET) $$(call mksubdir,$$(BINDIR),$$@)
+	$$(QUIET) $$(CXX) $$^ -o $$@ $$(LDFLAGS) $$(LDLIBS)
+	
+	@./$$@ $$(NO_OUTPUT) || $$(call shell-error,$$(MSG_TEST_FAILURE))
+	
+	$$(call ok,$$(MSG_TEST))
+endef
+$(foreach s,$(basename $(TESTSRC)),$(eval $(call test-factory,$s)))
+
 ########################################################################
 ##                              CLEAN                                 ##
 ########################################################################
@@ -651,6 +684,8 @@ MSG_TEST_SUCCESS = "${YELLOW}All tests passed successfully${RES}"
 MSG_STATLIB      = "${RED}Generating static library $@${RES}"
 MSG_MAKETAR      = "${RED}Generating tar file $@${RES}"
 MSG_MAKETGZ      = "${RED}Ziping file $@${RES}"
+
+MSG_ASM_COMPILE  = "Generating Assembly artifact ${WHITE}$@${RES}"
 
 MSG_C_COMPILE    = "Generating C artifact ${WHITE}$@${RES}"
 MSG_C_LINKAGE    = "${YELLOW}Generating C executable ${GREEN}$@${RES}"

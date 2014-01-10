@@ -130,7 +130,9 @@ rwildcard = $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2)$(filter $(subst
 # Assembly files
 # ==============
 # 1) Find all assembly files in the source directory
+# 2) Remove source directory root paths from ordinary assembly src
 $(foreach E,$(ASMEXT),$(eval ASMSRC += $(call rwildcard,$(SRCDIR),*$E)))
+ASMSRC := $(sort $(foreach ROOT,$(SRCDIR),$(patsubst $(ROOT)/%,%,$(ASMSRC))))
 
 # Library files
 # ==============
@@ -195,7 +197,7 @@ AUTOSRC := $(YACCSRC) $(LEXSRC)
 # 1) Find in a directory tree all the source files (with dir names)
 # 2) Remove src root directory name from all sources
 # 3) Save complete paths for libraries
-# 4) Remove library paths from ordinary src
+# 4) Remove source directory root paths from ordinary src
 $(foreach E,$(SRCEXT),$(eval SRC += $(call rwildcard,$(SRCDIR),*$E)))
 LIB := $(foreach l,$(LIB),$(or $(filter %$l,$(SRC)),$(SRCDIR)/$l) )
 SRC := $(or $(foreach l,$(LIB),$(filter-out %$l,$(SRC))),$(SRC))
@@ -256,9 +258,11 @@ $(if $(strip $(SHRSRC)),$(eval LDFLAGS := -Wl,-rpath=$(LIBDIR) $(LDFLAGS)))
 
 # Object files
 # =============
-# 1) Add '.o' suffix for each 'naked' source file name (basename)
-# 2) Prefix the build dir before each name
-OBJ := $(addsuffix .o,$(basename $(SRC)))
+# 1) Add '.o' suffix for each 'naked' assembly source file name (basename)
+# 2) Add '.o' suffix for each 'naked' source file name (basename)
+# 3) Prefix the build dir before each name
+OBJ := $(addsuffix .o,$(basename $(ASMSRC)))
+OBJ += $(addsuffix .o,$(basename $(SRC)))
 OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 # Header files
@@ -309,6 +313,9 @@ check: $(TESTBIN)
 # TODO: Remove tests
 .PHONY: test
 test: 
+	@echo "clexer:   " $(CLEXER)
+	@echo "cxxlexer: " $(CXXLEXER)
+	@echo "lexsrc:   " $(LEXSRC)
 	@echo "asm:      " $(ASMSRC)
 	@echo "testsrc:  " $(TESTSRC)
 	@echo "testbin:  " $(TESTBIN)

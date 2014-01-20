@@ -307,7 +307,7 @@ liball := $(sort \
     $(foreach l,$(lib_in),$(or\
         $(strip $(foreach s,$(srcall),\
             $(if $(findstring $l,$s),$s))),\
-        $(warning "Library file $l not found"))\
+        $(error Library file/directory "$l" not found))\
 ))
 #------------------------------------------------------------------[ 3 ]
 # Search-for-complete-path steps:

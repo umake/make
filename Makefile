@@ -56,29 +56,30 @@ SOFLAGS   ?= -shared
 ##                             PROGRAMS                               ##
 ########################################################################
 # Compilation
-AR         ?= ar
-AS         ?= nasm
-CC         ?= gcc
-CXX        ?= g++
-RANLIB     ?= ranlib
+AR         := ar
+AS         := nasm
+CC         := gcc
+CXX        := g++
+RANLIB     := ranlib
 
 # File manipulation
-CP         ?= cp -rap
-TAR        ?= tar -cvf
-ZIP        ?= gzip
-RM         ?= rm -f
-MKDIR      ?= mkdir -p
-RMDIR      ?= rm -rf
-FIND       ?= find
-FIND_FLAGS ?= -type d -print
+CP         := cp -rap
+MV         := mv
+RM         := rm -f
+TAR        := tar -cvf
+ZIP        := gzip
+MKDIR      := mkdir -p
+RMDIR      := rm -rf
+FIND       := find
+FIND_FLAGS := -type d -print
 
 # Parser and Lexer
-LEX        ?= flex
-LEX_CXX    ?= flex++
-LEXFLAGS   ?= 
-YACC       ?= bison
-YACC_CXX   ?= bison++
-YACcflags  ?= #-v -t
+LEX        := flex
+LEX_CXX    := flex++
+LEXFLAGS   := 
+YACC       := bison
+YACC_CXX   := bison++
+YACCFLAGS  := -d #-v -t
 
 ########################################################################
 ##                            DIRECTORIES                             ##
@@ -105,14 +106,14 @@ HXXEXT  ?= .H .hh .hpp .hxx .h++
 
 # Source extensions
 CEXT    ?= .c
-CXXEXT  ?= .C .cc .cpp .cxx .c++ .tcc
+CXXEXT  ?= .C .cc .cpp .cxx .c++ .tcc .icc
 
 # Library extensions
 LIBEXT  ?= .a .so .dll
 
 # Parser/Lexer extensions
-LEXEXT  ?= .l
-YACCEXT ?= .y
+LEXEXT  ?= .l .ll .lpp
+YACCEXT ?= .y .yy .ypp
 
 ########################################################################
 ##                       USER INPUT VALIDATION                        ##
@@ -134,6 +135,8 @@ cxxparser := $(CXXPARSER)
 ldflags   := $(LDFLAGS)
 arflags   := $(ARFLAGS)
 soflags   := $(SOFLAGS)
+lexflags  := $(LEXFLAG)
+yaccflags := $(YACCFLAGS)
 
 # Directories:
 # No directories must end with a '/' (slash)
@@ -175,6 +178,30 @@ $(foreach root,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $(root))))
 ##                              FILES                                 ##
 ########################################################################
 
+# Auxiliar functions
+# ===================
+# 1) root: Gets the root directory (first in the path) of a path or file
+# 2) not-root: Given a path or file, take out the root directory of it
+# 3) not: Returns empty if its argument was defined, or T otherwise
+# 4) remove-trailing-bar: Removes the last / of a directory-onl name
+define root
+$(foreach s,$1,\
+	$(if $(findstring /,$s),\
+		$(call root,$(patsubst %/,%,$(dir $s))),$(strip $s)))
+endef
+
+define not-root
+$(foreach s,$1,$(strip $(subst $(strip $(call root,$s))/,,$s)))
+endef
+
+define not
+$(strip $(if $1,,T))
+endef
+
+define remove-trailing-bar
+$(foreach s,$1,$(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s)))
+endef
+
 # Default variable names 
 # ======================
 # fooall: complete path WITH root directories
@@ -215,27 +242,17 @@ $(foreach root,$(srcdir),\
 # '---'-----'------'-----'--------'---------------------------------'
 # Examples: 1: test1/  2: test2 .c      4: test4/test4       5: test5/.c 
 # 			6: test6.c 7: test7/test7.c 8: src/test8/test8.c
-# 0) Define auxiliar functions to be used in the library definitions
 # 1) ar_in/shr_in: Remove the last / if there is a path only
 # 1) lib_in      : Store libraries as being shared and static libs
 # 3) liball      : If there is only a suffix, throw an error. 
 #                  Otherwise, make the same action as above
 # 4) libsrc      : Remove src root directories from libraries
-#------------------------------------------------------------------[ 0 ]
-define not
-$(strip $(if $1,,T))
-endef
-
-define remove-trailing-bar
-$(foreach s,$1,$(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s)))
-endef
 #------------------------------------------------------------------[ 1 ]
 ar_in  := $(call remove-trailing-bar,$(ARLIB))
 shr_in := $(call remove-trailing-bar,$(SHRLIB))
 #------------------------------------------------------------------[ 2 ]
 lib_in := $(ar_in) $(shr_in) #$(testlib)
 #------------------------------------------------------------------[ 3 ]
-# TODO: Try to put 'call not' instead of 'if-else'
 lib_in := \
 $(foreach s,$(lib_in),                                                 \
   $(if $(and                                                           \
@@ -253,19 +270,23 @@ $(foreach root,$(srcdir),\
 # 1) Find in a directory tree all the lex files (with dir names)
 # 2) Split C++ and C lexers (to be compiled appropriately)
 # 3) Change lex extension to format .yy.c or .yy.cc (for C/C++ lexers)
-# 4) Join all the C and C++ lexer source names
-# 5) Add lex default library with linker flags
+#    and join all the C and C++ lexer source names
+# 4) Add lex default library with linker flags
 #------------------------------------------------------------------[ 1 ]
-$(foreach root,$(srcdir),$(eval lexall += $(call rwildcard,$(root),*.l)))
+$(foreach root,$(srcdir),\
+    $(foreach E,$(LEXEXT),\
+        $(eval alllexer += $(call rwildcard,$(root),*$E))\
+))
 #------------------------------------------------------------------[ 2 ]
-cxxlexer := $(foreach l,$(cxxlexer),$(filter %$l,$(lexall)))
-clexer   := $(filter-out $(cxxlexer),$(lexall))
+cxxlexer := $(foreach l,$(cxxlexer),$(filter %$l,$(alllexer)))
+clexer   := $(filter-out $(cxxlexer),$(alllexer))
 #------------------------------------------------------------------[ 3 ]
-cxxlexer := $(patsubst %.l,%.yy.cc,$(cxxlexer))
-clexer   := $(patsubst %.l,%.yy.c ,$(clexer))
+lexall   += $(foreach E,$(LEXEXT),\
+                $(patsubst %$E,%.yy.cc,$(filter %$E,$(cxxlexer))))
+lexall   += $(foreach E,$(LEXEXT),\
+                $(patsubst %$E,%.yy.c,$(filter %$E,$(clexer))))
+lexall   := $(strip $(lexall))
 #------------------------------------------------------------------[ 4 ]
-lexall   := $(strip $(clexer) $(cxxlexer))
-#------------------------------------------------------------------[ 5 ]
 $(if $(strip $(lexall)),$(eval ldflags += -lfl))
 
 # Syntatic analyzer
@@ -273,21 +294,32 @@ $(if $(strip $(lexall)),$(eval ldflags += -lfl))
 # 1) Find in a directory tree all the yacc files (with dir names)
 # 2) Split C++ and C parsers (to be compiled appropriately)
 # 3) Change yacc extension to format .tab.c or .tab.cc (for C/C++ parsers)
-# 4) Join all the C and C++ parser source names
+#    and join all the C and C++ parser source names
+# 4) Create yacc parsers default header files
 #------------------------------------------------------------------[ 1 ]
-$(foreach root,$(srcdir),$(eval yaccall += $(call rwildcard,$(root),*.y)))
+$(foreach root,$(srcdir),\
+    $(foreach E,$(YACCEXT),\
+        $(eval allparser += $(call rwildcard,$(root),*$E))\
+))
 #------------------------------------------------------------------[ 2 ]
-cxxparser := $(foreach y,$(cxxparser),$(filter %$y,$(yaccall)))
-cparser   := $(filter-out $(cxxparser),$(yaccall))
+cxxparser := $(foreach y,$(cxxparser),$(filter %$y,$(allparser)))
+cparser   := $(filter-out $(cxxparser),$(allparser))
 #------------------------------------------------------------------[ 3 ]
-cxxparser := $(patsubst %.y,%.tab.cc,$(cxxparser))
-cparser   := $(patsubst %.y,%.tab.c ,$(cparser))
+yaccall   += $(foreach E,$(YACCEXT),\
+                $(patsubst %$E,%.tab.cc,$(filter %$E,$(cxxparser))))
+yaccall   += $(foreach E,$(YACCEXT),\
+                $(patsubst %$E,%.tab.c,$(filter %$E,$(cparser))))
+yaccall   := $(strip $(yaccall))
 #------------------------------------------------------------------[ 4 ]
-yaccall   := $(strip $(cparser) $(cxxparser))
+yaccinc   := $(addprefix $(incdir)/,$(call not-root,$(yaccall)))
+yaccinc   := $(patsubst %.c,%.h,$(patsubst %.cc,%.hh,$(yaccinc)))
 
-# Auto source code
-# =================
-autosrc := $(yaccall) $(lexall)
+# Automatically generated files
+# =============================
+autoall := $(yaccall) $(lexall)
+autosrc := $(call not-root,$(autoall))
+autoobj := $(addsuffix .o,$(basename $(autosrc)))
+autoobj := $(addprefix $(objdir)/,$(autoobj))
 
 # Source files
 # =============
@@ -421,9 +453,11 @@ $(if $(strip $(shrpsrc)),$(eval ldflags := -Wl,-rpath=$(libdir) $(ldflags)))
 # 1) Add '.o' suffix for each 'naked' assembly source file name (basename)
 # 2) Add '.o' suffix for each 'naked' source file name (basename)
 # 3) Prefix the build dir before each name
+# 4) Join all object files (including auto-generated)
 obj := $(addsuffix .o,$(basename $(asmsrc)))
 obj += $(addsuffix .o,$(basename $(src)))
 obj := $(addprefix $(objdir)/,$(obj))
+objall := $(obj) $(autoobj)
 
 # Header files
 # =============
@@ -451,7 +485,7 @@ testbin := $(strip $(addprefix $(bindir)/,$(basename $(testall))))
 # Binary
 # =======
 # 1) Find out if any source is C++ code, and then make a C++ binary
-is_cxx := $(foreach ext,$(CXXEXT),$(findstring $(ext),$(src) $(autosrc)))
+is_cxx := $(foreach ext,$(CXXEXT),$(findstring $(ext),$(src) $(autoall)))
 
 ########################################################################
 ##                              BUILD                                 ##
@@ -472,7 +506,16 @@ check: $(testbin)
 
 .PHONY: dump
 dump: 
-	@echo "srcdir:   " $(srcdir)
+	@echo "alllexer: " $(alllexer)
+	@echo "clexer:   " $(clexer)
+	@echo "cxxlexer: " $(cxxlexer)
+	@echo "lexall:   " $(lexall)
+	
+	@echo "---------------------"
+	@echo "allparser:" $(allparser)
+	@echo "cparser:  " $(cparser)
+	@echo "cxxparser:" $(cxxparser)
+	@echo "yaccall:  " $(yaccall)
 	
 	@echo "---------------------"
 	@echo "srcall:   " $(srcall)
@@ -482,6 +525,10 @@ dump:
 	@echo "src:      " $(src)
 	@echo ""
 	@echo "testsrc:  " $(testsrc)
+	@echo ""
+	@echo "autoall:  " $(autoall)
+	@echo ""
+	@echo "autosrc:  " $(autosrc)
 	
 	@echo "---------------------"
 	@echo "lib_in:   " $(lib_in)
@@ -526,6 +573,8 @@ dump:
 	@echo "arobj:    " $(arobj)
 	@echo ""
 	@echo "shrobj:   " $(shrobj)
+	@echo ""
+	@echo "autoobj:  " $(autoobj)
 	
 	@echo "---------------------"
 	@echo "cflags:   " $(cflags)
@@ -534,37 +583,27 @@ dump:
 	@echo "cxxlibs:  " $(cxxlibs) 
 	@echo "ldlibs:   " $(ldlibs)
 	@echo "ldflags:  " $(ldflags)
+	
 
 ifneq ($(is_cxx),)
-$(BIN): $(obj) $(lib) | $(bindir)
+$(BIN): $(autoobj) $(obj) $(lib) | $(bindir)
 	$(call status,$(MSG_CXX_LINKAGE))
-	$(quiet) $(CXX) $(obj) -o $(bindir)/$@ $(ldflags) $(ldlibs)
+	$(quiet) $(CXX) $(filter %.o,$^) -o $(bindir)/$@ $(ldflags) $(ldlibs)
 	$(call ok,$(MSG_CXX_LINKAGE))
 else
-$(BIN): $(obj) $(lib) | $(bindir)
+$(BIN): $(autoobj) $(obj) $(lib) | $(bindir)
 	$(call status,$(MSG_C_LINKAGE))
-	$(quiet) $(CC) $(obj) -o $(bindir)/$@ $(ldflags) $(ldlibs)
+	$(quiet) $(CC) $(filter %.o,$^) -o $(bindir)/$@ $(ldflags) $(ldlibs)
 	$(call ok,$(MSG_C_LINKAGE))
 endif
 
-$(obj): $(autosrc) | $(objdir)
+$(obj): | $(objdir)
+
+$(autoobj): $(autoall) | $(objdir)
 
 ########################################################################
 ##                              RULES                                 ##
 ########################################################################
-
-# Auxiliar functions
-# ===================
-# 1) root: Gets the root directory (first in the path) of a path or file
-# 2) not-root: Given a path or file, take out the root directory of it
-define root
-$(foreach s,$1,\
-	$(if $(findstring /,$s),\
-		$(call root,$(patsubst %/,%,$(dir $s))),$(strip $s)))
-endef
-define not-root
-$(foreach s,$1,$(strip $(subst $(strip $(call root,$s))/,,$s)))
-endef
 
 %.tar.gz: %.tar
 	$(call status,$(MSG_MAKETGZ))
@@ -591,15 +630,19 @@ endef
 # @return Target to generate source files according to its type        #
 #======================================================================#
 define lex-factory
-$1.yy.$2: $1.l $$(yaccall)
+$1.yy.$2: $3 $$(yaccall)
 	$$(call vstatus,$$(MSG_LEX))
-	$$(quiet) $3 $$(LEXFLAGS) -o$$@ $$< 
+	$$(quiet) $4 $$(lexflags) -o$$@ $$< 
 	$$(call ok,$$(MSG_LEX))
 endef
-c_lbase   := $(patsubst %.yy.c, %,$(clexer))
-cxx_lbase := $(patsubst %.yy.cc,%,$(cxxlexer))
-$(foreach s,$(c_lbase)  ,$(eval $(call lex-factory,$s,c,$(LEX))))
-$(foreach s,$(cxx_lbase),$(eval $(call lex-factory,$s,cc,$(LEX_CXX))))
+$(foreach s,$(clexer),$(eval\
+    $(call lex-factory,$(basename $s),c,\
+    $s,$(LEX))\
+))
+$(foreach s,$(cxxlexer),$(eval\
+    $(call lex-factory,$(basename $s),cc,\
+    $s,$(LEX_CXX))\
+))
 
 #======================================================================#
 # Function: yacc-factory                                               #
@@ -609,15 +652,25 @@ $(foreach s,$(cxx_lbase),$(eval $(call lex-factory,$s,cc,$(LEX_CXX))))
 # @return Target to generate source files according to its type        #
 #======================================================================#
 define yacc-factory
-$1.tab.$2: $1.y
+$1.tab.$2 $3.tab.$4: $5
 	$$(call vstatus,$$(MSG_YACC))
-	$$(quiet) $3 $$(YACcflags) $$< -o $$@ 
+	$$(quiet) $$(call mksubdir,$$(incdir),$$@)
+	$$(quiet) $6 $$(yaccflags) $$< -o $1.tab.$2
+	$$(quiet) $$(MV) $1.h $3.tab.$4
 	$$(call ok,$$(MSG_YACC))
 endef
-c_pbase   := $(patsubst %.tab.c, %,$(cparser))
-cxx_pbase := $(patsubst %.tab.cc,%,$(cxxparser))
-$(foreach s,$(c_pbase)  ,$(eval $(call yacc-factory,$s,c,$(YACC))))
-$(foreach s,$(cxx_pbase),$(eval $(call yacc-factory,$s,cc,$(YACC_CXX))))
+$(foreach s,$(cparser),$(eval\
+    $(call yacc-factory,\
+        $(basename $s),c,\
+        $(incdir)/$(call not-root,$(basename $s)),h,\
+        $s,$(YACC))\
+))
+$(foreach s,$(cxxparser),$(eval\
+    $(call yacc-factory,\
+        $(basename $s),cc,\
+        $(incdir)/$(call not-root,$(basename $s)),hh,\
+        $s,$(YACC_CXX))\
+))
 
 #======================================================================#
 # Function: compile-asm                                                #
@@ -807,8 +860,12 @@ distclean: clean
 
 .PHONY: realclean
 realclean: distclean
-	$(if $(lexall), $(call rm,$(lexall)), $(call ok,$(MSG_LEX_NONE)))
-	$(if $(yaccall),$(call rm,$(yaccall)),$(call ok,$(MSG_YACC_NONE)))
+	$(if $(lexall),\
+        $(call rm,$(lexall)),\
+        $(call ok,$(MSG_LEX_NONE))  )
+	$(if $(yaccall),\
+        $(call rm,$(yaccall) $(yaccinc)),\
+        $(call ok,$(MSG_YACC_NONE)) )
 
 ########################################################################
 ##                             FUNCIONS                               ##
@@ -846,7 +903,7 @@ define mkdir
 endef
 
 define mksubdir
-	$(MKDIR) $1/$(patsubst $1/%,%,$(dir $2))
+	$(MKDIR) $1/$(call not-root,$(dir $2))
 endef
 
 # Function: make-depend
@@ -870,14 +927,12 @@ endef
 # Hide command execution details
 V   ?= 0
 Q_0 := @
-Q_1 :=
 quiet := $(Q_$V)
+
 O_0 := 1> /dev/null
-O_1 := 
-NO_OUTPUT := $(O_$V)
 E_0 := 2> /dev/null
-E_1 := 
-NO_ERROR := $(E_$V)
+NO_OUTPUT := $(O_$V)
+NO_ERROR  := $(E_$V)
 
 # ANSII Escape Colors
 RED     := \033[1;31m
@@ -889,14 +944,14 @@ CYAN    := \033[1;36m
 WHITE   := \033[1;37m
 RES     := \033[0m
 
-MSG_RM           = "${BLUE}Removing $1${RES}"
+MSG_RM           = "${BLUE}Removing ${RES}$1${RES}"
 MSG_MKDIR        = "${CYAN}Creating directory $1${RES}"
-MSG_RMDIR        = "${BLUE}Removing directory $1${RES}"
+MSG_RMDIR        = "${BLUE}Removing directory ${CYAN}$1${RES}"
 
 MSG_LEX          = "${PURPLE}Generating scanner $@${RES}"
 MSG_LEX_NONE     = "${PURPLE}No auto-generated lexers${RES}"
 MSG_LEX_COMPILE  = "Compiling scanner ${WHITE}$@${RES}"
-MSG_YACC         = "${PURPLE}Generating parser $@${RES}"
+MSG_YACC         = "${PURPLE}Generating parser ${BLUE}$@${RES}"
 MSG_YACC_NONE    = "${PURPLE}No auto-generated parsers${RES}"
 MSG_YACC_COMPILE = "Compiling parser ${WHITE}$@${RES}"
 

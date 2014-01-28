@@ -15,16 +15,26 @@
 # limitations under the License.                                       #
 ########################################################################
 
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                          USER DEFINITIONS                            #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
 ########################################################################
 ##                             PROGRAM                                ##
 ########################################################################
 
+# Include configuration file if exists
+-include config.mk
+-include Config.mk
+
 # Project setting 
-PROJECT ?= Robot-Battle
+PROJECT ?= Default
 VESRION ?= 1.0
 
 # Program settings
-BIN     ?= Main
+BIN     ?= a.out
 ARLIB   ?= 
 SHRLIB  ?= 
 
@@ -51,6 +61,60 @@ LDFLAGS   ?=
 # Library flags
 ARFLAGS   ?= -rcv
 SOFLAGS   ?= -shared 
+
+########################################################################
+##                            DIRECTORIES                             ##
+########################################################################
+ifndef SINGLE_DIR
+SRCDIR  ?= src
+BINDIR  ?= bin
+DEPDIR  ?= dep
+OBJDIR  ?= build
+INCDIR  ?= include
+LIBDIR  ?= lib
+DISTDIR ?= dist
+TESTDIR ?= test
+else
+$(foreach var,\
+    SRCDIR BINDIR DEPDIR OBJDIR INCDIR LIBDIR DISTDIR TESTDIR,\
+    $(eval $(var) := .)\
+)
+endif
+
+########################################################################
+##                            EXTENSIONS                              ##
+########################################################################
+
+# Assembly extensions
+ASMEXT  ?= .asm .S
+
+# Header extensions
+HEXT    ?= .h
+HXXEXT  ?= .H .hh .hpp .hxx .h++
+
+# Source extensions
+CEXT    ?= .c
+CXXEXT  ?= .C .cc .cpp .cxx .c++ .tcc .icc
+
+# Library extensions
+LIBEXT  ?= .a .so .dll
+
+# Parser/Lexer extensions
+LEXEXT  ?= .l .ll .lpp
+YACCEXT ?= .y .yy .ypp
+
+# Dependence extensions
+DEPEXT  ?= .d
+
+# Binary extensions
+OBJEXT  ?= .o
+BINEXT  ?= 
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                           OS DEFINITIONS                             #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 ########################################################################
 ##                             PROGRAMS                               ##
@@ -81,49 +145,19 @@ YACC       := bison
 YACC_CXX   := bison++
 YACCFLAGS  := -d #-v -t
 
-########################################################################
-##                            DIRECTORIES                             ##
-########################################################################
-SRCDIR  ?= src
-BINDIR  ?= bin
-DEPDIR  ?= dep
-OBJDIR  ?= build
-INCDIR  ?= include
-LIBDIR  ?= lib
-DISTDIR ?= dist
-TESTDIR ?= test
+# Include configuration file if exists
+-include config_os.mk
+-include Config_os.mk
 
-########################################################################
-##                            EXTENSIONS                              ##
-########################################################################
-
-# Assembly extensions
-ASMEXT  ?= .asm .S
-
-# Header extensions
-HEXT    ?= .h
-HXXEXT  ?= .H .hh .hpp .hxx .h++
-
-# Source extensions
-CEXT    ?= .c
-CXXEXT  ?= .C .cc .cpp .cxx .c++ .tcc .icc
-
-# Library extensions
-LIBEXT  ?= .a .so .dll
-
-# Parser/Lexer extensions
-LEXEXT  ?= .l .ll .lpp
-YACCEXT ?= .y .yy .ypp
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                        DEVELOPER DEFINITIONS                         #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 ########################################################################
 ##                       USER INPUT VALIDATION                        ##
 ########################################################################
-
-# Binary:
-# One single binary allowed (for a while...)
-ifneq ($(words $(BIN)),1)
-    $(error Just one binary allowed per Makefile. Check BIN variable)
-endif
 
 # Flags:
 # Redefine flags to avoid conflict with user's local definitions
@@ -140,23 +174,62 @@ yaccflags := $(YACCFLAGS)
 
 # Directories:
 # No directories must end with a '/' (slash)
-srcdir  := $(foreach d,$(SRCDIR),$(patsubst %/,%,$d))
-bindir  := $(foreach d,$(BINDIR),$(patsubst %/,%,$d))
-depdir  := $(foreach d,$(DEPDIR),$(patsubst %/,%,$d))
-objdir  := $(foreach d,$(OBJDIR),$(patsubst %/,%,$d))
-incdir  := $(foreach d,$(INCDIR),$(patsubst %/,%,$d))
-libdir  := $(foreach d,$(LIBDIR),$(patsubst %/,%,$d))
-distdir := $(foreach d,$(DISTDIR),$(patsubst %/,%,$d))
-testdir := $(foreach d,$(TESTDIR),$(patsubst %/,%,$d))
+srcdir  := $(strip $(foreach d,$(SRCDIR),$(patsubst %/,%,$d)))
+bindir  := $(strip $(foreach d,$(BINDIR),$(patsubst %/,%,$d)))
+depdir  := $(strip $(foreach d,$(DEPDIR),$(patsubst %/,%,$d)))
+objdir  := $(strip $(foreach d,$(OBJDIR),$(patsubst %/,%,$d)))
+incdir  := $(strip $(foreach d,$(INCDIR),$(patsubst %/,%,$d)))
+libdir  := $(strip $(foreach d,$(LIBDIR),$(patsubst %/,%,$d)))
+distdir := $(strip $(foreach d,$(DISTDIR),$(patsubst %/,%,$d)))
+testdir := $(strip $(foreach d,$(TESTDIR),$(patsubst %/,%,$d)))
+
+# Check if every directory variable is non-empty
+ifeq ($(and $(srcdir),$(bindir),$(depdir),$(objdir),\
+            $(incdir),$(libdir),$(distdir),$(testdir)),)
+$(error There must be at least one directory of each type, or '.'.)
+endif
+
+ifneq ($(words $(depdir) $(objdir) $(distdir)),3)
+$(error There must be one dependency, object and distribution dir.)
+endif
 
 # Extensions:
 # Evety extension must begin with a '.' (dot)
-incext := $(HEXT) $(HXXEXT)
-srcext := $(CEXT) $(CXXEXT)
-allext := $(incext) $(srcext) $(ASMEXT) $(LIBEXT) $(LEXEXT) $(YACCEXT)
+hext    := $(strip $(HEXT))
+hxxext  := $(strip $(HXXEXT))
+cext    := $(strip $(CEXT))
+cxxext  := $(strip $(CXXEXT))
+asmext  := $(strip $(ASMEXT))
+libext  := $(strip $(LIBEXT))
+lexext  := $(strip $(LEXEXT))
+yaccext := $(strip $(YACCEXT))
+depext  := $(strip $(DEPEXT))
+objext  := $(strip $(OBJEXT))
+binext  := $(strip $(BINEXT))
+
+incext := $(hext) $(hxxext)
+srcext := $(cext) $(cxxext)
+
+# Check all extensions
+allext := $(incext) $(srcext) $(asmext) $(libext) 
+allext += $(lexext) $(yaccext) $(depext) $(objext) $(binext)
+allext := $(strip $(allext))
 $(foreach ext,$(allext),\
     $(if $(filter .%,$(ext)),,\
         $(error "$(ext)" is not a valid extension)))
+
+ifneq ($(words $(objext)),1)
+    $(error Just one object extension allowed!)
+endif
+
+ifneq ($(words $(depext)),1)
+    $(error Just one dependency extension allowed!)
+endif
+
+ifneq ($(words $(binext)),1)
+    $(if $(binext),\
+        $(error Just one or none binary extensions allowed!))
+endif
 
 ########################################################################
 ##                              PATHS                                 ##
@@ -166,13 +239,17 @@ $(foreach ext,$(allext),\
 .SUFFIXES:
 .SUFFIXES: $(allext)
 
-# Path
-vpath %        $(bindir)  # All binaries in bindir
-vpath lib%.a   $(libdir)  # All static libs in libdir
-vpath lib%.so  $(libdir)  # All shared libs in libdir
-vpath %.tar    $(distdir) # All tar files in distdir
-vpath %.tar.gz $(distdir) # All tar.gz files in distdir
-$(foreach root,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $(root))))
+# Paths
+# ======
+vpath %.tar      $(distdir) # All tar files in distdir
+vpath %.tar.gz   $(distdir) # All tar.gz files in distdir
+
+# Binaries, libraries and source extensions
+$(if $(binext),\
+    $(foreach e,$(binext),$(eval vpath %$e $(bindir))),\
+    $(eval vpath %$e $(bindir)))
+$(foreach e,$(libext),$(eval vpath lib%$e $(libdir)))
+$(foreach s,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 
 ########################################################################
 ##                              FILES                                 ##
@@ -184,6 +261,7 @@ $(foreach root,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $(root))))
 # 2) not-root: Given a path or file, take out the root directory of it
 # 3) not: Returns empty if its argument was defined, or T otherwise
 # 4) remove-trailing-bar: Removes the last / of a directory-onl name
+# 5) is-cxx: find out if there is a C++ file in its single argument
 define root
 $(foreach s,$1,\
 	$(if $(findstring /,$s),\
@@ -200,6 +278,10 @@ endef
 
 define remove-trailing-bar
 $(foreach s,$1,$(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s)))
+endef
+
+define is_cxx
+$(foreach e,$(cxxext),$(findstring $e,$(suffix $1)))
 endef
 
 # Default variable names 
@@ -221,7 +303,7 @@ rwildcard = $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)$(filter $(subst
 # 1) Find all assembly files in the source directory
 # 2) Remove source directory root paths from ordinary assembly src
 $(foreach root,$(srcdir),\
-    $(foreach E,$(ASMEXT),\
+    $(foreach E,$(asmext),\
         $(eval asmsrc += $(call rwildcard,$(root),*$E))))
 $(foreach root,$(srcdir),\
     $(eval asmsrc := $(patsubst $(root)/%,%,$(asmsrc))) )
@@ -251,7 +333,7 @@ $(foreach root,$(srcdir),\
 ar_in  := $(call remove-trailing-bar,$(ARLIB))
 shr_in := $(call remove-trailing-bar,$(SHRLIB))
 #------------------------------------------------------------------[ 2 ]
-lib_in := $(ar_in) $(shr_in) #$(testlib)
+lib_in := $(ar_in) $(shr_in)
 #------------------------------------------------------------------[ 3 ]
 lib_in := \
 $(foreach s,$(lib_in),                                                 \
@@ -274,16 +356,16 @@ $(foreach root,$(srcdir),\
 # 4) Add lex default library with linker flags
 #------------------------------------------------------------------[ 1 ]
 $(foreach root,$(srcdir),\
-    $(foreach E,$(LEXEXT),\
+    $(foreach E,$(lexext),\
         $(eval alllexer += $(call rwildcard,$(root),*$E))\
 ))
 #------------------------------------------------------------------[ 2 ]
 cxxlexer := $(foreach l,$(cxxlexer),$(filter %$l,$(alllexer)))
 clexer   := $(filter-out $(cxxlexer),$(alllexer))
 #------------------------------------------------------------------[ 3 ]
-lexall   += $(foreach E,$(LEXEXT),\
+lexall   += $(foreach E,$(lexext),\
                 $(patsubst %$E,%.yy.cc,$(filter %$E,$(cxxlexer))))
-lexall   += $(foreach E,$(LEXEXT),\
+lexall   += $(foreach E,$(lexext),\
                 $(patsubst %$E,%.yy.c,$(filter %$E,$(clexer))))
 lexall   := $(strip $(lexall))
 #------------------------------------------------------------------[ 4 ]
@@ -298,20 +380,21 @@ $(if $(strip $(lexall)),$(eval ldflags += -lfl))
 # 4) Create yacc parsers default header files
 #------------------------------------------------------------------[ 1 ]
 $(foreach root,$(srcdir),\
-    $(foreach E,$(YACCEXT),\
+    $(foreach E,$(yaccext),\
         $(eval allparser += $(call rwildcard,$(root),*$E))\
 ))
 #------------------------------------------------------------------[ 2 ]
 cxxparser := $(foreach y,$(cxxparser),$(filter %$y,$(allparser)))
 cparser   := $(filter-out $(cxxparser),$(allparser))
 #------------------------------------------------------------------[ 3 ]
-yaccall   += $(foreach E,$(YACCEXT),\
+yaccall   += $(foreach E,$(yaccext),\
                 $(patsubst %$E,%.tab.cc,$(filter %$E,$(cxxparser))))
-yaccall   += $(foreach E,$(YACCEXT),\
+yaccall   += $(foreach E,$(yaccext),\
                 $(patsubst %$E,%.tab.c,$(filter %$E,$(cparser))))
 yaccall   := $(strip $(yaccall))
 #------------------------------------------------------------------[ 4 ]
-yaccinc   := $(addprefix $(incdir)/,$(call not-root,$(yaccall)))
+yaccinc   := $(call not-root,$(yaccall))
+yaccinc   := $(addprefix $(firstword $(incdir))/,$(yaccinc))
 yaccinc   := $(patsubst %.c,%.h,$(patsubst %.cc,%.hh,$(yaccinc)))
 
 # Automatically generated files
@@ -329,11 +412,19 @@ autoobj := $(addprefix $(objdir)/,$(autoobj))
 # 4) srccln: Remove library src from normal src
 # 5) src   : Remove root directory names from dir paths
 #------------------------------------------------------------------[ 1 ]
+ifneq ($(srcdir),.)
 srcall := $(sort\
     $(foreach root,$(srcdir),\
         $(foreach E,$(srcext),\
             $(call rwildcard,$(root),*$E)\
 )))
+else 
+$(warning Source directory is '.'. Deep search for source disabled.)
+srcall := $(sort\
+    $(foreach E,$(srcext),\
+        $(wildcard *$E)\
+))
+endif
 #------------------------------------------------------------------[ 2 ]
 liball := $(sort \
     $(foreach l,$(lib_in),$(or\
@@ -368,6 +459,13 @@ srccln := $(filter-out $(liball),$(srcall))
 #------------------------------------------------------------------[ 5 ]
 src    := $(srccln)
 $(foreach root,$(srcdir),$(eval src := $(patsubst $(root)/%,%,$(src))))
+
+# Dependency files
+# =================
+# 1) Get the not-root basenames of all source directories
+# 2) Create dependency names and directories
+depall := $(strip $(call not-root,$(basename $(srcall) $(autoall))))
+depall := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
 
 # Static libraries
 # =================
@@ -463,7 +561,7 @@ objall := $(obj) $(autoobj)
 # =============
 # 1) Get all subdirectories of the included dirs
 # 2) Add them as paths to be searched for headers
-incsub  := $(call rsubdir,$(incdir))
+incsub  := $(foreach i,$(incdir),$(call rsubdir,$i))
 clibs   := $(patsubst %,-I%,$(incsub))
 cxxlibs := $(patsubst %,-I%,$(incsub))
 
@@ -484,15 +582,43 @@ testbin := $(strip $(addprefix $(bindir)/,$(basename $(testall))))
 
 # Binary
 # =======
-# 1) Find out if any source is C++ code, and then make a C++ binary
-is_cxx := $(foreach ext,$(CXXEXT),$(findstring $(ext),$(src) $(autoall)))
+# 1) Define all binary names
+# 2) Store common source, objects and libs between binaries
+# 3) Create variables:
+# 	 3.1) binary-name_src, for binary's specific sources;
+# 	 3.2) binary-name_obj, for binary's specific objects;
+# 	 3.3) binary-name_lib, for binary's specific libraries;
+# 	 3.4) binary-name_aobj, for binary's specific auto-generated objects;
+# 	 3.5) binary-name_asrc, for binary's specific auto-generated sources;
+# 	 3.6) binary-name_is_cxx, to test if the binary may be C's or C++'s
+#------------------------------------------------------------------[ 1 ]
+bin := $(strip $(BIN))
+#------------------------------------------------------------------[ 2 ]
+$(foreach b,$(bin),$(or\
+    $(eval comsrc  := $(filter-out $b/%,$(src))),\
+    $(eval comobj  := $(filter-out $(objdir)/$b/%,$(obj))),\
+    $(eval comlib  := $(filter-out $(libdir)/$b/%,$(lib))),\
+    $(eval comaobj := $(filter-out $(objdir)/$b/%,$(autoobj))),\
+    $(eval comaall := $(foreach b,$(bin),$(foreach s,$(srcdir),\
+                        $(filter-out $s/$b/%,$(autoall)))))\
+))
+#------------------------------------------------------------------[ 3 ]
+$(foreach b,$(bin),$(or\
+    $(eval $b_src    := $(comsrc)  $(filter $b/%,$(src))),\
+    $(eval $b_obj    := $(comobj)  $(filter $(objdir)/$b/%,$(objall))),\
+    $(eval $b_lib    := $(comlib)  $(filter $(libdir)/$b/%,$(lib))),\
+    $(eval $b_aobj   := $(comaobj) $(filter $(objdir)/$b/%,$(autoobj))),\
+    $(eval $b_aall   := $(comasrc) $(foreach s,$(srcdir),\
+                                       $(filter $s/$b/%,$(autosrc)))),\
+    $(eval $b_is_cxx := $(strip $(call is_cxx,$($b_src)))),\
+))
 
 ########################################################################
 ##                              BUILD                                 ##
 ########################################################################
 
 .PHONY: all
-all: $(BIN)
+all: $(bin)
 
 .PHONY: dist
 dist: $(distdir)/$(PROJECT)-$(VERSION).tar.gz
@@ -503,6 +629,20 @@ tar: $(distdir)/$(PROJECT)-$(VERSION).tar
 .PHONY: check
 check: $(testbin)
 	$(if $(strip $^),$(call ok,$(MSG_TEST_SUCCESS)))
+
+.PHONY: nothing
+nothing:
+	@echo "bin:         " $(bin)
+	@echo "common:      " $(common_obj)
+	@echo "Main_src:    " $(Main_src)
+	@echo "Main_obj:    " $(Main_obj)
+	@echo "Main_lib:    " $(Main_lib)
+	@echo "Main_is_cxx: " $(if $(Main_is_cxx),"yes", "no")
+	
+	@echo "Main2_src:    " $(Main2_src)
+	@echo "Main2_obj:    " $(Main2_obj)
+	@echo "Main2_lib:    " $(Main2_lib)
+	@echo "Main2_is_cxx: " $(if $(Main2_is_cxx),"yes", "no")
 
 .PHONY: dump
 dump: 
@@ -577,6 +717,9 @@ dump:
 	@echo "autoobj:  " $(autoobj)
 	
 	@echo "---------------------"
+	@echo "dep: 	 " $(depall)
+	
+	@echo "---------------------"
 	@echo "cflags:   " $(cflags)
 	@echo "clibs:    " $(clibs) 
 	@echo "cxxflags: " $(cxxflags)
@@ -584,22 +727,21 @@ dump:
 	@echo "ldlibs:   " $(ldlibs)
 	@echo "ldflags:  " $(ldflags)
 	
+	@echo "depsubdir " $(call subdir,$(depdir))
 
-ifneq ($(is_cxx),)
-$(BIN): $(autoobj) $(obj) $(lib) | $(bindir)
-	$(call status,$(MSG_CXX_LINKAGE))
-	$(quiet) $(CXX) $(filter %.o,$^) -o $(bindir)/$@ $(ldflags) $(ldlibs)
-	$(call ok,$(MSG_CXX_LINKAGE))
-else
-$(BIN): $(autoobj) $(obj) $(lib) | $(bindir)
-	$(call status,$(MSG_C_LINKAGE))
-	$(quiet) $(CC) $(filter %.o,$^) -o $(bindir)/$@ $(ldflags) $(ldlibs)
-	$(call ok,$(MSG_C_LINKAGE))
-endif
+define binary-factory
+$1: $$($1_obj) $$($1_lib) | $$(bindir)
+	$$(call status,$$(MSG_CXX_LINKAGE))
+	$$(quiet) $2 $$($1_obj) -o $$(bindir)/$$@ $$(ldflags) $$(ldlibs)
+	$$(call ok,$$(MSG_CXX_LINKAGE))
 
-$(obj): | $(objdir)
+$$($1_obj): | $$(objdir)
 
-$(autoobj): $(autoall) | $(objdir)
+$$($1_aobj): $$($1_aall) | $$(objdir)
+endef
+$(foreach b,$(bin),$(eval\
+    $(call binary-factory,$b,$(if $($b_is_cxx),$(CXX),$(CC)))\
+))
 
 ########################################################################
 ##                              RULES                                 ##
@@ -654,7 +796,7 @@ $(foreach s,$(cxxlexer),$(eval\
 define yacc-factory
 $1.tab.$2 $3.tab.$4: $5
 	$$(call vstatus,$$(MSG_YACC))
-	$$(quiet) $$(call mksubdir,$$(incdir),$$@)
+	$$(quiet) $$(call mksubdir,$$(firstword $$(incdir)),$$@)
 	$$(quiet) $6 $$(yaccflags) $$< -o $1.tab.$2
 	$$(quiet) $$(MV) $1.h $3.tab.$4
 	$$(call ok,$$(MSG_YACC))
@@ -662,13 +804,13 @@ endef
 $(foreach s,$(cparser),$(eval\
     $(call yacc-factory,\
         $(basename $s),c,\
-        $(incdir)/$(call not-root,$(basename $s)),h,\
+        $(firstword $(incdir))/$(call not-root,$(basename $s)),h,\
         $s,$(YACC))\
 ))
 $(foreach s,$(cxxparser),$(eval\
     $(call yacc-factory,\
         $(basename $s),cc,\
-        $(incdir)/$(call not-root,$(basename $s)),hh,\
+        $(firstword $(incdir))/$(call not-root,$(basename $s)),hh,\
         $s,$(YACC_CXX))\
 ))
 
@@ -684,14 +826,15 @@ define compile-asm
 $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_ASM_COMPILE))
 	
-	$$(quiet) $$(call make-depend,$$<,$$@,$$*.d)
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	$$(quiet) $$(call make-depend,$$<,$$@,$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(AS) $$(ASMFLAGS) $$< -o $$@
 	
 	$$(call ok,$$(MSG_ASM_COMPILE))
 endef
 $(foreach root,$(srcdir),\
-    $(foreach E,$(ASMEXT),\
+    $(foreach E,$(asmext),\
         $(eval $(call compile-asm,$E,$(root)/))))
 
 #======================================================================#
@@ -706,15 +849,16 @@ define compile-c
 $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_C_COMPILE))
 	
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call make-depend,$$<,$$@,$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) $$(cflags) $$(clibs) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_C_COMPILE))
 endef
-$(foreach root,$(srcdir),$(foreach E,$(CEXT),\
+$(foreach root,$(srcdir),$(foreach E,$(cext),\
     $(eval $(call compile-c,$E,$(root)/))))
-$(foreach E,$(CEXT),\
+$(foreach E,$(cext),\
     $(eval $(call compile-c,$E,$(testdir)/,$(testdir)/)))
 
 #======================================================================#
@@ -729,56 +873,61 @@ define compile-cpp
 $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_CXX_COMPILE))
 	
-	$$(quiet) $$(call make-depend,$$<,$$@,$$*.d)
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	$$(quiet) $$(call make-depend,$$<,$$@,$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) $$(cxxlibs) $$(cxxflags) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_CXX_COMPILE))
 endef
-$(foreach root,$(srcdir),$(foreach E,$(CXXEXT),\
+$(foreach root,$(srcdir),$(foreach E,$(cxxext),\
     $(eval $(call compile-cpp,$E,$(root)/))))
-$(foreach E,$(CXXEXT),\
+$(foreach E,$(cxxext),\
     $(eval $(call compile-cpp,$E,$(testdir)/,$(testdir)/)))
 
 # Include dependencies for each src extension
--include $(depdir)/*.d
+-include $(foreach d,$(call subdir,$(depdir)),d/*$(depext))
 
 #======================================================================#
 # Function: compile-sharedlib-linux-c                                  #
-# @param  $1 File basename                                             #
-# @param  $2 File extension                                            #
+# @param  $1 File root directory                                       #
+# @param  $2 File basename without root dir                            #
+# @param  $3 File extension                                            #
 # @return Target to compile the C library file                         #
 #======================================================================#
 define compile-sharedlib-linux-c
 $$(objdir)/$2.o: $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_C_LIBCOMP))
 	
-	$$(quiet) $$(call make-depend,$$<,$$@,$(notdir $2).d)
+	$$(quiet) $$(call mksubdir,$$(depdir),$2)
+	$$(quiet) $$(call make-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$2)
 	$$(quiet) $$(CC) -fPIC $$(clibs) $$(cflags) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_C_LIBCOMP))
 endef
-$(foreach s,$(foreach E,$(CEXT),$(filter %$E,$(shrall))),\
+$(foreach s,$(foreach E,$(cext),$(filter %$E,$(shrall))),\
     $(eval $(call compile-sharedlib-linux-c,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
 
 #======================================================================#
 # Function: compile-sharedlib-linux-cpp                                #
-# @param  $1 File basename                                             #
-# @param  $2 File extension                                            #
+# @param  $1 File root directory                                       #
+# @param  $2 File basename without root dir                            #
+# @param  $3 File extension                                            #
 # @return Target to compile the C++ library file                       #
 #======================================================================#
 define compile-sharedlib-linux-cpp
 $$(objdir)/$2.o: $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_CXX_LIBCOMP))
 	
-	$$(quiet) $$(call make-depend,$$<,$$@,$(notdir $2).d)
+	$$(quiet) $$(call mksubdir,$$(depdir),$2)
+	$$(quiet) $$(call make-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$2)
 	$$(quiet) $$(CXX) -fPIC $$(cxxlibs) $$(cxxflags) -c $$< -o $$@
 	
 	$$(call ok,$$(MSG_CXX_LIBCOMP))
 endef
-$(foreach s,$(foreach E,$(CXXEXT),$(filter %$E,$(shrall))),\
+$(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
     $(eval $(call compile-sharedlib-linux-cpp,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
 
 #======================================================================#
@@ -846,16 +995,22 @@ $(foreach s,$(basename $(testall)),$(eval $(call test-factory,$s)))
 ########################################################################
 .PHONY: mostlyclean
 mostlyclean:
+	$(call srm,$(objall))
 	$(call rmdir,$(objdir))
 
 .PHONY: clean
 clean: mostlyclean
+	$(call srm,$(liball))
 	$(call rmdir,$(libdir))
+	$(call srm,$(BIN)) # TODO: many executables
 	$(call rmdir,$(bindir))
 
+# TODO: list all dependencies and distribution info in variables
 .PHONY: distclean
 distclean: clean
-	$(call rmdir,$(depdir))
+	$(call srm,$(depall))
+	$(call rmdir,$(depdir) $(call subdir,depdir))
+	$(call srm,$(PROJECT)-$(VERSION).tar $(PROJECT)-$(VERSION).tar.gz)
 	$(call rmdir,$(distdir))
 
 .PHONY: realclean
@@ -871,7 +1026,7 @@ realclean: distclean
 ##                             FUNCIONS                               ##
 ########################################################################
 # Directories
-$(bindir) $(objdir) $(depdir) $(libdir):
+$(sort $(bindir) $(objdir) $(depdir) $(libdir)):
 	$(call mkdir,$@)
 
 define src2obj
@@ -884,26 +1039,34 @@ $(foreach root,$(srcdir),                 \
 ))))))
 endef
 
+define srm
+	$(quiet) $(RM) $1
+endef
+
 define rm
+$(if $(strip $(patsubst .,,$1)),\
 	$(call status,$(MSG_RM))
 	$(quiet) $(RM) $1
 	$(call ok,$(MSG_RM))
+)
 endef
 
 define rmdir
-	$(call status,$(MSG_RMDIR))
-	$(quiet) $(RMDIR) $1
-	$(call ok,$(MSG_RMDIR))
+	$(if $(strip $(patsubst .,,$1)), $(call status,$(MSG_RMDIR)) )
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(RMDIR) $1        )
+	$(if $(strip $(patsubst .,,$1)), $(call ok,$(MSG_RMDIR))     )
 endef
 
 define mkdir
-	$(call status,$(MSG_MKDIR))
-	$(quiet) $(MKDIR) $1
-	$(call ok,$(MSG_MKDIR))
+	$(if $(strip $(patsubst .,,$1)), $(call status,$(MSG_MKDIR)) )
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(MKDIR) $1        )
+	$(if $(strip $(patsubst .,,$1)), $(call ok,$(MSG_MKDIR))     )
 endef
 
 define mksubdir
+$(if $(strip $(patsubst .,,$1)),\
 	$(MKDIR) $1/$(call not-root,$(dir $2))
+)
 endef
 
 # Function: make-depend
@@ -911,12 +1074,12 @@ endef
 # @param $2 Main target to be analised
 # @param $3 Dependency file name
 define make-depend
-$(CXX) -MM                     \
-	-MF $(depdir)/$(notdir $3) \
-	-MP                        \
-	-MT $2                     \
-	$(cxxlibs)                 \
-	$(cxxflags)                \
+$(CXX) -MM                    \
+	-MF $(depdir)/$3$(depext) \
+	-MP                       \
+	-MT $2                    \
+	$(cxxlibs)                \
+	$(cxxflags)               \
 	$1
 endef
 

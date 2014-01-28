@@ -195,17 +195,17 @@ endif
 
 # Extensions:
 # Evety extension must begin with a '.' (dot)
-hext    := $(strip $(HEXT))
-hxxext  := $(strip $(HXXEXT))
-cext    := $(strip $(CEXT))
-cxxext  := $(strip $(CXXEXT))
-asmext  := $(strip $(ASMEXT))
-libext  := $(strip $(LIBEXT))
-lexext  := $(strip $(LEXEXT))
-yaccext := $(strip $(YACCEXT))
-depext  := $(strip $(DEPEXT))
-objext  := $(strip $(OBJEXT))
-binext  := $(strip $(BINEXT))
+hext    := $(strip $(sort $(HEXT)))
+hxxext  := $(strip $(sort $(HXXEXT)))
+cext    := $(strip $(sort $(CEXT)))
+cxxext  := $(strip $(sort $(CXXEXT)))
+asmext  := $(strip $(sort $(ASMEXT)))
+libext  := $(strip $(sort $(LIBEXT)))
+lexext  := $(strip $(sort $(LEXEXT)))
+yaccext := $(strip $(sort $(YACCEXT)))
+depext  := $(strip $(sort $(DEPEXT)))
+objext  := $(strip $(sort $(OBJEXT)))
+binext  := $(strip $(sort $(BINEXT)))
 
 incext := $(hext) $(hxxext)
 srcext := $(cext) $(cxxext)
@@ -592,7 +592,7 @@ testbin := $(strip $(addprefix $(bindir)/,$(basename $(testall))))
 # 	 3.5) binary-name_asrc, for binary's specific auto-generated sources;
 # 	 3.6) binary-name_is_cxx, to test if the binary may be C's or C++'s
 #------------------------------------------------------------------[ 1 ]
-bin := $(strip $(BIN))
+bin := $(sort $(strip $(BIN)))
 #------------------------------------------------------------------[ 2 ]
 $(foreach b,$(bin),$(or\
     $(eval comsrc  := $(filter-out $b/%,$(src))),\

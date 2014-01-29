@@ -253,15 +253,18 @@ endif
 
 # Paths
 # ======
-vpath %.tar      $(distdir) # All tar files in distdir
-vpath %.tar.gz   $(distdir) # All tar.gz files in distdir
+vpath %.tar    $(distdir) # All tar files in distdir
+vpath %.tar.gz $(distdir) # All tar.gz files in distdir
 
 # Binaries, libraries and source extensions
-$(if $(binext),\
-    $(foreach e,$(binext),$(eval vpath %$e $(bindir))),\
-    $(eval vpath %$e $(bindir)))
+$(foreach b,$(bindir) $(bindir)/$(testdir),\
+    $(if $(binext),\
+        $(foreach e,$(binext),$(eval vpath %$e $(bindir))),\
+        $(eval vpath %$e $(bindir)))\
+)
 $(foreach e,$(libext),$(eval vpath lib%$e $(libdir)))
 $(foreach s,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
+$(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 
 ########################################################################
 ##                              FILES                                 ##
@@ -281,7 +284,7 @@ $(foreach s,$1,\
 endef
 
 define not-root
-$(foreach s,$1,$(strip $(subst $(strip $(call root,$s))/,,$s)))
+$(foreach s,$1,$(strip $(patsubst $(strip $(call root,$s))/%,%,$s)))
 endef
 
 define not
@@ -473,13 +476,6 @@ srccln := $(filter-out $(liball),$(srcall))
 src    := $(srccln)
 $(foreach root,$(srcdir),$(eval src := $(patsubst $(root)/%,%,$(src))))
 
-# Dependency files
-# =================
-# 1) Get the not-root basenames of all source directories
-# 2) Create dependency names and directories
-depall := $(strip $(call not-root,$(basename $(srcall) $(autoall))))
-depall := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
-
 # Static libraries
 # =================
 # 1) Get complete static library paths from all libraries
@@ -602,6 +598,15 @@ $(foreach E,$(srcext),\
 testdep := $(basename $(call not-root,$(subst $(testsuf).,.,$(testall))))
 #------------------------------------------------------------------[ 3 ]
 testrun := $(addprefix run_,$(subst /,_,$(testdep)))
+
+# Dependency files
+# =================
+# 1) Dependencies will be generated for sources, auto sources and tests
+# 2) Get the not-root basenames of all source directories
+# 3) Create dependency names and directories
+depall := $(testall) $(call not-root,$(srcall) $(autoall))
+depall := $(strip $(basename $(depall)))
+depall := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
 
 # Binary
 # =======
@@ -806,7 +811,7 @@ $(foreach E,$(cxxext),\
     $(eval $(call compile-cpp,$E,$(testdir)/,$(testdir)/)))
 
 # Include dependencies for each src extension
--include $(foreach d,$(call subdir,$(depdir)),d/*$(depext))
+-include $(depall)
 
 #======================================================================#
 # Function: compile-sharedlib-linux-c                                  #

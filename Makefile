@@ -25,18 +25,18 @@
 ##                             PROGRAM                                ##
 ########################################################################
 
-# Include configuration file if exists
--include config.mk
--include Config.mk
-
 # Project setting 
 PROJECT ?= Default
-VESRION ?= 1.0
+VERSION ?= 1.0
 
 # Program settings
 BIN     ?= a.out
 ARLIB   ?= 
 SHRLIB  ?= 
+
+# Include configuration file if exists
+-include config.mk
+-include Config.mk
 
 ########################################################################
 ##                              FLAGS                                 ##
@@ -135,7 +135,7 @@ ZIP        := gzip
 MKDIR      := mkdir -p
 RMDIR      := rm -rf
 FIND       := find
-FIND_FLAGS := -type d -print
+FIND_FLAGS := -type d -print 2> /dev/null
 
 # Parser and Lexer
 LEX        := flex
@@ -144,6 +144,9 @@ LEXFLAGS   :=
 YACC       := bison
 YACC_CXX   := bison++
 YACCFLAGS  := -d #-v -t
+
+# Make
+MAKE       += --no-print-directory
 
 # Include configuration file if exists
 -include config_os.mk
@@ -296,7 +299,8 @@ endef
 # 1) rsubdir: For listing all subdirectories of a given dir
 # 2) rwildcard: For wildcard deep-search in the directory tree
 rsubdir   = $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS)))
-rwildcard = $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)$(filter $(subst *,%,$2),$d)) 
+rwildcard = $(foreach d,$(wildcard $1/*),\
+                $(call rwildcard,$d,$2)$(filter $(subst *,%,$2),$d)) 
 
 # Assembly files
 # ==============
@@ -561,9 +565,12 @@ objall := $(obj) $(autoobj)
 # =============
 # 1) Get all subdirectories of the included dirs
 # 2) Add them as paths to be searched for headers
+# 3) Get all files able to be included
 incsub  := $(foreach i,$(incdir),$(call rsubdir,$i))
 clibs   := $(patsubst %,-I%,$(incsub))
 cxxlibs := $(patsubst %,-I%,$(incsub))
+incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
+				$(call rwildcard,$i,*$e)))
 
 # Library files
 # ==============
@@ -582,7 +589,7 @@ testbin := $(strip $(addprefix $(bindir)/,$(basename $(testall))))
 
 # Binary
 # =======
-# 1) Define all binary names
+# 1) Define all binary names (with extensions if avaiable)
 # 2) Store common source, objects and libs between binaries
 # 3) Create variables:
 # 	 3.1) binary-name_src, for binary's specific sources;
@@ -593,6 +600,7 @@ testbin := $(strip $(addprefix $(bindir)/,$(basename $(testall))))
 # 	 3.6) binary-name_is_cxx, to test if the binary may be C's or C++'s
 #------------------------------------------------------------------[ 1 ]
 bin := $(sort $(strip $(BIN)))
+bin := $(if $(strip $(binext)),$(addprefix $(binext),$(bin)),$(bin))
 #------------------------------------------------------------------[ 2 ]
 $(foreach b,$(bin),$(or\
     $(eval comsrc  := $(filter-out $b/%,$(src))),\
@@ -632,116 +640,12 @@ check: $(testbin)
 
 .PHONY: nothing
 nothing:
-	@echo "bin:         " $(bin)
-	@echo "common:      " $(common_obj)
-	@echo "Main_src:    " $(Main_src)
-	@echo "Main_obj:    " $(Main_obj)
-	@echo "Main_lib:    " $(Main_lib)
-	@echo "Main_is_cxx: " $(if $(Main_is_cxx),"yes", "no")
-	
-	@echo "Main2_src:    " $(Main2_src)
-	@echo "Main2_obj:    " $(Main2_obj)
-	@echo "Main2_lib:    " $(Main2_lib)
-	@echo "Main2_is_cxx: " $(if $(Main2_is_cxx),"yes", "no")
 
-.PHONY: dump
-dump: 
-	@echo "alllexer: " $(alllexer)
-	@echo "clexer:   " $(clexer)
-	@echo "cxxlexer: " $(cxxlexer)
-	@echo "lexall:   " $(lexall)
-	
-	@echo "---------------------"
-	@echo "allparser:" $(allparser)
-	@echo "cparser:  " $(cparser)
-	@echo "cxxparser:" $(cxxparser)
-	@echo "yaccall:  " $(yaccall)
-	
-	@echo "---------------------"
-	@echo "srcall:   " $(srcall)
-	@echo ""
-	@echo "srccln:   " $(srccln)
-	@echo ""
-	@echo "src:      " $(src)
-	@echo ""
-	@echo "testsrc:  " $(testsrc)
-	@echo ""
-	@echo "autoall:  " $(autoall)
-	@echo ""
-	@echo "autosrc:  " $(autosrc)
-	
-	@echo "---------------------"
-	@echo "lib_in:   " $(lib_in)
-	@echo ""
-	@echo "libpat:   " $(libpat)
-	@echo ""
-	@echo "liball:   " $(liball)
-	@echo ""
-	@echo "libsrc:   " $(libsrc)
-	@echo ""
-	@echo "lib:      " $(lib)
-	
-	@echo "---------------------"
-	@echo "ar_in:    " $(ar_in)
-	@echo ""
-	@echo "arpat:    " $(arpat)
-	@echo ""
-	@echo "arpsrc:   " $(arpsrc)
-	@echo ""
-	@echo "arall:    " $(arall)
-	@echo ""
-	@echo "arasrc:   " $(arasrc)
-	@echo ""
-	@echo "arlib:    " $(arlib)
-	
-	@echo "---------------------"
-	@echo "shr_in:   " $(shr_in)
-	@echo ""
-	@echo "shrpat:   " $(shrpat)
-	@echo ""
-	@echo "shrpsrc:  " $(shrpsrc)
-	@echo ""
-	@echo "shrall:   " $(shrall)
-	@echo ""
-	@echo "shrasrc:  " $(shrasrc)
-	@echo ""
-	@echo "shrlib:   " $(shrlib)
-	
-	@echo "---------------------"
-	@echo "obj:      " $(obj)
-	@echo ""
-	@echo "arobj:    " $(arobj)
-	@echo ""
-	@echo "shrobj:   " $(shrobj)
-	@echo ""
-	@echo "autoobj:  " $(autoobj)
-	
-	@echo "---------------------"
-	@echo "dep: 	 " $(depall)
-	
-	@echo "---------------------"
-	@echo "cflags:   " $(cflags)
-	@echo "clibs:    " $(clibs) 
-	@echo "cxxflags: " $(cxxflags)
-	@echo "cxxlibs:  " $(cxxlibs) 
-	@echo "ldlibs:   " $(ldlibs)
-	@echo "ldflags:  " $(ldflags)
-	
-	@echo "depsubdir " $(call subdir,$(depdir))
-
-define binary-factory
-$1: $$($1_obj) $$($1_lib) | $$(bindir)
-	$$(call status,$$(MSG_CXX_LINKAGE))
-	$$(quiet) $2 $$($1_obj) -o $$(bindir)/$$@ $$(ldflags) $$(ldlibs)
-	$$(call ok,$$(MSG_CXX_LINKAGE))
-
-$$($1_obj): | $$(objdir)
-
-$$($1_aobj): $$($1_aall) | $$(objdir)
-endef
-$(foreach b,$(bin),$(eval\
-    $(call binary-factory,$b,$(if $($b_is_cxx),$(CXX),$(CC)))\
-))
+.PHONY: init
+init:
+	$(call mkdir,$(srcdir))
+	$(call mkdir,$(incdir))
+	$(quiet) $(MAKE) config > Config.mk
 
 ########################################################################
 ##                              RULES                                 ##
@@ -753,7 +657,7 @@ $(foreach b,$(bin),$(eval\
 	$(call ok,$(MSG_MAKETGZ))
 
 %.tar: tarfile = $(notdir $@)
-%.tar: $(BIN)
+%.tar: $(bin)
 	$(call mkdir,$(dir $@))
 	$(call mkdir,$(tarfile))
 	$(quiet) $(CP) $(libdir) $(bindir) $(tarfile)
@@ -765,35 +669,35 @@ $(foreach b,$(bin),$(eval\
 	$(call rmdir,$(tarfile))
 
 #======================================================================#
-# Function: lex-factory                                                #
+# Function: scanner-factory                                            #
 # @param  $1 Basename of the lex file                                  #
 # @param  $2 Extesion depending on the parser type (C/C++)             #
 # @param  $3 Program to be used depending on the parser type (C/C++)   #
 # @return Target to generate source files according to its type        #
 #======================================================================#
-define lex-factory
+define scanner-factory
 $1.yy.$2: $3 $$(yaccall)
 	$$(call vstatus,$$(MSG_LEX))
 	$$(quiet) $4 $$(lexflags) -o$$@ $$< 
 	$$(call ok,$$(MSG_LEX))
 endef
 $(foreach s,$(clexer),$(eval\
-    $(call lex-factory,$(basename $s),c,\
+    $(call scanner-factory,$(basename $s),c,\
     $s,$(LEX))\
 ))
 $(foreach s,$(cxxlexer),$(eval\
-    $(call lex-factory,$(basename $s),cc,\
+    $(call scanner-factory,$(basename $s),cc,\
     $s,$(LEX_CXX))\
 ))
 
 #======================================================================#
-# Function: yacc-factory                                               #
+# Function: parser-factory                                             #
 # @param  $1 Basename of the yacc file                                 #
 # @param  $2 Extesion depending on the parser type (C/C++)             #
 # @param  $3 Program to be used depending on the parser type (C/C++)   #
-# @return Target to generate source files according to its type        #
+# @return Target to generate source files accordingly to their types   #
 #======================================================================#
-define yacc-factory
+define parser-factory
 $1.tab.$2 $3.tab.$4: $5
 	$$(call vstatus,$$(MSG_YACC))
 	$$(quiet) $$(call mksubdir,$$(firstword $$(incdir)),$$@)
@@ -802,13 +706,13 @@ $1.tab.$2 $3.tab.$4: $5
 	$$(call ok,$$(MSG_YACC))
 endef
 $(foreach s,$(cparser),$(eval\
-    $(call yacc-factory,\
+    $(call parser-factory,\
         $(basename $s),c,\
         $(firstword $(incdir))/$(call not-root,$(basename $s)),h,\
         $s,$(YACC))\
 ))
 $(foreach s,$(cxxparser),$(eval\
-    $(call yacc-factory,\
+    $(call parser-factory,\
         $(basename $s),cc,\
         $(firstword $(incdir))/$(call not-root,$(basename $s)),hh,\
         $s,$(YACC_CXX))\
@@ -850,7 +754,7 @@ $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_C_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call make-depend,$$<,$$@,$$*)
+	$$(quiet) $$(call make-depend,$$<,$$@,$3/$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) $$(cflags) $$(clibs) -c $$< -o $$@
 	
@@ -874,7 +778,7 @@ $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_CXX_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call make-depend,$$<,$$@,$$*)
+	$$(quiet) $$(call make-depend,$$<,$$@,$3/$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) $$(cxxlibs) $$(cxxflags) -c $$< -o $$@
 	
@@ -990,6 +894,28 @@ $$(bindir)/$1: $$(objdir)/$1.o | $$(bindir)
 endef
 $(foreach s,$(basename $(testall)),$(eval $(call test-factory,$s)))
 
+#======================================================================#
+# Function: binary-factory                                             #
+# @param  $1 Binary name                                               #
+# @param  $2 Compiler to be used (C's or C++'s)                        #
+# @return Target to generate binaries and dependencies of its object   #
+#         files (to create objdir and automatic source)                #
+#======================================================================#
+define binary-factory
+$1: $$($1_obj) $$($1_lib) | $$(bindir)
+	$$(call status,$$(MSG_CXX_LINKAGE))
+	$$(quiet) $2 $$($1_obj) -o $$(bindir)/$$@ $$(ldflags) $$(ldlibs)
+	$$(call ok,$$(MSG_CXX_LINKAGE))
+
+$$($1_obj): | $$(objdir)
+
+$$($1_aobj): $$($1_aall) | $$(objdir)
+endef
+$(foreach b,$(bin),$(eval\
+    $(call binary-factory,$b,$(if $($b_is_cxx),$(CXX),$(CC)),\
+        $(if $($b_is_cxx),$(MSG_CXX_LINKAGE),$(MSG_C_LINKAGE)))\
+))
+
 ########################################################################
 ##                              CLEAN                                 ##
 ########################################################################
@@ -1002,15 +928,15 @@ mostlyclean:
 clean: mostlyclean
 	$(call srm,$(liball))
 	$(call rmdir,$(libdir))
-	$(call srm,$(BIN)) # TODO: many executables
+	$(call srm,$(bin))
 	$(call rmdir,$(bindir))
 
-# TODO: list all dependencies and distribution info in variables
 .PHONY: distclean
 distclean: clean
 	$(call srm,$(depall))
 	$(call rmdir,$(depdir) $(call subdir,depdir))
-	$(call srm,$(PROJECT)-$(VERSION).tar $(PROJECT)-$(VERSION).tar.gz)
+	$(call srm,$(PROJECT)-$(VERSION).tar)
+	$(call srm,$(PROJECT)-$(VERSION).tar.gz)
 	$(call rmdir,$(distdir))
 
 .PHONY: realclean
@@ -1021,6 +947,21 @@ realclean: distclean
 	$(if $(yaccall),\
         $(call rm,$(yaccall) $(yaccinc)),\
         $(call ok,$(MSG_YACC_NONE)) )
+
+.PHONY: uninitialize
+ifneq ($U,1)
+uninitialize:
+	@echo $(MSG_UNINIT_WARN)
+	@echo $(MSG_UNINIT_ALT)
+else
+uninitialize: realclean
+	$(call srm,$(srcall))
+	$(call rmdir,$(srcdir))
+	$(call srm,$(incall))
+	$(call rmdir,$(incdir))
+	$(call rm,Config.mk config.mk)
+	$(call rm,Config_os.mk config_os.mk)
+endif
 
 ########################################################################
 ##                             FUNCIONS                               ##
@@ -1110,6 +1051,9 @@ RES     := \033[0m
 MSG_RM           = "${BLUE}Removing ${RES}$1${RES}"
 MSG_MKDIR        = "${CYAN}Creating directory $1${RES}"
 MSG_RMDIR        = "${BLUE}Removing directory ${CYAN}$1${RES}"
+MSG_UNINIT_WARN  = "${RED}Are you sure you want to delete all"\
+				   "sources, headers and configuration files?"
+MSG_UNINIT_ALT   = "Run ${BLUE}'make uninitialize U=1'${RES}"
 
 MSG_LEX          = "${PURPLE}Generating scanner $@${RES}"
 MSG_LEX_NONE     = "${PURPLE}No auto-generated lexers${RES}"
@@ -1156,3 +1100,142 @@ endef
 define ok
 	@echo "\r${GREEN}[OK]${RES}" $1 "     "
 endef
+
+########################################################################
+##                         HELP AND CONFIGS                           ##
+########################################################################
+
+.PHONY: config
+config:
+	@echo "                                                            "
+	@echo "# Project setting                                           "
+	@echo "PROJECT := # Project name. Default is 'Default'             "
+	@echo "VERSION := # Version. Default is '1.0'                      "
+	@echo "                                                            "
+	@echo "# Program settings                                          "
+	@echo "BIN     := # Binaries' names. If a subdir of the source     "
+	@echo "           # directories has the same name of this binary,  "
+	@echo "           # this dir and all subdir will be compiled just  "
+	@echo "           # to this specific binary.                       "
+	@echo "                                                            "
+	@echo "ARLIB   := # Static/Shared libraries' names. If one is a    "
+	@echo "SHRLIB  := # lib, all source files will make the library.   "
+	@echo "                                                            "
+	@echo "# Flags                                                     "
+	@echo "ASFLAGS   := # Assembly Flags                               "
+	@echo "CFLAGS    := # C Flags                                      "
+	@echo "CXXFLAGS  := # C++ Flags                                    "
+	@echo "LDFLAGS   := # Linker flags                                 "
+	@echo "ARFLAGS   := # Static library flags                         "
+	@echo "SOFLAGS   := # Shared library flags                         "
+	@echo "                                                            "
+
+.PHONY: help
+help:
+	@echo "                                                            "
+	@echo "Makefile for C/C++ by Renato Cordeiro Ferreira.             "
+	@echo "Type 'make projecthelp' for additional info.                "
+	@echo "                                                            "
+
+.PHONY: projecthelp
+projecthelp:
+	@echo "                                                            "
+	@echo "$(PROJECT)-$(VERSION)                                       "
+	@echo "=============================                               "
+	@echo "                                                            "
+	@echo "Default targets:                                            "
+	@echo "-----------------                                           "
+	@echo " * all:         Generate all executables                    "
+	@echo " * check:       Compile and run Unit Tests                  "
+	@echo " * config:      Outputs Config.mk model for user's options  "
+	@echo " * dist:        Create .tar.gz with binaries and libraries  "
+	@echo " * init:        Create directories for beggining projects   "
+	@echo " * tar:         Create .tar with binaries and libraries     "
+	@echo "                                                            "
+	@echo "Debug targets:                                              "
+	@echo "---------------                                             "
+	@echo " * dump:        Print main vars used within this Makefile   "
+	@echo " * nothing:     Self-explicative, hun?                      "
+	@echo "                                                            "
+	@echo "Cleaning targets:                                           "
+	@echo "------------------                                          "
+	@echo " * mostlyclean: Clean all object files                      "
+	@echo " * clean:       Above and dependencies ou are here          "
+	@echo "                                                            "
+	@echo "Help targets:                                               "
+	@echo "---------------                                             "
+	@echo " * help:        Info about this Makefile                    "
+	@echo " * projecthelp: Perharps you kwnow if you are here          "
+	@echo "                                                            "
+
+########################################################################
+##                            DEBUGGING                               ##
+########################################################################
+
+define prompt
+	@echo "${YELLOW}"$1"${RES}" \
+          $(if $(strip $2),"$(strip $2)\n","${RED}Empty${RES}")
+endef
+
+.PHONY: dump
+dump: 
+	$(call prompt,"alllexer: ",$(alllexer)  )
+	$(call prompt,"clexer:   ",$(clexer)    )
+	$(call prompt,"cxxlexer: ",$(cxxlexer)  )
+	$(call prompt,"lexall:   ",$(lexall)    )
+	
+	@echo "---------------------"
+	$(call prompt,"allparser:",$(allparser) )
+	$(call prompt,"cparser:  ",$(cparser)   )
+	$(call prompt,"cxxparser:",$(cxxparser) )
+	$(call prompt,"yaccall:  ",$(yaccall)   )
+	
+	@echo "---------------------"
+	$(call prompt,"srcall:   ",$(srcall)    )
+	$(call prompt,"srccln:   ",$(srccln)    )
+	$(call prompt,"src:      ",$(src)       )
+	$(call prompt,"testsrc:  ",$(testsrc)   )
+	$(call prompt,"autoall:  ",$(autoall)   )
+	$(call prompt,"autosrc:  ",$(autosrc)   )
+	$(call prompt,"incall:   ",$(incall)    )
+	
+	@echo "---------------------"
+	$(call prompt,"lib_in:   ",$(lib_in)    )
+	$(call prompt,"libpat:   ",$(libpat)    )
+	$(call prompt,"liball:   ",$(liball)    )
+	$(call prompt,"libsrc:   ",$(libsrc)    )
+	$(call prompt,"lib:      ",$(lib)       )
+	
+	@echo "---------------------"
+	$(call prompt,"ar_in:    ",$(ar_in)     )
+	$(call prompt,"arpat:    ",$(arpat)     )
+	$(call prompt,"arpsrc:   ",$(arpsrc)    )
+	$(call prompt,"arall:    ",$(arall)     )
+	$(call prompt,"arasrc:   ",$(arasrc)    )
+	$(call prompt,"arlib:    ",$(arlib)     )
+	
+	@echo "---------------------"
+	$(call prompt,"shr_in:   ",$(shr_in)    )
+	$(call prompt,"shrpat:   ",$(shrpat)    )
+	$(call prompt,"shrpsrc:  ",$(shrpsrc)   )
+	$(call prompt,"shrall:   ",$(shrall)    )
+	$(call prompt,"shrasrc:  ",$(shrasrc)   )
+	$(call prompt,"shrlib:   ",$(shrlib)    )
+	
+	@echo "---------------------"
+	$(call prompt,"obj:      ",$(obj)       )
+	$(call prompt,"arobj:    ",$(arobj)     )
+	$(call prompt,"shrobj:   ",$(shrobj)    )
+	$(call prompt,"autoobj:  ",$(autoobj)   )
+	
+	@echo "---------------------"
+	$(call prompt,"dep:      ",$(depall)    )
+	
+	@echo "---------------------"
+	$(call prompt,"cflags:   ",$(cflags)    )
+	$(call prompt,"clibs:    ",$(clibs)     )
+	$(call prompt,"cxxflags: ",$(cxxflags)  )
+	$(call prompt,"cxxlibs:  ",$(cxxlibs)   )
+	$(call prompt,"ldlibs:   ",$(ldlibs)    )
+	$(call prompt,"ldflags:  ",$(ldflags)   )
+

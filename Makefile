@@ -110,6 +110,9 @@ DEPEXT  ?= .d
 OBJEXT  ?= .o
 BINEXT  ?= 
 
+# Test suffix
+TESTSUF ?= _tests
+
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
 #                           OS DEFINITIONS                             #
@@ -197,7 +200,13 @@ $(error There must be one dependency, object and distribution dir.)
 endif
 
 # Extensions:
-# Evety extension must begin with a '.' (dot)
+testsuf := $(strip $(sort $(TESTSUF)))
+ifneq ($(words $(testsuf)),1)
+    $(error Just one suffix allowed for test sources!)
+endif
+
+# Extensions:
+# Every extension must begin with a '.' (dot)
 hext    := $(strip $(sort $(HEXT)))
 hxxext  := $(strip $(sort $(HXXEXT)))
 cext    := $(strip $(sort $(CEXT)))
@@ -582,10 +591,17 @@ ldlibs  = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(libsub))))
 
 # Automated tests
 # ================
-# 1) Get all source files in the test directory
+# 1) testall: Get all source files in the test directory
+# 2) testdep: Basenames without test suffix, root dirs and extensions
+# 3) testrun: Alias to execute tests, prefixing run_ and 
+# 			  substituting / for _ in $(testdep)
+#------------------------------------------------------------------[ 1 ]
 $(foreach E,$(srcext),\
-    $(eval testall += $(call rwildcard,$(testdir),*_tests$E)))
-testbin := $(strip $(addprefix $(bindir)/,$(basename $(testall))))
+    $(eval testall += $(call rwildcard,$(testdir),*$(testsuf)$E)))
+#------------------------------------------------------------------[ 2 ]
+testdep := $(basename $(call not-root,$(subst $(testsuf).,.,$(testall))))
+#------------------------------------------------------------------[ 3 ]
+testrun := $(addprefix run_,$(subst /,_,$(testdep)))
 
 # Binary
 # =======
@@ -635,7 +651,7 @@ dist: $(distdir)/$(PROJECT)-$(VERSION).tar.gz
 tar: $(distdir)/$(PROJECT)-$(VERSION).tar
 
 .PHONY: check
-check: $(testbin)
+check: $(testrun)
 	$(if $(strip $^),$(call ok,$(MSG_TEST_SUCCESS)))
 
 .PHONY: nothing
@@ -878,21 +894,35 @@ $(foreach a,$(arpat),\
 #======================================================================#
 # Function: test-factory                                               #
 # @param  $1 Binary name for the unit test module                      #
+# @param  $2 Object with main function for running unit test           #
+# @param  $3 Object with the code that will be tested by the unit test #
+# @param  $4 Alias to execute tests, prefixing run_ and                #
+# 			 substituting / for _ in $(testdep)						   #
 # @return Target to generate binary file for the unit test             #
 #======================================================================#
 define test-factory
-.PHONY: $$(bindir)/$1
-$$(bindir)/$1: $$(objdir)/$1.o | $$(bindir)
-	$$(call status,$$(MSG_TEST))
+$1: $2 $3 | $$(bindir)
+	$$(call status,$$(MSG_TEST_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(bindir),$$@)
 	$$(quiet) $$(CXX) $$^ -o $$@ $$(ldflags) $$(ldlibs)
 	
-	@./$$@ $$(NO_OUTPUT) || $$(call shell-error,$$(MSG_TEST_FAILURE))
-	
+	$$(call ok,$$(MSG_TEST_COMPILE))
+
+.PHONY: $4
+$4: $1
+	$$(call status,$$(MSG_TEST))
+	@./$$< $$(NO_OUTPUT) || $$(call shell-error,$$(MSG_TEST_FAILURE))
 	$$(call ok,$$(MSG_TEST))
+
 endef
-$(foreach s,$(basename $(testall)),$(eval $(call test-factory,$s)))
+$(foreach s,$(testdep),$(eval\
+    $(call test-factory,\
+        $(bindir)/$(testdir)/$s$(testsuf)$(binext),\
+        $(objdir)/$(testdir)/$s$(testsuf).o,\
+        $(filter $(objdir)/$s.o,$(objall)),\
+        run_$(subst /,_,$s)\
+)))
 
 #======================================================================#
 # Function: binary-factory                                             #
@@ -1063,6 +1093,7 @@ MSG_YACC_NONE    = "${PURPLE}No auto-generated parsers${RES}"
 MSG_YACC_COMPILE = "Compiling parser ${WHITE}$@${RES}"
 
 MSG_TEST         = "${BLUE}Testing ${WHITE}$(notdir $<)${RES}"
+MSG_TEST_COMPILE = "Generating test executable ${GREEN}$(notdir $@)${RES}"
 MSG_TEST_FAILURE = "${CYAN}Test $(notdir $@) not passed${RES}"
 MSG_TEST_SUCCESS = "${YELLOW}All tests passed successfully${RES}"
 
@@ -1194,10 +1225,14 @@ dump:
 	$(call prompt,"srcall:   ",$(srcall)    )
 	$(call prompt,"srccln:   ",$(srccln)    )
 	$(call prompt,"src:      ",$(src)       )
-	$(call prompt,"testsrc:  ",$(testsrc)   )
 	$(call prompt,"autoall:  ",$(autoall)   )
 	$(call prompt,"autosrc:  ",$(autosrc)   )
 	$(call prompt,"incall:   ",$(incall)    )
+	
+	@echo "---------------------"
+	$(call prompt,"testall:  ",$(testall)   )
+	$(call prompt,"testdep:  ",$(testdep)   )
+	$(call prompt,"testrun:  ",$(testrun)   )
 	
 	@echo "---------------------"
 	$(call prompt,"lib_in:   ",$(lib_in)    )

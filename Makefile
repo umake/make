@@ -925,7 +925,9 @@ $(foreach s,$(testdep),$(eval\
     $(call test-factory,\
         $(bindir)/$(testdir)/$s$(testsuf)$(binext),\
         $(objdir)/$(testdir)/$s$(testsuf).o,\
-        $(filter $(objdir)/$s.o,$(objall)),\
+        $(if $(strip $(filter $(objdir)/$s.o,$(objall))),\
+            $(objdir)/$s.o,$(warning "$(objdir)/$s.o not found")\
+        ),\
         run_$(subst /,_,$s)\
 )))
 

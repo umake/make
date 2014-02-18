@@ -963,7 +963,7 @@ mostlyclean:
 
 .PHONY: clean
 clean: mostlyclean
-	$(call srm,$(liball))
+	$(call srm,$(lib))
 	$(call rmdir,$(libdir))
 	$(call srm,$(bin))
 	$(call rmdir,$(bindir))
@@ -1164,8 +1164,6 @@ config:
 	@echo "CFLAGS    := # C Flags                                      "
 	@echo "CXXFLAGS  := # C++ Flags                                    "
 	@echo "LDFLAGS   := # Linker flags                                 "
-	@echo "ARFLAGS   := # Static library flags                         "
-	@echo "SOFLAGS   := # Shared library flags                         "
 	@echo "                                                            "
 
 .PHONY: help

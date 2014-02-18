@@ -34,10 +34,6 @@ BIN     ?= a.out
 ARLIB   ?= 
 SHRLIB  ?= 
 
-# Include configuration file if exists
--include config.mk
--include Config.mk
-
 ########################################################################
 ##                              FLAGS                                 ##
 ########################################################################
@@ -61,6 +57,10 @@ LDFLAGS   ?=
 # Library flags
 ARFLAGS   ?= -rcv
 SOFLAGS   ?= -shared 
+
+# Include configuration file if exists
+-include config.mk
+-include Config.mk
 
 ########################################################################
 ##                            DIRECTORIES                             ##

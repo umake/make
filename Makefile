@@ -681,7 +681,7 @@ init:
 %.tar: $(bin)
 	$(call mkdir,$(dir $@))
 	$(call mkdir,$(tarfile))
-	$(quiet) $(CP) $(libdir) $(bindir) $(tarfile)
+	$(quiet) $(CP) $(if $(strip $(lib)),$(libdir)) $(bindir) $(tarfile)
 	
 	$(call vstatus,$(MSG_MAKETAR))
 	$(quiet) $(TAR) $@ $(tarfile)

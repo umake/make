@@ -675,7 +675,7 @@ init:
 %.tar.gz: %.tar
 	$(call status,$(MSG_MAKETGZ))
 	$(quiet) $(ZIP) $<
-	$(call ok,$(MSG_MAKETGZ))
+	$(call ok,$(MSG_MAKETGZ),$@)
 
 %.tar: tarfile = $(notdir $@)
 %.tar: $(bin)
@@ -685,7 +685,7 @@ init:
 	
 	$(call vstatus,$(MSG_MAKETAR))
 	$(quiet) $(TAR) $@ $(tarfile)
-	$(call ok,$(MSG_MAKETAR))
+	$(call ok,$(MSG_MAKETAR),$@)
 	
 	$(call rmdir,$(tarfile))
 
@@ -700,7 +700,7 @@ define scanner-factory
 $1.yy.$2: $3 $$(yaccall)
 	$$(call vstatus,$$(MSG_LEX))
 	$$(quiet) $4 $$(lexflags) -o$$@ $$< 
-	$$(call ok,$$(MSG_LEX))
+	$$(call ok,$$(MSG_LEX),$$@)
 endef
 $(foreach s,$(clexer),$(eval\
     $(call scanner-factory,$(basename $s),c,\
@@ -724,7 +724,7 @@ $1.tab.$2 $3.tab.$4: $5
 	$$(quiet) $$(call mksubdir,$$(firstword $$(incdir)),$$@)
 	$$(quiet) $6 $$(yaccflags) $$< -o $1.tab.$2
 	$$(quiet) $$(MV) $1.h $3.tab.$4
-	$$(call ok,$$(MSG_YACC))
+	$$(call ok,$$(MSG_YACC),$$@)
 endef
 $(foreach s,$(cparser),$(eval\
     $(call parser-factory,\
@@ -756,7 +756,7 @@ $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(AS) $$(ASMFLAGS) $$< -o $$@
 	
-	$$(call ok,$$(MSG_ASM_COMPILE))
+	$$(call ok,$$(MSG_ASM_COMPILE),$$@)
 endef
 $(foreach root,$(srcdir),\
     $(foreach E,$(asmext),\
@@ -777,9 +777,9 @@ $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call make-depend,$$<,$$@,$3/$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CC) $$(cflags) $$(clibs) -c $$< -o $$@
+	$$(quiet) $$(CC) $$(cflags) $$(clibs) -c $$< -o $$@ $$(ERROR)
 	
-	$$(call ok,$$(MSG_C_COMPILE))
+	$$(call ok,$$(MSG_C_COMPILE),$$@)
 endef
 $(foreach root,$(srcdir),$(foreach E,$(cext),\
     $(eval $(call compile-c,$E,$(root)/))))
@@ -801,9 +801,9 @@ $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call make-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CXX) $$(cxxlibs) $$(cxxflags) -c $$< -o $$@
+	$$(quiet) $$(CXX) $$(cxxlibs) $$(cxxflags) -c $$< -o $$@ $$(ERROR)
 	
-	$$(call ok,$$(MSG_CXX_COMPILE))
+	$$(call ok,$$(MSG_CXX_COMPILE),$$@)
 endef
 $(foreach root,$(srcdir),$(foreach E,$(cxxext),\
     $(eval $(call compile-cpp,$E,$(root)/))))
@@ -827,9 +827,9 @@ $$(objdir)/$2.o: $1$2$3 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$2)
 	$$(quiet) $$(call make-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$2)
-	$$(quiet) $$(CC) -fPIC $$(clibs) $$(cflags) -c $$< -o $$@
+	$$(quiet) $$(CC) -fPIC $$(clibs) $$(cflags) -c $$< -o $$@ $$(ERROR)
 	
-	$$(call ok,$$(MSG_C_LIBCOMP))
+	$$(call ok,$$(MSG_C_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(cext),$(filter %$E,$(shrall))),\
     $(eval $(call compile-sharedlib-linux-c,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
@@ -848,9 +848,10 @@ $$(objdir)/$2.o: $1$2$3 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$2)
 	$$(quiet) $$(call make-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$2)
-	$$(quiet) $$(CXX) -fPIC $$(cxxlibs) $$(cxxflags) -c $$< -o $$@
+	$$(quiet) $$(CXX) -fPIC $$(cxxlibs) $$(cxxflags) -c $$< -o $$@ \
+			  $$(ERROR)
 	
-	$$(call ok,$$(MSG_CXX_LIBCOMP))
+	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
     $(eval $(call compile-sharedlib-linux-cpp,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
@@ -869,9 +870,9 @@ $$(libdir)/$2lib$3.so: $$(shrobj) | $$(libdir)
 	
 	$$(quiet) $$(call mksubdir,$$(libdir),$2)
 	$$(quiet) $$(CXX) $$(soflags) -o $$@ \
-              $$(call src2obj,$$(wildcard $1$2$3$4*)) 
+              $$(call src2obj,$$(wildcard $1$2$3$4*)) $$(ERROR)
 	
-	$$(call ok,$$(MSG_CXX_SHRDLIB))
+	$$(call ok,$$(MSG_CXX_SHRDLIB),$$@)
 endef
 $(foreach s,$(shrpat),\
     $(eval $(call link-sharedlib-linux,$(call root,$s)/,$(call not-root,$(dir $s)),$(notdir $(basename $s)),$(or $(suffix $s),/))))
@@ -891,7 +892,7 @@ $$(libdir)/$2lib$3.a: $$(arobj) | $$(libdir)
 	$$(quiet) $$(AR) $$(arflags) $$@ \
               $$(call src2obj,$$(wildcard $1$2$3$4*)) $$(O_0) $$(E_0)
 	$$(quiet) $$(RANLIB) $$@
-	$$(call ok,$$(MSG_STATLIB))
+	$$(call ok,$$(MSG_STATLIB),$$@)
 endef
 $(foreach a,$(arpat),\
     $(eval $(call link-statlib-linux,$(call root,$a)/,$(call not-root,$(dir $a)),$(notdir $(basename $a)),$(or $(suffix $a),/))))
@@ -912,12 +913,12 @@ $1: $2 $3 | $$(bindir)
 	$$(quiet) $$(call mksubdir,$$(bindir),$$@)
 	$$(quiet) $$(CXX) $$^ -o $$@ $$(ldflags) $$(ldlibs)
 	
-	$$(call ok,$$(MSG_TEST_COMPILE))
+	$$(call ok,$$(MSG_TEST_COMPILE),$$@)
 
 .PHONY: $4
 $4: $1
 	$$(call status,$$(MSG_TEST))
-	@./$$< $$(NO_OUTPUT) || $$(call shell-error,$$(MSG_TEST_FAILURE))
+	@./$$< $$(NO_OUTPUT) || $$(call test-error,$$(MSG_TEST_FAILURE))
 	$$(call ok,$$(MSG_TEST))
 
 endef
@@ -942,7 +943,7 @@ define binary-factory
 $1: $$($1_obj) $$($1_lib) | $$(bindir)
 	$$(call status,$$(MSG_CXX_LINKAGE))
 	$$(quiet) $2 $$($1_obj) -o $$(bindir)/$$@ $$(ldflags) $$(ldlibs)
-	$$(call ok,$$(MSG_CXX_LINKAGE))
+	$$(call ok,$$(MSG_CXX_LINKAGE),$$(bindir)/$$@)
 
 $$($1_obj): | $$(objdir)
 
@@ -1076,6 +1077,7 @@ NO_OUTPUT := $(O_$V)
 NO_ERROR  := $(E_$V)
 
 # ANSII Escape Colors
+DEF     := \033[0;38m
 RED     := \033[1;31m
 GREEN   := \033[1;32m
 YELLOW  := \033[1;33m
@@ -1084,23 +1086,25 @@ PURPLE  := \033[1;35m
 CYAN    := \033[1;36m
 WHITE   := \033[1;37m
 RES     := \033[0m
+ERR 	:= \033[0;37m
 
 MSG_RM           = "${BLUE}Removing ${RES}$1${RES}"
 MSG_MKDIR        = "${CYAN}Creating directory $1${RES}"
 MSG_RMDIR        = "${BLUE}Removing directory ${CYAN}$1${RES}"
 MSG_UNINIT_WARN  = "${RED}Are you sure you want to delete all"\
 				   "sources, headers and configuration files?"
-MSG_UNINIT_ALT   = "Run ${BLUE}'make uninitialize U=1'${RES}"
+MSG_UNINIT_ALT   = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 
 MSG_LEX          = "${PURPLE}Generating scanner $@${RES}"
 MSG_LEX_NONE     = "${PURPLE}No auto-generated lexers${RES}"
-MSG_LEX_COMPILE  = "Compiling scanner ${WHITE}$@${RES}"
+MSG_LEX_COMPILE  = "${DEF}Compiling scanner ${WHITE}$@${RES}"
 MSG_YACC         = "${PURPLE}Generating parser ${BLUE}$@${RES}"
 MSG_YACC_NONE    = "${PURPLE}No auto-generated parsers${RES}"
-MSG_YACC_COMPILE = "Compiling parser ${WHITE}$@${RES}"
+MSG_YACC_COMPILE = "${DEF}Compiling parser ${WHITE}$@${RES}"
 
 MSG_TEST         = "${BLUE}Testing ${WHITE}$(notdir $<)${RES}"
-MSG_TEST_COMPILE = "Generating test executable ${GREEN}$(notdir $@)${RES}"
+MSG_TEST_COMPILE = "${DEF}Generating test executable"\
+                   "${GREEN}$(notdir $(strip $@))${RES}"
 MSG_TEST_FAILURE = "${CYAN}Test $(notdir $@) not passed${RES}"
 MSG_TEST_SUCCESS = "${YELLOW}All tests passed successfully${RES}"
 
@@ -1108,35 +1112,43 @@ MSG_STATLIB      = "${RED}Generating static library $@${RES}"
 MSG_MAKETAR      = "${RED}Generating tar file $@${RES}"
 MSG_MAKETGZ      = "${RED}Ziping file $@${RES}"
 
-MSG_ASM_COMPILE  = "Generating Assembly artifact ${WHITE}$@${RES}"
+MSG_ASM_COMPILE  = "${DEF}Generating Assembly artifact ${WHITE}$@${RES}"
 
-MSG_C_COMPILE    = "Generating C artifact ${WHITE}$@${RES}"
+MSG_C_COMPILE    = "${DEF}Generating C artifact ${WHITE}$@${RES}"
 MSG_C_LINKAGE    = "${YELLOW}Generating C executable ${GREEN}$@${RES}"
 MSG_C_SHRDLIB    = "${RED}Generating C shared library $@${RES}"
-MSG_C_LIBCOMP    = "Generating C library artifact ${YELLOW}$@${RES}"
+MSG_C_LIBCOMP    = "${DEF}Generating C library artifact ${YELLOW}$@${RES}"
 
-MSG_CXX_COMPILE  = "Generating C++ artifact ${WHITE}$@${RES}"
+MSG_CXX_COMPILE  = "${DEF}Generating C++ artifact ${WHITE}$@${RES}"
 MSG_CXX_LINKAGE  = "${YELLOW}Generating C++ executable ${GREEN}$@${RES}"
 MSG_CXX_SHRDLIB  = "${RED}Generating C++ shared library $@${RES}"
-MSG_CXX_LIBCOMP  = "Generating C++ library artifact ${YELLOW}$@${RES}"
+MSG_CXX_LIBCOMP  = "${DEF}Generating C++ library artifact ${YELLOW}$@${RES}"
 
 ifneq ($(strip $(quiet)),)
     define status
-    	@echo -n $1 "... "
+    	@$(RM) $@ && echo -n $1 "... "
     endef
 
     define vstatus
-    	@echo $1 "... "
+    	@$(RM) $@ && echo $1 "... "
     endef
 endif
 
-define shell-error
-(echo "\r${RED}[FAILURE]${RES}" $1"."\
-      "${RED}Aborting status: $$?${RES}" && exit 1)
+define ok
+	@if [ -f $2 ]; then\
+		echo "\r${GREEN}[OK]${RES}" $1 "     ";\
+	else\
+	 	echo "\r${RED}[ERROR]${RES}" $1 "     "; exit 1;\
+	fi
 endef
 
-define ok
-	@echo "\r${GREEN}[OK]${RES}" $1 "     "
+define ERROR 
+2>&1 | sed '1 i error' | sed 's/^/> /' | sed ''/"> error"/s//`printf "${ERR}"`/''
+endef
+
+define test-error
+(echo "\r${RED}[FAILURE]${RES}" $1"."\
+      "${RED}Aborting status: $$?${RES}" && exit 1)
 endef
 
 ########################################################################

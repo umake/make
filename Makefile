@@ -31,8 +31,11 @@ VERSION ?= 1.0
 
 # Program settings
 BIN     ?= a.out
-ARLIB   ?= 
-SHRLIB  ?= 
+SBIN    ?=
+LIBEXEC ?=
+SBIN    ?=
+ARLIB   ?=
+SHRLIB  ?=
 
 ########################################################################
 ##                              FLAGS                                 ##
@@ -67,19 +70,101 @@ SOFLAGS   ?= -shared
 ########################################################################
 ifndef SINGLE_DIR
 SRCDIR  ?= src
-BINDIR  ?= bin
 DEPDIR  ?= dep
 OBJDIR  ?= build
 INCDIR  ?= include
 LIBDIR  ?= lib
+BINDIR  ?= bin
+SBINDIR ?= sbin
+EXECDIR ?= libexec
 DISTDIR ?= dist
 TESTDIR ?= test
+DATADIR ?= 
+DESTDIR ?=
 else
 $(foreach var,\
-    SRCDIR BINDIR DEPDIR OBJDIR INCDIR LIBDIR DISTDIR TESTDIR,\
+    SRCDIR BINDIR DEPDIR OBJDIR INCDIR LIBDIR \
+    SBINDIR DISTDIR TESTDIR DATADIR,\
     $(eval $(var) := .)\
 )
 endif
+
+## INSTALLATION ########################################################
+
+### PREFIXES
+# * prefix:        Default prefix for variables below
+# * exec_prefix:   Prefix for machine-specific files (bins and libs)
+prefix         ?= /usr/local
+exec_prefix    ?= $(prefix)
+
+### EXECUTABLES AND LIBRARIES
+# * bindir:        Programs that user can run
+# * sbindir:       Runnable by shell, useful by sysadmins
+# * libexecdir:    Executables for being run only by other programs
+# * libdir         Object and libraries of object code
+install_dirs   := bindir sbindir libexecdir libdir
+bindir         ?= $(exec_prefix)/bin
+sbindir        ?= $(exec_prefix)/sbin
+libexecdir     ?= $(exec_prefix)/libexec
+libdir         ?= $(exec_prefix)/lib
+
+### DATA PREFIXES
+# * datarootdir:   Read-only machine-independent files (docs and data)
+# * datadir:       Read-only machine-independent files (data, no docs)
+# * sysconfdir:    Read-only single-machine files (as server configs)
+# * localstatedir: Exec-modifiable single-machine single-exec files 
+# * runstatedir:   Exec-modifiable single-machine run-persistent files
+install_dirs   += datarootdir datadir sysconfdir 
+install_dirs   += sharedstatedir localstatedir runstatedir
+datarootdir    ?= $(prefix)/share
+datadir        ?= $(datarootdir)
+sysconfdir     ?= $(prefix)/etc
+sharedstatedir ?= $(prefix)/com
+localstatedir  ?= $(prefix)/var
+runstatedir    ?= $(localstatedir)/run
+
+### HEADER FILES
+# * includedir:    Includable (header) files for use by GCC
+# * ondincludedir: Includable (header) files for GCC and othe compilers
+install_dirs   += includedir oldincludedir
+includedir     ?= $(prefix)/include
+oldincludedir  ?= /usr/include
+
+### DOCUMENTATION FILES
+# * infodir:       Doc directory for info files
+# * docdir:        Doc directory for files other than info     
+# * htmldir:       Doc directory for HTML files (with subdir for locale)
+# * dvidir:        Doc directory for DVI files (with subdir for locale)
+# * pdfdir:        Doc directory for PDF files (with subdir for locale)
+# * psdir:         Doc directory for PS files (with subdir for locale)
+install_dirs   += docdir infodir htmldir dvidir pdfdir psdir
+docdir         ?= $(datarootdir)/doc/$(PROJECT)/$(VERSION)
+infodir        ?= $(datarootdir)/info
+htmldir        ?= $(docdir)
+dvidir         ?= $(docdir)
+pdfdir         ?= $(docdir)
+psdir          ?= $(docdir)
+
+### MAN FILES
+# * mandir:       Manual main directory
+# * manXdir:      Manual section X (X from 1 to 7)
+install_dirs   += mandir man1dir man2dir man3dir 
+install_dirs   += man4dir man5dir man6dir man7dir
+mandir         ?= $(datarootdir)/man
+man1dir        ?= $(mandir)/man1
+man2dir        ?= $(mandir)/man2
+man3dir        ?= $(mandir)/man3
+man4dir        ?= $(mandir)/man4
+man5dir        ?= $(mandir)/man5
+man6dir        ?= $(mandir)/man6
+man7dir        ?= $(mandir)/man7
+
+### OTHERS
+# * lispdir:      Emacs Lisp files in this package
+# * localedir:    Locale-specific message catalogs for the package
+install_dirs   += lispdir localedir
+lispdir        ?= $(datarootdir)/emacs/site-lisp
+localedir      ?= $(datarootdir)/locale
 
 ########################################################################
 ##                            EXTENSIONS                              ##
@@ -123,33 +208,38 @@ TESTSUF ?= _tests
 ##                             PROGRAMS                               ##
 ########################################################################
 # Compilation
-AR         := ar
-AS         := nasm
-CC         := gcc
-CXX        := g++
-RANLIB     := ranlib
+AR         		:= ar
+AS         		:= nasm
+CC         		:= gcc
+CXX        		:= g++
+RANLIB     		:= ranlib
+
+# Installation
+INSTALL    		:= install
+INSTALL_DATA    := $(INSTALL)
+INSTALL_PROGRAM := $(INSTALL) -m 644
 
 # File manipulation
-CP         := cp -rap
-MV         := mv
-RM         := rm -f
-TAR        := tar -cvf
-ZIP        := gzip
-MKDIR      := mkdir -p
-RMDIR      := rm -rf
-FIND       := find
-FIND_FLAGS := -type d -print 2> /dev/null
+CP         		:= cp -rap
+MV         		:= mv
+RM         		:= rm -f
+TAR        		:= tar -cvf
+ZIP        		:= gzip
+MKDIR      		:= mkdir -p
+RMDIR      		:= rm -rf
+FIND       		:= find
+FIND_FLAGS 		:= -type d -print 2> /dev/null
 
 # Parser and Lexer
-LEX        := flex
-LEX_CXX    := flex++
-LEXFLAGS   := 
-YACC       := bison
-YACC_CXX   := bison++
-YACCFLAGS  := -d #-v -t
+LEX        		:= flex
+LEX_CXX    		:= flexc++
+LEXFLAGS   		:= 
+YACC       		:= bison
+YACC_CXX   		:= bisonc++
+YACCFLAGS  		:= -d #-v -t
 
 # Make
-MAKE       += --no-print-directory
+MAKE       		+= --no-print-directory
 
 # Include configuration file if exists
 -include config_os.mk
@@ -178,16 +268,28 @@ soflags   := $(SOFLAGS)
 lexflags  := $(LEXFLAG)
 yaccflags := $(YACCFLAGS)
 
+# Installation directories
+destdir := $(strip $(foreach d,$(DESTDIR),$(patsubst %/,%,$d)))
+
+$(foreach b,$(install_dirs),\
+    $(if $(strip $(firstword $($b))),\
+        $(eval i_$b := $(destdir)$(strip $(patsubst %/,%,$($b)))),\
+        $(error "$b" must not be empty))\
+)
+
 # Directories:
 # No directories must end with a '/' (slash)
 srcdir  := $(strip $(foreach d,$(SRCDIR),$(patsubst %/,%,$d)))
-bindir  := $(strip $(foreach d,$(BINDIR),$(patsubst %/,%,$d)))
 depdir  := $(strip $(foreach d,$(DEPDIR),$(patsubst %/,%,$d)))
 objdir  := $(strip $(foreach d,$(OBJDIR),$(patsubst %/,%,$d)))
 incdir  := $(strip $(foreach d,$(INCDIR),$(patsubst %/,%,$d)))
 libdir  := $(strip $(foreach d,$(LIBDIR),$(patsubst %/,%,$d)))
+bindir  := $(strip $(foreach d,$(BINDIR),$(patsubst %/,%,$d)))
+sbindir := $(strip $(foreach d,$(SBINDIR),$(patsubst %/,%,$d)))
+execdir := $(strip $(foreach d,$(EXECDIR),$(patsubst %/,%,$d)))
 distdir := $(strip $(foreach d,$(DISTDIR),$(patsubst %/,%,$d)))
 testdir := $(strip $(foreach d,$(TESTDIR),$(patsubst %/,%,$d)))
+datadir := $(strip $(foreach d,$(DATADIR),$(patsubst %/,%,$d)))
 
 # Check if every directory variable is non-empty
 ifeq ($(and $(srcdir),$(bindir),$(depdir),$(objdir),\
@@ -246,6 +348,9 @@ endif
 ########################################################################
 ##                              PATHS                                 ##
 ########################################################################
+
+# Define the shell to be used
+SHELL = /bin/sh
 
 # Define extensions as the only valid ones
 .SUFFIXES:
@@ -620,8 +725,19 @@ depall := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
 # 	 3.5) binary-name_asrc, for binary's specific auto-generated sources;
 # 	 3.6) binary-name_is_cxx, to test if the binary may be C's or C++'s
 #------------------------------------------------------------------[ 1 ]
-bin := $(sort $(strip $(BIN)))
-bin := $(if $(strip $(binext)),$(addprefix $(binext),$(bin)),$(bin))
+bin     := $(notdir $(sort $(strip $(BIN))))
+bin     := $(if $(strip $(binext)),\
+                $(addsuffix $(binext),$(bin)),$(bin))
+
+sbin    := $(notdir $(sort $(strip $(SBIN))))
+sbin    := $(if $(strip $(binext)),\
+                $(addsuffix $(binext),$(sbin)),$(sbin))
+
+libexec := $(notdir $(sort $(strip $(LIBEXEC))))
+libexec := $(if $(strip $(binext)),\
+                $(addsuffix $(binext),$(libexec)),$(libexec))
+
+bin     += $(sbin) $(libexec)
 #------------------------------------------------------------------[ 2 ]
 $(foreach b,$(bin),$(or\
     $(eval comsrc  := $(filter-out $b/%,$(src))),\
@@ -633,12 +749,15 @@ $(foreach b,$(bin),$(or\
 ))
 #------------------------------------------------------------------[ 3 ]
 $(foreach b,$(bin),$(or\
+    $(eval $b_dir    := $(if $(strip $(filter $b,$(libexec))),execdir,\
+                          $(if $(strip $(filter $b,$(sbin))),sbindir,\
+                              bindir))),\
     $(eval $b_src    := $(comsrc)  $(filter $b/%,$(src))),\
     $(eval $b_obj    := $(comobj)  $(filter $(objdir)/$b/%,$(objall))),\
     $(eval $b_lib    := $(comlib)  $(filter $(libdir)/$b/%,$(lib))),\
     $(eval $b_aobj   := $(comaobj) $(filter $(objdir)/$b/%,$(autoobj))),\
     $(eval $b_aall   := $(comasrc) $(foreach s,$(srcdir),\
-                                       $(filter $s/$b/%,$(autosrc)))),\
+                                     $(filter $s/$b/%,$(autosrc)))),\
     $(eval $b_is_cxx := $(strip $(call is_cxx,$($b_src)))),\
 ))
 
@@ -649,10 +768,17 @@ $(foreach b,$(bin),$(or\
 .PHONY: all
 all: $(bin)
 
+.PHONY: package
+package: dirs := $(srcdir) $(incdir) $(datadir)
+package: dirs += $(if $(strip $(lib)),$(libdir)) $(bindir)
+package: $(distdir)/$(PROJECT)-$(VERSION)_src.tar.gz
+
 .PHONY: dist
+dist: dirs := $(if $(strip $(lib)),$(libdir)) $(bindir)
 dist: $(distdir)/$(PROJECT)-$(VERSION).tar.gz
 
 .PHONY: tar
+tar: dirs := $(if $(strip $(lib)),$(libdir)) $(bindir)
 tar: $(distdir)/$(PROJECT)-$(VERSION).tar
 
 .PHONY: check
@@ -669,6 +795,28 @@ init:
 	$(quiet) $(MAKE) config > Config.mk
 
 ########################################################################
+##                           INSTALLATION                             ##
+########################################################################
+
+.PHONY: install
+install: 
+	$(foreach b,$(lib),\
+        $(INSTALL_DATA)    $(libdir)/$b $(i_libdir)/$b)
+	$(foreach b,$(bin),\
+        $(INSTALL_PROGRAM) $(bindir)/$b $(i_bindir)/$b)
+	$(foreach b,$(sbin),\
+        $(INSTALL_PROGRAM) $(sbindir)/$b $(i_sbindir)/$b)
+	$(foreach b,$(libexec),\
+        $(INSTALL_PROGRAM) $(execdir)/$b $(i_libexecdir)/$b)
+
+.PHONY: installdirs
+installdirs:
+	$(if $(strip $(bin)),    $(call mkdir,$(i_bindir)))
+	$(if $(strip $(sbin)),   $(call mkdir,$(i_sbindir)))
+	$(if $(strip $(libexec)),$(call mkdir,$(i_libexecdir)))
+	$(if $(strip $(lib)),    $(call mkdir,$(i_libdir)))
+
+########################################################################
 ##                              RULES                                 ##
 ########################################################################
 
@@ -680,14 +828,14 @@ init:
 %.tar: tarfile = $(notdir $@)
 %.tar: $(bin)
 	$(call mkdir,$(dir $@))
-	$(call mkdir,$(tarfile))
-	$(quiet) $(CP) $(if $(strip $(lib)),$(libdir)) $(bindir) $(tarfile)
+	$(quiet) $(MKDIR) $(tarfile)
+	$(quiet) $(CP) $(dirs) $(tarfile)
 	
 	$(call vstatus,$(MSG_MAKETAR))
 	$(quiet) $(TAR) $@ $(tarfile)
 	$(call ok,$(MSG_MAKETAR),$@)
 	
-	$(call rmdir,$(tarfile))
+	$(quiet) $(RMDIR) $(tarfile)
 
 #======================================================================#
 # Function: scanner-factory                                            #
@@ -940,18 +1088,19 @@ $(foreach s,$(testdep),$(eval\
 #         files (to create objdir and automatic source)                #
 #======================================================================#
 define binary-factory
-$1: $$($1_obj) $$($1_lib) | $$(bindir)
-	$$(call status,$$(MSG_CXX_LINKAGE))
-	$$(quiet) $2 $$($1_obj) -o $$(bindir)/$$@ $$(ldflags) $$(ldlibs)
-	$$(call ok,$$(MSG_CXX_LINKAGE),$$(bindir)/$$@)
+$1: $$($1_obj) $$($1_lib) | $4
+	@echo $4
+	$$(call status,$$(MSG_$2_LINKAGE))
+	$$(quiet) $3 $$($1_obj) -o $4/$$@ $$(ldflags) $$(ldlibs)
+	$$(call ok,$$(MSG_$2_LINKAGE),$$(bindir)/$$@)
 
 $$($1_obj): | $$(objdir)
 
 $$($1_aobj): $$($1_aall) | $$(objdir)
 endef
 $(foreach b,$(bin),$(eval\
-    $(call binary-factory,$b,$(if $($b_is_cxx),$(CXX),$(CC)),\
-        $(if $($b_is_cxx),$(MSG_CXX_LINKAGE),$(MSG_C_LINKAGE)))\
+    $(call binary-factory,$b,$(if $($b_is_cxx),CXX,C),\
+        $(if $($b_is_cxx),$(CXX),$(CC)),$($($b_dir)))\
 ))
 
 ########################################################################
@@ -1005,7 +1154,7 @@ endif
 ##                             FUNCIONS                               ##
 ########################################################################
 # Directories
-$(sort $(bindir) $(objdir) $(depdir) $(libdir)):
+$(sort $(bindir) $(sbindir) $(execdir) $(objdir) $(depdir) $(libdir)):
 	$(call mkdir,$@)
 
 define src2obj
@@ -1109,8 +1258,8 @@ MSG_TEST_FAILURE = "${CYAN}Test $(notdir $@) not passed${RES}"
 MSG_TEST_SUCCESS = "${YELLOW}All tests passed successfully${RES}"
 
 MSG_STATLIB      = "${RED}Generating static library $@${RES}"
-MSG_MAKETAR      = "${RED}Generating tar file $@${RES}"
-MSG_MAKETGZ      = "${RED}Ziping file $@${RES}"
+MSG_MAKETAR      = "${RED}Generating tar file ${BLUE}$@${RES}"
+MSG_MAKETGZ      = "${RED}Ziping file ${BLUE}$@${RES}"
 
 MSG_ASM_COMPILE  = "${DEF}Generating Assembly artifact ${WHITE}$@${RES}"
 
@@ -1194,9 +1343,11 @@ projecthelp:
 	@echo "Default targets:                                            "
 	@echo "-----------------                                           "
 	@echo " * all:         Generate all executables                    "
+	@echo " * install:     Install executables and libraries           "
 	@echo " * check:       Compile and run Unit Tests                  "
 	@echo " * config:      Outputs Config.mk model for user's options  "
 	@echo " * dist:        Create .tar.gz with binaries and libraries  "
+	@echo " * package:     As above, but also with sources and data    "
 	@echo " * init:        Create directories for beggining projects   "
 	@echo " * tar:         Create .tar with binaries and libraries     "
 	@echo "                                                            "
@@ -1222,23 +1373,27 @@ projecthelp:
 
 define prompt
 	@echo "${YELLOW}"$1"${RES}" \
-          $(if $(strip $2),"$(strip $2)\n","${RED}Empty${RES}")
+          $(if $(strip $2),"$(strip $2)","${RED}Empty${RES}")
 endef
 
 .PHONY: dump
 dump: 
+	@echo "${WHITE}LEXER              ${RES}"
+	@echo "---------------------------------"
 	$(call prompt,"alllexer: ",$(alllexer)  )
 	$(call prompt,"clexer:   ",$(clexer)    )
 	$(call prompt,"cxxlexer: ",$(cxxlexer)  )
 	$(call prompt,"lexall:   ",$(lexall)    )
 	
-	@echo "---------------------"
+	@echo "${WHITE}\nPARSER           ${RES}"
+	@echo "---------------------------------"
 	$(call prompt,"allparser:",$(allparser) )
 	$(call prompt,"cparser:  ",$(cparser)   )
 	$(call prompt,"cxxparser:",$(cxxparser) )
 	$(call prompt,"yaccall:  ",$(yaccall)   )
 	
-	@echo "---------------------"
+	@echo "${WHITE}\nSOURCE           ${RES}"
+	@echo "---------------------------------"
 	$(call prompt,"srcall:   ",$(srcall)    )
 	$(call prompt,"srccln:   ",$(srccln)    )
 	$(call prompt,"src:      ",$(src)       )
@@ -1246,19 +1401,22 @@ dump:
 	$(call prompt,"autosrc:  ",$(autosrc)   )
 	$(call prompt,"incall:   ",$(incall)    )
 	
-	@echo "---------------------"
+	@echo "${WHITE}\nTEST             ${RES}"
+	@echo "---------------------------------"
 	$(call prompt,"testall:  ",$(testall)   )
 	$(call prompt,"testdep:  ",$(testdep)   )
 	$(call prompt,"testrun:  ",$(testrun)   )
 	
-	@echo "---------------------"
+	@echo "${WHITE}\nLIBRARY          ${RES}"
+	@echo "---------------------------------"
 	$(call prompt,"lib_in:   ",$(lib_in)    )
 	$(call prompt,"libpat:   ",$(libpat)    )
 	$(call prompt,"liball:   ",$(liball)    )
 	$(call prompt,"libsrc:   ",$(libsrc)    )
 	$(call prompt,"lib:      ",$(lib)       )
 	
-	@echo "---------------------"
+	@echo "${WHITE}\nSTATIC LIBRARY   ${RES}"
+	@echo "---------------------------------"
 	$(call prompt,"ar_in:    ",$(ar_in)     )
 	$(call prompt,"arpat:    ",$(arpat)     )
 	$(call prompt,"arpsrc:   ",$(arpsrc)    )
@@ -1266,7 +1424,8 @@ dump:
 	$(call prompt,"arasrc:   ",$(arasrc)    )
 	$(call prompt,"arlib:    ",$(arlib)     )
 	
-	@echo "---------------------"
+	@echo "${WHITE}\nDYNAMIC LIBRARY  ${RES}"
+	@echo "---------------------------------"
 	$(call prompt,"shr_in:   ",$(shr_in)    )
 	$(call prompt,"shrpat:   ",$(shrpat)    )
 	$(call prompt,"shrpsrc:  ",$(shrpsrc)   )
@@ -1274,16 +1433,23 @@ dump:
 	$(call prompt,"shrasrc:  ",$(shrasrc)   )
 	$(call prompt,"shrlib:   ",$(shrlib)    )
 	
-	@echo "---------------------"
+	@echo "${WHITE}\nOBJECT           ${RES}"
+	@echo "---------------------------------"
 	$(call prompt,"obj:      ",$(obj)       )
 	$(call prompt,"arobj:    ",$(arobj)     )
 	$(call prompt,"shrobj:   ",$(shrobj)    )
 	$(call prompt,"autoobj:  ",$(autoobj)   )
 	
-	@echo "---------------------"
+	@echo "${WHITE}\nDEPENDENCY       ${RES}"
+	@echo "---------------------------------"
 	$(call prompt,"dep:      ",$(depall)    )
 	
-	@echo "---------------------"
+	@echo "${WHITE}\nBINARY           ${RES}"
+	@echo "---------------------------------"
+	$(call prompt,"bin:      ",$(bin)       )
+	
+	@echo "${WHITE}\nFLAGS            ${RES}"
+	@echo "---------------------------------"
 	$(call prompt,"cflags:   ",$(cflags)    )
 	$(call prompt,"clibs:    ",$(clibs)     )
 	$(call prompt,"cxxflags: ",$(cxxflags)  )

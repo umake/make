@@ -71,8 +71,9 @@ SOFLAGS   ?= -shared
 ifndef SINGLE_DIR
 SRCDIR  ?= src
 DEPDIR  ?= dep
-OBJDIR  ?= build
 INCDIR  ?= include
+DOCDIR  ?= doc
+OBJDIR  ?= build
 LIBDIR  ?= lib
 BINDIR  ?= bin
 SBINDIR ?= sbin
@@ -281,8 +282,9 @@ $(foreach b,$(install_dirs),\
 # No directories must end with a '/' (slash)
 srcdir  := $(strip $(foreach d,$(SRCDIR),$(patsubst %/,%,$d)))
 depdir  := $(strip $(foreach d,$(DEPDIR),$(patsubst %/,%,$d)))
-objdir  := $(strip $(foreach d,$(OBJDIR),$(patsubst %/,%,$d)))
 incdir  := $(strip $(foreach d,$(INCDIR),$(patsubst %/,%,$d)))
+docdir  := $(strip $(foreach d,$(DOCDIR),$(patsubst %/,%,$d)))
+objdir  := $(strip $(foreach d,$(OBJDIR),$(patsubst %/,%,$d)))
 libdir  := $(strip $(foreach d,$(LIBDIR),$(patsubst %/,%,$d)))
 bindir  := $(strip $(foreach d,$(BINDIR),$(patsubst %/,%,$d)))
 sbindir := $(strip $(foreach d,$(SBINDIR),$(patsubst %/,%,$d)))
@@ -799,7 +801,7 @@ init:
 ########################################################################
 
 .PHONY: install
-install: 
+install: | installdirs
 	$(foreach b,$(lib),\
         $(INSTALL_DATA)    $(libdir)/$b $(i_libdir)/$b)
 	$(foreach b,$(bin),\

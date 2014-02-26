@@ -30,7 +30,7 @@ PROJECT ?= Default
 VERSION ?= 1.0
 
 # Program settings
-BIN     ?= a.out
+BIN     ?=
 SBIN    ?=
 LIBEXEC ?=
 SBIN    ?=
@@ -364,11 +364,6 @@ vpath %.tar    $(distdir) # All tar files in distdir
 vpath %.tar.gz $(distdir) # All tar.gz files in distdir
 
 # Binaries, libraries and source extensions
-$(foreach b,$(bindir) $(bindir)/$(testdir),\
-    $(if $(binext),\
-        $(foreach e,$(binext),$(eval vpath %$e $(bindir))),\
-        $(eval vpath %$e $(bindir)))\
-)
 $(foreach e,$(libext),$(eval vpath lib%$e $(libdir)))
 $(foreach s,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
@@ -624,7 +619,7 @@ ldflags += $(addprefix -l,$(notdir $(basename $(arpsrc))))
 
 # Dynamic libraries
 # ==================
-# 1) Get complete static library paths from all libraries
+# 1) Get complete dynamic library paths from all libraries
 # 2) Expand directories to their paths, getting ALL sources without 
 #    root directories
 # 3) Create analogous object files from the above
@@ -671,7 +666,7 @@ $(if $(strip $(shrpsrc)),$(eval ldflags := -Wl,-rpath=$(libdir) $(ldflags)))
 obj := $(addsuffix .o,$(basename $(asmsrc)))
 obj += $(addsuffix .o,$(basename $(src)))
 obj := $(addprefix $(objdir)/,$(obj))
-objall := $(obj) $(autoobj)
+objall := $(obj) $(arobj) $(shrobj) $(autoobj)
 
 # Header files
 # =============
@@ -727,30 +722,34 @@ depall := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
 # 	 3.5) binary-name_asrc, for binary's specific auto-generated sources;
 # 	 3.6) binary-name_is_cxx, to test if the binary may be C's or C++'s
 #------------------------------------------------------------------[ 1 ]
-bin     := $(notdir $(sort $(strip $(BIN))))
+bin     := $(addprefix $(bindir)/,$(notdir $(sort $(strip $(BIN)))))
 bin     := $(if $(strip $(binext)),\
                 $(addsuffix $(binext),$(bin)),$(bin))
 
-sbin    := $(notdir $(sort $(strip $(SBIN))))
+sbin    := $(addprefix $(sbindir)/,$(notdir $(sort $(strip $(SBIN)))))
 sbin    := $(if $(strip $(binext)),\
                 $(addsuffix $(binext),$(sbin)),$(sbin))
 
-libexec := $(notdir $(sort $(strip $(LIBEXEC))))
+libexec := $(addprefix $(execdir)/,$(notdir $(sort $(strip $(LIBEXEC)))))
 libexec := $(if $(strip $(binext)),\
                 $(addsuffix $(binext),$(libexec)),$(libexec))
 
-bin     += $(sbin) $(libexec)
+$(if $(strip $(bin) $(sbin) $(libexec)),\
+	$(eval binall := $(bin) $(sbin) $(libexec)),\
+    $(eval binall := $(bindir)/a.out)\
+)
 #------------------------------------------------------------------[ 2 ]
-$(foreach b,$(bin),$(or\
+$(foreach b,$(binall),$(or\
     $(eval comsrc  := $(filter-out $b/%,$(src))),\
     $(eval comobj  := $(filter-out $(objdir)/$b/%,$(obj))),\
     $(eval comlib  := $(filter-out $(libdir)/$b/%,$(lib))),\
     $(eval comaobj := $(filter-out $(objdir)/$b/%,$(autoobj))),\
-    $(eval comaall := $(foreach b,$(bin),$(foreach s,$(srcdir),\
-                        $(filter-out $s/$b/%,$(autoall)))))\
+    $(eval comaall := $(foreach b,$(binall),\
+                        $(foreach s,$(srcdir),\
+                            $(filter-out $s/$b/%,$(autoall)))))\
 ))
 #------------------------------------------------------------------[ 3 ]
-$(foreach b,$(bin),$(or\
+$(foreach b,$(binall),$(or\
     $(eval $b_dir    := $(if $(strip $(filter $b,$(libexec))),execdir,\
                           $(if $(strip $(filter $b,$(sbin))),sbindir,\
                               bindir))),\
@@ -762,13 +761,14 @@ $(foreach b,$(bin),$(or\
                                      $(filter $s/$b/%,$(autosrc)))),\
     $(eval $b_is_cxx := $(strip $(call is_cxx,$($b_src)))),\
 ))
+#------------------------------------------------------------------[ 4 ]
 
 ########################################################################
 ##                              BUILD                                 ##
 ########################################################################
 
 .PHONY: all
-all: $(bin)
+all: $(binall)
 
 .PHONY: package
 package: dirs := $(srcdir) $(incdir) $(datadir)
@@ -828,7 +828,7 @@ installdirs:
 	$(call ok,$(MSG_MAKETGZ),$@)
 
 %.tar: tarfile = $(notdir $@)
-%.tar: $(bin)
+%.tar: $(binall)
 	$(call mkdir,$(dir $@))
 	$(quiet) $(MKDIR) $(tarfile)
 	$(quiet) $(CP) $(dirs) $(tarfile)
@@ -1038,9 +1038,10 @@ $(foreach s,$(shrpat),\
 define link-statlib-linux
 $$(libdir)/$2lib$3.a: $$(arobj) | $$(libdir)
 	$$(call status,$$(MSG_STATLIB))
-	$$(quiet) $$(call mksubdir,$$(libdir),$2)
+	$$(quiet) $$(call mksubdir,$$(libdir),$$(objdir)/$2)
 	$$(quiet) $$(AR) $$(arflags) $$@ \
-              $$(call src2obj,$$(wildcard $1$2$3$4*)) $$(O_0) $$(E_0)
+			  $$(call rwildcard,$$(objdir)/$2$3,*) \
+			  $$(NO_OUTPUT) $$(NO_ERROR)
 	$$(quiet) $$(RANLIB) $$@
 	$$(call ok,$$(MSG_STATLIB),$$@)
 endef
@@ -1090,19 +1091,18 @@ $(foreach s,$(testdep),$(eval\
 #         files (to create objdir and automatic source)                #
 #======================================================================#
 define binary-factory
-$1: $$($1_obj) $$($1_lib) | $4
-	@echo $4
+$1: $$($1_obj) $$($1_lib) | $$(dir $1)
 	$$(call status,$$(MSG_$2_LINKAGE))
-	$$(quiet) $3 $$($1_obj) -o $4/$$@ $$(ldflags) $$(ldlibs)
-	$$(call ok,$$(MSG_$2_LINKAGE),$$(bindir)/$$@)
+	$$(quiet) $3 $$($1_obj) -o $$@ $$(ldflags) $$(ldlibs)
+	$$(call ok,$$(MSG_$2_LINKAGE),$$@)
 
 $$($1_obj): | $$(objdir)
 
 $$($1_aobj): $$($1_aall) | $$(objdir)
 endef
-$(foreach b,$(bin),$(eval\
+$(foreach b,$(binall),$(eval\
     $(call binary-factory,$b,$(if $($b_is_cxx),CXX,C),\
-        $(if $($b_is_cxx),$(CXX),$(CC)),$($($b_dir)))\
+        $(if $($b_is_cxx),$(CXX),$(CC)))\
 ))
 
 ########################################################################
@@ -1117,8 +1117,10 @@ mostlyclean:
 clean: mostlyclean
 	$(call srm,$(lib))
 	$(call rmdir,$(libdir))
-	$(call srm,$(bin))
+	$(call srm,$(binall))
 	$(call rmdir,$(bindir))
+	$(call rmdir,$(sbindir))
+	$(call rmdir,$(execdir))
 
 .PHONY: distclean
 distclean: clean
@@ -1195,7 +1197,7 @@ endef
 
 define mksubdir
 $(if $(strip $(patsubst .,,$1)),\
-	$(MKDIR) $1/$(call not-root,$(dir $2))
+	$(MKDIR) $1/$(strip $(call not-root,$(dir $2)))
 )
 endef
 
@@ -1441,6 +1443,7 @@ dump:
 	$(call prompt,"arobj:    ",$(arobj)     )
 	$(call prompt,"shrobj:   ",$(shrobj)    )
 	$(call prompt,"autoobj:  ",$(autoobj)   )
+	$(call prompt,"objall:   ",$(objall)    )
 	
 	@echo "${WHITE}\nDEPENDENCY       ${RES}"
 	@echo "---------------------------------"

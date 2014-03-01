@@ -1296,9 +1296,15 @@ define ok
 	fi
 endef
 
-define ERROR 
-2>&1 | sed '1 i error' | sed 's/^/> /' | sed ''/"> error"/s//`printf "${ERR}"`/''
-endef
+ifndef MORE
+    define ERROR 
+    2>&1 | sed '1 i error' | sed 's/^/> /' | sed ''/"> error"/s//`printf "${ERR}"`/''
+    endef
+else
+    define ERROR 
+    2>&1 | more
+    endef
+endif 
 
 define test-error
 (echo "\r${RED}[FAILURE]${RES}" $1"."\

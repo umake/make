@@ -903,7 +903,7 @@ $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_ASM_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call make-depend,$$<,$$@,$$*)
+	$$(quiet) $$(call make-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(AS) $$(ASMFLAGS) $$< -o $$@
 	
@@ -926,7 +926,7 @@ $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_C_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call make-depend,$$<,$$@,$3/$$*)
+	$$(quiet) $$(call make-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) $$(cflags) $$(clibs) -c $$< -o $$@ $$(ERROR)
 	
@@ -975,9 +975,9 @@ define compile-sharedlib-linux-c
 $$(objdir)/$2.o: $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_C_LIBCOMP))
 	
-	$$(quiet) $$(call mksubdir,$$(depdir),$2)
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call make-depend,$$<,$$@,$2)
-	$$(quiet) $$(call mksubdir,$$(objdir),$2)
+	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) -fPIC $$(clibs) $$(cflags) -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_LIBCOMP),$$@)
@@ -996,9 +996,9 @@ define compile-sharedlib-linux-cpp
 $$(objdir)/$2.o: $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_CXX_LIBCOMP))
 	
-	$$(quiet) $$(call mksubdir,$$(depdir),$2)
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call make-depend,$$<,$$@,$2)
-	$$(quiet) $$(call mksubdir,$$(objdir),$2)
+	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) -fPIC $$(cxxlibs) $$(cxxflags) -c $$< -o $$@ \
 			  $$(ERROR)
 	
@@ -1021,7 +1021,7 @@ $$(libdir)/$2lib$3.so: $$(shrobj) | $$(libdir)
 	
 	$$(quiet) $$(call mksubdir,$$(libdir),$2)
 	$$(quiet) $$(CXX) $$(soflags) -o $$@ \
-              $$(call src2obj,$$(wildcard $1$2$3$4*)) $$(ERROR)
+			  $$(call rwildcard,$$(objdir)/$2$3,*$$(objext)) $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_SHRDLIB),$$@)
 endef

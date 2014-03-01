@@ -562,10 +562,11 @@ libpat := $(sort \
                 $(filter %$l,$s))\
         )),\
         $(strip $(foreach root,$(srcdir),\
-            $(foreach s,$(call rsubdir,$(root)),\
-                $(if $(findstring $l,$s),$s)\
-            )\
-        )),\
+            $(firstword $(sort \
+                $(foreach s,$(call rsubdir,$(root)),\
+                    $(if $(findstring $l,$s),$s)\
+                )\
+        )))),\
         $(strip $(foreach s,$(srcall),\
             $(if $(findstring $l,$s),$s)\
         ))\
@@ -1040,7 +1041,7 @@ $$(libdir)/$2lib$3.a: $$(arobj) | $$(libdir)
 	$$(call status,$$(MSG_STATLIB))
 	$$(quiet) $$(call mksubdir,$$(libdir),$$(objdir)/$2)
 	$$(quiet) $$(AR) $$(arflags) $$@ \
-			  $$(call rwildcard,$$(objdir)/$2$3,*) \
+			  $$(call rwildcard,$$(objdir)/$2$3,*$$(objext)) \
 			  $$(NO_OUTPUT) $$(NO_ERROR)
 	$$(quiet) $$(RANLIB) $$@
 	$$(call ok,$$(MSG_STATLIB),$$@)
@@ -1115,8 +1116,6 @@ mostlyclean:
 
 .PHONY: clean
 clean: mostlyclean
-	$(call srm,$(lib))
-	$(call rmdir,$(libdir))
 	$(call srm,$(binall))
 	$(call rmdir,$(bindir))
 	$(call rmdir,$(sbindir))
@@ -1124,6 +1123,8 @@ clean: mostlyclean
 
 .PHONY: distclean
 distclean: clean
+	$(call srm,$(lib))
+	$(call rmdir,$(libdir))
 	$(call srm,$(depall))
 	$(call rmdir,$(depdir) $(call subdir,depdir))
 	$(call srm,$(PROJECT)-$(VERSION).tar)
@@ -1346,29 +1347,32 @@ projecthelp:
 	@echo "                                                            "
 	@echo "Default targets:                                            "
 	@echo "-----------------                                           "
-	@echo " * all:         Generate all executables                    "
-	@echo " * install:     Install executables and libraries           "
-	@echo " * check:       Compile and run Unit Tests                  "
-	@echo " * config:      Outputs Config.mk model for user's options  "
-	@echo " * dist:        Create .tar.gz with binaries and libraries  "
-	@echo " * package:     As above, but also with sources and data    "
-	@echo " * init:        Create directories for beggining projects   "
-	@echo " * tar:         Create .tar with binaries and libraries     "
+	@echo " * all:          Generate all executables                   "
+	@echo " * check:        Compile and run Unit Tests                 "
+	@echo " * config:       Outputs Config.mk model for user's options "
+	@echo " * dist:         Create .tar.gz with binaries and libraries "
+	@echo " * init:         Create directories for beggining projects  "
+	@echo " * install:      Install executables and libraries          "
+	@echo " * package:      As above, but also with sources and data   "
+	@echo " * tar:          Create .tar with binaries and libraries    "
 	@echo "                                                            "
 	@echo "Debug targets:                                              "
 	@echo "---------------                                             "
-	@echo " * dump:        Print main vars used within this Makefile   "
-	@echo " * nothing:     Self-explicative, hun?                      "
+	@echo " * dump:         Print main vars used within this Makefile  "
+	@echo " * nothing:      Self-explicative, hun?                     "
 	@echo "                                                            "
 	@echo "Cleaning targets:                                           "
 	@echo "------------------                                          "
-	@echo " * mostlyclean: Clean all object files                      "
-	@echo " * clean:       Above and dependencies ou are here          "
+	@echo " * mostlyclean:  Clean all object files                     "
+	@echo " * clean:        Above and all types of binaries            "
+	@echo " * distclean:    Above and libraries, .tar and .tar.gz      "
+	@echo " * realclean:    Above, auto-generated source and docs      "
+	@echo " * uninitialize: Above and source/include directories       "
 	@echo "                                                            "
 	@echo "Help targets:                                               "
 	@echo "---------------                                             "
-	@echo " * help:        Info about this Makefile                    "
-	@echo " * projecthelp: Perharps you kwnow if you are here          "
+	@echo " * help:         Info about this Makefile                   "
+	@echo " * projecthelp:  Perharps you kwnow if you are here         "
 	@echo "                                                            "
 
 ########################################################################

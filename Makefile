@@ -1094,7 +1094,7 @@ $(foreach s,$(testdep),$(eval\
 define binary-factory
 $1: $$($1_obj) $$($1_lib) | $$(dir $1)
 	$$(call status,$$(MSG_$2_LINKAGE))
-	$$(quiet) $3 $$($1_obj) -o $$@ $$(ldflags) $$(ldlibs)
+	$$(quiet) $3 $$($1_obj) -o $$@ $$(ldflags) $$(ldlibs) $$(ERROR)
 	$$(call ok,$$(MSG_$2_LINKAGE),$$@)
 
 $$($1_obj): | $$(objdir)

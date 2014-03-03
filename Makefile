@@ -26,16 +26,18 @@
 ########################################################################
 
 # Project setting 
-PROJECT ?= Default
-VERSION ?= 1.0
+PROJECT  ?= Default
+VERSION  ?= 1.0
 
 # Program settings
-BIN     ?=
-SBIN    ?=
-LIBEXEC ?=
-SBIN    ?=
-ARLIB   ?=
-SHRLIB  ?=
+BIN      ?=
+SBIN     ?=
+LIBEXEC  ?=
+ARLIB    ?=
+SHRLIB   ?=
+
+# Documentation settings
+DOXYFILE ?= Doxyfile
 
 ########################################################################
 ##                              FLAGS                                 ##
@@ -48,7 +50,7 @@ ASFLAGS   ?= -f elf32
 CFLAGS    ?= -Wall -ansi -pedantic -O2 -g
 
 # C++ Options
-CXXFLAGS  ?= $(CFLAGS) -std=gnu++11
+CXXFLAGS  ?= $(CFLAGS) -std=c++11
 
 # Parsers in C++
 CXXLEXER  ?= 
@@ -196,6 +198,14 @@ DEPEXT  ?= .d
 OBJEXT  ?= .o
 BINEXT  ?= 
 
+# Documentation extensions
+TEXIEXT ?= .texi
+INFOEXT ?= .info
+HTMLEXT ?= .html
+DVIEXT  ?= .dvi
+PDFEXT  ?= .pdf
+PSEXT   ?= .ps
+
 # Test suffix
 TESTSUF ?= _tests
 
@@ -231,6 +241,9 @@ RMDIR      		:= rm -rf
 FIND       		:= find
 FIND_FLAGS 		:= -type d -print 2> /dev/null
 
+# Documentations
+DOXYGEN         := doxygen
+
 # Parser and Lexer
 LEX        		:= flex
 LEX_CXX    		:= flexc++
@@ -238,6 +251,14 @@ LEXFLAGS   		:=
 YACC       		:= bison
 YACC_CXX   		:= bisonc++
 YACCFLAGS  		:= -d #-v -t
+
+# Documentation
+MAKEINFO        := makeinfo
+INSTALL_INFO    := install-info
+TEXI2HTML       := makeinfo --no-split --html
+TEXI2DVI        := texi2dvi
+TEXI2PDF        := texi2pdf
+TEXI2PS         := texi2dvi --ps
 
 # Make
 MAKE       		+= --no-print-directory
@@ -255,6 +276,9 @@ MAKE       		+= --no-print-directory
 ########################################################################
 ##                       USER INPUT VALIDATION                        ##
 ########################################################################
+
+# Documentation:
+doxyfile  := $(strip $(firstword $(DOXYFILE)))
 
 # Flags:
 # Redefine flags to avoid conflict with user's local definitions
@@ -322,6 +346,13 @@ yaccext := $(strip $(sort $(YACCEXT)))
 depext  := $(strip $(sort $(DEPEXT)))
 objext  := $(strip $(sort $(OBJEXT)))
 binext  := $(strip $(sort $(BINEXT)))
+
+texiext := $(strip $(sort $(TEXIEXT)))
+infoext := $(strip $(sort $(INFOEXT)))
+htmlext := $(strip $(sort $(HTMLEXT)))
+dviext  := $(strip $(sort $(DVIEXT)))
+pdfext  := $(strip $(sort $(PDFEXT)))
+psext   := $(strip $(sort $(PSEXT)))
 
 incext := $(hext) $(hxxext)
 srcext := $(cext) $(cxxext)
@@ -401,13 +432,6 @@ define is_cxx
 $(foreach e,$(cxxext),$(findstring $e,$(suffix $1)))
 endef
 
-# Default variable names 
-# ======================
-# fooall: complete path WITH root directories
-# foosrc: complete path WITHOUT root directories
-# foopat: incomplete paths WITH root directories
-# foolib: library names WITHOUT root directories
-
 # Auxiliar functions
 # ===================
 # 1) rsubdir: For listing all subdirectories of a given dir
@@ -415,6 +439,17 @@ endef
 rsubdir   = $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS)))
 rwildcard = $(foreach d,$(wildcard $1/*),\
                 $(call rwildcard,$d,$2)$(filter $(subst *,%,$2),$d)) 
+rfilter-out   = \
+  $(eval rfilter-out_aux = $2)\
+  $(foreach d,$1,$(eval rfilter-out_aux = $(filter-out $d,$(rfilter-out_aux))))\
+  $(sort $(rfilter-out_aux))
+
+# Default variable names 
+# ======================
+# fooall: complete path WITH root directories
+# foosrc: complete path WITHOUT root directories
+# foopat: incomplete paths WITH root directories
+# foolib: library names WITHOUT root directories
 
 # Assembly files
 # ==============
@@ -707,9 +742,9 @@ testrun := $(addprefix run_,$(subst /,_,$(testdep)))
 # 1) Dependencies will be generated for sources, auto sources and tests
 # 2) Get the not-root basenames of all source directories
 # 3) Create dependency names and directories
-depall := $(testall) $(call not-root,$(srcall) $(autoall))
-depall := $(strip $(basename $(depall)))
-depall := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
+depall  := $(testall) $(call not-root,$(srcall) $(autoall))
+depall  := $(strip $(basename $(depall)))
+depall  := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
 
 # Binary
 # =======
@@ -764,6 +799,31 @@ $(foreach b,$(binall),$(or\
 ))
 #------------------------------------------------------------------[ 4 ]
 
+# Texinfo files
+# ==============
+# 1) texiall: All TexInfo files with complete path
+# 2) texisrc: Take out root dir reference from above
+# 3) Create variables:
+# 	 3.1) texiinfo, for INFO's to be generated from TexInfo files
+# 	 3.1) texihtml, for HTML's to be generated from TexInfo files
+# 	 3.2) texidvi, for DVI's to be generated from TexInfo files
+# 	 3.3) texipdf, for PDF's to be generated from TexInfo files
+# 	 3.4) texips, for PS's to be generated from TexInfo files
+#------------------------------------------------------------------[ 1 ]
+$(foreach root,$(docdir),\
+    $(foreach E,$(texiext),\
+        $(eval texiall += $(call rwildcard,$(root),*$E))\
+))
+#------------------------------------------------------------------[ 2 ]
+texisrc := $(call not-root,$(texiall))
+#------------------------------------------------------------------[ 3 ]
+$(foreach doc,info html dvi pdf ps,\
+    $(eval texi$(doc) := \
+        $(addprefix $(firstword $(docdir))/$(doc)/,\
+            $(addsuffix $(firstword $($(doc)ext)),\
+                $(basename $(texisrc))\
+))))
+
 ########################################################################
 ##                              BUILD                                 ##
 ########################################################################
@@ -786,7 +846,7 @@ tar: $(distdir)/$(PROJECT)-$(VERSION).tar
 
 .PHONY: check
 check: $(testrun)
-	$(if $(strip $^),$(call ok,$(MSG_TEST_SUCCESS)))
+	$(if $(strip $^),$(call phony-ok,$(MSG_TEST_SUCCESS)))
 
 .PHONY: nothing
 nothing:
@@ -795,22 +855,39 @@ nothing:
 init:
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
+	$(call mkdir,$(docdir))
 	$(quiet) $(MAKE) config > Config.mk
 
 ########################################################################
 ##                           INSTALLATION                             ##
 ########################################################################
 
+.PHONY: install-strip
+install-strip:
+	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install	   
+
 .PHONY: install
 install: | installdirs
 	$(foreach b,$(lib),\
-        $(INSTALL_DATA)    $(libdir)/$b $(i_libdir)/$b)
+        $(call phony-status,$(MSG_INSTALL_BIN)); \
+        $(INSTALL_DATA) $b $(i_libdir)/$(notdir b); \
+        $(call phony-ok,$(MSG_INSTALL_BIN)); \
+    )
 	$(foreach b,$(bin),\
-        $(INSTALL_PROGRAM) $(bindir)/$b $(i_bindir)/$b)
+        $(call phony-status,$(MSG_INSTALL_BIN)); \
+        $(INSTALL_PROGRAM) $b $(i_bindir)/$(notdir b); \
+        $(call phony-ok,$(MSG_INSTALL_BIN)); \
+    )
 	$(foreach b,$(sbin),\
-        $(INSTALL_PROGRAM) $(sbindir)/$b $(i_sbindir)/$b)
+        $(call phony-status,$(MSG_INSTALL_BIN)); \
+        $(INSTALL_PROGRAM) $b $(i_sbindir)/$(notdir b); \
+        $(call phony-ok,$(MSG_INSTALL_BIN)); \
+    )
 	$(foreach b,$(libexec),\
-        $(INSTALL_PROGRAM) $(execdir)/$b $(i_libexecdir)/$b)
+        $(call phony-status,$(MSG_INSTALL_BIN)); \
+        $(INSTALL_PROGRAM) $b $(i_libexecdir)/$(notdir b); \
+        $(call phony-ok,$(MSG_INSTALL_BIN)); \
+    )
 
 .PHONY: installdirs
 installdirs:
@@ -818,6 +895,126 @@ installdirs:
 	$(if $(strip $(sbin)),   $(call mkdir,$(i_sbindir)))
 	$(if $(strip $(libexec)),$(call mkdir,$(i_libexecdir)))
 	$(if $(strip $(lib)),    $(call mkdir,$(i_libdir)))
+
+.PHONY: install-docs
+install-docs: install-info install-html install-dvi
+install-docs: install-pdf install-ps
+
+.PHONY: install-info
+install-info: 
+	$(foreach f,$(texiinfo),\
+        $(INSTALL_DATA) $f $(i_infodir)/$(notdir $f);\
+        if $(SHELL) -c '$(INSTALL_INFO) --version' $(NO_OUTOUT) 2>&1; \
+        then \
+            $(INSTALL_INFO) --dir-file="$(i_infodir)/dir" \
+            "$(i_infodir)/$(notdir $f)"; \
+        else true; fi;\
+    )
+
+.PHONY: installcheck
+installcheck:
+	$(call phony-ok,"No installation test avaiable")
+
+########################################################################
+##                          UNINSTALLATION                            ##
+########################################################################
+
+.PHONY: uninstall
+uninstall: uninstall-docs
+	@# Remove installed libraries
+	$(foreach b,$(lib),\
+        $(call phony-status,$(MSG_UNINSTALL_BIN)); \
+        $(RM) $(i_libdir)/$(notdir $b); \
+        $(call phony-ok,$(MSG_INSTALL_BIN)); \
+    )
+	$(call rm-if-empty,$(i_libdir),\
+        $(addprefix $(i_libdir)/,$(notdir $(bin))))
+	
+	@# Remove installed binaries
+	$(foreach b,$(bin),\
+        $(call phony-status,$(MSG_UNINSTALL_BIN)); \
+        $(RM) $(i_bindir)/$(notdir $b); \
+        $(call phony-ok,$(MSG_INSTALL_BIN)); \
+    )
+	$(call rm-if-empty,$(i_bindir),\
+        $(addprefix $(i_bindir)/,$(notdir $(bin))))
+	
+	@# Remove installed shell binaries
+	$(foreach b,$(sbin),\
+        $(call phony-status,$(MSG_UNINSTALL_BIN)); \
+        $(RM) $(i_sbindir)/$(notdir $b); \
+        $(call phony-ok,$(MSG_INSTALL_BIN)); \
+    )
+	$(call rm-if-empty,$(i_sbindir),\
+        $(addprefix $(i_sbindir)/,$(notdir $(sbin))))
+	
+	@# Remove installed library-executable binaries
+	$(foreach b,$(libexec),\
+        $(call phony-status,$(MSG_UNINSTALL_BIN)); \
+        $(RM) $(i_libexecdir)/$(notdir $b); \
+        $(call phony-ok,$(MSG_INSTALL_BIN)); \
+    )
+	$(call rm-if-empty,$(i_libexecdir),\
+        $(addprefix $(i_libexecdir)/,$(notdir $(libexec))))
+
+.PHONY: uninstall-docs
+uninstall-docs: uninstall-info uninstall-html uninstall-dvi
+uninstall-docs: uninstall-pdf uninstall-ps
+
+.PHONY: uninstall-info
+uninstall-info: 
+	$(foreach f,$(texiinfo),\
+        $(call phony-status,$(MSG_UNINSTALL_DOC));\
+        $(RM) $(i_infodir)/$(notdir $f);\
+        $(call phony-ok,$(MSG_UNINSTALL_DOC));\
+    )
+	$(call rm-if-empty,$(i_infodir),\
+        $(addprefix $(i_infodir)/,$(notdir $(texiinfo))))
+
+########################################################################
+##                          DOCUMENTATION                             ##
+########################################################################
+
+.PHONY: docs
+all-docs: $(if $(strip $(doxyfile)),doxy) 
+all-docs: $(if $(strip $(texiall)),info html dvi pdf ps)
+
+ifneq ($(strip $(doxyfile)),) ####
+
+.PHONY: doxy
+doxy: $(docdir)/$(doxyfile).mk
+	$(call phony-status,$(MSG_DOXY_DOCS))
+	$(quiet) $(DOXYGEN) $< $(NO_OUTPUT) $(NO_ERROR)
+	$(call phony-ok,$(MSG_DOXY_DOCS))
+
+$(docdir)/$(doxyfile).mk: $(doxyfile) $(srcall) $(incall) | $(docdir)
+	$(call mkdir,$(docdir)/doxygen)
+	$(call status,$(MSG_DOXY_MAKE))
+	$(quiet) $(CP) $< $@
+	
+	@echo "                                                      " >> $@
+	@echo "######################################################" >> $@
+	@echo "##                 MAKEFILE CONFIGS                 ##" >> $@
+	@echo "######################################################" >> $@
+	@echo "                                                      " >> $@
+	@echo "# Project info                                        " >> $@
+	@echo "PROJECT_NAME     = $(PROJECT)                         " >> $@
+	@echo "PROJECT_NUMBER   = $(VERSION)                         " >> $@
+	@echo "                                                      " >> $@
+	@echo "# Source info                                         " >> $@
+	@echo "INPUT            = $(call rsubdir,$(srcdir) $(incdir))" >> $@
+	@echo "FILE_PATTERNS    = $(addprefix *,$(srcext) $(incext)) " >> $@
+	@echo "                                                      " >> $@
+	@echo "OUTPUT_DIRECTORY = $(firstword $(docdir)/doxygen)     " >> $@
+	
+	$(call ok,$(MSG_DOXY_MAKE),$@)
+
+$(doxyfile):
+	$(call status,$(MSG_DOXY_FILE))
+	$(quiet) $(DOXYGEN) -g $@ $(NO_OUTPUT)
+	$(call ok,$(MSG_DOXY_FILE),$@)
+
+endif # ifneq($(strip $(doxyfile)),) ####
 
 ########################################################################
 ##                              RULES                                 ##
@@ -1069,9 +1266,9 @@ $1: $2 $3 | $$(bindir)
 
 .PHONY: $4
 $4: $1
-	$$(call status,$$(MSG_TEST))
+	$$(call phony-status,$$(MSG_TEST))
 	@./$$< $$(NO_OUTPUT) || $$(call test-error,$$(MSG_TEST_FAILURE))
-	$$(call ok,$$(MSG_TEST))
+	$$(call phony-ok,$$(MSG_TEST))
 
 endef
 $(foreach s,$(testdep),$(eval\
@@ -1106,51 +1303,116 @@ $(foreach b,$(binall),$(eval\
         $(if $($b_is_cxx),$(CXX),$(CC)))\
 ))
 
+#======================================================================#
+# Function: texinfo-factory                                            #
+# @param  $1 Type of doc to be generated                               #
+# @param  $2 Extension that should be used for the doc file type       #
+# @param  $3 Command to generate the doc file                          #
+# @return Three targets: one to generate all files of a doc type; one  #
+#         general target to create the files of this doc type; and a   #
+#         target to generate the dir where the files should be put     #
+#======================================================================#
+define texinfo-factory
+.PHONY: $1
+$1: $$(texi$1)
+	$$(call phony-ok,$$(MSG_TEXI_DOCS))
+
+$$(docdir)/$1/%$2: $$(filter $$(docdir)/$$*%,$$(texiall)) | $$(docdir)/$1
+	$$(call status,$$(MSG_TEXI_FILE))
+	$$(call mksubdir,$$(docdir)/$1,$$<)
+	$$(quiet) $3 $$< -o $$@ $$(ERROR)
+	$$(call srm,$$(notdir $$(basename $$@)).*)
+	$$(call ok,$$(MSG_TEXI_FILE),$$@)
+
+$$(docdir)/$1:
+	$$(quiet) $$(call mkdir,$$@)
+endef
+$(eval $(call texinfo-factory,info,$(firstword $(infoext)),$(MAKEINFO)))
+$(eval $(call texinfo-factory,html,$(firstword $(htmlext)),$(TEXI2HTML)))
+$(eval $(call texinfo-factory,dvi,$(firstword $(dviext)),$(TEXI2DVI)))
+$(eval $(call texinfo-factory,pdf,$(firstword $(pdfext)),$(TEXI2PDF)))
+$(eval $(call texinfo-factory,ps,$(firstword $(psext)),$(TEXI2PS)))
+
+#======================================================================#
+# Function: install-texinfo-factory                                    #
+# @param  $1 Type of doc to be generated                               #
+# @return Two targets: one to install the files of the specified doc   #
+#         type (creating the directory as needed); and another one to  #
+#         uninstall these files and delete the dir (if empty).         #
+#======================================================================#
+define install-texinfo-factory
+.PHONY: install-$1
+install-$1:
+	$$(call mkdir,$$(i_$1dir))
+	$$(foreach f,$$(texi$1),\
+        $$(call phony-status,$$(MSG_INSTALL_DOC));\
+        $$(INSTALL_DATA) $$f $$(i_$1dir)/$$(notdir $$f);\
+        $$(call phony-ok,$$(MSG_INSTALL_DOC));\
+    )
+
+.PHONY: uninstall-$1
+uninstall-$1:
+	$$(foreach f,$$(texi$1),\
+        $$(call phony-status,$$(MSG_UNINSTALL_DOC));\
+        $$(RM) $$(i_$1dir)/$$(notdir $$f);\
+        $$(call phony-ok,$$(MSG_UNINSTALL_DOC));\
+    )
+	$$(call rm-if-empty,$$(i_$1dir),\
+        $$(addprefix $$(i_$1dir)/,$$(notdir $$(texi$1))))
+endef
+$(foreach type,html dvi pdf ps,\
+    $(eval $(call install-texinfo-factory,$(type))))
+
 ########################################################################
 ##                              CLEAN                                 ##
 ########################################################################
 .PHONY: mostlyclean
 mostlyclean:
-	$(call srm,$(objall))
-	$(call rmdir,$(objdir))
+	$(call rm-if-empty,$(objdir),$(objall))
 
 .PHONY: clean
 clean: mostlyclean
-	$(call srm,$(binall))
-	$(call rmdir,$(bindir))
-	$(call rmdir,$(sbindir))
-	$(call rmdir,$(execdir))
+	$(call rm-if-empty,$(bindir),$(bin))
+	$(call rm-if-empty,$(sbindir),$(sbin))
+	$(call rm-if-empty,$(execdir),$(libexec))
 
 .PHONY: distclean
 distclean: clean
-	$(call srm,$(lib))
-	$(call rmdir,$(libdir))
-	$(call srm,$(depall))
-	$(call rmdir,$(depdir) $(call subdir,depdir))
-	$(call srm,$(PROJECT)-$(VERSION).tar)
-	$(call srm,$(PROJECT)-$(VERSION).tar.gz)
-	$(call rmdir,$(distdir))
+	$(call rm-if-empty,$(libdir),$(lib))
+	$(call rm-if-empty,$(depdir),$(depall))
+	$(call rm-if-empty,$(distdir))
+
+.PHONY: docclean
+docclean:
+	$(call rm-if-empty,$(docdir)/doxygen)
+	$(call rm-if-empty,$(docdir)/info,$(texiinfo))
+	$(call rm-if-empty,$(docdir)/html,$(texihtml))
+	$(call rm-if-empty,$(docdir)/dvi,$(texidvi))
+	$(call rm-if-empty,$(docdir)/pdf,$(texipdf))
+	$(call rm-if-empty,$(docdir)/ps,$(texips))
 
 .PHONY: realclean
-realclean: distclean
+realclean: docclean distclean
 	$(if $(lexall),\
         $(call rm,$(lexall)),\
-        $(call ok,$(MSG_LEX_NONE))  )
+        $(call phony-ok,$(MSG_LEX_NONE))  )
 	$(if $(yaccall),\
         $(call rm,$(yaccall) $(yaccinc)),\
-        $(call ok,$(MSG_YACC_NONE)) )
+        $(call phony-ok,$(MSG_YACC_NONE)) )
+
+.PHONY: mainteiner-clean
+mainteiner-clean: realclean
 
 .PHONY: uninitialize
-ifneq ($U,1)
+ifndef U
 uninitialize:
 	@echo $(MSG_UNINIT_WARN)
 	@echo $(MSG_UNINIT_ALT)
 else
-uninitialize: realclean
-	$(call srm,$(srcall))
-	$(call rmdir,$(srcdir))
-	$(call srm,$(incall))
-	$(call rmdir,$(incdir))
+uninitialize: mainteiner-clean
+	$(call rm-if-empty,$(srcdir),$(srcall))
+	$(call rm-if-empty,$(incdir),$(incall))
+	$(call rm-if-empty,$(docdir),$(texiall))
 	$(call rm,Config.mk config.mk)
 	$(call rm,Config_os.mk config_os.mk)
 endif
@@ -1158,47 +1420,78 @@ endif
 ########################################################################
 ##                             FUNCIONS                               ##
 ########################################################################
-# Directories
-$(sort $(bindir) $(sbindir) $(execdir) $(objdir) $(depdir) $(libdir)):
+
+## Directories #########################################################
+$(sort $(bindir) $(sbindir) $(execdir) ):
 	$(call mkdir,$@)
 
-define src2obj
-$(foreach root,$(srcdir),                 \
-    $(addprefix $(objdir)/,               \
-        $(patsubst $(root)/%,%,           \
-            $(addsuffix .o,               \
-                $(basename                \
-                    $(filter $(root)/%,$1 \
-))))))
+$(sort $(objdir) $(depdir) $(libdir) $(docdir) ):
+	$(call mkdir,$@)
+
+## REMOVES #############################################################
+define srm
+	$(quiet) $(RM) $1 $(NO_ERROR)
 endef
 
-define srm
-	$(quiet) $(RM) $1
+define srmdir
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(RMDIR) $1)
 endef
 
 define rm
 $(if $(strip $(patsubst .,,$1)),\
-	$(call status,$(MSG_RM))
+	$(call phony-status,$(MSG_RM))
 	$(quiet) $(RM) $1
-	$(call ok,$(MSG_RM))
+	$(call phony-ok,$(MSG_RM))
 )
 endef
 
 define rmdir
-	$(if $(strip $(patsubst .,,$1)), $(call status,$(MSG_RMDIR)) )
-	$(if $(strip $(patsubst .,,$1)), $(quiet) $(RMDIR) $1        )
-	$(if $(strip $(patsubst .,,$1)), $(call ok,$(MSG_RMDIR))     )
+	$(if $(strip $(patsubst .,,$1)), $(call phony-status,$(MSG_RMDIR)) )
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(RMDIR) $1              )
+	$(if $(strip $(patsubst .,,$1)), $(call phony-ok,$(MSG_RMDIR))     )
 endef
 
+#======================================================================#
+# Function: rm-if-empty                                                #
+# @param  $1 Directory name                                            #
+# @param  $2 Files in $1 that should be removed from within $1         #
+# .---------------.---------.-------------.------------.               #
+# | Dir not empty | 2nd arg | Extra files | Result     |               #
+# |===============|=========|=============|============|               #
+# |               |         |             | nothing    | } When dir is #
+# |               |         |      X      | nothing    | } empty, it   #
+# |               |    X    |             | nothing    | } doesn't     #
+# |               |    X    |      X      | nothing    | } exist       #
+# |       X       |         |             | remove     | - No restric. #
+# |       X       |         |      X      | remove     | - or restric. #
+# |       X       |    X    |             | remove     | - ok? Remove! #
+# |       X       |    X    |      X      | not_remove | } Not remove, #
+# '---------------'---------'-------------'------------'   otherwise   #
+#======================================================================#
+define rm-if-empty
+	$(if $(strip $2),$(call srm,$2))
+	$(if $(strip $(call rwildcard,$1,*)),\
+        $(if $(strip $2),\
+            $(if $(strip $(call rfilter-out,$2,\
+                $(call rfilter-out,\
+                    $(filter-out $1,$(call rsubdir,$1)),\
+                    $(call rwildcard,$1,*)),\
+            )),$(call phony-ok,$(MSG_RM_NOT_EMPTY)),$(call rmdir,$1)),\
+            $(call rmdir,$1)),\
+        $(call phony-ok,$(MSG_RM_EMPTY))\
+    )
+endef
+
+## MKDIR ###############################################################
 define mkdir
-	$(if $(strip $(patsubst .,,$1)), $(call status,$(MSG_MKDIR)) )
-	$(if $(strip $(patsubst .,,$1)), $(quiet) $(MKDIR) $1        )
-	$(if $(strip $(patsubst .,,$1)), $(call ok,$(MSG_MKDIR))     )
+	$(if $(strip $(patsubst .,,$1)), $(call phony-status,$(MSG_MKDIR)) )
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(MKDIR) $1              )
+	$(if $(strip $(patsubst .,,$1)), $(call phony-ok,$(MSG_MKDIR))     )
 endef
 
 define mksubdir
 $(if $(strip $(patsubst .,,$1)),\
-	$(MKDIR) $1/$(strip $(call not-root,$(dir $2)))
+	$(quiet) $(MKDIR) $1/$(strip $(call not-root,$(dir $2)))
 )
 endef
 
@@ -1242,43 +1535,64 @@ WHITE   := \033[1;37m
 RES     := \033[0m
 ERR 	:= \033[0;37m
 
-MSG_RM           = "${BLUE}Removing ${RES}$1${RES}"
-MSG_MKDIR        = "${CYAN}Creating directory $1${RES}"
-MSG_RMDIR        = "${BLUE}Removing directory ${CYAN}$1${RES}"
-MSG_UNINIT_WARN  = "${RED}Are you sure you want to delete all"\
-				   "sources, headers and configuration files?"
-MSG_UNINIT_ALT   = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
+MSG_RM            = "${BLUE}Removing ${RES}$1${RES}"
+MSG_MKDIR         = "${CYAN}Creating directory $1${RES}"
+MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
+				    "sources, headers and configuration files?"
+MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 
-MSG_LEX          = "${PURPLE}Generating scanner $@${RES}"
-MSG_LEX_NONE     = "${PURPLE}No auto-generated lexers${RES}"
-MSG_LEX_COMPILE  = "${DEF}Compiling scanner ${WHITE}$@${RES}"
-MSG_YACC         = "${PURPLE}Generating parser ${BLUE}$@${RES}"
-MSG_YACC_NONE    = "${PURPLE}No auto-generated parsers${RES}"
-MSG_YACC_COMPILE = "${DEF}Compiling parser ${WHITE}$@${RES}"
+MSG_RMDIR         = "${BLUE}Removing directory ${CYAN}$1${RES}"
+MSG_RM_NOT_EMPTY  = "${PURPLE}Directory ${WHITE}$1${RES} not empty"
+MSG_RM_EMPTY      = "${PURPLE}Nothing to remove in $1${RES}"
 
-MSG_TEST         = "${BLUE}Testing ${WHITE}$(notdir $<)${RES}"
-MSG_TEST_COMPILE = "${DEF}Generating test executable"\
-                   "${GREEN}$(notdir $(strip $@))${RES}"
-MSG_TEST_FAILURE = "${CYAN}Test $(notdir $@) not passed${RES}"
-MSG_TEST_SUCCESS = "${YELLOW}All tests passed successfully${RES}"
+MSG_TEXI_FILE     = "${DEF}Generating $1 file ${WHITE}$@${RES}"
+MSG_TEXI_DOCS     = "${BLUE}Generating docs in ${WHITE}$@${RES}"
 
-MSG_STATLIB      = "${RED}Generating static library $@${RES}"
-MSG_MAKETAR      = "${RED}Generating tar file ${BLUE}$@${RES}"
-MSG_MAKETGZ      = "${RED}Ziping file ${BLUE}$@${RES}"
+MSG_DOXY_DOCS     = "${YELLOW}Generating Doxygen docs${RES}"
+MSG_DOXY_FILE     = "${BLUE}Generating Doxygen file ${WHITE}$@${RES}"
+MSG_DOXY_MAKE     = "${BLUE}Generating Doxygen config ${WHITE}$@${RES}"
 
-MSG_ASM_COMPILE  = "${DEF}Generating Assembly artifact ${WHITE}$@${RES}"
+MSG_INSTALL_BIN   = "${DEF}Installing binary file ${GREEN}$b${RES}"
+MSG_UNINSTALL_BIN = "${DEF}Uninstalling binary file ${GREEN}$b${RES}"
+MSG_INSTALL_DOC   = "${DEF}Installing document file ${BLUE}$f${RES}"
+MSG_UNINSTALL_DOC = "${DEF}Uninstalling document file ${BLUE}$f${RES}"
 
-MSG_C_COMPILE    = "${DEF}Generating C artifact ${WHITE}$@${RES}"
-MSG_C_LINKAGE    = "${YELLOW}Generating C executable ${GREEN}$@${RES}"
-MSG_C_SHRDLIB    = "${RED}Generating C shared library $@${RES}"
-MSG_C_LIBCOMP    = "${DEF}Generating C library artifact ${YELLOW}$@${RES}"
+MSG_LEX           = "${PURPLE}Generating scanner $@${RES}"
+MSG_LEX_NONE      = "${PURPLE}No auto-generated lexers${RES}"
+MSG_LEX_COMPILE   = "${DEF}Compiling scanner ${WHITE}$@${RES}"
+MSG_YACC          = "${PURPLE}Generating parser ${BLUE}$@${RES}"
+MSG_YACC_NONE     = "${PURPLE}No auto-generated parsers${RES}"
+MSG_YACC_COMPILE  = "${DEF}Compiling parser ${WHITE}$@${RES}"
 
-MSG_CXX_COMPILE  = "${DEF}Generating C++ artifact ${WHITE}$@${RES}"
-MSG_CXX_LINKAGE  = "${YELLOW}Generating C++ executable ${GREEN}$@${RES}"
-MSG_CXX_SHRDLIB  = "${RED}Generating C++ shared library $@${RES}"
-MSG_CXX_LIBCOMP  = "${DEF}Generating C++ library artifact ${YELLOW}$@${RES}"
+MSG_TEST          = "${BLUE}Testing ${WHITE}$(notdir $<)${RES}"
+MSG_TEST_COMPILE  = "${DEF}Generating test executable"\
+                    "${GREEN}$(notdir $(strip $@))${RES}"
+MSG_TEST_FAILURE  = "${CYAN}Test $(notdir $@) not passed${RES}"
+MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
+
+MSG_STATLIB       = "${RED}Generating static library $@${RES}"
+MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
+MSG_MAKETGZ       = "${RED}Ziping file ${BLUE}$@${RES}"
+
+MSG_ASM_COMPILE   = "${DEF}Generating Assembly artifact ${WHITE}$@${RES}"
+
+MSG_C_COMPILE     = "${DEF}Generating C artifact ${WHITE}$@${RES}"
+MSG_C_LINKAGE     = "${YELLOW}Generating C executable ${GREEN}$@${RES}"
+MSG_C_SHRDLIB     = "${RED}Generating C shared library $@${RES}"
+MSG_C_LIBCOMP     = "${DEF}Generating C library artifact"\
+                    "${YELLOW}$@${RES}"
+
+MSG_CXX_COMPILE   = "${DEF}Generating C++ artifact ${WHITE}$@${RES}"
+MSG_CXX_LINKAGE   = "${YELLOW}Generating C++ executable ${GREEN}$@${RES}"
+MSG_CXX_SHRDLIB   = "${RED}Generating C++ shared library $@${RES}"
+MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
+                    "${YELLOW}$@${RES}"
 
 ifneq ($(strip $(quiet)),)
+    define phony-status
+    	@echo -n $1 "... "
+    endef
+	
     define status
     	@$(RM) $@ && echo -n $1 "... "
     endef
@@ -1288,12 +1602,16 @@ ifneq ($(strip $(quiet)),)
     endef
 endif
 
+define phony-ok
+	@echo "\r${GREEN}[OK]${RES}" $1 "     "
+endef
+
 define ok
-	@if [ -f $2 ]; then\
-		echo "\r${GREEN}[OK]${RES}" $1 "     ";\
-	else\
-	 	echo "\r${RED}[ERROR]${RES}" $1 "     "; exit 1;\
-	fi
+@if [ -f $2 ]; then\
+	echo "\r${GREEN}[OK]${RES}" $1 "     ";\
+else\
+	echo "\r${RED}[ERROR]${RES}" $1 "     "; exit 1;\
+fi
 endef
 
 ifndef MORE
@@ -1318,6 +1636,10 @@ endef
 .PHONY: config
 config:
 	@echo "                                                            "
+	@echo "############################################################"
+	@echo "##         DELETE ANY TARGET TO USE THE DEFAULT!          ##"
+	@echo "############################################################"
+	@echo "                                                            "
 	@echo "# Project setting                                           "
 	@echo "PROJECT := # Project name. Default is 'Default'             "
 	@echo "VERSION := # Version. Default is '1.0'                      "
@@ -1327,6 +1649,9 @@ config:
 	@echo "           # directories has the same name of this binary,  "
 	@echo "           # this dir and all subdir will be compiled just  "
 	@echo "           # to this specific binary.                       "
+	@echo "SBIN    := # Same as above, but for shell only binaries.    "
+	@echo "LIBEXEC := # Again, but for binaries runnable only by other "
+	@echo "           # programs, not normal users.                    "
 	@echo "                                                            "
 	@echo "ARLIB   := # Static/Shared libraries' names. If one is a    "
 	@echo "SHRLIB  := # lib, all source files will make the library.   "
@@ -1353,14 +1678,20 @@ projecthelp:
 	@echo "                                                            "
 	@echo "Default targets:                                            "
 	@echo "-----------------                                           "
+	@echo " * all-docs:     Generate docs in all formats avaiable      "
 	@echo " * all:          Generate all executables                   "
 	@echo " * check:        Compile and run Unit Tests                 "
 	@echo " * config:       Outputs Config.mk model for user's options "
 	@echo " * dist:         Create .tar.gz with binaries and libraries "
+	@echo " * doxy:         Create Doxygen docs (if doxyfile defined)  "
 	@echo " * init:         Create directories for beggining projects  "
+	@echo " * install-*     Install docs in info, html, dvi, pdf or ps "
+	@echo " * install-docs  Install documentation in all formats       "
 	@echo " * install:      Install executables and libraries          "
-	@echo " * package:      As above, but also with sources and data   "
+	@echo " * installcheck: Run installation tests (if avaiable)       "
+	@echo " * package:      As 'tar', but also with sources and data   "
 	@echo " * tar:          Create .tar with binaries and libraries    "
+	@echo " * uninstall:    Uninstall anything created by any install  "
 	@echo "                                                            "
 	@echo "Debug targets:                                              "
 	@echo "---------------                                             "
@@ -1379,6 +1710,12 @@ projecthelp:
 	@echo "---------------                                             "
 	@echo " * help:         Info about this Makefile                   "
 	@echo " * projecthelp:  Perharps you kwnow if you are here         "
+	@echo "                                                            "
+	@echo "Special flags:                                              "
+	@echo "---------------                                             "
+	@echo " * U:            Allow uninitilization of the project       "
+	@echo " * V:            Allow the verbose mode                     "
+	@echo " * MORE:         With error, use 'more' to read stderr      "
 	@echo "                                                            "
 
 ########################################################################
@@ -1457,11 +1794,21 @@ dump:
 	
 	@echo "${WHITE}\nDEPENDENCY       ${RES}"
 	@echo "---------------------------------"
-	$(call prompt,"dep:      ",$(depall)    )
+	$(call prompt,"depall:   ",$(depall)    )
 	
 	@echo "${WHITE}\nBINARY           ${RES}"
 	@echo "---------------------------------"
 	$(call prompt,"bin:      ",$(bin)       )
+	
+	@echo "${WHITE}\nDOCUMENTATION    ${RES}"
+	@echo "---------------------------------"
+	$(call prompt,"texiall:  ",$(texiall)   )
+	$(call prompt,"texisrc:  ",$(texiall)   )
+	$(call prompt,"texiinfo: ",$(texiinfo)  )
+	$(call prompt,"texihtml: ",$(texihtml)  )
+	$(call prompt,"texidvi:  ",$(texidvi)   )
+	$(call prompt,"texipdf:  ",$(texipdf)   )
+	$(call prompt,"texips:   ",$(texips)    )
 	
 	@echo "${WHITE}\nFLAGS            ${RES}"
 	@echo "---------------------------------"
@@ -1471,4 +1818,4 @@ dump:
 	$(call prompt,"cxxlibs:  ",$(cxxlibs)   )
 	$(call prompt,"ldlibs:   ",$(ldlibs)    )
 	$(call prompt,"ldflags:  ",$(ldflags)   )
-
+	

@@ -37,6 +37,8 @@ ARLIB    ?=
 SHRLIB   ?=
 
 # Documentation settings
+LICENSE  ?= LICENSE
+NOTICE   ?= NOTICE
 DOXYFILE ?= Doxyfile
 
 ########################################################################
@@ -304,18 +306,18 @@ $(foreach b,$(install_dirs),\
 
 # Directories:
 # No directories must end with a '/' (slash)
-srcdir  := $(strip $(foreach d,$(SRCDIR),$(patsubst %/,%,$d)))
-depdir  := $(strip $(foreach d,$(DEPDIR),$(patsubst %/,%,$d)))
-incdir  := $(strip $(foreach d,$(INCDIR),$(patsubst %/,%,$d)))
-docdir  := $(strip $(foreach d,$(DOCDIR),$(patsubst %/,%,$d)))
-objdir  := $(strip $(foreach d,$(OBJDIR),$(patsubst %/,%,$d)))
-libdir  := $(strip $(foreach d,$(LIBDIR),$(patsubst %/,%,$d)))
-bindir  := $(strip $(foreach d,$(BINDIR),$(patsubst %/,%,$d)))
-sbindir := $(strip $(foreach d,$(SBINDIR),$(patsubst %/,%,$d)))
-execdir := $(strip $(foreach d,$(EXECDIR),$(patsubst %/,%,$d)))
-distdir := $(strip $(foreach d,$(DISTDIR),$(patsubst %/,%,$d)))
-testdir := $(strip $(foreach d,$(TESTDIR),$(patsubst %/,%,$d)))
-datadir := $(strip $(foreach d,$(DATADIR),$(patsubst %/,%,$d)))
+override srcdir  := $(strip $(foreach d,$(SRCDIR),$(patsubst %/,%,$d)))
+override depdir  := $(strip $(foreach d,$(DEPDIR),$(patsubst %/,%,$d)))
+override incdir  := $(strip $(foreach d,$(INCDIR),$(patsubst %/,%,$d)))
+override docdir  := $(strip $(foreach d,$(DOCDIR),$(patsubst %/,%,$d)))
+override objdir  := $(strip $(foreach d,$(OBJDIR),$(patsubst %/,%,$d)))
+override libdir  := $(strip $(foreach d,$(LIBDIR),$(patsubst %/,%,$d)))
+override bindir  := $(strip $(foreach d,$(BINDIR),$(patsubst %/,%,$d)))
+override sbindir := $(strip $(foreach d,$(SBINDIR),$(patsubst %/,%,$d)))
+override execdir := $(strip $(foreach d,$(EXECDIR),$(patsubst %/,%,$d)))
+override distdir := $(strip $(foreach d,$(DISTDIR),$(patsubst %/,%,$d)))
+override testdir := $(strip $(foreach d,$(TESTDIR),$(patsubst %/,%,$d)))
+override datadir := $(strip $(foreach d,$(DATADIR),$(patsubst %/,%,$d)))
 
 # Check if every directory variable is non-empty
 ifeq ($(and $(srcdir),$(bindir),$(depdir),$(objdir),\
@@ -972,6 +974,72 @@ uninstall-info:
         $(addprefix $(i_infodir)/,$(notdir $(texiinfo))))
 
 ########################################################################
+##                           MANAGEMENT                               ##
+########################################################################
+
+override incbase := $(strip $(firstword $(incdir)))$(if $(IN),/$(IN))
+override srcbase := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
+
+override NAMESPACE := $(notdir $(NAMESPACE))
+override CLASS     := $(basename $(notdir $(CLASS)))
+override C_FILE    := $(basename $(notdir $(C_FILE)))
+override CXX_FILE  := $(basename $(notdir $(CXX_FILE)))
+override TEMPLATE  := $(basename $(notdir $(TEMPLATE)))
+
+ifdef IN
+override IN := $(strip $(foreach d,$(IN),$(patsubst %/,%,$d)))
+endif
+
+.PHONY: new
+new:
+ifdef NAMESPACE
+	$(call mkdir,$(incbase)/$(NAMESPACE))
+	$(call mkdir,$(srcbase)/$(NAMESPACE))
+endif
+ifdef CLASS
+	$(call touch,$(srcbase)/$(CLASS).hpp,$(NOTICE))
+	$(call touch,$(incbase)/$(CLASS).cpp,$(NOTICE))
+endif
+ifdef C_FILE                                                            
+	$(call touch,$(srcbase)/$(C_FILE).h,$(NOTICE))
+	$(call touch,$(incbase)/$(C_FILE).c,$(NOTICE))
+endif
+ifdef CXX_FILE                                                          
+	$(call touch,$(srcbase)/$(CXX_FILE).hpp,$(NOTICE))
+	$(call touch,$(incbase)/$(CXX_FILE).cpp,$(NOTICE))
+endif
+ifdef TEMPLATE
+	$(call touch,$(incbase)/$(TEMPLATE).tcc,$(NOTICE))
+endif
+
+.PHONY: delete
+delete:
+ifndef D
+	@echo $(MSG_DELETE_WARN)
+	@echo $(MSG_DELETE_ALT)
+else
+ifdef NAMESPACE
+	$(call rmdir,$(incbase)/$(NAMESPACE))
+	$(call rmdir,$(srcbase)/$(NAMESPACE))
+endif
+ifdef CLASS
+	$(call rm,$(srcbase)/$(CLASS).hpp)
+	$(call rm,$(incbase)/$(CLASS).cpp)
+endif
+ifdef C_FILE
+	$(call rm,$(srcbase)/$(C_FILE).h)
+	$(call rm,$(incbase)/$(C_FILE).c)
+endif
+ifdef CXX_FILE
+	$(call rm,$(srcbase)/$(CXX_FILE).hpp)
+	$(call rm,$(incbase)/$(CXX_FILE).cpp)
+endif
+ifdef TEMPLATE
+	$(call rm,$(incbase)/$(TEMPLATE).tcc)
+endif
+endif
+
+########################################################################
 ##                          DOCUMENTATION                             ##
 ########################################################################
 
@@ -1491,8 +1559,18 @@ endef
 
 define mksubdir
 $(if $(strip $(patsubst .,,$1)),\
-	$(quiet) $(MKDIR) $1/$(strip $(call not-root,$(dir $2)))
-)
+	$(quiet) $(MKDIR) $1/$(strip $(call not-root,$(dir $2))))
+endef
+
+define touch
+$(if $(wildcard $(strip $1)*),,\
+    $(call phony-status,$(MSG_TOUCH)))
+$(if $(wildcard $(strip $1)*),,\
+    $(if $(strip $2),\
+        $(quiet) cat $2 > $1,\
+        $(quiet) touch $1))
+$(if $(wildcard $(strip $1)*),,\
+    $(call phony-ok,$(MSG_TOUCH)))
 endef
 
 # Function: make-depend
@@ -1540,6 +1618,10 @@ MSG_MKDIR         = "${CYAN}Creating directory $1${RES}"
 MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
 				    "sources, headers and configuration files?"
 MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
+
+MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
+MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
+MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
 
 MSG_RMDIR         = "${BLUE}Removing directory ${CYAN}$1${RES}"
 MSG_RM_NOT_EMPTY  = "${PURPLE}Directory ${WHITE}$1${RES} not empty"
@@ -1682,6 +1764,7 @@ projecthelp:
 	@echo " * all:          Generate all executables                   "
 	@echo " * check:        Compile and run Unit Tests                 "
 	@echo " * config:       Outputs Config.mk model for user's options "
+	@echo " * delete:       Remove C/C++ artifact (see above)          "
 	@echo " * dist:         Create .tar.gz with binaries and libraries "
 	@echo " * doxy:         Create Doxygen docs (if doxyfile defined)  "
 	@echo " * init:         Create directories for beggining projects  "
@@ -1689,6 +1772,7 @@ projecthelp:
 	@echo " * install-docs  Install documentation in all formats       "
 	@echo " * install:      Install executables and libraries          "
 	@echo " * installcheck: Run installation tests (if avaiable)       "
+	@echo " * new:          Create C/C++ artifact (see above)          "
 	@echo " * package:      As 'tar', but also with sources and data   "
 	@echo " * tar:          Create .tar with binaries and libraries    "
 	@echo " * uninstall:    Uninstall anything created by any install  "
@@ -1713,9 +1797,18 @@ projecthelp:
 	@echo "                                                            "
 	@echo "Special flags:                                              "
 	@echo "---------------                                             "
+	@echo " * D:            Allow deletion of a C/C++ artifact         "
 	@echo " * U:            Allow uninitilization of the project       "
 	@echo " * V:            Allow the verbose mode                     "
 	@echo " * MORE:         With error, use 'more' to read stderr      "
+	@echo "                                                            "
+	@echo "Management flags                                            "
+	@echo "-----------------                                           "
+	@echo "* NAMESPACE:     Create new directory for namespace         "
+	@echo "* CLASS:         Create new file for a C++ class            "
+	@echo "* C_FILE:        Create ordinaries C files (.c/.h)          "
+	@echo "* CXX_FILE:      Create ordinaries C++ files (.cpp/.hpp)    "
+	@echo "* TEMPLATE:      Create C++ template file (.tcc)            "
 	@echo "                                                            "
 
 ########################################################################

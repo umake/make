@@ -221,38 +221,38 @@ TESTSUF ?= _tests
 ##                             PROGRAMS                               ##
 ########################################################################
 # Compilation
-AR         		:= ar
-AS         		:= nasm
-CC         		:= gcc
-CXX        		:= g++
-RANLIB     		:= ranlib
+AR              := ar
+AS              := nasm
+CC              := gcc
+CXX             := g++
+RANLIB          := ranlib
 
 # Installation
-INSTALL    		:= install
+INSTALL         := install
 INSTALL_DATA    := $(INSTALL)
 INSTALL_PROGRAM := $(INSTALL) -m 644
 
 # File manipulation
-CP         		:= cp -rap
-MV         		:= mv
-RM         		:= rm -f
-TAR        		:= tar -cvf
-ZIP        		:= gzip
-MKDIR      		:= mkdir -p
-RMDIR      		:= rm -rf
-FIND       		:= find
-FIND_FLAGS 		:= -type d -print 2> /dev/null
+CP              := cp -rap
+MV              := mv
+RM              := rm -f
+TAR             := tar -cvf
+ZIP             := gzip
+MKDIR           := mkdir -p
+RMDIR           := rm -rf
+FIND            := find
+FIND_FLAGS      := -type d -print 2> /dev/null
 
 # Documentations
 DOXYGEN         := doxygen
 
 # Parser and Lexer
-LEX        		:= flex
-LEX_CXX    		:= flexc++
-LEXFLAGS   		:= 
-YACC       		:= bison
-YACC_CXX   		:= bisonc++
-YACCFLAGS  		:= -d #-v -t
+LEX             := flex
+LEX_CXX         := flexc++
+LEXFLAGS        := 
+YACC            := bison
+YACC_CXX        := bisonc++
+YACCFLAGS       := -d #-v -t
 
 # Documentation
 MAKEINFO        := makeinfo
@@ -263,7 +263,7 @@ TEXI2PDF        := texi2pdf
 TEXI2PS         := texi2dvi --ps
 
 # Make
-MAKE       		+= --no-print-directory
+MAKE            += --no-print-directory
 
 # Include configuration file if exists
 -include config_os.mk
@@ -1486,7 +1486,7 @@ uninitialize: mainteiner-clean
 endif
 
 ########################################################################
-##                             FUNCIONS                               ##
+##                            FUNCTIONS                               ##
 ########################################################################
 
 ## Directories #########################################################
@@ -1611,12 +1611,12 @@ PURPLE  := \033[1;35m
 CYAN    := \033[1;36m
 WHITE   := \033[1;37m
 RES     := \033[0m
-ERR 	:= \033[0;37m
+ERR     := \033[0;37m
 
 MSG_RM            = "${BLUE}Removing ${RES}$1${RES}"
 MSG_MKDIR         = "${CYAN}Creating directory $1${RES}"
 MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
-				    "sources, headers and configuration files?"
+                    "sources, headers and configuration files?"
 MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"

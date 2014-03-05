@@ -410,7 +410,7 @@ $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 # 1) root: Gets the root directory (first in the path) of a path or file
 # 2) not-root: Given a path or file, take out the root directory of it
 # 3) not: Returns empty if its argument was defined, or T otherwise
-# 4) remove-trailing-bar: Removes the last / of a directory-onl name
+# 4) remove-trailing-bar: Removes the last / of a directory-only name
 # 5) is-cxx: find out if there is a C++ file in its single argument
 define root
 $(foreach s,$1,\
@@ -974,72 +974,6 @@ uninstall-info:
         $(addprefix $(i_infodir)/,$(notdir $(texiinfo))))
 
 ########################################################################
-##                           MANAGEMENT                               ##
-########################################################################
-
-override incbase := $(strip $(firstword $(incdir)))$(if $(IN),/$(IN))
-override srcbase := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
-
-override NAMESPACE := $(notdir $(NAMESPACE))
-override CLASS     := $(basename $(notdir $(CLASS)))
-override C_FILE    := $(basename $(notdir $(C_FILE)))
-override CXX_FILE  := $(basename $(notdir $(CXX_FILE)))
-override TEMPLATE  := $(basename $(notdir $(TEMPLATE)))
-
-ifdef IN
-override IN := $(strip $(foreach d,$(IN),$(patsubst %/,%,$d)))
-endif
-
-.PHONY: new
-new:
-ifdef NAMESPACE
-	$(call mkdir,$(incbase)/$(NAMESPACE))
-	$(call mkdir,$(srcbase)/$(NAMESPACE))
-endif
-ifdef CLASS
-	$(call touch,$(srcbase)/$(CLASS).hpp,$(NOTICE))
-	$(call touch,$(incbase)/$(CLASS).cpp,$(NOTICE))
-endif
-ifdef C_FILE                                                            
-	$(call touch,$(srcbase)/$(C_FILE).h,$(NOTICE))
-	$(call touch,$(incbase)/$(C_FILE).c,$(NOTICE))
-endif
-ifdef CXX_FILE                                                          
-	$(call touch,$(srcbase)/$(CXX_FILE).hpp,$(NOTICE))
-	$(call touch,$(incbase)/$(CXX_FILE).cpp,$(NOTICE))
-endif
-ifdef TEMPLATE
-	$(call touch,$(incbase)/$(TEMPLATE).tcc,$(NOTICE))
-endif
-
-.PHONY: delete
-delete:
-ifndef D
-	@echo $(MSG_DELETE_WARN)
-	@echo $(MSG_DELETE_ALT)
-else
-ifdef NAMESPACE
-	$(call rmdir,$(incbase)/$(NAMESPACE))
-	$(call rmdir,$(srcbase)/$(NAMESPACE))
-endif
-ifdef CLASS
-	$(call rm,$(srcbase)/$(CLASS).hpp)
-	$(call rm,$(incbase)/$(CLASS).cpp)
-endif
-ifdef C_FILE
-	$(call rm,$(srcbase)/$(C_FILE).h)
-	$(call rm,$(incbase)/$(C_FILE).c)
-endif
-ifdef CXX_FILE
-	$(call rm,$(srcbase)/$(CXX_FILE).hpp)
-	$(call rm,$(incbase)/$(CXX_FILE).cpp)
-endif
-ifdef TEMPLATE
-	$(call rm,$(incbase)/$(TEMPLATE).tcc)
-endif
-endif
-
-########################################################################
 ##                          DOCUMENTATION                             ##
 ########################################################################
 
@@ -1486,17 +1420,126 @@ uninitialize: mainteiner-clean
 endif
 
 ########################################################################
+##                              OUTPUT                                ##
+########################################################################
+
+# Hide command execution details
+V   ?= 0
+Q_0 := @
+quiet := $(Q_$V)
+
+O_0 := 1> /dev/null
+E_0 := 2> /dev/null
+NO_OUTPUT := $(O_$V)
+NO_ERROR  := $(E_$V)
+
+# ANSII Escape Colors
+DEF     := \033[0;38m
+RED     := \033[1;31m
+GREEN   := \033[1;32m
+YELLOW  := \033[1;33m
+BLUE    := \033[1;34m
+PURPLE  := \033[1;35m
+CYAN    := \033[1;36m
+WHITE   := \033[1;37m
+RES     := \033[0m
+ERR     := \033[0;37m
+
+MSG_RM            = "${BLUE}Removing ${RES}$1${RES}"
+MSG_MKDIR         = "${CYAN}Creating directory $1${RES}"
+MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
+                    "sources, headers and configuration files?"
+MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
+
+MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}${ostream}${RES}"
+MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
+MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
+
+MSG_RMDIR         = "${BLUE}Removing directory ${CYAN}$1${RES}"
+MSG_RM_NOT_EMPTY  = "${PURPLE}Directory ${WHITE}$1${RES} not empty"
+MSG_RM_EMPTY      = "${PURPLE}Nothing to remove in $1${RES}"
+
+MSG_TEXI_FILE     = "${DEF}Generating $1 file ${WHITE}$@${RES}"
+MSG_TEXI_DOCS     = "${BLUE}Generating docs in ${WHITE}$@${RES}"
+
+MSG_DOXY_DOCS     = "${YELLOW}Generating Doxygen docs${RES}"
+MSG_DOXY_FILE     = "${BLUE}Generating Doxygen file ${WHITE}$@${RES}"
+MSG_DOXY_MAKE     = "${BLUE}Generating Doxygen config ${WHITE}$@${RES}"
+
+MSG_INSTALL_BIN   = "${DEF}Installing binary file ${GREEN}$b${RES}"
+MSG_UNINSTALL_BIN = "${DEF}Uninstalling binary file ${GREEN}$b${RES}"
+MSG_INSTALL_DOC   = "${DEF}Installing document file ${BLUE}$f${RES}"
+MSG_UNINSTALL_DOC = "${DEF}Uninstalling document file ${BLUE}$f${RES}"
+
+MSG_LEX           = "${PURPLE}Generating scanner $@${RES}"
+MSG_LEX_NONE      = "${PURPLE}No auto-generated lexers${RES}"
+MSG_LEX_COMPILE   = "${DEF}Compiling scanner ${WHITE}$@${RES}"
+MSG_YACC          = "${PURPLE}Generating parser ${BLUE}$@${RES}"
+MSG_YACC_NONE     = "${PURPLE}No auto-generated parsers${RES}"
+MSG_YACC_COMPILE  = "${DEF}Compiling parser ${WHITE}$@${RES}"
+
+MSG_TEST          = "${BLUE}Testing ${WHITE}$(notdir $<)${RES}"
+MSG_TEST_COMPILE  = "${DEF}Generating test executable"\
+                    "${GREEN}$(notdir $(strip $@))${RES}"
+MSG_TEST_FAILURE  = "${CYAN}Test $(notdir $@) not passed${RES}"
+MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
+
+MSG_STATLIB       = "${RED}Generating static library $@${RES}"
+MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
+MSG_MAKETGZ       = "${RED}Ziping file ${BLUE}$@${RES}"
+
+MSG_ASM_COMPILE   = "${DEF}Generating Assembly artifact ${WHITE}$@${RES}"
+
+MSG_C_COMPILE     = "${DEF}Generating C artifact ${WHITE}$@${RES}"
+MSG_C_LINKAGE     = "${YELLOW}Generating C executable ${GREEN}$@${RES}"
+MSG_C_SHRDLIB     = "${RED}Generating C shared library $@${RES}"
+MSG_C_LIBCOMP     = "${DEF}Generating C library artifact"\
+                    "${YELLOW}$@${RES}"
+
+MSG_CXX_COMPILE   = "${DEF}Generating C++ artifact ${WHITE}$@${RES}"
+MSG_CXX_LINKAGE   = "${YELLOW}Generating C++ executable ${GREEN}$@${RES}"
+MSG_CXX_SHRDLIB   = "${RED}Generating C++ shared library $@${RES}"
+MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
+                    "${YELLOW}$@${RES}"
+
+########################################################################
 ##                            FUNCTIONS                               ##
 ########################################################################
 
-## Directories #########################################################
+## DEPENDENCIES ########################################################
+# Function: make-depend
+# @param $1 Source name (with path)
+# @param $2 Main target to be analised
+# @param $3 Dependency file name
+define make-depend
+$(CXX) -MM                    \
+	-MF $(depdir)/$3$(depext) \
+	-MP                       \
+	-MT $2                    \
+	$(cxxlibs)                \
+	$(cxxflags)               \
+	$1
+endef
+
+## DIRECTORIES #########################################################
 $(sort $(bindir) $(sbindir) $(execdir) ):
 	$(call mkdir,$@)
 
 $(sort $(objdir) $(depdir) $(libdir) $(docdir) ):
 	$(call mkdir,$@)
 
-## REMOVES #############################################################
+define mkdir
+	$(if $(strip $(patsubst .,,$1)), $(call phony-status,$(MSG_MKDIR)) )
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(MKDIR) $1              )
+	$(if $(strip $(patsubst .,,$1)), $(call phony-ok,$(MSG_MKDIR))     )
+endef
+
+define mksubdir
+$(if $(strip $(patsubst .,,$1)),\
+	$(quiet) $(MKDIR) $1/$(strip $(call not-root,$(dir $2))))
+endef
+
+## REMOTION ############################################################
 define srm
 	$(quiet) $(RM) $1 $(NO_ERROR)
 endef
@@ -1550,126 +1593,7 @@ define rm-if-empty
     )
 endef
 
-## MKDIR ###############################################################
-define mkdir
-	$(if $(strip $(patsubst .,,$1)), $(call phony-status,$(MSG_MKDIR)) )
-	$(if $(strip $(patsubst .,,$1)), $(quiet) $(MKDIR) $1              )
-	$(if $(strip $(patsubst .,,$1)), $(call phony-ok,$(MSG_MKDIR))     )
-endef
-
-define mksubdir
-$(if $(strip $(patsubst .,,$1)),\
-	$(quiet) $(MKDIR) $1/$(strip $(call not-root,$(dir $2))))
-endef
-
-define touch
-$(if $(wildcard $(strip $1)*),,\
-    $(call phony-status,$(MSG_TOUCH)))
-$(if $(wildcard $(strip $1)*),,\
-    $(if $(strip $2),\
-        $(quiet) cat $2 > $1,\
-        $(quiet) touch $1))
-$(if $(wildcard $(strip $1)*),,\
-    $(call phony-ok,$(MSG_TOUCH)))
-endef
-
-# Function: make-depend
-# @param $1 Source name (with path)
-# @param $2 Main target to be analised
-# @param $3 Dependency file name
-define make-depend
-$(CXX) -MM                    \
-	-MF $(depdir)/$3$(depext) \
-	-MP                       \
-	-MT $2                    \
-	$(cxxlibs)                \
-	$(cxxflags)               \
-	$1
-endef
-
-########################################################################
-##                              OUTPUT                                ##
-########################################################################
-
-# Hide command execution details
-V   ?= 0
-Q_0 := @
-quiet := $(Q_$V)
-
-O_0 := 1> /dev/null
-E_0 := 2> /dev/null
-NO_OUTPUT := $(O_$V)
-NO_ERROR  := $(E_$V)
-
-# ANSII Escape Colors
-DEF     := \033[0;38m
-RED     := \033[1;31m
-GREEN   := \033[1;32m
-YELLOW  := \033[1;33m
-BLUE    := \033[1;34m
-PURPLE  := \033[1;35m
-CYAN    := \033[1;36m
-WHITE   := \033[1;37m
-RES     := \033[0m
-ERR     := \033[0;37m
-
-MSG_RM            = "${BLUE}Removing ${RES}$1${RES}"
-MSG_MKDIR         = "${CYAN}Creating directory $1${RES}"
-MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
-                    "sources, headers and configuration files?"
-MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
-
-MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
-MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
-MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
-
-MSG_RMDIR         = "${BLUE}Removing directory ${CYAN}$1${RES}"
-MSG_RM_NOT_EMPTY  = "${PURPLE}Directory ${WHITE}$1${RES} not empty"
-MSG_RM_EMPTY      = "${PURPLE}Nothing to remove in $1${RES}"
-
-MSG_TEXI_FILE     = "${DEF}Generating $1 file ${WHITE}$@${RES}"
-MSG_TEXI_DOCS     = "${BLUE}Generating docs in ${WHITE}$@${RES}"
-
-MSG_DOXY_DOCS     = "${YELLOW}Generating Doxygen docs${RES}"
-MSG_DOXY_FILE     = "${BLUE}Generating Doxygen file ${WHITE}$@${RES}"
-MSG_DOXY_MAKE     = "${BLUE}Generating Doxygen config ${WHITE}$@${RES}"
-
-MSG_INSTALL_BIN   = "${DEF}Installing binary file ${GREEN}$b${RES}"
-MSG_UNINSTALL_BIN = "${DEF}Uninstalling binary file ${GREEN}$b${RES}"
-MSG_INSTALL_DOC   = "${DEF}Installing document file ${BLUE}$f${RES}"
-MSG_UNINSTALL_DOC = "${DEF}Uninstalling document file ${BLUE}$f${RES}"
-
-MSG_LEX           = "${PURPLE}Generating scanner $@${RES}"
-MSG_LEX_NONE      = "${PURPLE}No auto-generated lexers${RES}"
-MSG_LEX_COMPILE   = "${DEF}Compiling scanner ${WHITE}$@${RES}"
-MSG_YACC          = "${PURPLE}Generating parser ${BLUE}$@${RES}"
-MSG_YACC_NONE     = "${PURPLE}No auto-generated parsers${RES}"
-MSG_YACC_COMPILE  = "${DEF}Compiling parser ${WHITE}$@${RES}"
-
-MSG_TEST          = "${BLUE}Testing ${WHITE}$(notdir $<)${RES}"
-MSG_TEST_COMPILE  = "${DEF}Generating test executable"\
-                    "${GREEN}$(notdir $(strip $@))${RES}"
-MSG_TEST_FAILURE  = "${CYAN}Test $(notdir $@) not passed${RES}"
-MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
-
-MSG_STATLIB       = "${RED}Generating static library $@${RES}"
-MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
-MSG_MAKETGZ       = "${RED}Ziping file ${BLUE}$@${RES}"
-
-MSG_ASM_COMPILE   = "${DEF}Generating Assembly artifact ${WHITE}$@${RES}"
-
-MSG_C_COMPILE     = "${DEF}Generating C artifact ${WHITE}$@${RES}"
-MSG_C_LINKAGE     = "${YELLOW}Generating C executable ${GREEN}$@${RES}"
-MSG_C_SHRDLIB     = "${RED}Generating C shared library $@${RES}"
-MSG_C_LIBCOMP     = "${DEF}Generating C library artifact"\
-                    "${YELLOW}$@${RES}"
-
-MSG_CXX_COMPILE   = "${DEF}Generating C++ artifact ${WHITE}$@${RES}"
-MSG_CXX_LINKAGE   = "${YELLOW}Generating C++ executable ${GREEN}$@${RES}"
-MSG_CXX_SHRDLIB   = "${RED}Generating C++ shared library $@${RES}"
-MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
-                    "${YELLOW}$@${RES}"
-
+## STATUS ##############################################################
 ifneq ($(strip $(quiet)),)
     define phony-status
     	@echo -n $1 "... "
@@ -1696,6 +1620,7 @@ else\
 fi
 endef
 
+## ERROR ###############################################################
 ifndef MORE
     define ERROR 
     2>&1 | sed '1 i error' | sed 's/^/> /' | sed ''/"> error"/s//`printf "${ERR}"`/''
@@ -1711,6 +1636,178 @@ define test-error
       "${RED}Aborting status: $$?${RES}" && exit 1)
 endef
 
+## TEXT ################################################################
+define uc
+$(shell echo $1 | tr "a-z" "A-Z")
+endef
+
+define lc
+$(shell echo $1 | tr "A-Z" "a-z")
+endef
+
+# Function: select 
+# Define which ostream should be used
+define select
+$(eval ostream = \
+    $(strip $(if $(strip $(subst stdout,,$(strip $1))),$1,)))
+endef
+
+# Function: select 
+# Add a text in the end of a ostream
+define cat
+$(if $(strip $(wildcard $(ostream)*)),,\
+    @echo $1 $(if $(strip $(ostream)),>> $(ostream)))
+endef
+
+# Function: touch
+# Create a new file based on a model
+# @param $1 file to be used as a model
+define touch
+$(if $(wildcard $(ostream)*),,\
+    $(call phony-status,$(MSG_TOUCH)))
+$(if $(wildcard $(ostream)*),,\
+    $(if $(strip $1),\
+        $(quiet) cat $1 > $(ostream),\
+        $(quiet) touch $(ostream)))
+$(if $(wildcard $(ostream)*),,\
+    $(call phony-ok,$(MSG_TOUCH)))
+endef
+
+########################################################################
+##                           MANAGEMENT                               ##
+########################################################################
+
+# Namespace/Module variable
+# ===========================
+# 1) Remove trailing bars if it is a directory-only name
+# 2) If the name includes a root src/inc directory, remove-it.
+# 3) Manipulates IN to be used in a #ifndef C/C++ preproc directive
+ifdef IN
+#------------------------------------------------------------------[ 1 ]
+override IN := $(strip $(call remove-trailing-bar,$(IN)))
+#------------------------------------------------------------------[ 2 ]
+override IN := $(strip $(or $(strip $(foreach d,$(srcdir) $(incdir),\
+                   $(if $(strip $(patsubst $d%,%,$(call root,$(IN)))),,\
+                       $(call not-root,$(IN))\
+               ))),$(IN)))
+#------------------------------------------------------------------[ 3 ]
+indef       := $(strip $(call uc,$(subst /,_,$(strip $(IN)))))_
+endif
+
+# Path variables
+# ================
+# Auxiliar variables to the default place to create/remove 
+# files created by this makefile (usually the first inc/src dirs)
+override incbase   := $(strip $(firstword $(incdir)))$(if $(IN),/$(IN))
+override srcbase   := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
+
+# Artifacts
+# ===========
+# C/C++ Artifacts that may be created by this Makefile
+override NAMESPACE := $(notdir $(NAMESPACE))
+override CLASS     := $(basename $(notdir $(CLASS)))
+override C_FILE    := $(basename $(notdir $(C_FILE)))
+override CXX_FILE  := $(basename $(notdir $(CXX_FILE)))
+override TEMPLATE  := $(basename $(notdir $(TEMPLATE)))
+
+.PHONY: new
+new:
+ifdef NAMESPACE
+	$(call mkdir,$(incbase)/$(NAMESPACE))
+	$(call mkdir,$(srcbase)/$(NAMESPACE))
+endif
+ifdef CLASS
+	$(call select,$(incbase)/$(CLASS).hpp)
+	$(call touch,$(NOTICE))
+	$(call cat,'                                                      ')
+	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CLASS))_DEFINED       ')
+	$(call cat,'#define HPP_$(indef)$(call uc,$(CLASS))_DEFINED       ')
+	$(call cat,'                                                      ')
+	$(call cat,'class $(CLASS)                                        ')
+	$(call cat,'{                                                     ')
+	$(call cat,'                                                      ')
+	$(call cat,'};                                                    ')
+	$(call cat,'                                                      ')
+	$(call cat,'#endif                                                ')
+	
+	$(call select,$(srcbase)/$(CLASS).cpp)
+	$(call touch,$(NOTICE))
+	$(call cat,'                                                      ')
+	$(call cat,'// Libraries                                          ')
+	$(call cat,'#include "$(CLASS).hpp"                               ')
+	$(call cat,'                                                      ')
+	
+	$(call select,stdout)
+endif
+ifdef C_FILE                                                            
+	$(call select,$(incbase)/$(C_FILE).h)
+	$(call touch,$(NOTICE))
+	$(call cat,'                                                      ')
+	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_FILE))_DEFINED        ')
+	$(call cat,'#define H_$(indef)$(call uc,$(C_FILE))_DEFINED        ')
+	$(call cat,'                                                      ')
+	$(call cat,'#endif                                                ')
+	
+	$(call select,$(srcbase)/$(C_FILE).c)
+	$(call touch,$(NOTICE))
+	$(call cat,'                                                      ')
+	$(call cat,'// Libraries                                          ')
+	$(call cat,'#include "$(C_FILE).hpp"                              ')
+	$(call cat,'                                                      ')
+	
+	$(call select,stdout)
+endif
+ifdef CXX_FILE                                                          
+	$(call select,$(incbase)/$(CXX_FILE).hpp)
+	$(call touch,$(NOTICE))
+	$(call cat,'                                                      ')
+	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_FILE))_DEFINED    ')
+	$(call cat,'#define HPP_$(indef)$(call uc,$(CXX_FILE))_DEFINED    ')
+	$(call cat,'                                                      ')
+	$(call cat,'#endif                                                ')
+	
+	$(call select,$(srcbase)/$(CXX_FILE).cpp)
+	$(call touch,$(NOTICE))
+	$(call cat,'                                                      ')
+	$(call cat,'// Libraries                                          ')
+	$(call cat,'#include "$(CXX_FILE).hpp"                            ')
+	$(call cat,'                                                      ')
+	
+	$(call select,stdout)
+endif
+ifdef TEMPLATE
+	$(call select,$(srcbase)/$(TEMPLATE).tcc)
+	$(call touch,$(NOTICE))
+	$(call select,stdout)
+endif
+
+.PHONY: delete
+delete:
+ifndef D
+	@echo $(MSG_DELETE_WARN)
+	@echo $(MSG_DELETE_ALT)
+else
+ifdef NAMESPACE
+	$(call rmdir,$(incbase)/$(NAMESPACE))
+	$(call rmdir,$(srcbase)/$(NAMESPACE))
+endif
+ifdef CLASS
+	$(call rm,$(incbase)/$(CLASS).hpp)
+	$(call rm,$(srcbase)/$(CLASS).cpp)
+endif
+ifdef C_FILE
+	$(call rm,$(incbase)/$(C_FILE).h)
+	$(call rm,$(srcbase)/$(C_FILE).c)
+endif
+ifdef CXX_FILE
+	$(call rm,$(incbase)/$(CXX_FILE).hpp)
+	$(call rm,$(srcbase)/$(CXX_FILE).cpp)
+endif
+ifdef TEMPLATE
+	$(call rm,$(incbase)/$(TEMPLATE).tcc)
+endif
+endif
+
 ########################################################################
 ##                         HELP AND CONFIGS                           ##
 ########################################################################
@@ -1723,26 +1820,32 @@ config:
 	@echo "############################################################"
 	@echo "                                                            "
 	@echo "# Project setting                                           "
-	@echo "PROJECT := # Project name. Default is 'Default'             "
-	@echo "VERSION := # Version. Default is '1.0'                      "
+	@echo "PROJECT  := # Project name. Default is 'Default'            "
+	@echo "VERSION  := # Version. Default is '1.0'                     "
 	@echo "                                                            "
 	@echo "# Program settings                                          "
-	@echo "BIN     := # Binaries' names. If a subdir of the source     "
-	@echo "           # directories has the same name of this binary,  "
-	@echo "           # this dir and all subdir will be compiled just  "
-	@echo "           # to this specific binary.                       "
-	@echo "SBIN    := # Same as above, but for shell only binaries.    "
-	@echo "LIBEXEC := # Again, but for binaries runnable only by other "
-	@echo "           # programs, not normal users.                    "
+	@echo "BIN      := # Binaries' names. If a subdir of the source    "
+	@echo "            # directories has the same name of this binary, "
+	@echo "            # this dir and all subdir will be compiled      "
+	@echo "            # only for this specific binary.                "
+	@echo "SBIN     := # Same as above, but for shell-only binaries.   "
+	@echo "LIBEXEC  := # Again, but for binaries runnable only by      "
+	@echo "            # other programs, not normal users.             "
 	@echo "                                                            "
-	@echo "ARLIB   := # Static/Shared libraries' names. If one is a    "
-	@echo "SHRLIB  := # lib, all source files will make the library.   "
+	@echo "ARLIB    := # Static/Shared libraries' names. If one is a   "
+	@echo "SHRLIB   := # lib, all source files will make the library.  "
 	@echo "                                                            "
 	@echo "# Flags                                                     "
-	@echo "ASFLAGS   := # Assembly Flags                               "
-	@echo "CFLAGS    := # C Flags                                      "
-	@echo "CXXFLAGS  := # C++ Flags                                    "
-	@echo "LDFLAGS   := # Linker flags                                 "
+	@echo "ASFLAGS  := # Assembly Flags                                "
+	@echo "CFLAGS   := # C Flags                                       "
+	@echo "CXXFLAGS := # C++ Flags                                     "
+	@echo "LDFLAGS  := # Linker flags                                  "
+	@echo "                                                            "
+	@echo "# Documentation                                             "
+	@echo "LICENSE  := # File with a License (def: LICENSE)            "
+	@echo "NOTICE   := # File with a Notice of the License, to be used "
+	@echo "            # in the beggining of any file (def: NOTICE).   "
+	@echo "DOXYFILE := # Config file for Doxygen (def: Doxyfile)       "
 	@echo "                                                            "
 
 .PHONY: help

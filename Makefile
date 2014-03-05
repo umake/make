@@ -198,7 +198,7 @@ DEPEXT  ?= .d
 
 # Binary extensions
 OBJEXT  ?= .o
-BINEXT  ?= 
+BINEXT  ?=
 
 # Documentation extensions
 TEXIEXT ?= .texi
@@ -358,6 +358,7 @@ psext   := $(strip $(sort $(PSEXT)))
 
 incext := $(hext) $(hxxext)
 srcext := $(cext) $(cxxext)
+docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 
 # Check all extensions
 allext := $(incext) $(srcext) $(asmext) $(libext) 
@@ -859,6 +860,15 @@ init:
 	$(call mkdir,$(incdir))
 	$(call mkdir,$(docdir))
 	$(quiet) $(MAKE) config > Config.mk
+	$(quiet) $(MAKE) gitignore > .gitignore
+
+.PHONY: standard
+standard:
+	$(call mv,$(docext),$(docdir))
+	$(call mv,$(srcext) $(asmext) $(lexext) $(yaccext),$(srcdir))
+	$(call mv,$(incext),$(incdir))
+	$(call mv,$(objext),$(objdir))
+	$(call mv,$(libext),$(libdir))
 
 ########################################################################
 ##                           INSTALLATION                             ##
@@ -1451,6 +1461,9 @@ MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
                     "sources, headers and configuration files?"
 MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 
+MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
+MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
+
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}${ostream}${RES}"
 MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
 MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
@@ -1537,6 +1550,22 @@ endef
 define mksubdir
 $(if $(strip $(patsubst .,,$1)),\
 	$(quiet) $(MKDIR) $1/$(strip $(call not-root,$(dir $2))))
+endef
+
+define mv
+$(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
+    $(if $(strip $(wildcard $(firstword $2/*))),,\
+        $(call mkdir,$(firstword $2))\
+))
+$(call phony-status,$(MSG_MOVE))
+$(quiet) $(strip $(foreach e,$(strip $1),\
+    $(if $(strip $(wildcard *$e)),\
+        $(MV) $(wildcard *$e) $(firstword $2); )\
+))
+$(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
+    $(call phony-ok,$(MSG_MOVE)),\
+	$(call phony-ok,$(MSG_NO_MOVE))\
+)
 endef
 
 ## REMOTION ############################################################
@@ -1848,6 +1877,31 @@ config:
 	@echo "DOXYFILE := # Config file for Doxygen (def: Doxyfile)       "
 	@echo "                                                            "
 
+.PHONY: gitignore
+gitignore:
+	@echo "                                                            "
+	@echo "# Automatically generated directories                       "
+	@echo "#======================================                     "
+	@$(foreach d,$(depdir),echo $d/; )
+	@$(foreach d,$(objdir),echo $d/; )
+	@$(foreach d,$(libdir),echo $d/; )
+	@$(foreach d,$(bindir),echo $d/; )
+	@$(foreach d,$(sbindir),echo $d/; )
+	@$(foreach d,$(execdir),echo $d/; )
+	@$(foreach d,$(distdir),echo $d/; )
+	@echo "                                                            "
+	@echo "# Objects, Libraries and Binaries                           "
+	@echo "#==================================                         "
+	@$(foreach e,$(objext),echo *$e; )
+	@$(foreach e,$(libext),echo *$e; )
+	@$(foreach e,$(binext),echo *$e; )
+	@echo "                                                            "
+	@echo "# Make auxiliars                                            "
+	@echo "#=================                                          "
+	@echo $(if $(strip $(doxyfile)),$(docdir)/$(doxyfile).mk)
+	@$(foreach e,$(depext),echo *$e; )
+	@echo "                                                            "
+
 .PHONY: help
 help:
 	@echo "                                                            "
@@ -1870,6 +1924,7 @@ projecthelp:
 	@echo " * delete:       Remove C/C++ artifact (see above)          "
 	@echo " * dist:         Create .tar.gz with binaries and libraries "
 	@echo " * doxy:         Create Doxygen docs (if doxyfile defined)  "
+	@echo " * gitignore:    Outputs .gitignore model for user          "
 	@echo " * init:         Create directories for beggining projects  "
 	@echo " * install-*     Install docs in info, html, dvi, pdf or ps "
 	@echo " * install-docs  Install documentation in all formats       "
@@ -1877,6 +1932,7 @@ projecthelp:
 	@echo " * installcheck: Run installation tests (if avaiable)       "
 	@echo " * new:          Create C/C++ artifact (see above)          "
 	@echo " * package:      As 'tar', but also with sources and data   "
+	@echo " * standard:     Move files to their standard directories   "
 	@echo " * tar:          Create .tar with binaries and libraries    "
 	@echo " * uninstall:    Uninstall anything created by any install  "
 	@echo "                                                            "

@@ -1954,6 +1954,7 @@ gitignore:
 	@echo "                                                            "
 	@echo "# Make auxiliars                                            "
 	@echo "#=================                                          "
+	@echo $(if $(strip $(doxyfile)),$(docdir)/doxygen/)
 	@echo $(if $(strip $(doxyfile)),$(docdir)/$(doxyfile).mk)
 	@$(foreach e,$(depext),echo *$e; )
 	@echo "                                                            "

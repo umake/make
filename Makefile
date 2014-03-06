@@ -237,7 +237,9 @@ CP              := cp -rap
 MV              := mv
 RM              := rm -f
 TAR             := tar -cvf
-ZIP             := gzip
+ZIP             := zip
+GZIP            := gzip
+BZIP2           := bzip2
 MKDIR           := mkdir -p
 RMDIR           := rm -rf
 FIND            := find
@@ -835,17 +837,13 @@ $(foreach doc,info html dvi pdf ps,\
 all: $(binall)
 
 .PHONY: package
-package: dirs := $(srcdir) $(incdir) $(datadir)
-package: dirs += $(if $(strip $(lib)),$(libdir)) $(bindir)
-package: $(distdir)/$(PROJECT)-$(VERSION)_src.tar.gz
+package: package-tar.gz
 
 .PHONY: dist
-dist: dirs := $(if $(strip $(lib)),$(libdir)) $(bindir)
-dist: $(distdir)/$(PROJECT)-$(VERSION).tar.gz
+dist: dist-tar.gz
 
 .PHONY: tar
-tar: dirs := $(if $(strip $(lib)),$(libdir)) $(bindir)
-tar: $(distdir)/$(PROJECT)-$(VERSION).tar
+tar: dist-tar
 
 .PHONY: check
 check: $(testrun)
@@ -1031,23 +1029,6 @@ endif # ifneq($(strip $(doxyfile)),) ####
 ########################################################################
 ##                              RULES                                 ##
 ########################################################################
-
-%.tar.gz: %.tar
-	$(call status,$(MSG_MAKETGZ))
-	$(quiet) $(ZIP) $<
-	$(call ok,$(MSG_MAKETGZ),$@)
-
-%.tar: tarfile = $(notdir $@)
-%.tar: $(binall)
-	$(call mkdir,$(dir $@))
-	$(quiet) $(MKDIR) $(tarfile)
-	$(quiet) $(CP) $(dirs) $(tarfile)
-	
-	$(call vstatus,$(MSG_MAKETAR))
-	$(quiet) $(TAR) $@ $(tarfile)
-	$(call ok,$(MSG_MAKETAR),$@)
-	
-	$(quiet) $(RMDIR) $(tarfile)
 
 #======================================================================#
 # Function: scanner-factory                                            #
@@ -1375,6 +1356,70 @@ endef
 $(foreach type,html dvi pdf ps,\
     $(eval $(call install-texinfo-factory,$(type))))
 
+#======================================================================#
+# Function: packsyst-factory                                           #
+# @param  $1 Extension of the file package system                      #
+# @param  $2 Part of the name of the var with text to be outputed      #
+# @param  $3 Program to be used to generate the package                #
+# @return Target to create a package with dirs specified by 'dirs' var #
+#======================================================================#
+define packsyst-factory
+%.$1: packdir = $$(notdir $$@)_dir
+%.$1: packdep = $$(addprefix $$(packdir)/,\
+        $$(foreach f,$$(dirs),$$(call rwildcard,$$f,*)))
+%.$1: $$(binall)
+	$$(call mkdir,$$(dir $$@))
+	$$(quiet) $$(MKDIR) $$(packdir)
+	$$(quiet) $$(CP) $$(dirs) $$(packdir)
+	
+	$$(call vstatus,$$(MSG_MAKE$2))
+	$$(quiet) $3 $$@ $$(packdep)
+	$$(call ok,$$(MSG_MAKE$2),$$@)
+	
+	$$(quiet) $$(RMDIR) $$(packdir)
+endef
+$(eval $(call packsyst-factory,tar,TAR,$(TAR)))
+$(eval $(call packsyst-factory,zip,ZIP,$(ZIP)))
+
+#======================================================================#
+# Function: compression-factory                                        #
+# @param  $1 Extension to be added in the compressed file              #
+# @param  $2 Extension of the uncompressed file (for dependency)       #
+# @param  $3 Part of the name of the var with text to be outputed      #
+# @param  $4 Program to be used to generate the compressed package     #
+# @return Target to create a compressed package from uncompressed one  #
+#======================================================================#
+define compression-factory
+%.$1: %.$2
+	$$(call status,$$(MSG_MAKE$3))
+	$$(quiet) $4 $$< $$(ERROR)
+	$$(call ok,$$(MSG_MAKE$3),$$@)
+endef
+$(eval $(call compression-factory,tgz,tar,TGZ,$(GZIP)))
+$(eval $(call compression-factory,tbz2,tar,TBZ2,$(BZIP2)))
+$(eval $(call compression-factory,tar.gz,tar,TGZ,$(GZIP)))
+$(eval $(call compression-factory,tar.bz2,tar,TBZ2,$(BZIP2)))
+
+#======================================================================#
+# Function: dist-factory                                               #
+# @param  $1 Extension of the file package system                      #
+# @return Phony targets to create a binary distribution and a source   #
+#         distribution of the project                                  #
+#======================================================================#
+define dist-factory
+.PHONY: package-$1
+package-$1: dirs := $$(srcdir) $$(incdir) $$(datadir)
+package-$1: dirs += $$(docdir) $$(LICENSE) $$(NOTICE)
+package-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir) 
+package-$1: $$(distdir)/$$(PROJECT)-$$(VERSION)_src.$1
+
+.PHONY: dist-$1
+dist-$1: dirs := $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir)
+dist-$1: $$(distdir)/$$(PROJECT)-$$(VERSION).$1
+endef
+$(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
+    $(eval $(call dist-factory,$e)))
+
 ########################################################################
 ##                              CLEAN                                 ##
 ########################################################################
@@ -1444,6 +1489,7 @@ NO_OUTPUT := $(O_$V)
 NO_ERROR  := $(E_$V)
 
 # ANSII Escape Colors
+ifndef NO_COLORS
 DEF     := \033[0;38m
 RED     := \033[1;31m
 GREEN   := \033[1;32m
@@ -1454,6 +1500,7 @@ CYAN    := \033[1;36m
 WHITE   := \033[1;37m
 RES     := \033[0m
 ERR     := \033[0;37m
+endif
 
 MSG_RM            = "${BLUE}Removing ${RES}$1${RES}"
 MSG_MKDIR         = "${CYAN}Creating directory $1${RES}"
@@ -1499,7 +1546,11 @@ MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
 
 MSG_STATLIB       = "${RED}Generating static library $@${RES}"
 MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
-MSG_MAKETGZ       = "${RED}Ziping file ${BLUE}$@${RES}"
+MSG_MAKEZIP       = "${RED}Generating zip file ${BLUE}$@${RES}"
+MSG_MAKETGZ       = "${YELLOW}Compressing file ${BLUE}$@"\
+                    "${YELLOW}(gzip)${RES}"
+MSG_MAKETBZ2      = "${YELLOW}Compressing file ${BLUE}$@"\
+                    "${YELLOW}(bzip2)${RES}"
 
 MSG_ASM_COMPILE   = "${DEF}Generating Assembly artifact ${WHITE}$@${RES}"
 
@@ -1623,6 +1674,10 @@ define rm-if-empty
 endef
 
 ## STATUS ##############################################################
+ifdef SILENT
+V := 1
+else
+
 ifneq ($(strip $(quiet)),)
     define phony-status
     	@echo -n $1 "... "
@@ -1645,10 +1700,11 @@ define ok
 @if [ -f $2 ]; then\
 	echo "\r${GREEN}[OK]${RES}" $1 "     ";\
 else\
-	echo "\r${RED}[ERROR]${RES}" $1 "     "; exit 1;\
+	echo "\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}"; exit 1;\
 fi
 endef
 
+endif
 ## ERROR ###############################################################
 ifndef MORE
     define ERROR 
@@ -1922,16 +1978,18 @@ projecthelp:
 	@echo " * check:        Compile and run Unit Tests                 "
 	@echo " * config:       Outputs Config.mk model for user's options "
 	@echo " * delete:       Remove C/C++ artifact (see above)          "
+	@echo " * dist-*:       As 'dist', with many types of compression  "
 	@echo " * dist:         Create .tar.gz with binaries and libraries "
 	@echo " * doxy:         Create Doxygen docs (if doxyfile defined)  "
 	@echo " * gitignore:    Outputs .gitignore model for user          "
 	@echo " * init:         Create directories for beggining projects  "
-	@echo " * install-*     Install docs in info, html, dvi, pdf or ps "
-	@echo " * install-docs  Install documentation in all formats       "
+	@echo " * install-*:    Install docs in info, html, dvi, pdf or ps "
+	@echo " * install-docs: Install documentation in all formats       "
 	@echo " * install:      Install executables and libraries          "
 	@echo " * installcheck: Run installation tests (if avaiable)       "
 	@echo " * new:          Create C/C++ artifact (see above)          "
-	@echo " * package:      As 'tar', but also with sources and data   "
+	@echo " * package-*:    As 'package', with many compressions       "
+	@echo " * package:      As 'dist', but also with sources and data  "
 	@echo " * standard:     Move files to their standard directories   "
 	@echo " * tar:          Create .tar with binaries and libraries    "
 	@echo " * uninstall:    Uninstall anything created by any install  "
@@ -1975,8 +2033,8 @@ projecthelp:
 ########################################################################
 
 define prompt
-	@echo "${YELLOW}"$1"${RES}" \
-          $(if $(strip $2),"$(strip $2)","${RED}Empty${RES}")
+@echo "${YELLOW}"$1"${RES}" \
+	  $(if $(strip $2),"$(strip $2)","${RED}Empty${RES}")
 endef
 
 .PHONY: dump

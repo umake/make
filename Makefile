@@ -2019,6 +2019,8 @@ projecthelp:
 	@echo " * U:            Allow uninitilization of the project       "
 	@echo " * V:            Allow the verbose mode                     "
 	@echo " * MORE:         With error, use 'more' to read stderr      "
+	@echo " * SILENT:       Just output the plain commands as executed "
+	@echo " * NO_COLORS:    Outputs are made without any color         "
 	@echo "                                                            "
 	@echo "Management flags                                            "
 	@echo "-----------------                                           "

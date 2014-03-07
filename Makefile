@@ -66,8 +66,8 @@ ARFLAGS   ?= -rcv
 SOFLAGS   ?= -shared 
 
 # Include configuration file if exists
--include $(if $(strip $(wildcard config.mk*)),config.mk)
--include $(if $(strip $(wildcard Config.mk*)),Config.mk)
+-include config.mk
+-include Config.mk
 
 ########################################################################
 ##                            DIRECTORIES                             ##
@@ -268,8 +268,8 @@ TEXI2PS         := texi2dvi --ps
 MAKE            += --no-print-directory
 
 # Include configuration file if exists
--include $(if $(wildcard config_os.mk*),config_os.mk)
--include $(if $(wildcard Config_os.mk*),Config_os.mk)
+-include config_os.mk
+-include Config_os.mk
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
@@ -882,10 +882,6 @@ check: $(testrun)
 .PHONY: nothing
 nothing:
 
-# Default target: return error
-%::
-	$(call exit-with-error,$(MSG_CMD_UNRECOG))
-
 ########################################################################
 ##                          INITIALIZATION                            ##
 ########################################################################
@@ -1194,7 +1190,7 @@ $(foreach E,$(cxxext),\
     $(eval $(call compile-cpp,$E,$(testdir)/,$(testdir)/)))
 
 # Include dependencies for each src extension
--include $(foreach d,$(depall),$(if $(strip $(wildcard $d)),$d))
+-include $(depall)
 
 #======================================================================#
 # Function: compile-sharedlib-linux-c                                  #

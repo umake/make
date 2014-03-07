@@ -66,8 +66,8 @@ ARFLAGS   ?= -rcv
 SOFLAGS   ?= -shared 
 
 # Include configuration file if exists
--include config.mk
--include Config.mk
+-include $(if $(strip $(wildcard config.mk*)),config.mk)
+-include $(if $(strip $(wildcard Config.mk*)),Config.mk)
 
 ########################################################################
 ##                            DIRECTORIES                             ##
@@ -268,8 +268,8 @@ TEXI2PS         := texi2dvi --ps
 MAKE            += --no-print-directory
 
 # Include configuration file if exists
--include config_os.mk
--include Config_os.mk
+-include $(if $(wildcard config_os.mk*),config_os.mk)
+-include $(if $(wildcard Config_os.mk*),Config_os.mk)
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
@@ -882,6 +882,14 @@ check: $(testrun)
 .PHONY: nothing
 nothing:
 
+# Default target: return error
+%::
+	$(call exit-with-error,$(MSG_CMD_UNRECOG))
+
+########################################################################
+##                          INITIALIZATION                            ##
+########################################################################
+
 .PHONY: init
 init:
 	$(call mkdir,$(srcdir))
@@ -892,11 +900,12 @@ init:
 
 .PHONY: standard
 standard:
-	$(call mv,$(docext),$(docdir))
-	$(call mv,$(srcext) $(asmext) $(lexext) $(yaccext),$(firstword srcdir))
-	$(call mv,$(incext),$(firstword incdir))
 	$(call mv,$(objext),$(objdir))
 	$(call mv,$(libext),$(firstword libdir))
+	$(call mv,$(docext),$(docdir))
+	$(call mv,$(incext),$(firstword incdir))
+	$(call mv,$(srcext) $(asmext) $(lexext) $(yaccext),\
+		$(firstword srcdir))
 
 ########################################################################
 ##                           INSTALLATION                             ##
@@ -1185,7 +1194,7 @@ $(foreach E,$(cxxext),\
     $(eval $(call compile-cpp,$E,$(testdir)/,$(testdir)/)))
 
 # Include dependencies for each src extension
--include $(depall)
+-include $(foreach d,$(depall),$(if $(strip $(wildcard $d)),$d))
 
 #======================================================================#
 # Function: compile-sharedlib-linux-c                                  #
@@ -1532,6 +1541,9 @@ RES     := \033[0m
 ERR     := \033[0;37m
 endif
 
+MSG_CMD_UNRECOG   = "${RED}Command $@ unknown. Type '${DEF}make"\
+                    "projecthelp${RED}' for valid targets.${RES}"
+
 MSG_RM            = "${BLUE}Removing ${RES}$1${RES}"
 MSG_MKDIR         = "${CYAN}Creating directory $1${RES}"
 MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
@@ -1738,6 +1750,10 @@ define ok
 else\
 	echo "\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}"; exit 1;\
 fi
+endef
+
+define exit-with-error
+	@echo "${RED}[ERROR]${RES}" $1; exit 1;
 endef
 
 endif

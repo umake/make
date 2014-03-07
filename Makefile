@@ -1027,8 +1027,8 @@ doxy: $(docdir)/$(doxyfile).mk
 	$(quiet) $(DOXYGEN) $< $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_DOXY_DOCS))
 
-$(docdir)/$(doxyfile).mk: $(doxyfile) $(srcall) $(incall) | $(docdir)
-	$(call mkdir,$(docdir)/doxygen)
+$(docdir)/$(doxyfile).mk: | $(docdir) $(docdir)/doxygen
+$(docdir)/$(doxyfile).mk: $(doxyfile) $(srcall) $(incall)
 	$(call status,$(MSG_DOXY_MAKE))
 	$(quiet) $(CP) $< $@
 	
@@ -1053,6 +1053,9 @@ $(doxyfile):
 	$(call status,$(MSG_DOXY_FILE))
 	$(quiet) $(DOXYGEN) -g $@ $(NO_OUTPUT)
 	$(call ok,$(MSG_DOXY_FILE),$@)
+
+$(docdir)/doxygen:
+	$(call mkdir,$(docdir)/doxygen)
 
 endif # ifneq($(strip $(doxyfile)),) ####
 

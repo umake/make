@@ -949,7 +949,7 @@ dpkg: package-tar.gz $(debdep)
 	$(call phony-ok,$(MSG_DEB_STEP4))
 
 $(debdir)/changelog: | $(debdir)
-	$(quiet) $(DCH) $(ERROR)
+	$(quiet) $(DCH)
 
 $(debdir)/compat: | $(debdir)
 	$(call touch,$@)

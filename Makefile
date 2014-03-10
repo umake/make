@@ -442,7 +442,7 @@ $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 ########################################################################
 
 # Files used to help to configure Make
-make_configs := $(AUXFILES)
+make_configs := $(AUXFILES) $(LICENSE) $(NOTICE)
 make_configs += Config.mk config.mk Config_os.mk config_os.mk
 make_configs := $(sort $(foreach f,$(make_configs),$(wildcard $f)))
 
@@ -1598,15 +1598,16 @@ $(foreach t,bin sbin libexec,$(foreach b,$($t),\
 # @return Target to create a package with dirs specified by 'dirs' var #
 #======================================================================#
 define packsyst-factory
+%.$1: clndirs = $$(foreach d,$$(dirs),$$(if $$(wildcard $$d*),$$d))
 %.$1: packdir = $$(notdir $$*)
 %.$1: packdep = $$(addprefix $$(packdir)/,\
         $$(strip $$(foreach f,$$(dirs),$$(or \
             $$(strip $$(call rwildcard,$$f,*)),\
-            $$(strip $$(wildcard $$f*))))))
+            $$(strip $$(wildcard $$f*))) )))
 %.$1: $$(binall)
 	$$(call mkdir,$$(dir $$@))
 	$$(quiet) $$(MKDIR) $$(packdir)
-	$$(quiet) $$(CP) $$(dirs) $$(packdir)
+	$$(quiet) $$(CP) $$(clndirs) $$(packdir)
 	
 	$$(call vstatus,$$(MSG_MAKE$2))
 	$$(quiet) $3 $$@ $$(packdep)
@@ -1659,8 +1660,7 @@ $(eval $(call compression-shortcut,tbz2,tar.bz2,TBZ2))
 define dist-factory
 .PHONY: package-$1
 package-$1: dirs := Makefile $$(make_configs)
-package-$1: dirs += $$(srcdir) $$(incdir) $$(datadir)
-package-$1: dirs += $$(docdir) $$(LICENSE) $$(NOTICE)
+package-$1: dirs += $$(srcdir) $$(incdir) $$(datadir) $$(docdir)
 package-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir) 
 package-$1: $$(distdir)/$$(PROJECT)-$$(VERSION)_src.$1
 

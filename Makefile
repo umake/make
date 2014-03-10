@@ -65,12 +65,20 @@ CFLAGS    := -Wall -ansi -pedantic -O2 -g
 # C++ Options
 CXXFLAGS  := $(CFLAGS) -std=c++11
 
+# Fortran Options
+FCFLAGS   := -cpp
+
 # Parsers in C++
 CXXLEXER  := 
 CXXPARSER := 
 
 # Linker flags
 LDFLAGS   := 
+LDC       := 
+LDFC      := -lgfortran
+LDCXX     := 
+LDLEX     := -lfl
+LDYACC    := 
 
 # Library flags
 ARFLAGS   := -rcv
@@ -192,10 +200,12 @@ ASMEXT  := .asm .S
 
 # Header extensions
 HEXT    := .h
+HFCEXT  := .mod .MOD
 HXXEXT  := .H .hh .hpp .hxx .h++
 
 # Source extensions
 CEXT    := .c
+FCEXT   := .f .FOR .for .f77 .f90 .f95 .F .fpp .FPP
 CXXEXT  := .C .cc .cpp .cxx .c++ .tcc .icc
 
 # Library extensions
@@ -236,6 +246,7 @@ TESTSUF := _tests
 AR              := ar
 AS              := nasm
 CC              := gcc
+FC              := gfortran
 CXX             := g++
 RANLIB          := ranlib
 
@@ -305,6 +316,7 @@ doxyfile  := $(strip $(firstword $(DOXYFILE)))
 # Redefine flags to avoid conflict with user's local definitions
 asflags   := $(ASFLAGS)
 cflags    := $(CFLAGS)
+fcflags   := $(FCFLAGS)
 cxxflags  := $(CXXFLAGS)
 cxxlexer  := $(CXXLEXER)
 cxxparser := $(CXXPARSER)
@@ -358,8 +370,10 @@ endif
 # Extensions:
 # Every extension must begin with a '.' (dot)
 hext    := $(strip $(sort $(HEXT)))
+hfcext  := $(strip $(sort $(HFCEXT)))
 hxxext  := $(strip $(sort $(HXXEXT)))
 cext    := $(strip $(sort $(CEXT)))
+fcext   := $(strip $(sort $(FCEXT)))
 cxxext  := $(strip $(sort $(CXXEXT)))
 asmext  := $(strip $(sort $(ASMEXT)))
 libext  := $(strip $(sort $(LIBEXT)))
@@ -376,8 +390,8 @@ dviext  := $(strip $(sort $(DVIEXT)))
 pdfext  := $(strip $(sort $(PDFEXT)))
 psext   := $(strip $(sort $(PSEXT)))
 
-incext := $(hext) $(hxxext)
-srcext := $(cext) $(cxxext)
+incext := $(hext) $(hxxext) $(hfcext)
+srcext := $(cext) $(cxxext) $(fcext)
 docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 
 # Check all extensions
@@ -455,8 +469,34 @@ define remove-trailing-bar
 $(foreach s,$1,$(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s)))
 endef
 
+define has_c
+$(if $(strip $(sort $(foreach s,$(sort $(suffix $1)),\
+	$(findstring $s,$(cext))))),has_c)
+endef
+
+define is_c
+$(if $(strip $(foreach s,$(sort $(suffix $1)),\
+    $(if $(strip $(findstring $s,$(cxxext))),,$s))),,is_c)
+endef
+
+define has_fc
+$(if $(strip $(sort $(foreach s,$(sort $(suffix $1)),\
+	$(findstring $s,$(fcext))))),has_fc)
+endef
+
+define is_fc
+$(if $(strip $(foreach s,$(sort $(suffix $1)),\
+    $(if $(strip $(findstring $s,$(fcext))),,$s))),,is_fc)
+endef
+
+define has_cxx
+$(if $(strip $(sort $(foreach s,$(sort $(suffix $1)),\
+	$(findstring $s,$(cxxext))))),has_cxx)
+endef
+
 define is_cxx
-$(foreach e,$(cxxext),$(findstring $e,$(suffix $1)))
+$(if $(strip $(foreach s,$(sort $(suffix $1)),\
+    $(if $(strip $(findstring $s,$(cxxext))),,$s))),,is_cxx)
 endef
 
 # Auxiliar functions
@@ -527,7 +567,6 @@ $(foreach s,$(lib_in),                                                 \
 # 2) Split C++ and C lexers (to be compiled appropriately)
 # 3) Change lex extension to format .yy.c or .yy.cc (for C/C++ lexers)
 #    and join all the C and C++ lexer source names
-# 4) Add lex default library with linker flags
 #------------------------------------------------------------------[ 1 ]
 $(foreach root,$(srcdir),\
     $(foreach E,$(lexext),\
@@ -542,8 +581,6 @@ lexall   += $(foreach E,$(lexext),\
 lexall   += $(foreach E,$(lexext),\
                 $(patsubst %$E,%.yy.c,$(filter %$E,$(clexer))))
 lexall   := $(strip $(lexall))
-#------------------------------------------------------------------[ 4 ]
-$(if $(strip $(lexall)),$(eval ldflags += -lfl))
 
 # Syntatic analyzer
 # ==================
@@ -755,6 +792,7 @@ objall := $(obj) $(arobj) $(shrobj) $(autoobj)
 # 3) Get all files able to be included
 incsub  := $(foreach i,$(incdir),$(call rsubdir,$i))
 clibs   := $(patsubst %,-I%,$(incsub))
+fclibs  := $(patsubst %,-I%,$(incsub))
 cxxlibs := $(patsubst %,-I%,$(incsub))
 incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
                 $(call rwildcard,$i,*$e)))
@@ -769,6 +807,15 @@ lib     := $(arlib) $(shrlib) $(externlib)
 libname := $(arname) $(shrname) $(externname)
 libsub   = $(if $(strip $(lib)),$(foreach d,$(libdir),$(call rsubdir,$d)))
 ldlibs   = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(libsub))))
+
+# Type-specific libraries
+# ========================
+# 1) Add c, fc, cxx, lex and yacc only libraries in linker flags
+$(if $(strip $(call has_c,$(srcall))),$(eval ldflags += $(LDC)))
+$(if $(strip $(call has_fc,$(srcall))),$(eval ldflags += $(LDFC)))
+$(if $(strip $(call has_cxx,$(srcall))),$(eval ldflags += $(LDCXX)))
+$(if $(strip $(lexall)),$(eval ldflags += $(LDLEX)))
+$(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
 
 # Automated tests
 # ================
@@ -853,6 +900,7 @@ $(foreach b,$(notdir $(binall)),$(or\
     $(eval $b_aobj   += $(comaobj)),\
     $(eval $b_aall   += $(comasrc)),\
     $(eval $b_link   := $(sort $(addprefix -l,$($b_link) $(comlink)))),\
+    $(eval $b_is_fc  := $(strip $(call is_fc,$($b_src)))),\
     $(eval $b_is_cxx := $(strip $(call is_cxx,$($b_src)))),\
 ))
 
@@ -1193,7 +1241,7 @@ $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_ASM_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call make-depend,$$<,$$@,$3$$*)
+	$$(quiet) $$(call c-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(AS) $$(ASMFLAGS) $$< -o $$@
 	
@@ -1216,7 +1264,7 @@ $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_C_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call make-depend,$$<,$$@,$3$$*)
+	$$(quiet) $$(call c-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) $$(cflags) $$(clibs) -c $$< -o $$@ $$(ERROR)
 	
@@ -1240,7 +1288,7 @@ $$(objdir)/$3%.o: $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_CXX_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call make-depend,$$<,$$@,$3$$*)
+	$$(quiet) $$(call cpp-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) $$(cxxlibs) $$(cxxflags) -c $$< -o $$@ $$(ERROR)
 	
@@ -1250,6 +1298,30 @@ $(foreach root,$(srcdir),$(foreach E,$(cxxext),\
     $(eval $(call compile-cpp,$E,$(root)/))))
 $(foreach E,$(cxxext),\
     $(eval $(call compile-cpp,$E,$(testdir)/,$(testdir)/)))
+
+#======================================================================#
+# Function: compile-fortran                                            #
+# @param  $1 Fortran extension                                         #
+# @param  $2 Root source directory                                     #
+# @param  $3 Source tree specific path in objdir to put objects        #
+# @return Target to compile all Fortran files with the given           #
+# 		  extension, looking in the right root directory               #
+#======================================================================#
+define compile-fortran
+$$(objdir)/$3%.o: $2%$1 | $$(depdir)
+	$$(call status,$$(MSG_FC_COMPILE))
+	
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	$$(quiet) $$(call fortran-depend,$$<,$$@,$3$$*)
+	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
+	$$(quiet) $$(FC) $$(fcflags) $$(fclibs) -c $$< -o $$@ $$(ERROR)
+	
+	$$(call ok,$$(MSG_FC_COMPILE),$$@)
+endef
+$(foreach root,$(srcdir),$(foreach E,$(fcext),\
+    $(eval $(call compile-fortran,$E,$(root)/))))
+$(foreach E,$(fcext),\
+    $(eval $(call compile-fortran,$E,$(testdir)/,$(testdir)/)))
 
 # Include dependencies for each src extension
 -include $(depall)
@@ -1266,7 +1338,7 @@ $$(objdir)/$2.o: $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_C_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call make-depend,$$<,$$@,$2)
+	$$(quiet) $$(call c-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) -fPIC $$(clibs) $$(cflags) -c $$< -o $$@ $$(ERROR)
 	
@@ -1287,15 +1359,37 @@ $$(objdir)/$2.o: $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_CXX_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call make-depend,$$<,$$@,$2)
+	$$(quiet) $$(call cpp-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) -fPIC $$(cxxlibs) $$(cxxflags) -c $$< -o $$@ \
-			  $$(ERROR)
+              $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
     $(eval $(call compile-sharedlib-linux-cpp,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
+
+#======================================================================#
+# Function: compile-sharedlib-linux-fortran                            #
+# @param  $1 File root directory                                       #
+# @param  $2 File basename without root dir                            #
+# @param  $3 File extension                                            #
+# @return Target to compile the Fortran library file                   #
+#======================================================================#
+define compile-sharedlib-linux-fortran
+$$(objdir)/$2.o: $1$2$3 | $$(depdir)
+	$$(call status,$$(MSG_FC_LIBCOMP))
+	
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
+	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
+	$$(quiet) $$(FC) -fPIC $$(fclibs) $$(fcflags) -c $$< -o $$@ \
+              $$(ERROR)
+	
+	$$(call ok,$$(MSG_FC_LIBCOMP),$$@)
+endef
+$(foreach s,$(foreach E,$(fcext),$(filter %$E,$(shrall))),\
+    $(eval $(call compile-sharedlib-linux-fortran,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
 
 #======================================================================#
 # Function: link-sharedlib-linux                                       #
@@ -1386,9 +1480,15 @@ $$($2_aobj): $$($2_aall) | $$(objdir)
 endef
 $(foreach b,$(binall),$(eval\
     $(call binary-factory,$(dir $b),$(notdir $b),\
-        $(if $($(strip $(notdir $b))_is_cxx),CXX,C),\
-        $(if $($(strip $(notdir $b))_is_cxx),$(CXX),$(CC)))\
-))
+        $(if $($(strip $(notdir $b))_is_c),C,\
+        $(if $($(strip $(notdir $b))_is_fc),FC,\
+        $(if $($(strip $(notdir $b))_is_cxx),CXX,CXX\
+    ))),\
+        $(if $($(strip $(notdir $b))_is_c),$(CC),\
+        $(if $($(strip $(notdir $b))_is_fc),$(FC),\
+        $(if $($(strip $(notdir $b))_is_cxx),$(CXX),$(CXX)\
+    ))),\
+)))
 
 #======================================================================#
 # Function: texinfo-factory                                            #
@@ -1735,6 +1835,13 @@ MSG_C_SHRDLIB     = "${RED}Generating C shared library $@${RES}"
 MSG_C_LIBCOMP     = "${DEF}Generating C library artifact"\
                     "${YELLOW}$@${RES}"
 
+MSG_FC_COMPILE    = "${DEF}Generating Fortran artifact ${WHITE}$@${RES}"
+MSG_FC_LINKAGE    = "${YELLOW}Generating Fortran executable"\
+                    "${GREEN}$@${RES}"
+MSG_FC_SHRDLIB    = "${RED}Generating Fortran shared library $@${RES}"
+MSG_FC_LIBCOMP    = "${DEF}Generating Fortran library artifact"\
+                    "${YELLOW}$@${RES}"
+
 MSG_CXX_COMPILE   = "${DEF}Generating C++ artifact ${WHITE}$@${RES}"
 MSG_CXX_LINKAGE   = "${YELLOW}Generating C++ executable ${GREEN}$@${RES}"
 MSG_CXX_SHRDLIB   = "${RED}Generating C++ shared library $@${RES}"
@@ -1746,17 +1853,32 @@ MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
 ########################################################################
 
 ## DEPENDENCIES ########################################################
-# Function: make-depend
+# Functions: *-depend
 # @param $1 Source name (with path)
 # @param $2 Main target to be analised
 # @param $3 Dependency file name
-define make-depend
+
+define c-depend
+$(CC) -MM                     \
+    -MF $(depdir)/$3$(depext) \
+    -MP -MT $2                \
+    $(clibs) $(cflags)        \
+    $1
+endef
+
+define cpp-depend
 $(CXX) -MM                    \
     -MF $(depdir)/$3$(depext) \
-    -MP                       \
-    -MT $2                    \
-    $(cxxlibs)                \
-    $(cxxflags)               \
+    -MP -MT $2                \
+    $(cxxlibs) $(cxxflags)    \
+    $1
+endef
+
+define fortran-depend
+$(FC) -MM                     \
+    -MF $(depdir)/$3$(depext) \
+    -MP -MT $2                \
+    $(fclibs) $(fcflags)      \
     $1
 endef
 
@@ -2234,6 +2356,15 @@ endef
 
 .PHONY: dump
 dump: 
+	@echo "${WHITE}\nACCEPTED EXTENSIONS   ${RES}"
+	@echo "--------------------------------------"
+	$(call prompt,"srcext:      ",$(srcext)      )
+	$(call prompt,"incext:      ",$(incext)      )
+	$(call prompt,"libext:      ",$(libext)      )
+	$(call prompt,"lexext:      ",$(lexext)      )
+	$(call prompt,"yaccext:     ",$(yaccext)     )
+	$(call prompt,"docext:      ",$(docext)      )
+	                                           
 	@echo "${WHITE}LEXER                   ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"alllexer:    ",$(alllexer)    )
@@ -2336,6 +2467,8 @@ dump:
 	@echo "--------------------------------------"
 	$(call prompt,"cflags:      ",$(cflags)      )
 	$(call prompt,"clibs:       ",$(clibs)       )
+	$(call prompt,"fcflags:     ",$(fcflags)     )
+	$(call prompt,"fclibs:      ",$(fclibs)      )
 	$(call prompt,"cxxflags:    ",$(cxxflags)    )
 	$(call prompt,"cxxlibs:     ",$(cxxlibs)     )
 	$(call prompt,"ldlibs:      ",$(ldlibs)      )

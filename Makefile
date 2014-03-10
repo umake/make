@@ -30,6 +30,7 @@ PROJECT     := Default
 VERSION     := 1.0
 
 # Package info
+AUXFILES        :=
 MAINTEINER_NAME := Your Name
 MAINTEINER_MAIL := your_mail@mail.com
 PRIORITY        := optional
@@ -441,8 +442,9 @@ $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 ########################################################################
 
 # Files used to help to configure Make
-make_configs := Config.mk config.mk Config_os.mk config_os.mk
-make_configs := $(foreach f,$(make_configs),$(wildcard $f))
+make_configs := $(AUXFILES)
+make_configs += Config.mk config.mk Config_os.mk config_os.mk
+make_configs := $(sort $(foreach f,$(make_configs),$(wildcard $f)))
 
 # Auxiliar functions
 # ===================

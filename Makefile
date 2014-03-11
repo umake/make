@@ -67,7 +67,7 @@ CFLAGS    := -Wall -ansi -pedantic -O2 -g
 CXXFLAGS  := $(CFLAGS) -std=c++11
 
 # Fortran Options
-FCFLAGS   := -cpp
+FFLAGS   := -cpp
 
 # Parsers in C++
 CXXLEXER  := 
@@ -76,7 +76,7 @@ CXXPARSER :=
 # Linker flags
 LDFLAGS   := 
 LDC       := 
-LDFC      := -lgfortran
+LDF       := -lgfortran
 LDCXX     := 
 LDLEX     := -lfl
 LDYACC    := 
@@ -201,12 +201,12 @@ ASMEXT  := .asm .S
 
 # Header extensions
 HEXT    := .h
-HFCEXT  := .mod .MOD
+HFEXT   := .mod .MOD
 HXXEXT  := .H .hh .hpp .hxx .h++
 
 # Source extensions
 CEXT    := .c
-FCEXT   := .f .FOR .for .f77 .f90 .f95 .F .fpp .FPP
+FEXT    := .f .FOR .for .f77 .f90 .f95 .F .fpp .FPP
 CXXEXT  := .C .cc .cpp .cxx .c++ .tcc .icc
 
 # Library extensions
@@ -317,7 +317,7 @@ doxyfile  := $(strip $(firstword $(DOXYFILE)))
 # Redefine flags to avoid conflict with user's local definitions
 asflags   := $(ASFLAGS)
 cflags    := $(CFLAGS)
-fcflags   := $(FCFLAGS)
+fflags    := $(FFLAGS)
 cxxflags  := $(CXXFLAGS)
 cxxlexer  := $(CXXLEXER)
 cxxparser := $(CXXPARSER)
@@ -371,10 +371,10 @@ endif
 # Extensions:
 # Every extension must begin with a '.' (dot)
 hext    := $(strip $(sort $(HEXT)))
-hfcext  := $(strip $(sort $(HFCEXT)))
+hfext   := $(strip $(sort $(HFEXT)))
 hxxext  := $(strip $(sort $(HXXEXT)))
 cext    := $(strip $(sort $(CEXT)))
-fcext   := $(strip $(sort $(FCEXT)))
+fext    := $(strip $(sort $(FEXT)))
 cxxext  := $(strip $(sort $(CXXEXT)))
 asmext  := $(strip $(sort $(ASMEXT)))
 libext  := $(strip $(sort $(LIBEXT)))
@@ -391,8 +391,8 @@ dviext  := $(strip $(sort $(DVIEXT)))
 pdfext  := $(strip $(sort $(PDFEXT)))
 psext   := $(strip $(sort $(PSEXT)))
 
-incext := $(hext) $(hxxext) $(hfcext)
-srcext := $(cext) $(cxxext) $(fcext)
+incext := $(hext) $(hxxext) $(hfext)
+srcext := $(cext) $(cxxext) $(fext)
 docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 
 # Check all extensions
@@ -481,14 +481,14 @@ $(if $(strip $(foreach s,$(sort $(suffix $1)),\
     $(if $(strip $(findstring $s,$(cxxext))),,$s))),,is_c)
 endef
 
-define has_fc
+define has_f
 $(if $(strip $(sort $(foreach s,$(sort $(suffix $1)),\
-	$(findstring $s,$(fcext))))),has_fc)
+	$(findstring $s,$(fext))))),has_f)
 endef
 
-define is_fc
+define is_f
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
-    $(if $(strip $(findstring $s,$(fcext))),,$s))),,is_fc)
+    $(if $(strip $(findstring $s,$(fext))),,$s))),,is_f)
 endef
 
 define has_cxx
@@ -794,7 +794,7 @@ objall := $(obj) $(arobj) $(shrobj) $(autoobj)
 # 3) Get all files able to be included
 incsub  := $(foreach i,$(incdir),$(call rsubdir,$i))
 clibs   := $(patsubst %,-I%,$(incsub))
-fclibs  := $(patsubst %,-I%,$(incsub))
+flibs   := $(patsubst %,-I%,$(incsub))
 cxxlibs := $(patsubst %,-I%,$(incsub))
 incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
                 $(call rwildcard,$i,*$e)))
@@ -812,9 +812,9 @@ ldlibs   = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(libsub))))
 
 # Type-specific libraries
 # ========================
-# 1) Add c, fc, cxx, lex and yacc only libraries in linker flags
+# 1) Add c, f, cxx, lex and yacc only libraries in linker flags
 $(if $(strip $(call has_c,$(srcall))),$(eval ldflags += $(LDC)))
-$(if $(strip $(call has_fc,$(srcall))),$(eval ldflags += $(LDFC)))
+$(if $(strip $(call has_f,$(srcall))),$(eval ldflags += $(LDF)))
 $(if $(strip $(call has_cxx,$(srcall))),$(eval ldflags += $(LDCXX)))
 $(if $(strip $(lexall)),$(eval ldflags += $(LDLEX)))
 $(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
@@ -902,7 +902,7 @@ $(foreach b,$(notdir $(binall)),$(or\
     $(eval $b_aobj   += $(comaobj)),\
     $(eval $b_aall   += $(comasrc)),\
     $(eval $b_link   := $(sort $(addprefix -l,$($b_link) $(comlink)))),\
-    $(eval $b_is_fc  := $(strip $(call is_fc,$($b_src)))),\
+    $(eval $b_is_f   := $(strip $(call is_f,$($b_src)))),\
     $(eval $b_is_cxx := $(strip $(call is_cxx,$($b_src)))),\
 ))
 
@@ -1311,18 +1311,18 @@ $(foreach E,$(cxxext),\
 #======================================================================#
 define compile-fortran
 $$(objdir)/$3%.o: $2%$1 | $$(depdir)
-	$$(call status,$$(MSG_FC_COMPILE))
+	$$(call status,$$(MSG_F_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) $$(fcflags) $$(fclibs) -c $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(FC) $$(fflags) $$(flibs) -c $$< -o $$@ $$(ERROR)
 	
-	$$(call ok,$$(MSG_FC_COMPILE),$$@)
+	$$(call ok,$$(MSG_F_COMPILE),$$@)
 endef
-$(foreach root,$(srcdir),$(foreach E,$(fcext),\
+$(foreach root,$(srcdir),$(foreach E,$(fext),\
     $(eval $(call compile-fortran,$E,$(root)/))))
-$(foreach E,$(fcext),\
+$(foreach E,$(fext),\
     $(eval $(call compile-fortran,$E,$(testdir)/,$(testdir)/)))
 
 # Include dependencies for each src extension
@@ -1380,17 +1380,17 @@ $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
 #======================================================================#
 define compile-sharedlib-linux-fortran
 $$(objdir)/$2.o: $1$2$3 | $$(depdir)
-	$$(call status,$$(MSG_FC_LIBCOMP))
+	$$(call status,$$(MSG_F_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) -fPIC $$(fclibs) $$(fcflags) -c $$< -o $$@ \
+	$$(quiet) $$(FC) -fPIC $$(flibs) $$(fflags) -c $$< -o $$@ \
               $$(ERROR)
 	
-	$$(call ok,$$(MSG_FC_LIBCOMP),$$@)
+	$$(call ok,$$(MSG_F_LIBCOMP),$$@)
 endef
-$(foreach s,$(foreach E,$(fcext),$(filter %$E,$(shrall))),\
+$(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
     $(eval $(call compile-sharedlib-linux-fortran,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
 
 #======================================================================#
@@ -1483,11 +1483,11 @@ endef
 $(foreach b,$(binall),$(eval\
     $(call binary-factory,$(dir $b),$(notdir $b),\
         $(if $($(strip $(notdir $b))_is_c),C,\
-        $(if $($(strip $(notdir $b))_is_fc),FC,\
+        $(if $($(strip $(notdir $b))_is_f),F,\
         $(if $($(strip $(notdir $b))_is_cxx),CXX,CXX\
     ))),\
         $(if $($(strip $(notdir $b))_is_c),$(CC),\
-        $(if $($(strip $(notdir $b))_is_fc),$(FC),\
+        $(if $($(strip $(notdir $b))_is_f),$(FC),\
         $(if $($(strip $(notdir $b))_is_cxx),$(CXX),$(CXX)\
     ))),\
 )))
@@ -1837,11 +1837,11 @@ MSG_C_SHRDLIB     = "${RED}Generating C shared library $@${RES}"
 MSG_C_LIBCOMP     = "${DEF}Generating C library artifact"\
                     "${YELLOW}$@${RES}"
 
-MSG_FC_COMPILE    = "${DEF}Generating Fortran artifact ${WHITE}$@${RES}"
-MSG_FC_LINKAGE    = "${YELLOW}Generating Fortran executable"\
+MSG_F_COMPILE     = "${DEF}Generating Fortran artifact ${WHITE}$@${RES}"
+MSG_F_LINKAGE     = "${YELLOW}Generating Fortran executable"\
                     "${GREEN}$@${RES}"
-MSG_FC_SHRDLIB    = "${RED}Generating Fortran shared library $@${RES}"
-MSG_FC_LIBCOMP    = "${DEF}Generating Fortran library artifact"\
+MSG_F_SHRDLIB     = "${RED}Generating Fortran shared library $@${RES}"
+MSG_F_LIBCOMP     = "${DEF}Generating Fortran library artifact"\
                     "${YELLOW}$@${RES}"
 
 MSG_CXX_COMPILE   = "${DEF}Generating C++ artifact ${WHITE}$@${RES}"
@@ -1880,7 +1880,7 @@ define fortran-depend
 $(FC) -MM                     \
     -MF $(depdir)/$3$(depext) \
     -MP -MT $2                \
-    $(fclibs) $(fcflags)      \
+    $(flibs) $(fflags)      \
     $1
 endef
 
@@ -2098,11 +2098,14 @@ override srcbase   := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
 # Artifacts
 # ===========
 # C/C++ Artifacts that may be created by this Makefile
-override NAMESPACE := $(notdir $(NAMESPACE))
-override CLASS     := $(basename $(notdir $(CLASS)))
-override C_FILE    := $(basename $(notdir $(C_FILE)))
-override CXX_FILE  := $(basename $(notdir $(CXX_FILE)))
-override TEMPLATE  := $(basename $(notdir $(TEMPLATE)))
+override NAMESPACE  := $(notdir $(NAMESPACE))
+override CLASS      := $(basename $(notdir $(CLASS)))
+override C_FILE     := $(basename $(notdir $(C_FILE)))
+override F_FILE     := $(basename $(notdir $(F_FILE)))
+override CXX_FILE   := $(basename $(notdir $(CXX_FILE)))
+override TEMPLATE   := $(basename $(notdir $(TEMPLATE)))
+override C_MODULE   := $(basename $(notdir $(C_MODULE)))
+override CXX_MODULE := $(basename $(notdir $(CXX_MODULE)))
 
 .PHONY: new
 new:
@@ -2151,6 +2154,17 @@ ifdef C_FILE
 	
 	$(call select,stdout)
 endif
+ifdef F_FILE
+	$(call touch,$(srcbase)/$(F_FILE).f,$(NOTICE))
+	$(call select,$(srcbase)/$(F_FILE).f)
+	$(call cat,'c $(call lc,$(F_FILE)).f                              ')
+	$(call cat,'                                                      ')
+	$(call cat,'      program $(call lc,$(F_FILE))                    ')
+	$(call cat,'          stop                                        ')
+	$(call cat,'      end                                             ')
+	
+	$(call select,stdout)
+endif
 ifdef CXX_FILE                                                          
 	$(call touch,$(incbase)/$(CXX_FILE).hpp,$(NOTICE))
 	$(call select,$(incbase)/$(CXX_FILE).hpp)
@@ -2174,6 +2188,28 @@ ifdef TEMPLATE
 	$(call select,$(srcbase)/$(TEMPLATE).tcc)
 	$(call select,stdout)
 endif
+ifdef C_MODULE
+	$(call touch,$(incbase)/$(C_MODULE).h,$(NOTICE))
+	$(call select,$(incbase)/$(C_MODULE).h)
+	$(call cat,'                                                      ')
+	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_MODULE))_DEFINED      ')
+	$(call cat,'#define H_$(indef)$(call uc,$(C_MODULE))_DEFINED      ')
+	$(call cat,'                                                      ')
+	$(call cat,'#endif                                                ')
+	
+	$(call mkdir,$(srcbase)/$(C_MODULE))
+endif
+ifdef CXX_MODULE
+	$(call touch,$(incbase)/$(CXX_MODULE).hpp,$(NOTICE))
+	$(call select,$(incbase)/$(CXX_MODULE).hpp)
+	$(call cat,'                                                      ')
+	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_MODULE))_DEFINED  ')
+	$(call cat,'#define HPP_$(indef)$(call uc,$(CXX_MODULE))_DEFINED  ')
+	$(call cat,'                                                      ')
+	$(call cat,'#endif                                                ')
+	
+	$(call mkdir,$(srcbase)/$(CXX_MODULE))
+endif
 
 .PHONY: delete
 delete:
@@ -2186,19 +2222,40 @@ ifdef NAMESPACE
 	$(call rm-if-empty,$(srcbase)/$(NAMESPACE))
 endif
 ifdef CLASS
-	$(call rm,$(incbase)/$(CLASS).hpp)
-	$(call rm,$(srcbase)/$(CLASS).cpp)
+	$(if $(wildcard $(incbase)/$(CLASS).hpp),\
+        $(call rm,$(incbase)/$(CLASS).hpp))
+	$(if $(wildcard $(srcbase)/$(CLASS).cpp),\
+        $(call rm,$(srcbase)/$(CLASS).cpp))
 endif
 ifdef C_FILE
-	$(call rm,$(incbase)/$(C_FILE).h)
-	$(call rm,$(srcbase)/$(C_FILE).c)
+	$(if $(wildcard $(incbase)/$(C_FILE).h),\
+        $(call rm,$(incbase)/$(C_FILE).h))
+	$(if $(wildcard $(srcbase)/$(C_FILE).c),\
+        $(call rm,$(srcbase)/$(C_FILE).c))
+endif
+ifdef F_FILE
+	$(if $(wildcard $(srcbase)/$(F_FILE).f),\
+        $(call rm,$(srcbase)/$(F_FILE).f))
 endif
 ifdef CXX_FILE
-	$(call rm,$(incbase)/$(CXX_FILE).hpp)
-	$(call rm,$(srcbase)/$(CXX_FILE).cpp)
+	$(if $(wildcard $(incbase)/$(CXX_FILE).hpp),\
+        $(call rm,$(incbase)/$(CXX_FILE).hpp))
+	$(if $(wildcard $(srcbase)/$(CXX_FILE).cpp),\
+        $(call rm,$(srcbase)/$(CXX_FILE).cpp))
 endif
 ifdef TEMPLATE
-	$(call rm,$(incbase)/$(TEMPLATE).tcc)
+	$(if $(wildcard $(incbase)/$(TEMPLATE).tcc),\
+        $(call rm,$(incbase)/$(TEMPLATE).tcc))
+endif
+ifdef C_MODULE
+	$(if $(wildcard $(incbase)/$(C_MODULE).h),\
+        $(call rm,$(incbase)/$(C_MODULE).h))
+	$(call rm-if-empty,$(srcbase)/$(C_MODULE))
+endif
+ifdef CXX_MODULE
+	$(if $(wildcard $(incbase)/$(CXX_MODULE).hpp),\
+        $(call rm,$(incbase)/$(CXX_MODULE).hpp))
+	$(call rm-if-empty,$(srcbase)/$(C_MODULE))
 endif
 endif
 
@@ -2344,6 +2401,8 @@ projecthelp:
 	@echo "* CLASS:         Create new file for a C++ class            "
 	@echo "* C_FILE:        Create ordinaries C files (.c/.h)          "
 	@echo "* CXX_FILE:      Create ordinaries C++ files (.cpp/.hpp)    "
+	@echo "* C_MODULE:      Create C header and dir for its sources    "
+	@echo "* CXX_MODULE:    Create C++ header and dif for its sources  "
 	@echo "* TEMPLATE:      Create C++ template file (.tcc)            "
 	@echo "                                                            "
 
@@ -2469,8 +2528,8 @@ dump:
 	@echo "--------------------------------------"
 	$(call prompt,"cflags:      ",$(cflags)      )
 	$(call prompt,"clibs:       ",$(clibs)       )
-	$(call prompt,"fcflags:     ",$(fcflags)     )
-	$(call prompt,"fclibs:      ",$(fclibs)      )
+	$(call prompt,"fflags:      ",$(fflags)      )
+	$(call prompt,"flibs:       ",$(flibs)       )
 	$(call prompt,"cxxflags:    ",$(cxxflags)    )
 	$(call prompt,"cxxlibs:     ",$(cxxlibs)     )
 	$(call prompt,"ldlibs:      ",$(ldlibs)      )

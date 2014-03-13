@@ -207,7 +207,8 @@ HXXEXT  := .H .hh .hpp .hxx .h++
 # Source extensions
 CEXT    := .c
 FEXT    := .f .FOR .for .f77 .f90 .f95 .F .fpp .FPP
-CXXEXT  := .C .cc .cpp .cxx .c++ .tcc .icc
+CXXEXT  := .C .cc .cpp .cxx .c++
+TLEXT   := .tcc .icc
 
 # Library extensions
 LIBEXT  := .a .so .dll
@@ -376,6 +377,7 @@ hxxext  := $(strip $(sort $(HXXEXT)))
 cext    := $(strip $(sort $(CEXT)))
 fext    := $(strip $(sort $(FEXT)))
 cxxext  := $(strip $(sort $(CXXEXT)))
+tlext   := $(strip $(sort $(TLEXT)))
 asmext  := $(strip $(sort $(ASMEXT)))
 libext  := $(strip $(sort $(LIBEXT)))
 lexext  := $(strip $(sort $(LEXEXT)))
@@ -391,7 +393,7 @@ dviext  := $(strip $(sort $(DVIEXT)))
 pdfext  := $(strip $(sort $(PDFEXT)))
 psext   := $(strip $(sort $(PSEXT)))
 
-incext := $(hext) $(hxxext) $(hfext)
+incext := $(hext) $(hxxext) $(tlext) $(hfext)
 srcext := $(cext) $(cxxext) $(fext)
 docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 
@@ -478,7 +480,7 @@ endef
 
 define is_c
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
-    $(if $(strip $(findstring $s,$(cxxext))),,$s))),,is_c)
+    $(if $(strip $(findstring $s,$(cext))),,$s))),,is_c)
 endef
 
 define has_f
@@ -1778,6 +1780,7 @@ MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
+MSG_NEW_EXT       = "${RED}Extension '$1' invalid${RES}"
 MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
 MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
 
@@ -1965,7 +1968,7 @@ define rm-if-empty
 	$(if $(strip $(call rwildcard,$1,*)),\
         $(if $(strip $2),
             $(if $(strip $(MAINTEINER_CLEAN)),\
-				$(call rmdir,$1),\
+                $(call rmdir,$1),\
                 $(if $(strip $(call rfilter-out,$2,\
                         $(call rfilter-out,\
                             $(filter-out $1,$(call rsubdir,$1)),\
@@ -1975,7 +1978,10 @@ define rm-if-empty
             )),\
             $(call rmdir,$1)\
         ),\
-        $(call phony-ok,$(MSG_RM_EMPTY))\
+        $(if $(wildcard $1),\
+            $(call rmdir,$1),\
+            $(call phony-ok,$(MSG_RM_EMPTY))\
+        )\
     )
 endef
 
@@ -2004,12 +2010,8 @@ define ok
 @if [ -f $2 ]; then\
 	echo "\r${GREEN}[OK]${RES}" $1 "     ";\
 else\
-	echo "\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}"; exit 1;\
+	echo "\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}"; exit 42;\
 fi
-endef
-
-define exit-with-error
-	@echo "${RED}[ERROR]${RES}" $1; exit 1;
 endef
 
 endif
@@ -2024,9 +2026,13 @@ else
     endef
 endif 
 
+define phony-error
+	@echo "${RED}[ERROR]${RES}" $1; exit 42;
+endef
+
 define test-error
 (echo "\r${RED}[FAILURE]${RES}" $1"."\
-      "${RED}Aborting status: $$?${RES}" && exit 1)
+      "${RED}Aborting status: $$?${RES}" && exit 42)
 endef
 
 ## TEXT ################################################################
@@ -2088,6 +2094,22 @@ override IN := $(strip $(or $(strip $(foreach d,$(srcdir) $(incdir),\
 indef       := $(strip $(call uc,$(subst /,_,$(strip $(IN)))))_
 endif
 
+# Extension variables
+# =====================
+override SRC_EXT := $(strip $(if $(strip $(SRC_EXT)),\
+    $(or $(filter .%,$(SRC_EXT)),.$(SRC_EXT))))
+override INC_EXT := $(strip $(if $(strip $(INC_EXT)),\
+    $(or $(filter .%,$(INC_EXT)),.$(INC_EXT))))
+
+# Function: invalid-ext
+# $1 File extension
+# $2 List of extensions to validate as correct $1, if it is not empty
+define invalid-ext
+$(if $(strip $1),$(if $(findstring $(strip $1),$2),,\
+    $(call phony-error,$(MSG_NEW_EXT))\
+))
+endef
+
 # Path variables
 # ================
 # Auxiliar variables to the default place to create/remove 
@@ -2114,8 +2136,12 @@ ifdef NAMESPACE
 	$(call mkdir,$(srcbase)/$(NAMESPACE))
 endif
 ifdef CLASS
-	$(call touch,$(incbase)/$(CLASS).hpp,$(NOTICE))
-	$(call select,$(incbase)/$(CLASS).hpp)
+	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
+	
+	$(call invalid-ext,$(INC_EXT),$(hxxext))
+	$(call touch,$(incbase)/$(CLASS)$(INC_EXT),$(NOTICE))
+	$(call select,$(incbase)/$(CLASS)$(INC_EXT))
 	$(call cat,'                                                      ')
 	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CLASS))_DEFINED       ')
 	$(call cat,'#define HPP_$(indef)$(call uc,$(CLASS))_DEFINED       ')
@@ -2127,37 +2153,46 @@ ifdef CLASS
 	$(call cat,'                                                      ')
 	$(call cat,'#endif                                                ')
 	
-	$(call touch,$(srcbase)/$(CLASS).cpp,$(NOTICE))
-	$(call select,$(srcbase)/$(CLASS).cpp)
+	$(call invalid-ext,$(SRC_EXT),$(cxxext))
+	$(call touch,$(srcbase)/$(CLASS)$(SRC_EXT),$(NOTICE))
+	$(call select,$(srcbase)/$(CLASS)$(SRC_EXT))
 	$(call cat,'                                                      ')
 	$(call cat,'// Libraries                                          ')
-	$(call cat,'#include "$(CLASS).hpp"                               ')
+	$(call cat,'#include "$(CLASS)$(INC_EXT)"                         ')
 	$(call cat,'                                                      ')
 	
 	$(call select,stdout)
 endif
 ifdef C_FILE                                                            
-	$(call touch,$(incbase)/$(C_FILE).h,$(NOTICE))
-	$(call select,$(incbase)/$(C_FILE).h)
+	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
+	
+	$(call invalid-ext,$(INC_EXT),$(hext))
+	$(call touch,$(incbase)/$(C_FILE)$(INC_EXT),$(NOTICE))
+	$(call select,$(incbase)/$(C_FILE)$(INC_EXT))
 	$(call cat,'                                                      ')
 	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_FILE))_DEFINED        ')
 	$(call cat,'#define H_$(indef)$(call uc,$(C_FILE))_DEFINED        ')
 	$(call cat,'                                                      ')
 	$(call cat,'#endif                                                ')
 	
-	$(call touch,$(srcbase)/$(C_FILE).c,$(NOTICE))
-	$(call select,$(srcbase)/$(C_FILE).c)
+	$(call invalid-ext,$(SRC_EXT),$(cext))
+	$(call touch,$(srcbase)/$(C_FILE)$(SRC_EXT),$(NOTICE))
+	$(call select,$(srcbase)/$(C_FILE)$(SRC_EXT))
 	$(call cat,'                                                      ')
 	$(call cat,'// Libraries                                          ')
-	$(call cat,'#include "$(C_FILE).hpp"                              ')
+	$(call cat,'#include "$(C_FILE)$(INC_EXT)"                        ')
 	$(call cat,'                                                      ')
 	
 	$(call select,stdout)
 endif
 ifdef F_FILE
-	$(call touch,$(srcbase)/$(F_FILE).f,$(NOTICE))
-	$(call select,$(srcbase)/$(F_FILE).f)
-	$(call cat,'c $(call lc,$(F_FILE)).f                              ')
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
+	                        
+	$(call invalid-ext,$(SRC_EXT),$(fext))
+	$(call touch,$(srcbase)/$(F_FILE)$(SRC_EXT),$(NOTICE))
+	$(call select,$(srcbase)/$(F_FILE)$(SRC_EXT))
+	$(call cat,'c $(call lc,$(F_FILE))$(SRC_EXT)                      ')
 	$(call cat,'                                                      ')
 	$(call cat,'      program $(call lc,$(F_FILE))                    ')
 	$(call cat,'          stop                                        ')
@@ -2166,31 +2201,42 @@ ifdef F_FILE
 	$(call select,stdout)
 endif
 ifdef CXX_FILE                                                          
-	$(call touch,$(incbase)/$(CXX_FILE).hpp,$(NOTICE))
-	$(call select,$(incbase)/$(CXX_FILE).hpp)
+	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
+	
+	$(call invalid-ext,$(INC_EXT),$(hxxext))
+	$(call touch,$(incbase)/$(CXX_FILE)$(INC_EXT),$(NOTICE))
+	$(call select,$(incbase)/$(CXX_FILE)$(INC_EXT))
 	$(call cat,'                                                      ')
 	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_FILE))_DEFINED    ')
 	$(call cat,'#define HPP_$(indef)$(call uc,$(CXX_FILE))_DEFINED    ')
 	$(call cat,'                                                      ')
 	$(call cat,'#endif                                                ')
 	
-	$(call touch,$(srcbase)/$(CXX_FILE).cpp,$(NOTICE))
-	$(call select,$(srcbase)/$(CXX_FILE).cpp)
+	$(call invalid-ext,$(SRC_EXT),$(cxxext))
+	$(call touch,$(srcbase)/$(CXX_FILE)$(SRC_EXT),$(NOTICE))
+	$(call select,$(srcbase)/$(CXX_FILE)$(SRC_EXT))
 	$(call cat,'                                                      ')
 	$(call cat,'// Libraries                                          ')
-	$(call cat,'#include "$(CXX_FILE).hpp"                            ')
+	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"                      ')
 	$(call cat,'                                                      ')
 	
 	$(call select,stdout)
 endif
 ifdef TEMPLATE
-	$(call touch,$(srcbase)/$(TEMPLATE).tcc,$(NOTICE))
-	$(call select,$(srcbase)/$(TEMPLATE).tcc)
+	$(if $(INC_EXT),,$(eval override INC_EXT := .tcc))
+	                        
+	$(call invalid-ext,$(INC_EXT),$(tlext))
+	$(call touch,$(incbase)/$(TEMPLATE)$(INC_EXT),$(NOTICE))
+	$(call select,$(incbase)/$(TEMPLATE)$(INC_EXT))
 	$(call select,stdout)
 endif
 ifdef C_MODULE
-	$(call touch,$(incbase)/$(C_MODULE).h,$(NOTICE))
-	$(call select,$(incbase)/$(C_MODULE).h)
+	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
+	
+	$(call invalid-ext,$(INC_EXT),$(hext))
+	$(call touch,$(incbase)/$(C_MODULE)$(INC_EXT),$(NOTICE))
+	$(call select,$(incbase)/$(C_MODULE)$(INC_EXT))
 	$(call cat,'                                                      ')
 	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_MODULE))_DEFINED      ')
 	$(call cat,'#define H_$(indef)$(call uc,$(C_MODULE))_DEFINED      ')
@@ -2200,8 +2246,11 @@ ifdef C_MODULE
 	$(call mkdir,$(srcbase)/$(C_MODULE))
 endif
 ifdef CXX_MODULE
-	$(call touch,$(incbase)/$(CXX_MODULE).hpp,$(NOTICE))
-	$(call select,$(incbase)/$(CXX_MODULE).hpp)
+	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
+	
+	$(call invalid-ext,$(INC_EXT),$(hxxext))
+	$(call touch,$(incbase)/$(CXX_MODULE)$(INC_EXT),$(NOTICE))
+	$(call select,$(incbase)/$(CXX_MODULE)$(INC_EXT))
 	$(call cat,'                                                      ')
 	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_MODULE))_DEFINED  ')
 	$(call cat,'#define HPP_$(indef)$(call uc,$(CXX_MODULE))_DEFINED  ')
@@ -2210,6 +2259,14 @@ ifdef CXX_MODULE
 	
 	$(call mkdir,$(srcbase)/$(CXX_MODULE))
 endif
+
+# Function: delete-file
+# $1 File basename to be deleted
+# $2 Extensions allowed for the basename above
+define delete-file
+$(if $(strip $(firstword $(foreach e,$2,$(wildcard $1$e)))),\
+    $(call rm,$(firstword $(foreach e,$2,$(wildcard $1$e)))))
+endef
 
 .PHONY: delete
 delete:
@@ -2222,40 +2279,30 @@ ifdef NAMESPACE
 	$(call rm-if-empty,$(srcbase)/$(NAMESPACE))
 endif
 ifdef CLASS
-	$(if $(wildcard $(incbase)/$(CLASS).hpp),\
-        $(call rm,$(incbase)/$(CLASS).hpp))
-	$(if $(wildcard $(srcbase)/$(CLASS).cpp),\
-        $(call rm,$(srcbase)/$(CLASS).cpp))
+	$(call delete-file,$(incbase)/$(CLASS),$(INC_EXT) $(hxxext))
+	$(call delete-file,$(srcbase)/$(CLASS),$(SRC_EXT) $(cxxext))
 endif
 ifdef C_FILE
-	$(if $(wildcard $(incbase)/$(C_FILE).h),\
-        $(call rm,$(incbase)/$(C_FILE).h))
-	$(if $(wildcard $(srcbase)/$(C_FILE).c),\
-        $(call rm,$(srcbase)/$(C_FILE).c))
+	$(call delete-file,$(incbase)/$(C_FILE),$(INC_EXT) $(hext))
+	$(call delete-file,$(srcbase)/$(C_FILE),$(SRC_EXT) $(cext))
 endif
 ifdef F_FILE
-	$(if $(wildcard $(srcbase)/$(F_FILE).f),\
-        $(call rm,$(srcbase)/$(F_FILE).f))
+	$(call delete-file,$(srcbase)/$(F_FILE),$(SRC_EXT) $(fext))
 endif
 ifdef CXX_FILE
-	$(if $(wildcard $(incbase)/$(CXX_FILE).hpp),\
-        $(call rm,$(incbase)/$(CXX_FILE).hpp))
-	$(if $(wildcard $(srcbase)/$(CXX_FILE).cpp),\
-        $(call rm,$(srcbase)/$(CXX_FILE).cpp))
+	$(call delete-file,$(incbase)/$(CXX_FILE),$(INC_EXT) $(hxxext))
+	$(call delete-file,$(srcbase)/$(CXX_FILE),$(SRC_EXT) $(cxxext))
 endif
 ifdef TEMPLATE
-	$(if $(wildcard $(incbase)/$(TEMPLATE).tcc),\
-        $(call rm,$(incbase)/$(TEMPLATE).tcc))
+	$(call delete-file,$(incbase)/$(TEMPLATE),$(INC_EXT) $(tlext))
 endif
 ifdef C_MODULE
-	$(if $(wildcard $(incbase)/$(C_MODULE).h),\
-        $(call rm,$(incbase)/$(C_MODULE).h))
+	$(call delete-file,$(incbase)/$(C_MODULE),$(INC_EXT) $(hext))
 	$(call rm-if-empty,$(srcbase)/$(C_MODULE))
 endif
 ifdef CXX_MODULE
-	$(if $(wildcard $(incbase)/$(CXX_MODULE).hpp),\
-        $(call rm,$(incbase)/$(CXX_MODULE).hpp))
-	$(call rm-if-empty,$(srcbase)/$(C_MODULE))
+	$(call delete-file,$(incbase)/$(CXX_MODULE),$(INC_EXT) $(hxxext))
+	$(call rm-if-empty,$(srcbase)/$(CXX_MODULE))
 endif
 endif
 
@@ -2393,17 +2440,19 @@ projecthelp:
 	@echo " * V:            Allow the verbose mode                     "
 	@echo " * MORE:         With error, use 'more' to read stderr      "
 	@echo " * SILENT:       Just output the plain commands as executed "
+	@echo " * INC_EXT:      Include extension for files made by 'new'  "
+	@echo " * SRC_EXT:      Source extension for files made by 'new'   "
 	@echo " * NO_COLORS:    Outputs are made without any color         "
 	@echo "                                                            "
 	@echo "Management flags                                            "
 	@echo "-----------------                                           "
 	@echo "* NAMESPACE:     Create new directory for namespace         "
 	@echo "* CLASS:         Create new file for a C++ class            "
-	@echo "* C_FILE:        Create ordinaries C files (.c/.h)          "
-	@echo "* CXX_FILE:      Create ordinaries C++ files (.cpp/.hpp)    "
+	@echo "* C_FILE:        Create ordinaries C files                  "
+	@echo "* CXX_FILE:      Create ordinaries C++ files                "
 	@echo "* C_MODULE:      Create C header and dir for its sources    "
 	@echo "* CXX_MODULE:    Create C++ header and dif for its sources  "
-	@echo "* TEMPLATE:      Create C++ template file (.tcc)            "
+	@echo "* TEMPLATE:      Create C++ template file                   "
 	@echo "                                                            "
 
 ########################################################################

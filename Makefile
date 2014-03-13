@@ -1950,18 +1950,20 @@ endef
 # does not test for extra files in the directory (see below)           #
 # @param $1 Directory name                                             #
 # @param $2 Files in $1 that should be removed from within $1          #
-# .---------------.---------.-------------.------------.               #
-# | Dir not empty | 2nd arg | Extra files | Result     |               #
-# |===============|=========|=============|============|               #
-# |               |         |             | nothing    | } When dir is #
-# |               |         |      X      | nothing    | } empty, it   #
-# |               |    X    |             | nothing    | } doesn't     #
-# |               |    X    |      X      | nothing    | } exist       #
-# |       X       |         |             | remove     | - No restric. #
-# |       X       |         |      X      | remove     | - or restric. #
-# |       X       |    X    |             | remove     | - ok? Remove! #
-# |       X       |    X    |      X      | not_remove | } Not remove, #
-# '---------------'---------'-------------'------------'   otherwise   #
+# .---------.-----.-------.-------.------------.                       #
+# | Dir not | 2nd | Extra |  Dir  | Result     |                       #
+# |  ampty  | arg | files | exist |            |                       #
+# |=========|=====|=======|=======|============|                       #
+# |         |     |       |       | nothing    | }                     #
+# |         |     |       |   X   | remove     | }                     #
+# |         |     |   X   |       | nothing    | } When dir is         #
+# |         |  X  |       |       | nothing    | } empty               #
+# |         |  X  |   X   |       | nothing    | }                     #
+# |    X    |     |       |       | remove     | - No restric.         #
+# |    X    |     |   X   |       | remove     | - or restric.         #
+# |    X    |  X  |       |       | remove     | - ok? Remove!         #
+# |    X    |  X  |   X   |       | not_remove | } Not remove,         #
+# '---------'-----'-------'-------'------------'   otherwise           #
 #======================================================================#
 define rm-if-empty
 	$(if $(strip $2),$(call srm,$2))

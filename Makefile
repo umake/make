@@ -2053,7 +2053,7 @@ $(eval ostream = \
     $(strip $(if $(strip $(subst stdout,,$(strip $1))),$1,)))
 endef
 
-# Function: select 
+# Function: cat
 # Add a text in the end of a ostream
 define cat
 $(if $(strip $(wildcard $(ostream)*)),,\
@@ -2084,6 +2084,7 @@ endef
 # 1) Remove trailing bars if it is a directory-only name
 # 2) If the name includes a root src/inc directory, remove-it.
 # 3) Manipulates IN to be used in a #ifndef C/C++ preproc directive
+# 4) Define identation accordingly to namespace depth
 ifdef IN
 #------------------------------------------------------------------[ 1 ]
 override IN := $(strip $(call remove-trailing-bar,$(IN)))
@@ -2094,6 +2095,8 @@ override IN := $(strip $(or $(strip $(foreach d,$(srcdir) $(incdir),\
                ))),$(IN)))
 #------------------------------------------------------------------[ 3 ]
 indef       := $(strip $(call uc,$(subst /,_,$(strip $(IN)))))_
+#------------------------------------------------------------------[ 3 ]
+idnt        := $(if $(strip $(IN)),    )
 endif
 
 # Extension variables
@@ -2112,6 +2115,22 @@ $(if $(strip $1),$(if $(findstring $(strip $1),$2),,\
 ))
 endef
 
+# Function: start-namespace
+# Create new namespaces from the IN variable
+define start-namespace
+$(if $(strip $(IN)),\
+    $(call cat,$(subst \\n ,\\n,\
+        $(patsubst %,namespace % {\\n,$(subst /, ,$(IN)))\
+)))
+endef
+
+# Function: end-namespace
+# End the namespaces using the IN variable for namespace depth
+define end-namespace
+$(if $(strip $(IN)),\
+    $(call cat,$(subst } ,},$(foreach n,$(subst /, ,$(IN)),}))))
+endef
+
 # Path variables
 # ================
 # Auxiliar variables to the default place to create/remove 
@@ -2122,17 +2141,20 @@ override srcbase   := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
 # Artifacts
 # ===========
 # C/C++ Artifacts that may be created by this Makefile
-override NAMESPACE  := $(notdir $(NAMESPACE))
-override CLASS      := $(basename $(notdir $(CLASS)))
-override C_FILE     := $(basename $(notdir $(C_FILE)))
-override F_FILE     := $(basename $(notdir $(F_FILE)))
-override CXX_FILE   := $(basename $(notdir $(CXX_FILE)))
-override TEMPLATE   := $(basename $(notdir $(TEMPLATE)))
-override C_MODULE   := $(basename $(notdir $(C_MODULE)))
-override CXX_MODULE := $(basename $(notdir $(CXX_MODULE)))
+override NAMESPACE  := $(strip $(notdir $(NAMESPACE)))
+override CLASS      := $(strip $(basename $(notdir $(CLASS))))
+override C_FILE     := $(strip $(basename $(notdir $(C_FILE))))
+override F_FILE     := $(strip $(basename $(notdir $(F_FILE))))
+override CXX_FILE   := $(strip $(basename $(notdir $(CXX_FILE))))
+override TEMPLATE   := $(strip $(basename $(notdir $(TEMPLATE))))
+override C_MODULE   := $(strip $(basename $(notdir $(C_MODULE))))
+override CXX_MODULE := $(strip $(basename $(notdir $(CXX_MODULE))))
 
 .PHONY: new
 new:
+	$(if $(or $(NAMESPACE),$(CLASS),$(C_FILE),$(F_FILE),$(CXX_FILE),\
+         $(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
+         $(error No filetype defined. Type 'make projecthelp' for info))
 ifdef NAMESPACE
 	$(call mkdir,$(incbase)/$(NAMESPACE))
 	$(call mkdir,$(srcbase)/$(NAMESPACE))
@@ -2144,24 +2166,26 @@ ifdef CLASS
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(incbase)/$(CLASS)$(INC_EXT),$(NOTICE))
 	$(call select,$(incbase)/$(CLASS)$(INC_EXT))
-	$(call cat,'                                                      ')
-	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CLASS))_DEFINED       ')
-	$(call cat,'#define HPP_$(indef)$(call uc,$(CLASS))_DEFINED       ')
-	$(call cat,'                                                      ')
-	$(call cat,'class $(CLASS)                                        ')
-	$(call cat,'{                                                     ')
-	$(call cat,'                                                      ')
-	$(call cat,'};                                                    ')
-	$(call cat,'                                                      ')
-	$(call cat,'#endif                                                ')
+	$(call cat,''                                                      )
+	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CLASS))_DEFINED'       )
+	$(call cat,'#define HPP_$(indef)$(call uc,$(CLASS))_DEFINED'       )
+	$(call cat,''                                                      )
+	$(call start-namespace                                             )
+	$(call cat,'$(idnt)class $(CLASS)'                                 )
+	$(call cat,'$(idnt){'                                              )
+	$(call cat,'$(idnt)$(idnt)'                                        )
+	$(call cat,'$(idnt)};'                                             )
+	$(call end-namespace                                               )
+	$(call cat,''                                                      )
+	$(call cat,'#endif'                                                )
 	
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	$(call touch,$(srcbase)/$(CLASS)$(SRC_EXT),$(NOTICE))
 	$(call select,$(srcbase)/$(CLASS)$(SRC_EXT))
-	$(call cat,'                                                      ')
-	$(call cat,'// Libraries                                          ')
-	$(call cat,'#include "$(CLASS)$(INC_EXT)"                         ')
-	$(call cat,'                                                      ')
+	$(call cat,''                                                      )
+	$(call cat,'// Libraries'                                          )
+	$(call cat,'#include "$(CLASS)$(INC_EXT)"'                         )
+	$(call cat,''                                                      )
 	
 	$(call select,stdout)
 endif
@@ -2172,19 +2196,19 @@ ifdef C_FILE
 	$(call invalid-ext,$(INC_EXT),$(hext))
 	$(call touch,$(incbase)/$(C_FILE)$(INC_EXT),$(NOTICE))
 	$(call select,$(incbase)/$(C_FILE)$(INC_EXT))
-	$(call cat,'                                                      ')
-	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_FILE))_DEFINED        ')
-	$(call cat,'#define H_$(indef)$(call uc,$(C_FILE))_DEFINED        ')
-	$(call cat,'                                                      ')
-	$(call cat,'#endif                                                ')
+	$(call cat,''                                                      )
+	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_FILE))_DEFINED'        )
+	$(call cat,'#define H_$(indef)$(call uc,$(C_FILE))_DEFINED'        )
+	$(call cat,''                                                      )
+	$(call cat,'#endif'                                                )
 	
 	$(call invalid-ext,$(SRC_EXT),$(cext))
 	$(call touch,$(srcbase)/$(C_FILE)$(SRC_EXT),$(NOTICE))
 	$(call select,$(srcbase)/$(C_FILE)$(SRC_EXT))
-	$(call cat,'                                                      ')
-	$(call cat,'// Libraries                                          ')
-	$(call cat,'#include "$(C_FILE)$(INC_EXT)"                        ')
-	$(call cat,'                                                      ')
+	$(call cat,''                                                      )
+	$(call cat,'// Libraries'                                          )
+	$(call cat,'#include "$(C_FILE)$(INC_EXT)"'                        )
+	$(call cat,''                                                      )
 	
 	$(call select,stdout)
 endif
@@ -2194,11 +2218,11 @@ ifdef F_FILE
 	$(call invalid-ext,$(SRC_EXT),$(fext))
 	$(call touch,$(srcbase)/$(F_FILE)$(SRC_EXT),$(NOTICE))
 	$(call select,$(srcbase)/$(F_FILE)$(SRC_EXT))
-	$(call cat,'c $(call lc,$(F_FILE))$(SRC_EXT)                      ')
-	$(call cat,'                                                      ')
-	$(call cat,'      program $(call lc,$(F_FILE))                    ')
-	$(call cat,'          stop                                        ')
-	$(call cat,'      end                                             ')
+	$(call cat,'c $(call lc,$(F_FILE))$(SRC_EXT)'                      )
+	$(call cat,''                                                      )
+	$(call cat,'      program $(call lc,$(F_FILE))'                    )
+	$(call cat,'          stop'                                        )
+	$(call cat,'      end'                                             )
 	
 	$(call select,stdout)
 endif
@@ -2209,19 +2233,23 @@ ifdef CXX_FILE
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(incbase)/$(CXX_FILE)$(INC_EXT),$(NOTICE))
 	$(call select,$(incbase)/$(CXX_FILE)$(INC_EXT))
-	$(call cat,'                                                      ')
-	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_FILE))_DEFINED    ')
-	$(call cat,'#define HPP_$(indef)$(call uc,$(CXX_FILE))_DEFINED    ')
-	$(call cat,'                                                      ')
-	$(call cat,'#endif                                                ')
+	$(call cat,''                                                      )
+	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_FILE))_DEFINED'    )
+	$(call cat,'#define HPP_$(indef)$(call uc,$(CXX_FILE))_DEFINED'    )
+	$(call cat,''                                                      )
+	$(call start-namespace                                             )
+	$(call cat,'$(idnt)'                                               )
+	$(call end-namespace                                               )
+	$(call cat,''                                                      )
+	$(call cat,'#endif'                                                )
 	
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	$(call touch,$(srcbase)/$(CXX_FILE)$(SRC_EXT),$(NOTICE))
 	$(call select,$(srcbase)/$(CXX_FILE)$(SRC_EXT))
-	$(call cat,'                                                      ')
-	$(call cat,'// Libraries                                          ')
-	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"                      ')
-	$(call cat,'                                                      ')
+	$(call cat,''                                                      )
+	$(call cat,'// Libraries'                                          )
+	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"'                      )
+	$(call cat,''                                                      )
 	
 	$(call select,stdout)
 endif
@@ -2231,6 +2259,16 @@ ifdef TEMPLATE
 	$(call invalid-ext,$(INC_EXT),$(tlext))
 	$(call touch,$(incbase)/$(TEMPLATE)$(INC_EXT),$(NOTICE))
 	$(call select,$(incbase)/$(TEMPLATE)$(INC_EXT))
+	$(call cat,''                                                      )
+	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(TEMPLATE))_DEFINED'    )
+	$(call cat,'#define HPP_$(indef)$(call uc,$(TEMPLATE))_DEFINED'    )
+	$(call cat,''                                                      )
+	$(call start-namespace                                             )
+	$(call cat,'$(idnt)'                                               )
+	$(call end-namespace                                               )
+	$(call cat,''                                                      )
+	$(call cat,'#endif'                                                )
+	
 	$(call select,stdout)
 endif
 ifdef C_MODULE
@@ -2239,11 +2277,11 @@ ifdef C_MODULE
 	$(call invalid-ext,$(INC_EXT),$(hext))
 	$(call touch,$(incbase)/$(C_MODULE)$(INC_EXT),$(NOTICE))
 	$(call select,$(incbase)/$(C_MODULE)$(INC_EXT))
-	$(call cat,'                                                      ')
-	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_MODULE))_DEFINED      ')
-	$(call cat,'#define H_$(indef)$(call uc,$(C_MODULE))_DEFINED      ')
-	$(call cat,'                                                      ')
-	$(call cat,'#endif                                                ')
+	$(call cat,''                                                      )
+	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_MODULE))_DEFINED'      )
+	$(call cat,'#define H_$(indef)$(call uc,$(C_MODULE))_DEFINED'      )
+	$(call cat,''                                                      )
+	$(call cat,'#endif'                                                )
 	
 	$(call mkdir,$(srcbase)/$(C_MODULE))
 endif
@@ -2253,11 +2291,15 @@ ifdef CXX_MODULE
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(incbase)/$(CXX_MODULE)$(INC_EXT),$(NOTICE))
 	$(call select,$(incbase)/$(CXX_MODULE)$(INC_EXT))
-	$(call cat,'                                                      ')
-	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_MODULE))_DEFINED  ')
-	$(call cat,'#define HPP_$(indef)$(call uc,$(CXX_MODULE))_DEFINED  ')
-	$(call cat,'                                                      ')
-	$(call cat,'#endif                                                ')
+	$(call cat,''                                                      )
+	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_MODULE))_DEFINED'  )
+	$(call cat,'#define HPP_$(indef)$(call uc,$(CXX_MODULE))_DEFINED'  )
+	$(call cat,''                                                      )
+	$(call start-namespace                                             )
+	$(call cat,'$(idnt)'                                               )
+	$(call end-namespace                                               )
+	$(call cat,''                                                      )
+	$(call cat,'#endif'                                                )
 	
 	$(call mkdir,$(srcbase)/$(CXX_MODULE))
 endif
@@ -2272,6 +2314,9 @@ endef
 
 .PHONY: delete
 delete:
+	$(if $(or $(NAMESPACE),$(CLASS),$(C_FILE),$(F_FILE),$(CXX_FILE),\
+         $(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
+         $(error No filetype defined. Type 'make projecthelp' for info))
 ifndef D
 	@echo $(MSG_DELETE_WARN)
 	@echo $(MSG_DELETE_ALT)

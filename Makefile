@@ -1203,7 +1203,7 @@ $$(firstword $$(srcdir))/$1.yy.$2: \
     $$(firstword $$(incdir))/$1-yy)
 
 $$(firstword $$(srcdir))/$1.yy.$2: $3 $$(yaccall)
-	$$(call vstatus,$$(MSG_LEX))
+	$$(call status,$$(MSG_LEX))
 	$$(quiet) $$(MKDIR) $$(basename $$(basename $$@))
 	
 	$$(quiet) cd $$(basename $$(basename $$@))/ \
@@ -1242,15 +1242,15 @@ $$(firstword $$(srcdir))/$1.tab.$2: \
     $$(firstword $$(incdir))/$1-tab)
 
 $$(firstword $$(srcdir))/$1.tab.$2: $3
-	$$(call vstatus,$$(MSG_YACC))
+	$$(call status,$$(MSG_YACC))
 	$$(quiet) $$(MKDIR) $$(basename $$(basename $$@))
-	
+
 	$$(quiet) cd $$(basename $$(basename $$@))/ \
               && $4 $$(yaccflags) ../$$(notdir $$<) $$(ERROR)
 	$$(quiet) $$(MV) $$(basename $$(basename $$@))/* \
                      $$(firstword $$(incdir))/$1-tab          $$(ERROR)
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/*.$2 $$@ $$(ERROR)
-	
+
 	$$(quiet) $$(RMDIR) $$(basename $$(basename $$@))/
 	$$(call ok,$$(MSG_YACC),$$@)
 
@@ -1849,7 +1849,7 @@ MSG_DEB_STEP3     = "${YELLOW}[STEP_3]${DEF} Adding directory${CYAN}"\
 MSG_DEB_STEP4     = "${YELLOW}[STEP_4]${DEF} Building the Debian"\
                     "package${RES}"
 
-MSG_LEX           = "${PURPLE}Generating scanner $@${RES}"
+MSG_LEX           = "${PURPLE}Generating scanner ${BLUE}$@${RES}"
 MSG_LEX_NONE      = "${PURPLE}No auto-generated lexers${RES}"
 MSG_LEX_COMPILE   = "${DEF}Compiling scanner ${WHITE}$@${RES}"
 MSG_YACC          = "${PURPLE}Generating parser ${BLUE}$@${RES}"

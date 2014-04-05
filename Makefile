@@ -1510,9 +1510,9 @@ $(foreach s,$(testdep),$(eval\
 #         files (to create objdir and automatic source)                #
 #======================================================================#
 define binary-factory
-$1$2: $$($2_lib) $$($2_obj) $$($2_aobj) | $1
+$1$2: $$($2_lib) $$($2_aobj) $$($2_obj) | $1
 	$$(call status,$$(MSG_$$(strip $3)_LINKAGE))
-	$$(quiet) $4 $$($2_obj) $$($2_aobj) -o $$@ \
+	$$(quiet) $4 $$($2_aobj) $$($2_obj) -o $$@ \
               $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
 	$$(call ok,$$(MSG_$$(strip $3)_LINKAGE),$$@)
 

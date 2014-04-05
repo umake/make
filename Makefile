@@ -67,7 +67,7 @@ CFLAGS    := -Wall -ansi -pedantic -O2 -g
 CXXFLAGS  := $(CFLAGS) -std=c++11
 
 # Fortran Options
-FFLAGS   := -cpp
+FFLAGS    := -cpp
 
 # Parsers in C++
 CXXLEXER  := 
@@ -200,7 +200,7 @@ localedir      := $(datarootdir)/locale
 ASMEXT  := .asm .S
 
 # Header extensions
-HEXT    := .h
+HEXT    := .h .ih
 HFEXT   := .mod .MOD
 HXXEXT  := .H .hh .hpp .hxx .h++
 
@@ -279,7 +279,7 @@ LEX_CXX         := flexc++
 LEXFLAGS        := 
 YACC            := bison
 YACC_CXX        := bisonc++
-YACCFLAGS       := -d #-v -t
+YACCFLAGS       := 
 
 # Documentation
 MAKEINFO        := makeinfo
@@ -589,7 +589,7 @@ lexall   := $(strip $(lexall))
 #------------------------------------------------------------------[ 4 ]
 lexinc   := $(call not-root,$(basename $(basename $(lexall))))
 lexinc   := $(addprefix $(firstword $(incdir))/,$(lexinc))
-lexinc   := $(addsuffix /,$(lexinc))
+lexinc   := $(addsuffix -yy/,$(lexinc))
 
 # Syntatic analyzer
 # ==================
@@ -613,16 +613,16 @@ yaccall   += $(foreach E,$(yaccext),\
                 $(patsubst %$E,%.tab.c,$(filter %$E,$(cparser))))
 yaccall   := $(strip $(yaccall))
 #------------------------------------------------------------------[ 4 ]
-yaccinc   := $(call not-root,$(yaccall))
+yaccinc   := $(call not-root,$(basename $(basename $(yaccall))))
 yaccinc   := $(addprefix $(firstword $(incdir))/,$(yaccinc))
-yaccinc   := $(patsubst %.c,%.h,$(patsubst %.cc,%.hh,$(yaccinc)))
+yaccinc   := $(addsuffix -tab/,$(yaccinc))
 
 # Automatically generated files
 # =============================
 autoall := $(yaccall) $(lexall)
 autoinc := $(yaccinc) $(lexinc)
 autosrc := $(call not-root,$(autoall))
-autoobj := $(addsuffix .o,$(basename $(autosrc)))
+autoobj := $(addsuffix $(firstword $(objext)),$(basename $(autosrc)))
 autoobj := $(addprefix $(objdir)/,$(autoobj))
 
 # Source files
@@ -786,12 +786,12 @@ $(foreach e,$(libext),\
 
 # Object files
 # =============
-# 1) Add '.o' suffix for each 'naked' assembly source file name (basename)
-# 2) Add '.o' suffix for each 'naked' source file name (basename)
+# 1) Add obj suffix for each 'naked' assembly source file name (basename)
+# 2) Add obj suffix for each 'naked' source file name (basename)
 # 3) Prefix the build dir before each name
 # 4) Join all object files (including auto-generated)
-obj := $(addsuffix .o,$(basename $(asmsrc)))
-obj += $(addsuffix .o,$(basename $(src)))
+obj := $(addsuffix $(firstword $(objext)),$(basename $(asmsrc)))
+obj += $(addsuffix $(firstword $(objext)),$(basename $(src)))
 obj := $(addprefix $(objdir)/,$(obj))
 objall := $(obj) $(arobj) $(shrobj) #$(autoobj)
 
@@ -801,7 +801,7 @@ objall := $(obj) $(arobj) $(shrobj) #$(autoobj)
 # 2) Add them as paths to be searched for headers
 # 3) Get all files able to be included
 incsub  := $(foreach i,$(incdir),$(call rsubdir,$i))
-incsub  += $(lexinc) #TODO: uncomment this ==> $(yaccinc)
+incsub  += $(lexinc) $(yaccinc)
 clibs   := $(patsubst %,-I%,$(incsub))
 flibs   := $(patsubst %,-I%,$(incsub))
 cxxlibs := $(patsubst %,-I%,$(incsub))
@@ -1199,8 +1199,8 @@ endif # ifneq($(strip $(doxyfile)),) ####
 define scanner-factory
 # Recompile target iff the include directory not exists
 $$(firstword $$(srcdir))/$1.yy.$2: \
-    $$(if $$(wildcard $$(firstword $$(incdir))/$1),,\
-    $$(firstword $$(incdir))/$1)
+    $$(if $$(wildcard $$(firstword $$(incdir))/$1-yy),,\
+    $$(firstword $$(incdir))/$1-yy)
 
 $$(firstword $$(srcdir))/$1.yy.$2: $3 $$(yaccall)
 	$$(call vstatus,$$(MSG_LEX))
@@ -1209,14 +1209,14 @@ $$(firstword $$(srcdir))/$1.yy.$2: $3 $$(yaccall)
 	$$(quiet) cd $$(basename $$(basename $$@))/ \
               && $4 $$(lexflags) ../$$(notdir $$<)
 	$$(quiet) $$(MV) $$(basename $$(basename $$@))/* \
-                     $$(firstword $$(incdir))/$1
-	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1/*.$2 $$@
+                     $$(firstword $$(incdir))/$1-yy
+	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/*.$2 $$@
 	
 	$$(quiet) $$(RMDIR) $$(basename $$(basename $$@))/
 	$$(call ok,$$(MSG_LEX),$$@)
-	
-ifeq ($$(wildcard $$(firstword $$(incdir))/$1),)
-$$(firstword $$(incdir))/$1/:
+
+ifeq ($$(wildcard $$(firstword $$(incdir))/$1-yy),)
+$$(firstword $$(incdir))/$1-yy/:
 	$$(call mkdir,$$@)
 endif
 endef
@@ -1237,24 +1237,35 @@ $(foreach s,$(cxxlexer),$(eval\
 # @return Target to generate source files accordingly to their types   #
 #======================================================================#
 define parser-factory
-$1.tab.$2 $3.tab.$4: $5
+$$(firstword $$(srcdir))/$1.tab.$2: \
+    $$(if $$(wildcard $$(firstword $$(incdir))/$1-tab),,\
+    $$(firstword $$(incdir))/$1-tab)
+
+$$(firstword $$(srcdir))/$1.tab.$2: $3
 	$$(call vstatus,$$(MSG_YACC))
-	$$(quiet) $$(call mksubdir,$$(incdir),$$@)
-	$$(quiet) $6 $$(yaccflags) $$< -o $1.tab.$2
-	$$(quiet) $$(MV) $1.h $3.tab.$4
+	$$(quiet) $$(MKDIR) $$(basename $$(basename $$@))
+	
+	$$(quiet) cd $$(basename $$(basename $$@))/ \
+              && $4 $$(yaccflags) ../$$(notdir $$<)
+	$$(quiet) $$(MV) $$(basename $$(basename $$@))/* \
+                     $$(firstword $$(incdir))/$1-tab
+	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/*.$2 $$@
+	
+	$$(quiet) $$(RMDIR) $$(basename $$(basename $$@))/
 	$$(call ok,$$(MSG_YACC),$$@)
+
+ifeq ($$(wildcard $$(firstword $$(incdir))/$1-tab),)
+$$(firstword $$(incdir))/$1-tab/:
+	$$(call mkdir,$$@)
+endif
 endef
 $(foreach s,$(cparser),$(eval\
-    $(call parser-factory,\
-        $(basename $s),c,\
-        $(firstword $(incdir))/$(call not-root,$(basename $s)),h,\
-        $s,$(YACC))\
+    $(call parser-factory,$(call not-root,$(basename $s)),c,$s,\
+    $(YACC))\
 ))
 $(foreach s,$(cxxparser),$(eval\
-    $(call parser-factory,\
-        $(basename $s),cc,\
-        $(firstword $(incdir))/$(call not-root,$(basename $s)),hh,\
-        $s,$(YACC_CXX))\
+    $(call parser-factory,$(call not-root,$(basename $s)),cc,$s,\
+    $(YACC_CXX))\
 ))
 
 #======================================================================#
@@ -1266,7 +1277,7 @@ $(foreach s,$(cxxparser),$(eval\
 #         extension, looking in the right root directory               #
 #======================================================================#
 define compile-asm
-$$(objdir)/$3%.o: $2%$1 | $$(depdir)
+$$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_ASM_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -1289,7 +1300,7 @@ $(foreach root,$(srcdir),\
 #         looking in the right root directory                          #
 #======================================================================#
 define compile-c
-$$(objdir)/$3%.o: $2%$1 | $$(depdir)
+$$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_C_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -1313,7 +1324,7 @@ $(foreach E,$(cext),\
 #         looking in the right root directory                          #
 #======================================================================#
 define compile-cpp
-$$(objdir)/$3%.o: $2%$1 | $$(depdir)
+$$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_CXX_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -1337,7 +1348,7 @@ $(foreach E,$(cxxext),\
 #         extension, looking in the right root directory               #
 #======================================================================#
 define compile-fortran
-$$(objdir)/$3%.o: $2%$1 | $$(depdir)
+$$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_F_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -1363,7 +1374,7 @@ $(foreach E,$(fext),\
 # @return Target to compile the C library file                         #
 #======================================================================#
 define compile-sharedlib-linux-c
-$$(objdir)/$2.o: $1$2$3 | $$(depdir)
+$$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_C_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -1384,7 +1395,7 @@ $(foreach s,$(foreach E,$(cext),$(filter %$E,$(shrall))),\
 # @return Target to compile the C++ library file                       #
 #======================================================================#
 define compile-sharedlib-linux-cpp
-$$(objdir)/$2.o: $1$2$3 | $$(depdir)
+$$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_CXX_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -1406,7 +1417,7 @@ $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
 # @return Target to compile the Fortran library file                   #
 #======================================================================#
 define compile-sharedlib-linux-fortran
-$$(objdir)/$2.o: $1$2$3 | $$(depdir)
+$$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_F_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -1482,9 +1493,11 @@ endef
 $(foreach s,$(testdep),$(eval\
     $(call test-factory,\
         $(bindir)/$(testdir)/$s$(testsuf)$(binext),\
-        $(objdir)/$(testdir)/$s$(testsuf).o,\
-        $(if $(strip $(filter $(objdir)/$s.o,$(objall))),\
-            $(objdir)/$s.o,$(warning "$(objdir)/$s.o not found")\
+        $(objdir)/$(testdir)/$s$(testsuf)$(firstword $(objext)),\
+        $(if $(strip \
+            $(filter $(objdir)/$s$(firstword $(objext)),$(objall))),\
+                $(objdir)/$s$(firstword $(objext)),\
+                $(warning "$(objdir)/$s$(firstword $(objext)) not found")\
         ),\
         run_$(subst /,_,$s)\
 )))
@@ -1740,7 +1753,7 @@ realclean: docclean distclean packageclean
         $(call rm,$(lexall)) $(call rm-if-empty,$(lexinc)),\
         $(call phony-ok,$(MSG_LEX_NONE))  )
 	$(if $(yaccall),\
-        $(call rm,$(yaccall) $(yaccinc)),\
+        $(call rm,$(yaccall)) $(call rm-if-empty,$(yaccinc)),\
         $(call phony-ok,$(MSG_YACC_NONE)) )
 
 .PHONY: mainteiner-clean
@@ -2436,6 +2449,13 @@ gitignore:
 	@$(foreach d,$(execdir),echo $d/; )
 	@$(foreach d,$(distdir),echo $d/; )
 	@echo "                                                            "
+	@echo "# Scanner and Parser files                                  "
+	@echo "#===========================                                "
+	@echo "*.yy.*                                                      "
+	@echo "*-yy/                                                       "
+	@echo "*.tab.*                                                     "
+	@echo "*-tab/                                                      "
+	@echo "                                                            "
 	@echo "# Objects, Libraries and Binaries                           "
 	@echo "#==================================                         "
 	@$(foreach e,$(objext),echo *$e; )
@@ -2662,5 +2682,3 @@ dump:
 	$(call prompt,"ldlibs:      ",$(ldlibs)      )
 	$(call prompt,"ldflags:     ",$(ldflags)     )
 	
-	@echo $(basename $(basename src/parser/blah.yy.cc))
-	@echo $(and $(wildcard $(firstword $(incdir))/parser/Scanner/))

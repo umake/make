@@ -2224,6 +2224,7 @@ ifdef CLASS
 	$(call cat,''                                                      )
 	$(call cat,'// Libraries'                                          )
 	$(call cat,'#include "$(CLASS)$(INC_EXT)"'                         )
+	$(call cat,'using namespace $(subst /,::,$(IN));'                  )
 	$(call cat,''                                                      )
 	
 	$(call select,stdout)
@@ -2288,6 +2289,7 @@ ifdef CXX_FILE
 	$(call cat,''                                                      )
 	$(call cat,'// Libraries'                                          )
 	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"'                      )
+	$(call cat,'using namespace $(subst /,::,$(IN));'                  )
 	$(call cat,''                                                      )
 	
 	$(call select,stdout)

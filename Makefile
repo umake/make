@@ -1207,10 +1207,10 @@ $$(firstword $$(srcdir))/$1.yy.$2: $3 $$(yaccall)
 	$$(quiet) $$(MKDIR) $$(basename $$(basename $$@))
 	
 	$$(quiet) cd $$(basename $$(basename $$@))/ \
-              && $4 $$(lexflags) ../$$(notdir $$<)
+              && $4 $$(lexflags) ../$$(notdir $$<) $$(ERROR)
 	$$(quiet) $$(MV) $$(basename $$(basename $$@))/* \
-                     $$(firstword $$(incdir))/$1-yy
-	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/*.$2 $$@
+                     $$(firstword $$(incdir))/$1-yy          $$(ERROR)
+	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/*.$2 $$@ $$(ERROR)
 	
 	$$(quiet) $$(RMDIR) $$(basename $$(basename $$@))/
 	$$(call ok,$$(MSG_LEX),$$@)
@@ -1246,10 +1246,10 @@ $$(firstword $$(srcdir))/$1.tab.$2: $3
 	$$(quiet) $$(MKDIR) $$(basename $$(basename $$@))
 	
 	$$(quiet) cd $$(basename $$(basename $$@))/ \
-              && $4 $$(yaccflags) ../$$(notdir $$<)
+              && $4 $$(yaccflags) ../$$(notdir $$<) $$(ERROR)
 	$$(quiet) $$(MV) $$(basename $$(basename $$@))/* \
-                     $$(firstword $$(incdir))/$1-tab
-	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/*.$2 $$@
+                     $$(firstword $$(incdir))/$1-tab          $$(ERROR)
+	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/*.$2 $$@ $$(ERROR)
 	
 	$$(quiet) $$(RMDIR) $$(basename $$(basename $$@))/
 	$$(call ok,$$(MSG_YACC),$$@)
@@ -1283,7 +1283,7 @@ $$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(AS) $$(ASMFLAGS) $$< -o $$@
+	$$(quiet) $$(AS) $$(ASMFLAGS) $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_ASM_COMPILE),$$@)
 endef

@@ -485,7 +485,7 @@ endef
 
 define has_f
 $(if $(strip $(sort $(foreach s,$(sort $(suffix $1)),\
-	$(findstring $s,$(fext))))),has_f)
+    $(findstring $s,$(fext))))),has_f)
 endef
 
 define is_f
@@ -495,7 +495,7 @@ endef
 
 define has_cxx
 $(if $(strip $(sort $(foreach s,$(sort $(suffix $1)),\
-	$(findstring $s,$(cxxext))))),has_cxx)
+    $(findstring $s,$(cxxext))))),has_cxx)
 endef
 
 define is_cxx
@@ -507,7 +507,7 @@ endef
 # ===================
 # 1) rsubdir: For listing all subdirectories of a given dir
 # 2) rwildcard: For wildcard deep-search in the directory tree
-# 3) rfilter-out: For filtering text from a list with many items     
+# 3) rfilter-out: For filtering a list of text from another list
 rsubdir   = $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS)))
 rwildcard = $(foreach d,$(wildcard $1/*),\
                 $(call rwildcard,$d,$2)$(filter $(subst *,%,$2),$d)) 
@@ -571,6 +571,7 @@ $(foreach s,$(lib_in),                                                 \
 # 2) Split C++ and C lexers (to be compiled appropriately)
 # 3) Change lex extension to format .yy.c or .yy.cc (for C/C++ lexers)
 #    and join all the C and C++ lexer source names
+# 4) Create lex scanners default directories for headers
 #------------------------------------------------------------------[ 1 ]
 $(foreach root,$(srcdir),\
     $(foreach E,$(lexext),\
@@ -585,6 +586,10 @@ lexall   += $(foreach E,$(lexext),\
 lexall   += $(foreach E,$(lexext),\
                 $(patsubst %$E,%.yy.c,$(filter %$E,$(clexer))))
 lexall   := $(strip $(lexall))
+#------------------------------------------------------------------[ 4 ]
+lexinc   := $(call not-root,$(basename $(basename $(lexall))))
+lexinc   := $(addprefix $(firstword $(incdir))/,$(lexinc))
+lexinc   := $(addsuffix /,$(lexinc))
 
 # Syntatic analyzer
 # ==================
@@ -615,6 +620,7 @@ yaccinc   := $(patsubst %.c,%.h,$(patsubst %.cc,%.hh,$(yaccinc)))
 # Automatically generated files
 # =============================
 autoall := $(yaccall) $(lexall)
+autoinc := $(yaccinc) $(lexinc)
 autosrc := $(call not-root,$(autoall))
 autoobj := $(addsuffix .o,$(basename $(autosrc)))
 autoobj := $(addprefix $(objdir)/,$(autoobj))
@@ -672,10 +678,10 @@ libpat := $(sort \
 )
 #------------------------------------------------------------------[ 4 ]
 srccln := $(srcall)
-srccln := $(filter-out $(liball),$(srcall))
+srccln := $(call rfilter-out,$(liball),$(srccln))
+srccln := $(call rfilter-out,$(lexall) $(yaccall),$(srccln))
 #------------------------------------------------------------------[ 5 ]
-src    := $(srccln)
-$(foreach root,$(srcdir),$(eval src := $(patsubst $(root)/%,%,$(src))))
+src    := $(call not-root,$(srccln))
 
 # Static libraries
 # =================
@@ -787,7 +793,7 @@ $(foreach e,$(libext),\
 obj := $(addsuffix .o,$(basename $(asmsrc)))
 obj += $(addsuffix .o,$(basename $(src)))
 obj := $(addprefix $(objdir)/,$(obj))
-objall := $(obj) $(arobj) $(shrobj) $(autoobj)
+objall := $(obj) $(arobj) $(shrobj) #$(autoobj)
 
 # Header files
 # =============
@@ -795,6 +801,7 @@ objall := $(obj) $(arobj) $(shrobj) $(autoobj)
 # 2) Add them as paths to be searched for headers
 # 3) Get all files able to be included
 incsub  := $(foreach i,$(incdir),$(call rsubdir,$i))
+incsub  += $(lexinc) #TODO: uncomment this ==> $(yaccinc)
 clibs   := $(patsubst %,-I%,$(incsub))
 flibs   := $(patsubst %,-I%,$(incsub))
 cxxlibs := $(patsubst %,-I%,$(incsub))
@@ -1190,18 +1197,36 @@ endif # ifneq($(strip $(doxyfile)),) ####
 # @return Target to generate source files according to its type        #
 #======================================================================#
 define scanner-factory
-$1.yy.$2: $3 $$(yaccall)
+# Recompile target iff the include directory not exists
+$$(firstword $$(srcdir))/$1.yy.$2: \
+    $$(if $$(wildcard $$(firstword $$(incdir))/$1),,\
+    $$(firstword $$(incdir))/$1)
+
+$$(firstword $$(srcdir))/$1.yy.$2: $3 $$(yaccall)
 	$$(call vstatus,$$(MSG_LEX))
-	$$(quiet) $4 $$(lexflags) -o$$@ $$< 
+	$$(quiet) $$(MKDIR) $$(basename $$(basename $$@))
+	
+	$$(quiet) cd $$(basename $$(basename $$@))/ \
+              && $4 $$(lexflags) ../$$(notdir $$<)
+	$$(quiet) $$(MV) $$(basename $$(basename $$@))/* \
+                     $$(firstword $$(incdir))/$1
+	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1/*.$2 $$@
+	
+	$$(quiet) $$(RMDIR) $$(basename $$(basename $$@))/
 	$$(call ok,$$(MSG_LEX),$$@)
+	
+ifeq ($$(wildcard $$(firstword $$(incdir))/$1),)
+$$(firstword $$(incdir))/$1/:
+	$$(call mkdir,$$@)
+endif
 endef
 $(foreach s,$(clexer),$(eval\
-    $(call scanner-factory,$(basename $s),c,\
-    $s,$(LEX))\
+    $(call scanner-factory,$(call not-root,$(basename $s)),c,$s,\
+    $(LEX))\
 ))
 $(foreach s,$(cxxlexer),$(eval\
-    $(call scanner-factory,$(basename $s),cc,\
-    $s,$(LEX_CXX))\
+    $(call scanner-factory,$(call not-root,$(basename $s)),cc,$s,\
+    $(LEX_CXX))\
 ))
 
 #======================================================================#
@@ -1214,7 +1239,7 @@ $(foreach s,$(cxxlexer),$(eval\
 define parser-factory
 $1.tab.$2 $3.tab.$4: $5
 	$$(call vstatus,$$(MSG_YACC))
-	$$(quiet) $$(call mksubdir,$$(firstword $$(incdir)),$$@)
+	$$(quiet) $$(call mksubdir,$$(incdir),$$@)
 	$$(quiet) $6 $$(yaccflags) $$< -o $1.tab.$2
 	$$(quiet) $$(MV) $1.h $3.tab.$4
 	$$(call ok,$$(MSG_YACC),$$@)
@@ -1309,7 +1334,7 @@ $(foreach E,$(cxxext),\
 # @param  $2 Root source directory                                     #
 # @param  $3 Source tree specific path in objdir to put objects        #
 # @return Target to compile all Fortran files with the given           #
-# 		  extension, looking in the right root directory               #
+#         extension, looking in the right root directory               #
 #======================================================================#
 define compile-fortran
 $$(objdir)/$3%.o: $2%$1 | $$(depdir)
@@ -1679,7 +1704,7 @@ $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
 ########################################################################
 .PHONY: mostlyclean
 mostlyclean:
-	$(call rm-if-empty,$(objdir),$(objall))
+	$(call rm-if-empty,$(objdir),$(objall) $(autoobj))
 
 .PHONY: clean
 clean: mostlyclean
@@ -1712,7 +1737,7 @@ packageclean:
 .PHONY: realclean
 realclean: docclean distclean packageclean
 	$(if $(lexall),\
-        $(call rm,$(lexall)),\
+        $(call rm,$(lexall)) $(call rm-if-empty,$(lexinc)),\
         $(call phony-ok,$(MSG_LEX_NONE))  )
 	$(if $(yaccall),\
         $(call rm,$(yaccall) $(yaccinc)),\
@@ -1900,9 +1925,10 @@ define mkdir
 	$(if $(strip $(patsubst .,,$1)), $(call phony-ok,$(MSG_MKDIR))     )
 endef
 
+# Create a subdirectory tree in the first element of a list of roots
 define mksubdir
 $(if $(strip $(patsubst .,,$1)),\
-	$(quiet) $(MKDIR) $1/$(strip $(call not-root,$(dir $2))))
+	$(quiet) $(MKDIR) $(firstword $1)/$(strip $(call not-root,$(dir $2))))
 endef
 
 define mv
@@ -1952,17 +1978,17 @@ endef
 # @param $2 Files in $1 that should be removed from within $1          #
 # .---------.-----.-------.-------.------------.                       #
 # | Dir not | 2nd | Extra |  Dir  | Result     |                       #
-# |  ampty  | arg | files | exist |            |                       #
+# |  empty  | arg | files | exist |            |                       #
 # |=========|=====|=======|=======|============|                       #
 # |         |     |       |       | nothing    | }                     #
 # |         |     |       |   X   | remove     | }                     #
 # |         |     |   X   |       | nothing    | } When dir is         #
 # |         |  X  |       |       | nothing    | } empty               #
 # |         |  X  |   X   |       | nothing    | }                     #
-# |    X    |     |       |       | remove     | - No restric.         #
-# |    X    |     |   X   |       | remove     | - or restric.         #
-# |    X    |  X  |       |       | remove     | - ok? Remove!         #
-# |    X    |  X  |   X   |       | not_remove | } Not remove,         #
+# |    X    |     |       |   X   | remove     | - With or without     #
+# |    X    |     |   X   |   X   | remove     | - rest., remove.      #
+# |    X    |  X  |       |   X   | remove     | - ok? Remove!         #
+# |    X    |  X  |   X   |   X   | not_remove | } Not remove,         #
 # '---------'-----'-------'-------'------------'   otherwise           #
 #======================================================================#
 define rm-if-empty
@@ -2544,6 +2570,11 @@ dump:
 	$(call prompt,"autoall:     ",$(autoall)     )
 	$(call prompt,"autosrc:     ",$(autosrc)     )
 	$(call prompt,"incall:      ",$(incall)      )
+	
+	@echo "${WHITE}\nHEADERS               ${RES}"
+	@echo "--------------------------------------"
+	$(call prompt,"incall:      ",$(incall)      )
+	$(call prompt,"autoinc:     ",$(autoinc)     )
 	                                           
 	@echo "${WHITE}\nTEST                  ${RES}"
 	@echo "--------------------------------------"
@@ -2631,3 +2662,5 @@ dump:
 	$(call prompt,"ldlibs:      ",$(ldlibs)      )
 	$(call prompt,"ldflags:     ",$(ldflags)     )
 	
+	@echo $(basename $(basename src/parser/blah.yy.cc))
+	@echo $(and $(wildcard $(firstword $(incdir))/parser/Scanner/))

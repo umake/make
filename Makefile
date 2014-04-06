@@ -1204,15 +1204,13 @@ $$(firstword $$(srcdir))/$1.yy.$2: \
 
 $$(firstword $$(srcdir))/$1.yy.$2: $3 $$(yaccall)
 	$$(call status,$$(MSG_LEX))
-	$$(quiet) $$(MKDIR) $$(basename $$(basename $$@))
 	
-	$$(quiet) cd $$(basename $$(basename $$@))/ \
-              && $4 $$(lexflags) ../$$(notdir $$<) $$(ERROR)
-	$$(quiet) $$(MV) $$(basename $$(basename $$@))/* \
-                     $$(firstword $$(incdir))/$1-yy          $$(ERROR)
+	$$(quiet) $$(MV) $$< $$(firstword $$(incdir))/$1-yy/
+	$$(quiet) cd $$(firstword $$(incdir))/$1-yy/ \
+              && $4 $$(lexflags) $$(notdir $$<) $$(ERROR)
+	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/$$(notdir $$<) $$<
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/*.$2 $$@ $$(ERROR)
 	
-	$$(quiet) $$(RMDIR) $$(basename $$(basename $$@))/
 	$$(call ok,$$(MSG_LEX),$$@)
 
 ifeq ($$(wildcard $$(firstword $$(incdir))/$1-yy),)
@@ -1243,15 +1241,13 @@ $$(firstword $$(srcdir))/$1.tab.$2: \
 
 $$(firstword $$(srcdir))/$1.tab.$2: $3
 	$$(call status,$$(MSG_YACC))
-	$$(quiet) $$(MKDIR) $$(basename $$(basename $$@))
 
-	$$(quiet) cd $$(basename $$(basename $$@))/ \
-              && $4 $$(yaccflags) ../$$(notdir $$<) $$(ERROR)
-	$$(quiet) $$(MV) $$(basename $$(basename $$@))/* \
-                     $$(firstword $$(incdir))/$1-tab          $$(ERROR)
+	$$(quiet) $$(MV) $$< $$(firstword $$(incdir))/$1-tab/
+	$$(quiet) cd $$(firstword $$(incdir))/$1-tab/ \
+              && $4 $$(yaccflags) $$(notdir $$<) $$(ERROR)
+	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/$$(notdir $$<) $$<
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/*.$2 $$@ $$(ERROR)
-
-	$$(quiet) $$(RMDIR) $$(basename $$(basename $$@))/
+	
 	$$(call ok,$$(MSG_YACC),$$@)
 
 ifeq ($$(wildcard $$(firstword $$(incdir))/$1-tab),)

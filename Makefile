@@ -1746,10 +1746,10 @@ packageclean:
 .PHONY: realclean
 realclean: docclean distclean packageclean
 	$(if $(lexall),\
-        $(call rm,$(lexall)) $(call rm-if-empty,$(lexinc)),\
+        $(call rm,$(lexall)),\
         $(call phony-ok,$(MSG_LEX_NONE))  )
 	$(if $(yaccall),\
-        $(call rm,$(yaccall)) $(call rm-if-empty,$(yaccinc)),\
+        $(call rm,$(yaccall)),\
         $(call phony-ok,$(MSG_YACC_NONE)) )
 
 .PHONY: mainteiner-clean

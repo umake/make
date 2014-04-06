@@ -1202,7 +1202,7 @@ $$(firstword $$(srcdir))/$1.yy.$2: \
     $$(if $$(wildcard $$(firstword $$(incdir))/$1-yy),,\
     $$(firstword $$(incdir))/$1-yy)
 
-$$(firstword $$(srcdir))/$1.yy.$2: $3 $$(yaccall)
+$$(firstword $$(srcdir))/$1.yy.$2: $3
 	$$(call status,$$(MSG_LEX))
 	
 	$$(quiet) $$(MV) $$< $$(firstword $$(incdir))/$1-yy/
@@ -1239,7 +1239,7 @@ $$(firstword $$(srcdir))/$1.tab.$2: \
     $$(if $$(wildcard $$(firstword $$(incdir))/$1-tab),,\
     $$(firstword $$(incdir))/$1-tab)
 
-$$(firstword $$(srcdir))/$1.tab.$2: $3
+$$(firstword $$(srcdir))/$1.tab.$2: $3 $$(lexall)
 	$$(call status,$$(MSG_YACC))
 
 	$$(quiet) $$(MV) $$< $$(firstword $$(incdir))/$1-tab/

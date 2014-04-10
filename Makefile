@@ -2449,13 +2449,6 @@ gitignore:
 	@$(foreach d,$(execdir),echo $d/; )
 	@$(foreach d,$(distdir),echo $d/; )
 	@echo "                                                            "
-	@echo "# Scanner and Parser files                                  "
-	@echo "#===========================                                "
-	@echo "*.yy.*                                                      "
-	@echo "*-yy/                                                       "
-	@echo "*.tab.*                                                     "
-	@echo "*-tab/                                                      "
-	@echo "                                                            "
 	@echo "# Objects, Libraries and Binaries                           "
 	@echo "#==================================                         "
 	@$(foreach e,$(objext),echo *$e; )

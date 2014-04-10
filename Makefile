@@ -917,10 +917,10 @@ $(foreach b,$(notdir $(binall)),$(or\
 
 # Install binary
 # ================
-i_lib     := $(addprefix $(i_libdir)/,$(notdir $(lib)))
-i_bin     := $(addprefix $(i_bindir)/,$(notdir $(bin)))
-i_sbin    := $(addprefix $(i_sbindir)/,$(notdir $(sbin)))
-i_libexec := $(addprefix $(i_libexecdir)/,$(notdir $(libexec)))
+i_lib     := $(addprefix $(i_libdir)/,$(call not-root,$(lib)))
+i_bin     := $(addprefix $(i_bindir)/,$(call not-root,$(bin)))
+i_sbin    := $(addprefix $(i_sbindir)/,$(call not-root,$(sbin)))
+i_libexec := $(addprefix $(i_libexecdir)/,$(call not-root,$(libexec)))
 
 # Texinfo files
 # ==============
@@ -1603,10 +1603,11 @@ $(foreach d,$(i_libdir) $(i_bindir) $(i_sbindir) $(i_libexecdir),\
 # @return Target to install some data file                             #
 #======================================================================#
 define install-data
-$1/$$(notdir $2): | $1
-	$$(call phony-status,$$(MSG_INSTALL_BIN))
+$1/$$(call not-root,$2): | $1
+	$$(call phony-status,$$(MSG_INSTALL_DAT))
+	$$(call mksubdir,$1,$2)
 	$$(quiet) $$(INSTALL_DATA) $2 $$@
-	$$(call phony-ok,$$(MSG_INSTALL_BIN))
+	$$(call phony-ok,$$(MSG_INSTALL_DAT))
 endef
 $(foreach t,lib,$(foreach b,$($t),\
     $(eval $(call install-data,$(i_$tdir),$b))))
@@ -1618,8 +1619,9 @@ $(foreach t,lib,$(foreach b,$($t),\
 # @return Target to install some program                               #
 #======================================================================#
 define install-program
-$1/$$(notdir $2): | $1
+$1/$$(call not-root,$2): | $1
 	$$(call phony-status,$$(MSG_INSTALL_BIN))
+	$$(call mksubdir,$1,$2)
 	$$(quiet) $$(INSTALL_PROGRAM) $2 $$@
 	$$(call phony-ok,$$(MSG_INSTALL_BIN))
 endef

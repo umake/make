@@ -452,9 +452,10 @@ make_configs := $(sort $(foreach f,$(make_configs),$(wildcard $f)))
 # ===================
 # 1) root: Gets the root directory (first in the path) of a path or file
 # 2) not-root: Given a path or file, take out the root directory of it
-# 3) not: Returns empty if its argument was defined, or T otherwise
-# 4) remove-trailing-bar: Removes the last / of a directory-only name
-# 5) is-cxx: find out if there is a C++ file in its single argument
+# 3) invert: Invert a list of elements
+# 4) not: Returns empty if its argument was defined, or T otherwise
+# 5) remove-trailing-bar: Removes the last / of a directory-only name
+# 6) is-cxx: find out if there is a C++ file in its single argument
 define root
 $(foreach s,$1,\
     $(if $(findstring /,$s),\
@@ -463,6 +464,10 @@ endef
 
 define not-root
 $(foreach s,$1,$(strip $(patsubst $(strip $(call root,$s))/%,%,$s)))
+endef
+
+define invert
+$(if $(strip $1),$(call invert,$(wordlist 2,$(words $1),$1))) $(firstword $1) 
 endef
 
 define not
@@ -1119,13 +1124,36 @@ installcheck:
 ##                          UNINSTALLATION                            ##
 ########################################################################
 
+# Remove subdirectories of this directory
+# Remove files if no subdir was identified
+define uninstall
+$(if $(strip $(i_$1)),\
+    $(if $(sort $(foreach d,\
+        $(call root,$(call not-root,$($1))),\
+        $(call rsubdir,$(i_$1dir)/$d)\
+    )),
+        $(call rm-if-empty,\
+            $(call invert,$(sort $(foreach d,\
+                $(call root,$(call not-root,$($1))),\
+                $(call rsubdir,$(i_$1dir)/$d)\
+            ))),\
+            $(i_$1)\
+        ),\
+        $(if $(strip $(foreach f,$(i_$1),$(wildcard $f))),\
+            $(call rm,$(i_$1)))\
+))
+endef
+
+.PHONY: mainteiner-uninstall
+mainteiner-uninstall:
+	@$(MAKE) uninstall DESTDIR=$(destdir) MAINTEINER_CLEAN=1
+
 .PHONY: uninstall
-uninstall: uninstall-docs
-	$(if $(strip $(i_lib)),$(call rm-if-empty,$(i_libdir),$(i_lib)))
-	$(if $(strip $(i_bin)),$(call rm-if-empty,$(i_bindir),$(i_bin)))
-	$(if $(strip $(i_sbin)),$(call rm-if-empty,$(i_sbindir),$(i_sbin)))
-	$(if $(strip $(i_libexec)),\
-        $(call rm-if-empty,$(i_libexecdir),$(i_libexec)))
+uninstall: 
+	$(call uninstall,lib)
+	$(call uninstall,bin)
+	$(call uninstall,sbin)
+	$(call uninstall,libexec)
 
 .PHONY: uninstall-docs
 uninstall-docs: uninstall-info uninstall-html uninstall-dvi
@@ -1821,8 +1849,8 @@ MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
 MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
 
 MSG_RMDIR         = "${BLUE}Removing directory ${CYAN}$1${RES}"
-MSG_RM_NOT_EMPTY  = "${PURPLE}Directory ${WHITE}$1${RES} not empty"
-MSG_RM_EMPTY      = "${PURPLE}Nothing to remove in $1${RES}"
+MSG_RM_NOT_EMPTY  = "${PURPLE}Directory ${WHITE}$d${RES} not empty"
+MSG_RM_EMPTY      = "${PURPLE}Nothing to remove in $d${RES}"
 
 MSG_TEXI_FILE     = "${DEF}Generating $1 file ${WHITE}$@${RES}"
 MSG_TEXI_DOCS     = "${BLUE}Generating docs in ${WHITE}$@${RES}"
@@ -1960,24 +1988,24 @@ endef
 
 ## REMOTION ############################################################
 define srm
-	$(quiet) $(RM) $1 $(NO_ERROR)
+	$(quiet) $(RM) $1 $(NO_ERROR);
 endef
 
 define srmdir
-	$(if $(strip $(patsubst .,,$1)), $(quiet) $(RMDIR) $1)
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(RMDIR) $1;)
 endef
 
 define rm
 $(if $(strip $(patsubst .,,$1)),\
 	$(call phony-status,$(MSG_RM))
-	$(quiet) $(RM) $1
+	$(quiet) $(RM) $1;
 	$(call phony-ok,$(MSG_RM))
 )
 endef
 
 define rmdir
 	$(if $(strip $(patsubst .,,$1)), $(call phony-status,$(MSG_RMDIR)) )
-	$(if $(strip $(patsubst .,,$1)), $(quiet) $(RMDIR) $1              )
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(RMDIR) $1;             )
 	$(if $(strip $(patsubst .,,$1)), $(call phony-ok,$(MSG_RMDIR))     )
 endef
 
@@ -1992,10 +2020,10 @@ endef
 # |  empty  | arg | files | exist |            |                       #
 # |=========|=====|=======|=======|============|                       #
 # |         |     |       |       | nothing    | }                     #
-# |         |     |       |   X   | remove     | }                     #
 # |         |     |   X   |       | nothing    | } When dir is         #
 # |         |  X  |       |       | nothing    | } empty               #
 # |         |  X  |   X   |       | nothing    | }                     #
+# |         |     |       |   X   | remove     | }                     #
 # |    X    |     |       |   X   | remove     | - With or without     #
 # |    X    |     |   X   |   X   | remove     | - rest., remove.      #
 # |    X    |  X  |       |   X   | remove     | - ok? Remove!         #
@@ -2004,24 +2032,25 @@ endef
 #======================================================================#
 define rm-if-empty
 	$(if $(strip $2),$(call srm,$2))
-	$(if $(strip $(call rwildcard,$1,*)),\
-        $(if $(strip $2),
-            $(if $(strip $(MAINTEINER_CLEAN)),\
-                $(call rmdir,$1),\
-                $(if $(strip $(call rfilter-out,$2,\
-                        $(call rfilter-out,\
-                            $(filter-out $1,$(call rsubdir,$1)),\
-                            $(call rwildcard,$1,*)))),\
-                    $(call phony-ok,$(MSG_RM_NOT_EMPTY)),\
-                    $(call rmdir,$1)\
-            )),\
-            $(call rmdir,$1)\
-        ),\
-        $(if $(wildcard $1),\
-            $(call rmdir,$1),\
-            $(call phony-ok,$(MSG_RM_EMPTY))\
-        )\
-    )
+	$(foreach d,$(strip $1),\
+        $(if $(strip $(call rwildcard,$d,*)),\
+            $(if $(strip $2),
+                $(if $(strip $(MAINTEINER_CLEAN)),\
+                    $(call rmdir,$d),\
+                    $(if $(strip $(call rfilter-out,$2,\
+                            $(call rfilter-out,\
+                                $(filter-out $d,$(call rsubdir,$d)),\
+                                $(call rwildcard,$d,*)))),\
+                        $(call phony-ok,$(MSG_RM_NOT_EMPTY)),\
+                        $(call rmdir,$d)\
+                )),\
+                $(call rmdir,$d)\
+            ),\
+            $(if $(wildcard $d),\
+                $(call rmdir,$d),\
+                $(call phony-ok,$(MSG_RM_EMPTY))\
+            )\
+    ))
 endef
 
 ## STATUS ##############################################################
@@ -2029,20 +2058,20 @@ ifndef SILENT
 
 ifneq ($(strip $(quiet)),)
     define phony-status
-    	@echo -n $1 "... "
+    	@echo -n $1 "... ";
     endef
     
     define status
-    	@$(RM) $@ && echo -n $1 "... "
+    	@$(RM) $@ && echo -n $1 "... ";
     endef
 
     define vstatus
-    	@$(RM) $@ && echo $1 "... "
+    	@$(RM) $@ && echo $1 "... ";
     endef
 endif
 
 define phony-ok
-	@echo "\r${GREEN}[OK]${RES}" $1 "     "
+	@echo "\r${GREEN}[OK]${RES}" $1 "     ";
 endef
 
 define ok
@@ -2681,4 +2710,4 @@ dump:
 	$(call prompt,"cxxlibs:     ",$(cxxlibs)     )
 	$(call prompt,"ldlibs:      ",$(ldlibs)      )
 	$(call prompt,"ldflags:     ",$(ldflags)     )
-	
+

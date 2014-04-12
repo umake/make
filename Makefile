@@ -2275,7 +2275,7 @@ ifdef C_FILE
 	$(call touch,$(srcbase)/$(C_FILE)$(SRC_EXT),$(NOTICE))
 	$(call select,$(srcbase)/$(C_FILE)$(SRC_EXT))
 	$(call cat,''                                                      )
-	$(call cat,'// Libraries'                                          )
+	$(call cat,'/* Libraries */'                                       )
 	$(call cat,'#include "$(C_FILE)$(INC_EXT)"'                        )
 	$(call cat,''                                                      )
 	
@@ -2429,49 +2429,49 @@ endif
 
 .PHONY: config
 config:
-	@echo "                                                            "
+	@echo ""
 	@echo "############################################################"
 	@echo "##         DELETE ANY TARGET TO USE THE DEFAULT!          ##"
 	@echo "############################################################"
-	@echo "                                                            "
-	@echo "# Project setting                                           "
-	@echo "PROJECT  := # Project name. Default is 'Default'            "
-	@echo "VERSION  := # Version. Default is '1.0'                     "
-	@echo "                                                            "
-	@echo "# Program settings                                          "
-	@echo "BIN      := # Binaries' names. If a subdir of the source    "
-	@echo "            # directories has the same name of this binary, "
-	@echo "            # this dir and all subdir will be compiled      "
-	@echo "            # only for this specific binary.                "
-	@echo "SBIN     := # Same as above, but for shell-only binaries.   "
-	@echo "LIBEXEC  := # Again, but for binaries runnable only by      "
-	@echo "            # other programs, not normal users.             "
-	@echo "                                                            "
-	@echo "ARLIB    := # Static/Shared libraries' names. If one is a   "
-	@echo "SHRLIB   := # lib, all source files will make the library.  "
-	@echo "                                                            "
-	@echo "# Flags                                                     "
-	@echo "ASFLAGS  := # Assembly Flags                                "
-	@echo "CFLAGS   := # C Flags                                       "
-	@echo "CXXFLAGS := # C++ Flags                                     "
-	@echo "LDFLAGS  := # Linker flags                                  "
-	@echo "                                                            "
-	@echo "# Documentation                                             "
-	@echo "LICENSE  := # File with a License (def: LICENSE)            "
-	@echo "NOTICE   := # File with a Notice of the License, to be used "
-	@echo "            # in the beggining of any file (def: NOTICE).   "
-	@echo "DOXYFILE := # Config file for Doxygen (def: Doxyfile)       "
-	@echo "                                                            "
-	@echo "# Package info                                              "
-	@echo "MAINTEINER_NAME := # Your name                              "
-	@echo "MAINTEINER_MAIL := # your_name@mail.com                     "
-	@echo "                                                            "
+	@echo ""
+	@echo "# Project setting"
+	@echo "PROJECT  := # Project name. Default is 'Default'"
+	@echo "VERSION  := # Version. Default is '1.0'"
+	@echo ""
+	@echo "# Program settings"
+	@echo "BIN      := # Binaries' names. If a subdir of the source"
+	@echo "            # directories has the same name of this binary,"
+	@echo "            # this dir and all subdir will be compiled"
+	@echo "            # only for this specific binary."
+	@echo "SBIN     := # Same as above, but for shell-only binaries."
+	@echo "LIBEXEC  := # Again, but for binaries runnable only by"
+	@echo "            # other programs, not normal users."
+	@echo ""
+	@echo "ARLIB    := # Static/Shared libraries' names. If one is a"
+	@echo "SHRLIB   := # lib, all source files will make the library."
+	@echo ""
+	@echo "# Flags"
+	@echo "ASFLAGS  := # Assembly Flags"
+	@echo "CFLAGS   := # C Flags"
+	@echo "CXXFLAGS := # C++ Flags"
+	@echo "LDFLAGS  := # Linker flags"
+	@echo ""
+	@echo "# Documentation"
+	@echo "LICENSE  := # File with a License (def: LICENSE)"
+	@echo "NOTICE   := # File with a Notice of the License, to be used"
+	@echo "            # in the beggining of any file (def: NOTICE)."
+	@echo "DOXYFILE := # Config file for Doxygen (def: Doxyfile)"
+	@echo ""
+	@echo "# Package info"
+	@echo "MAINTEINER_NAME := # Your name"
+	@echo "MAINTEINER_MAIL := # your_name@mail.com"
+	@echo ""
 
 .PHONY: gitignore
 gitignore:
-	@echo "                                                            "
-	@echo "# Automatically generated directories                       "
-	@echo "#======================================                     "
+	@echo ""
+	@echo "# Automatically generated directories"
+	@echo "#======================================"
 	@$(foreach d,$(depdir),echo $d/; )
 	@$(foreach d,$(objdir),echo $d/; )
 	@$(foreach d,$(libdir),echo $d/; )
@@ -2479,26 +2479,19 @@ gitignore:
 	@$(foreach d,$(sbindir),echo $d/; )
 	@$(foreach d,$(execdir),echo $d/; )
 	@$(foreach d,$(distdir),echo $d/; )
-	@echo "                                                            "
-	@echo "# Scanner and Parser files                                  "
-	@echo "#===========================                                "
-	@echo "*.yy.*                                                      "
-	@echo "*-yy/                                                       "
-	@echo "*.tab.*                                                     "
-	@echo "*-tab/                                                      "
-	@echo "                                                            "
-	@echo "# Objects, Libraries and Binaries                           "
-	@echo "#==================================                         "
+	@echo ""
+	@echo "# Objects, Libraries and Binaries"
+	@echo "#=================================="
 	@$(foreach e,$(objext),echo *$e; )
 	@$(foreach e,$(libext),echo *$e; )
 	@$(foreach e,$(binext),echo *$e; )
-	@echo "                                                            "
-	@echo "# Make auxiliars                                            "
-	@echo "#=================                                          "
-	@echo $(if $(strip $(doxyfile)),$(docdir)/doxygen/)
-	@echo $(if $(strip $(doxyfile)),$(docdir)/$(doxyfile).mk)
+	@echo ""
+	@echo "# Make auxiliars"
+	@echo "#================="
+	@$(if $(strip $(doxyfile)),echo $(docdir)/doxygen/)
+	@$(if $(strip $(doxyfile)),echo $(docdir)/$(doxyfile).mk)
 	@$(foreach e,$(depext),echo *$e; )
-	@echo "                                                            "
+	@echo ""
 
 .PHONY: help
 help:

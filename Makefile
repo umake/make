@@ -69,10 +69,6 @@ CXXFLAGS  := $(CFLAGS) -std=c++11
 # Fortran Options
 FFLAGS    := -cpp
 
-# Parsers in C++
-CXXLEXER  := 
-CXXPARSER := 
-
 # Linker flags
 LDFLAGS   := 
 LDC       := 
@@ -214,8 +210,10 @@ TLEXT   := .tcc .icc
 LIBEXT  := .a .so .dll
 
 # Parser/Lexer extensions
-LEXEXT  := .l .ll .lpp
-YACCEXT := .y .yy .ypp
+LEXEXT  := .l
+LEXXEXT := .ll .lpp
+YACCEXT := .y
+YAXXEXT := .yy .ypp
 
 # Dependence extensions
 DEPEXT  := .d
@@ -381,7 +379,9 @@ tlext   := $(strip $(sort $(TLEXT)))
 asmext  := $(strip $(sort $(ASMEXT)))
 libext  := $(strip $(sort $(LIBEXT)))
 lexext  := $(strip $(sort $(LEXEXT)))
+lexxext := $(strip $(sort $(LEXXEXT)))
 yaccext := $(strip $(sort $(YACCEXT)))
+yaxxext := $(strip $(sort $(YAXXEXT)))
 depext  := $(strip $(sort $(DEPEXT)))
 objext  := $(strip $(sort $(OBJEXT)))
 binext  := $(strip $(sort $(BINEXT)))
@@ -399,7 +399,8 @@ docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 
 # Check all extensions
 allext := $(incext) $(srcext) $(asmext) $(libext) 
-allext += $(lexext) $(yaccext) $(depext) $(objext) $(binext)
+allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext) 
+allext += $(depext) $(objext) $(binext)
 allext := $(strip $(allext))
 $(foreach ext,$(allext),\
     $(if $(filter .%,$(ext)),,\
@@ -579,16 +580,16 @@ $(foreach s,$(lib_in),                                                 \
 # 4) Create lex scanners default directories for headers
 #------------------------------------------------------------------[ 1 ]
 $(foreach root,$(srcdir),\
-    $(foreach E,$(lexext),\
+    $(foreach E,$(lexext) $(lexxext),\
         $(eval alllexer += $(call rwildcard,$(root),*$E))\
 ))
 #------------------------------------------------------------------[ 2 ]
-cxxlexer := $(foreach l,$(cxxlexer),$(filter %$l,$(alllexer)))
+cxxlexer := $(foreach e,$(lexxext),$(filter %$e,$(alllexer)))
 clexer   := $(filter-out $(cxxlexer),$(alllexer))
 #------------------------------------------------------------------[ 3 ]
-lexall   += $(foreach E,$(lexext),\
+lexall   += $(foreach E,$(lexext) $(lexxext),\
                 $(patsubst %$E,%.yy.cc,$(filter %$E,$(cxxlexer))))
-lexall   += $(foreach E,$(lexext),\
+lexall   += $(foreach E,$(lexext) $(lexxext),\
                 $(patsubst %$E,%.yy.c,$(filter %$E,$(clexer))))
 lexall   := $(strip $(lexall))
 #------------------------------------------------------------------[ 4 ]
@@ -605,16 +606,16 @@ lexinc   := $(addsuffix -yy/,$(lexinc))
 # 4) Create yacc parsers default header files
 #------------------------------------------------------------------[ 1 ]
 $(foreach root,$(srcdir),\
-    $(foreach E,$(yaccext),\
+    $(foreach E,$(yaccext) $(yaxxext),\
         $(eval allparser += $(call rwildcard,$(root),*$E))\
 ))
 #------------------------------------------------------------------[ 2 ]
-cxxparser := $(foreach y,$(cxxparser),$(filter %$y,$(allparser)))
+cxxparser := $(foreach e,$(yaxxext),$(filter %$e,$(allparser)))
 cparser   := $(filter-out $(cxxparser),$(allparser))
 #------------------------------------------------------------------[ 3 ]
-yaccall   += $(foreach E,$(yaccext),\
+yaccall   += $(foreach E,$(yaccext) $(yaxxext),\
                 $(patsubst %$E,%.tab.cc,$(filter %$E,$(cxxparser))))
-yaccall   += $(foreach E,$(yaccext),\
+yaccall   += $(foreach E,$(yaccext) $(yaxxext),\
                 $(patsubst %$E,%.tab.c,$(filter %$E,$(cparser))))
 yaccall   := $(strip $(yaccall))
 #------------------------------------------------------------------[ 4 ]
@@ -1087,8 +1088,9 @@ standard:
 	$(call mv,$(libext),$(firstword libdir))
 	$(call mv,$(docext),$(docdir))
 	$(call mv,$(incext),$(firstword incdir))
-	$(call mv,$(srcext) $(asmext) $(lexext) $(yaccext),\
-		$(firstword srcdir))
+	$(call mv,$(srcext) $(asmext),$(firstword srcdir))
+	$(call mv,$(lexext) $(lexxext) $(yaccext) $(yaxxext),\
+        $(firstword srcdir))
 
 ########################################################################
 ##                           INSTALLATION                             ##
@@ -2594,23 +2596,25 @@ dump:
 	$(call prompt,"incext:      ",$(incext)      )
 	$(call prompt,"libext:      ",$(libext)      )
 	$(call prompt,"lexext:      ",$(lexext)      )
+	$(call prompt,"lexxext:     ",$(lexxext)     )
 	$(call prompt,"yaccext:     ",$(yaccext)     )
+	$(call prompt,"yaxxext:     ",$(yaxxext)     )
 	$(call prompt,"docext:      ",$(docext)      )
-	                                           
-	@echo "${WHITE}LEXER                   ${RES}"
+	
+	@echo "${WHITE}\nLEXER                 ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"alllexer:    ",$(alllexer)    )
 	$(call prompt,"clexer:      ",$(clexer)      )
 	$(call prompt,"cxxlexer:    ",$(cxxlexer)    )
 	$(call prompt,"lexall:      ",$(lexall)      )
-	                                           
+	
 	@echo "${WHITE}\nPARSER                ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"allparser:   ",$(allparser)   )
 	$(call prompt,"cparser:     ",$(cparser)     )
 	$(call prompt,"cxxparser:   ",$(cxxparser)   )
 	$(call prompt,"yaccall:     ",$(yaccall)     )
-	                                            
+	
 	@echo "${WHITE}\nSOURCE                ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"srcall:      ",$(srcall)      )
@@ -2624,13 +2628,13 @@ dump:
 	@echo "--------------------------------------"
 	$(call prompt,"incall:      ",$(incall)      )
 	$(call prompt,"autoinc:     ",$(autoinc)     )
-	                                           
+	
 	@echo "${WHITE}\nTEST                  ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"testall:     ",$(testall)     )
 	$(call prompt,"testdep:     ",$(testdep)     )
 	$(call prompt,"testrun:     ",$(testrun)     )
-	                                            
+	
 	@echo "${WHITE}\nLIBRARY               ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"lib_in:      ",$(lib_in)      )
@@ -2639,12 +2643,12 @@ dump:
 	$(call prompt,"libsrc:      ",$(libsrc)      )
 	$(call prompt,"libname:     ",$(libname)     )
 	$(call prompt,"lib:         ",$(lib)         )
-	                                           
+	
 	@echo "${WHITE}\nEXTERNAL LIBRARY      ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"externlib:   ",$(externlib)   )
 	$(call prompt,"externname:  ",$(externname)  )
-	                                            
+	
 	@echo "${WHITE}\nSTATIC LIBRARY        ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"ar_in:       ",$(ar_in)       )
@@ -2652,7 +2656,7 @@ dump:
 	$(call prompt,"arpatsrc:    ",$(arpatsrc)    )
 	$(call prompt,"arname:      ",$(arname)      )
 	$(call prompt,"arlib:       ",$(arlib)       )
-	                                           
+	
 	@echo "${WHITE}\nDYNAMIC LIBRARY       ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"shr_in:      ",$(shr_in)      )
@@ -2699,7 +2703,7 @@ dump:
 	$(call prompt,"texidvi:     ",$(texidvi)     )
 	$(call prompt,"texipdf:     ",$(texipdf)     )
 	$(call prompt,"texips:      ",$(texips)      )
-	                                           
+	
 	@echo "${WHITE}\nFLAGS                 ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"cflags:      ",$(cflags)      )

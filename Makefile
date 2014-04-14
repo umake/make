@@ -627,17 +627,17 @@ yaccinc   := $(addsuffix -tab/,$(yaccinc))
 # =============================
 autoall := $(yaccall) $(lexall)
 autoinc := $(yaccinc) $(lexinc)
-autosrc := $(call not-root,$(autoall))
-autoobj := $(addsuffix $(firstword $(objext)),$(basename $(autosrc)))
-autoobj := $(addprefix $(objdir)/,$(autoobj))
 
 # Source files
 # =============
-# 1) srcall: Find in the directory trees all source files (with dir names)
-# 2) liball: Save complete paths for libraries (wildcard-expanded)
-# 3) libpat: Save complete paths for libraries (non-wildcard-expanded)
-# 4) srccln: Remove library src from normal src
-# 5) src   : Remove root directory names from dir paths
+# 1) srcall : Find in the dir trees all source files (with dir names)
+# 2) srcall : Remove automatically generated source files from srcall
+# 3) liball : Save complete paths for libraries (wildcard-expanded)
+# 4) libpat : Save complete paths for libraries (non-wildcard-expanded)
+# 5) srccln : Remove library src from normal src
+# 5) autocln: Remove library src from normal auto generated src
+# 6) src    : Remove root directory names from dir paths
+# 6) autosrc: Remove root directory names from dir paths
 #------------------------------------------------------------------[ 1 ]
 ifneq ($(srcdir),.)
 srcall := $(sort\
@@ -653,14 +653,22 @@ srcall := $(sort\
 ))
 endif
 #------------------------------------------------------------------[ 2 ]
+srcall := $(call rfilter-out,$(lexall) $(yaccall),$(srcall))
+#------------------------------------------------------------------[ 3 ]
 liball := $(sort \
+    $(foreach l,$(lib_in),$(or\
+        $(strip $(foreach s,$(autoall),\
+            $(if $(findstring $l,$s),$s))),\
+        $(error Library file/directory "$l" not found))\
+))
+liball += $(sort \
     $(foreach l,$(lib_in),$(or\
         $(strip $(foreach s,$(srcall),\
             $(if $(findstring $l,$s),$s))),\
         $(error Library file/directory "$l" not found))\
 ))
 
-#------------------------------------------------------------------[ 3 ]
+#------------------------------------------------------------------[ 4 ]
 # Search-for-complete-path steps:
 # * Cases #6 (path witout root) and #7 (all path);
 # * Case  #2 (path without file);
@@ -682,12 +690,15 @@ libpat := $(sort \
         ))\
     ))\
 )
-#------------------------------------------------------------------[ 4 ]
-srccln := $(srcall)
-srccln := $(call rfilter-out,$(liball),$(srccln))
-srccln := $(call rfilter-out,$(lexall) $(yaccall),$(srccln))
 #------------------------------------------------------------------[ 5 ]
-src    := $(call not-root,$(srccln))
+srccln  := $(srcall)
+srccln  := $(call rfilter-out,$(liball),$(srccln))
+
+autocln := $(autoall)
+autocln := $(call rfilter-out,$(liball),$(autocln))
+#------------------------------------------------------------------[ 6 ]
+src     := $(call not-root,$(srccln))
+autosrc := $(call not-root,$(autocln))
 
 # Static libraries
 # =================
@@ -796,10 +807,14 @@ $(foreach e,$(libext),\
 # 2) Add obj suffix for each 'naked' source file name (basename)
 # 3) Prefix the build dir before each name
 # 4) Join all object files (including auto-generated)
+# 5) Repeat (1) and (3) for the automatically generated sources
 obj := $(addsuffix $(firstword $(objext)),$(basename $(asmsrc)))
 obj += $(addsuffix $(firstword $(objext)),$(basename $(src)))
 obj := $(addprefix $(objdir)/,$(obj))
 objall := $(obj) $(arobj) $(shrobj) #$(autoobj)
+
+autoobj := $(addsuffix $(firstword $(objext)),$(basename $(autosrc)))
+autoobj := $(addprefix $(objdir)/,$(autoobj))
 
 # Header files
 # =============
@@ -911,11 +926,11 @@ comaobj := $(call common-factory,aobj,$(autoobj))
 comaall := $(call common-factory,aall,$(autoall))
 #------------------------------------------------------------------[ 4 ]
 $(foreach b,$(notdir $(binall)),$(or\
-    $(eval $b_src    += $(comsrc)),\
-    $(eval $b_obj    += $(comobj)),\
-    $(eval $b_lib    += $(comlib)),\
-    $(eval $b_aobj   += $(comaobj)),\
-    $(eval $b_aall   += $(comasrc)),\
+    $(eval $b_src    := $(comsrc)  $($b_src)  ),\
+    $(eval $b_obj    := $(comobj)  $($b_obj)  ),\
+    $(eval $b_lib    := $(comlib)  $($b_lib)  ),\
+    $(eval $b_aobj   := $(comaobj) $($b_aobj) ),\
+    $(eval $b_aall   := $(comasrc) $($b_aall) ),\
     $(eval $b_link   := $(sort $(addprefix -l,$($b_link) $(comlink)))),\
     $(eval $b_is_f   := $(strip $(call is_f,$($b_src)))),\
     $(eval $b_is_cxx := $(strip $(call is_cxx,$($b_src)))),\
@@ -2614,8 +2629,8 @@ dump:
 	$(call prompt,"srccln:      ",$(srccln)      )
 	$(call prompt,"src:         ",$(src)         )
 	$(call prompt,"autoall:     ",$(autoall)     )
+	$(call prompt,"autocln:     ",$(autocln)     )
 	$(call prompt,"autosrc:     ",$(autosrc)     )
-	$(call prompt,"incall:      ",$(incall)      )
 	
 	@echo "${WHITE}\nHEADERS               ${RES}"
 	@echo "--------------------------------------"
@@ -2707,4 +2722,4 @@ dump:
 	$(call prompt,"cxxlibs:     ",$(cxxlibs)     )
 	$(call prompt,"ldlibs:      ",$(ldlibs)      )
 	$(call prompt,"ldflags:     ",$(ldflags)     )
-
+	

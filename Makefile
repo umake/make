@@ -33,13 +33,13 @@ VERSION     := 1.0
 AUXFILES        :=
 MAINTEINER_NAME := Your Name
 MAINTEINER_MAIL := your_mail@mail.com
-PRIORITY        := optional
 SYNOPSIS        := default short synopsis
 DESCRIPTION     := default long description
 
 # Debian package
 DEB_VERSION     := 1
 DEB_PROJECT     := Default
+DEB_PRIORITY    := optional
 
 # Program settings
 BIN      :=
@@ -351,6 +351,13 @@ override distdir := $(strip $(foreach d,$(DISTDIR),$(patsubst %/,%,$d)))
 override testdir := $(strip $(foreach d,$(TESTDIR),$(patsubst %/,%,$d)))
 override datadir := $(strip $(foreach d,$(DATADIR),$(patsubst %/,%,$d)))
 
+# All directories
+alldir := $(strip\
+    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)     \
+    $(libdir) $(bindir) $(sbindir) $(execdir) $(distdir) $(testdir) \
+    $(datadir)                                                      \
+)
+
 # Check if every directory variable is non-empty
 ifeq ($(and $(srcdir),$(bindir),$(depdir),$(objdir),\
             $(incdir),$(libdir),$(distdir),$(testdir)),)
@@ -444,11 +451,6 @@ $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 ##                              FILES                                 ##
 ########################################################################
 
-# Files used to help to configure Make
-make_configs := $(AUXFILES) $(LICENSE) $(NOTICE)
-make_configs += Config.mk config.mk Config_os.mk config_os.mk
-make_configs := $(sort $(foreach f,$(make_configs),$(wildcard $f)))
-
 # Auxiliar functions
 # ===================
 # 1) root: Gets the root directory (first in the path) of a path or file
@@ -481,7 +483,7 @@ endef
 
 define has_c
 $(if $(strip $(sort $(foreach s,$(sort $(suffix $1)),\
-	$(findstring $s,$(cext))))),has_c)
+    $(findstring $s,$(cext))))),has_c)
 endef
 
 define is_c
@@ -509,8 +511,8 @@ $(if $(strip $(foreach s,$(sort $(suffix $1)),\
     $(if $(strip $(findstring $s,$(cxxext))),,$s))),,is_cxx)
 endef
 
-# Auxiliar functions
-# ===================
+# Auxiliar recursive functions
+# ==============================
 # 1) rsubdir: For listing all subdirectories of a given dir
 # 2) rwildcard: For wildcard deep-search in the directory tree
 # 3) rfilter-out: For filtering a list of text from another list
@@ -519,8 +521,31 @@ rwildcard = $(foreach d,$(wildcard $1/*),\
                 $(call rwildcard,$d,$2)$(filter $(subst *,%,$2),$d)) 
 rfilter-out = \
   $(eval rfilter-out_aux = $2)\
-  $(foreach d,$1,$(eval rfilter-out_aux = $(filter-out $d,$(rfilter-out_aux))))\
+  $(foreach d,$1,\
+      $(eval rfilter-out_aux = $(filter-out $d,$(rfilter-out_aux))))\
   $(sort $(rfilter-out_aux))
+
+# Configuration Files
+# =====================
+make_configs := $(AUXFILES) $(LICENSE) $(NOTICE)
+make_configs += Config.mk config.mk Config_os.mk config_os.mk
+make_configs := $(sort $(foreach f,$(make_configs),$(wildcard $f)))
+
+# Ignored Files
+# ===============
+# 1) Find complete paths for the ignored files
+# 2) Define a function for filtering out the ignored files
+#------------------------------------------------------------------[ 1 ]
+ignored := $(sort $(IGNORED))
+ignored := $(sort $(foreach f,$(ignored),\
+               $(foreach r,$(alldir) $(bin) $(sbin) $(libexec),\
+                   $(foreach d,$(call rsubdir,$r),\
+                       $(wildcard $d/$f*)\
+           ))))
+#------------------------------------------------------------------[ 2 ]
+define filter-ignored
+$(call rfilter-out,$(ignored),$1)
+endef
 
 # Default variable names 
 # ======================
@@ -528,16 +553,6 @@ rfilter-out = \
 # foosrc: complete path WITHOUT root directories
 # foopat: incomplete paths WITH root directories
 # foolib: library names WITHOUT root directories
-
-# Assembly files
-# ==============
-# 1) Find all assembly files in the source directory
-# 2) Remove source directory root paths from ordinary assembly src
-$(foreach root,$(srcdir),\
-    $(foreach E,$(asmext),\
-        $(eval asmsrc += $(call rwildcard,$(root),*$E))))
-$(foreach root,$(srcdir),\
-    $(eval asmsrc := $(patsubst $(root)/%,%,$(asmsrc))) )
 
 # Library files
 # ==============
@@ -571,28 +586,42 @@ $(foreach s,$(lib_in),                                                 \
   $(error "Invalid argument $s in library variable"),$s)               \
 )
 
+# Assembly files
+# ==============
+# 1) Find all assembly files in the source directory
+# 2) Filter out ignored files from above
+#------------------------------------------------------------------[ 1 ]
+$(foreach root,$(srcdir),\
+    $(foreach E,$(asmext),\
+        $(eval asmall += $(call rwildcard,$(root),*$E))))
+#------------------------------------------------------------------[ 2 ]
+asmall := $(call filter-ignored,$(asmall))
+
 # Lexical analyzer
 # =================
 # 1) Find in a directory tree all the lex files (with dir names)
-# 2) Split C++ and C lexers (to be compiled appropriately)
-# 3) Change lex extension to format .yy.c or .yy.cc (for C/C++ lexers)
+# 2) Filter out ignored files from above
+# 3) Split C++ and C lexers (to be compiled appropriately)
+# 4) Change lex extension to format .yy.c or .yy.cc (for C/C++ lexers)
 #    and join all the C and C++ lexer source names
-# 4) Create lex scanners default directories for headers
+# 5) Create lex scanners default directories for headers
 #------------------------------------------------------------------[ 1 ]
 $(foreach root,$(srcdir),\
     $(foreach E,$(lexext) $(lexxext),\
         $(eval alllexer += $(call rwildcard,$(root),*$E))\
 ))
 #------------------------------------------------------------------[ 2 ]
+alllexer := $(call filter-ignored,$(alllexer))
+#------------------------------------------------------------------[ 3 ]
 cxxlexer := $(foreach e,$(lexxext),$(filter %$e,$(alllexer)))
 clexer   := $(filter-out $(cxxlexer),$(alllexer))
-#------------------------------------------------------------------[ 3 ]
+#------------------------------------------------------------------[ 4 ]
 lexall   += $(foreach E,$(lexext) $(lexxext),\
                 $(patsubst %$E,%.yy.cc,$(filter %$E,$(cxxlexer))))
 lexall   += $(foreach E,$(lexext) $(lexxext),\
                 $(patsubst %$E,%.yy.c,$(filter %$E,$(clexer))))
 lexall   := $(strip $(lexall))
-#------------------------------------------------------------------[ 4 ]
+#------------------------------------------------------------------[ 5 ]
 lexinc   := $(call not-root,$(basename $(basename $(lexall))))
 lexinc   := $(addprefix $(firstword $(incdir))/,$(lexinc))
 lexinc   := $(addsuffix -yy/,$(lexinc))
@@ -600,25 +629,28 @@ lexinc   := $(addsuffix -yy/,$(lexinc))
 # Syntatic analyzer
 # ==================
 # 1) Find in a directory tree all the yacc files (with dir names)
-# 2) Split C++ and C parsers (to be compiled appropriately)
-# 3) Change yacc extension to format .tab.c or .tab.cc (for C/C++ parsers)
+# 3) Filter out ignored files from above
+# 3) Split C++ and C parsers (to be compiled appropriately)
+# 4) Change yacc extension to format .tab.c or .tab.cc (for C/C++ parsers)
 #    and join all the C and C++ parser source names
-# 4) Create yacc parsers default header files
+# 5) Create yacc parsers default header files
 #------------------------------------------------------------------[ 1 ]
 $(foreach root,$(srcdir),\
     $(foreach E,$(yaccext) $(yaxxext),\
         $(eval allparser += $(call rwildcard,$(root),*$E))\
 ))
 #------------------------------------------------------------------[ 2 ]
+allparser := $(call filter-ignored,$(allparser))
+#------------------------------------------------------------------[ 3 ]
 cxxparser := $(foreach e,$(yaxxext),$(filter %$e,$(allparser)))
 cparser   := $(filter-out $(cxxparser),$(allparser))
-#------------------------------------------------------------------[ 3 ]
+#------------------------------------------------------------------[ 4 ]
 yaccall   += $(foreach E,$(yaccext) $(yaxxext),\
                 $(patsubst %$E,%.tab.cc,$(filter %$E,$(cxxparser))))
 yaccall   += $(foreach E,$(yaccext) $(yaxxext),\
                 $(patsubst %$E,%.tab.c,$(filter %$E,$(cparser))))
 yaccall   := $(strip $(yaccall))
-#------------------------------------------------------------------[ 4 ]
+#------------------------------------------------------------------[ 5 ]
 yaccinc   := $(call not-root,$(basename $(basename $(yaccall))))
 yaccinc   := $(addprefix $(firstword $(incdir))/,$(yaccinc))
 yaccinc   := $(addsuffix -tab/,$(yaccinc))
@@ -631,6 +663,7 @@ autoinc := $(yaccinc) $(lexinc)
 # Source files
 # =============
 # 1) srcall : Find in the dir trees all source files (with dir names)
+# 2) srcall : Filter out ignored files from above
 # 2) srcall : Remove automatically generated source files from srcall
 # 3) liball : Save complete paths for libraries (wildcard-expanded)
 # 4) libpat : Save complete paths for libraries (non-wildcard-expanded)
@@ -653,22 +686,21 @@ srcall := $(sort\
 ))
 endif
 #------------------------------------------------------------------[ 2 ]
-srcall := $(call rfilter-out,$(lexall) $(yaccall),$(srcall))
+srcall := $(call filter-ignored,$(srcall))
 #------------------------------------------------------------------[ 3 ]
-liball := $(sort \
-    $(foreach l,$(lib_in),$(or\
-        $(strip $(foreach s,$(autoall),\
-            $(if $(findstring $l,$s),$s))),\
-        $(error Library file/directory "$l" not found))\
-))
-liball += $(sort \
-    $(foreach l,$(lib_in),$(or\
-        $(strip $(foreach s,$(srcall),\
-            $(if $(findstring $l,$s),$s))),\
-        $(error Library file/directory "$l" not found))\
-))
-
+srcall := $(call rfilter-out,$(lexall) $(yaccall),$(srcall))
 #------------------------------------------------------------------[ 4 ]
+liball := $(sort \
+    $(foreach r,$(autoall) $(srcall) $(asmall),\
+        $(foreach l,$(lib_in),\
+            $(strip $(foreach s,$r,\
+                $(if $(findstring $l,$s),$s)))\
+)))
+# Give error if there is no match with the lib name
+$(foreach l,$(lib_in),\
+    $(if $(findstring $l,$(liball)),,\
+        $(error Library file/directory "$l" not found)))
+#------------------------------------------------------------------[ 5 ]
 # Search-for-complete-path steps:
 # * Cases #6 (path witout root) and #7 (all path);
 # * Case  #2 (path without file);
@@ -685,19 +717,23 @@ libpat := $(sort \
                     $(if $(findstring $l,$s),$s)\
                 )\
         )))),\
-        $(strip $(foreach s,$(srcall),\
+        $(strip $(foreach s,$(srcall) $(autoall) $(asmall),\
             $(if $(findstring $l,$s),$s)\
         ))\
     ))\
 )
-#------------------------------------------------------------------[ 5 ]
+#------------------------------------------------------------------[ 6 ]
 srccln  := $(srcall)
 srccln  := $(call rfilter-out,$(liball),$(srccln))
 
+asmcln  := $(asmall)
+asmcln  := $(call rfilter-out,$(liball),$(asmcln))
+
 autocln := $(autoall)
 autocln := $(call rfilter-out,$(liball),$(autocln))
-#------------------------------------------------------------------[ 6 ]
+#------------------------------------------------------------------[ 7 ]
 src     := $(call not-root,$(srccln))
+asmsrc  := $(call not-root,$(asmcln))
 autosrc := $(call not-root,$(autocln))
 
 # Static libraries
@@ -787,8 +823,9 @@ $(if $(strip $(shrpatsrc)),\
 
 # External libraries
 # ====================
-# 1) externlib:  Extra libraries given by the user
-# 2) externname: Extra libraries names, deduced from above
+# 1) externlib  : Extra libraries given by the user
+# 2) externlib  : Filter out ignored files from above
+# 2) externname : Extra libraries names, deduced from above
 #------------------------------------------------------------------[ 1 ]
 externlib  := \
 $(foreach e,$(libext),\
@@ -796,6 +833,8 @@ $(foreach e,$(libext),\
         $(call rwildcard,$d,*$e)\
 ))
 #------------------------------------------------------------------[ 2 ]
+externlib  := $(call filter-ignored,$(externlib))
+#------------------------------------------------------------------[ 3 ]
 externname := \
 $(foreach e,$(libext),\
     $(patsubst lib%$e,%,$(filter lib%$e,$(notdir $(externlib))))\
@@ -808,11 +847,15 @@ $(foreach e,$(libext),\
 # 3) Prefix the build dir before each name
 # 4) Join all object files (including auto-generated)
 # 5) Repeat (1) and (3) for the automatically generated sources
+#------------------------------------------------------------------[ 1 ]
 obj := $(addsuffix $(firstword $(objext)),$(basename $(asmsrc)))
+#------------------------------------------------------------------[ 2 ]
 obj += $(addsuffix $(firstword $(objext)),$(basename $(src)))
+#------------------------------------------------------------------[ 3 ]
 obj := $(addprefix $(objdir)/,$(obj))
+#------------------------------------------------------------------[ 4 ]
 objall := $(obj) $(arobj) $(shrobj) #$(autoobj)
-
+#------------------------------------------------------------------[ 5 ]
 autoobj := $(addsuffix $(firstword $(objext)),$(basename $(autosrc)))
 autoobj := $(addprefix $(objdir)/,$(autoobj))
 
@@ -821,13 +864,19 @@ autoobj := $(addprefix $(objdir)/,$(autoobj))
 # 1) Get all subdirectories of the included dirs
 # 2) Add them as paths to be searched for headers
 # 3) Get all files able to be included
+# 4) Filter out ignored files from above
+#------------------------------------------------------------------[ 1 ]
 incsub  := $(foreach i,$(incdir),$(call rsubdir,$i))
 incsub  += $(lexinc) $(yaccinc)
+#------------------------------------------------------------------[ 2 ]
 clibs   := $(patsubst %,-I%,$(incsub))
 flibs   := $(patsubst %,-I%,$(incsub))
 cxxlibs := $(patsubst %,-I%,$(incsub))
+#------------------------------------------------------------------[ 3 ]
 incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
                 $(call rwildcard,$i,*$e)))
+#------------------------------------------------------------------[ 4 ]
+incall  := $(call filter-ignored,$(incall))
 
 # Library files
 # ==============
@@ -852,15 +901,18 @@ $(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
 # Automated tests
 # ================
 # 1) testall: Get all source files in the test directory
-# 2) testdep: Basenames without test suffix, root dirs and extensions
-# 3) testrun: Alias to execute tests, prefixing run_ and 
+# 2) testall: Filter out ignored files from above
+# 3) testdep: Basenames without test suffix, root dirs and extensions
+# 4) testrun: Alias to execute tests, prefixing run_ and 
 #             substituting / for _ in $(testdep)
 #------------------------------------------------------------------[ 1 ]
 $(foreach E,$(srcext),\
     $(eval testall += $(call rwildcard,$(testdir),*$(testsuf)$E)))
 #------------------------------------------------------------------[ 2 ]
-testdep := $(basename $(call not-root,$(subst $(testsuf).,.,$(testall))))
+testall := $(call filter-ignored,$(testall))
 #------------------------------------------------------------------[ 3 ]
+testdep := $(basename $(call not-root,$(subst $(testsuf).,.,$(testall))))
+#------------------------------------------------------------------[ 4 ]
 testrun := $(addprefix run_,$(subst /,_,$(testdep)))
 
 # Dependency files
@@ -887,14 +939,17 @@ depall  := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
 #    4.7) binary-name_is_cxx, to test if the binary may be C's or C++'s
 #------------------------------------------------------------------[ 1 ]
 bin     := $(addprefix $(bindir)/,$(notdir $(sort $(strip $(BIN)))))
+bin     := $(call filter-ignored,$(bin))
 bin     := $(if $(strip $(binext)),\
                 $(addsuffix $(binext),$(bin)),$(bin))
 
 sbin    := $(addprefix $(sbindir)/,$(notdir $(sort $(strip $(SBIN)))))
+sbin    := $(call filter-ignored,$(sbin))
 sbin    := $(if $(strip $(binext)),\
                 $(addsuffix $(binext),$(sbin)),$(sbin))
 
 libexec := $(addprefix $(execdir)/,$(notdir $(sort $(strip $(LIBEXEC)))))
+libexec := $(call filter-ignored,$(libexec))
 libexec := $(if $(strip $(binext)),\
                 $(addsuffix $(binext),$(libexec)),$(libexec))
 
@@ -946,21 +1001,24 @@ i_libexec := $(addprefix $(i_libexecdir)/,$(call not-root,$(libexec)))
 # Texinfo files
 # ==============
 # 1) texiall: All TexInfo files with complete path
-# 2) texisrc: Take out root dir reference from above
-# 3) Create variables:
-#    3.1) texiinfo, for INFO's to be generated from TexInfo files
-#    3.1) texihtml, for HTML's to be generated from TexInfo files
-#    3.2) texidvi, for DVI's to be generated from TexInfo files
-#    3.3) texipdf, for PDF's to be generated from TexInfo files
-#    3.4) texips, for PS's to be generated from TexInfo files
+# 2) texiall: Filter out ignored files from above
+# 3) texisrc: Take out root dir reference from above
+# 4) Create variables:
+#    4.1) texiinfo, for INFO's to be generated from TexInfo files
+#    4.1) texihtml, for HTML's to be generated from TexInfo files
+#    4.2) texidvi, for DVI's to be generated from TexInfo files
+#    4.3) texipdf, for PDF's to be generated from TexInfo files
+#    4.4) texips, for PS's to be generated from TexInfo files
 #------------------------------------------------------------------[ 1 ]
 $(foreach root,$(docdir),\
     $(foreach E,$(texiext),\
         $(eval texiall += $(call rwildcard,$(root),*$E))\
 ))
 #------------------------------------------------------------------[ 2 ]
-texisrc := $(call not-root,$(texiall))
+texiall := $(call filter-ignored,$(texiall))
 #------------------------------------------------------------------[ 3 ]
+texisrc := $(call not-root,$(texiall))
+#------------------------------------------------------------------[ 4 ]
 $(foreach doc,info html dvi pdf ps,\
     $(eval texi$(doc) := \
         $(addprefix $(firstword $(docdir))/$(doc)/,\
@@ -1042,7 +1100,7 @@ $(debdir)/control: | $(debdir)
 	@echo "Source: $(DEB_PROJECT)"                            >> $@
 	@echo "Maintainer: $(MAINTEINER_NAME) $(MAINTEINER_MAIL)" >> $@
 	@echo "Section: misc"                                     >> $@
-	@echo "Priority: $(PRIORITY)"                             >> $@
+	@echo "Priority: $(DEB_PRIORITY)"                         >> $@
 	@echo "Standards-Version: $(VERSION)"                     >> $@
 	@echo "Build-Depends: debhelper (>= 9)"                   >> $@
 	@echo " "                                                 >> $@
@@ -2462,6 +2520,8 @@ config:
 	@echo "LIBEXEC  := # Again, but for binaries runnable only by"
 	@echo "            # other programs, not normal users."
 	@echo ""
+	@echo "IGNORED  := # Files within Make dirs and bins to be ignored."
+	@echo ""
 	@echo "ARLIB    := # Static/Shared libraries' names. If one is a"
 	@echo "SHRLIB   := # lib, all source files will make the library."
 	@echo ""
@@ -2480,6 +2540,8 @@ config:
 	@echo "# Package info"
 	@echo "MAINTEINER_NAME := # Your name"
 	@echo "MAINTEINER_MAIL := # your_name@mail.com"
+	@echo "SYNOPSIS        := # One-line description of the program"
+	@echo "DESCRIPTION     := # Longer description of the program"
 	@echo ""
 
 .PHONY: gitignore
@@ -2598,6 +2660,10 @@ endef
 
 .PHONY: dump
 dump: 
+	@echo "${WHITE}\nIGNORED FILES         ${RES}"
+	@echo "--------------------------------------"
+	$(call prompt,"ignored:     ",$(ignored)     )
+	
 	@echo "${WHITE}\nACCEPTED EXTENSIONS   ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"srcext:      ",$(srcext)      )
@@ -2628,6 +2694,9 @@ dump:
 	$(call prompt,"srcall:      ",$(srcall)      )
 	$(call prompt,"srccln:      ",$(srccln)      )
 	$(call prompt,"src:         ",$(src)         )
+	$(call prompt,"asmall:      ",$(asmall)      )
+	$(call prompt,"asmcln:      ",$(asmcln)      )
+	$(call prompt,"asmsrc:      ",$(asmsrc)      )
 	$(call prompt,"autoall:     ",$(autoall)     )
 	$(call prompt,"autocln:     ",$(autocln)     )
 	$(call prompt,"autosrc:     ",$(autosrc)     )
@@ -2723,3 +2792,4 @@ dump:
 	$(call prompt,"ldlibs:      ",$(ldlibs)      )
 	$(call prompt,"ldflags:     ",$(ldflags)     )
 	
+	$(call prompt,"lib_in:      ",$(lib_in)      )

@@ -310,6 +310,8 @@ MAKE            += --no-print-directory
 ########################################################################
 
 # Documentation:
+license   := $(strip $(firstword $(wildcard $(LICENSE))))
+notice    := $(strip $(firstword $(wildcard $(NOTICE))))
 doxyfile  := $(strip $(firstword $(DOXYFILE)))
 
 # Flags:
@@ -527,7 +529,7 @@ rfilter-out = \
 
 # Configuration Files
 # =====================
-make_configs := $(AUXFILES) $(LICENSE) $(NOTICE)
+make_configs := $(AUXFILES) $(license) $(notice)
 make_configs += Config.mk config.mk Config_os.mk config_os.mk
 make_configs := $(sort $(foreach f,$(make_configs),$(wildcard $f)))
 
@@ -1112,7 +1114,7 @@ $(debdir)/control: | $(debdir)
 	$(call select,stdout)
 
 $(debdir)/copyright: | $(debdir)
-	$(call touch,$@,$(NOTICE))
+	$(call touch,$@,$(notice))
 
 $(debdir)/rules: | $(debdir)
 	$(call touch,$@)
@@ -2305,7 +2307,7 @@ ifdef CLASS
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
 	
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
-	$(call touch,$(incbase)/$(CLASS)$(INC_EXT),$(NOTICE))
+	$(call touch,$(incbase)/$(CLASS)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CLASS)$(INC_EXT))
 	$(call cat,''                                                      )
 	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CLASS))_DEFINED'       )
@@ -2321,7 +2323,7 @@ ifdef CLASS
 	$(call cat,'#endif'                                                )
 	
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
-	$(call touch,$(srcbase)/$(CLASS)$(SRC_EXT),$(NOTICE))
+	$(call touch,$(srcbase)/$(CLASS)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(CLASS)$(SRC_EXT))
 	$(call cat,''                                                      )
 	$(call cat,'// Libraries'                                          )
@@ -2336,7 +2338,7 @@ ifdef C_FILE
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
 	
 	$(call invalid-ext,$(INC_EXT),$(hext))
-	$(call touch,$(incbase)/$(C_FILE)$(INC_EXT),$(NOTICE))
+	$(call touch,$(incbase)/$(C_FILE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(C_FILE)$(INC_EXT))
 	$(call cat,''                                                      )
 	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_FILE))_DEFINED'        )
@@ -2345,7 +2347,7 @@ ifdef C_FILE
 	$(call cat,'#endif'                                                )
 	
 	$(call invalid-ext,$(SRC_EXT),$(cext))
-	$(call touch,$(srcbase)/$(C_FILE)$(SRC_EXT),$(NOTICE))
+	$(call touch,$(srcbase)/$(C_FILE)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(C_FILE)$(SRC_EXT))
 	$(call cat,''                                                      )
 	$(call cat,'/* Libraries */'                                       )
@@ -2358,7 +2360,7 @@ ifdef F_FILE
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
 	                        
 	$(call invalid-ext,$(SRC_EXT),$(fext))
-	$(call touch,$(srcbase)/$(F_FILE)$(SRC_EXT),$(NOTICE))
+	$(call touch,$(srcbase)/$(F_FILE)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(F_FILE)$(SRC_EXT))
 	$(call cat,'c $(call lc,$(F_FILE))$(SRC_EXT)'                      )
 	$(call cat,''                                                      )
@@ -2373,7 +2375,7 @@ ifdef CXX_FILE
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
 	
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
-	$(call touch,$(incbase)/$(CXX_FILE)$(INC_EXT),$(NOTICE))
+	$(call touch,$(incbase)/$(CXX_FILE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CXX_FILE)$(INC_EXT))
 	$(call cat,''                                                      )
 	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_FILE))_DEFINED'    )
@@ -2386,7 +2388,7 @@ ifdef CXX_FILE
 	$(call cat,'#endif'                                                )
 	
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
-	$(call touch,$(srcbase)/$(CXX_FILE)$(SRC_EXT),$(NOTICE))
+	$(call touch,$(srcbase)/$(CXX_FILE)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(CXX_FILE)$(SRC_EXT))
 	$(call cat,''                                                      )
 	$(call cat,'// Libraries'                                          )
@@ -2400,7 +2402,7 @@ ifdef TEMPLATE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .tcc))
 	                        
 	$(call invalid-ext,$(INC_EXT),$(tlext))
-	$(call touch,$(incbase)/$(TEMPLATE)$(INC_EXT),$(NOTICE))
+	$(call touch,$(incbase)/$(TEMPLATE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(TEMPLATE)$(INC_EXT))
 	$(call cat,''                                                      )
 	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(TEMPLATE))_DEFINED'    )
@@ -2418,7 +2420,7 @@ ifdef C_MODULE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
 	
 	$(call invalid-ext,$(INC_EXT),$(hext))
-	$(call touch,$(incbase)/$(C_MODULE)$(INC_EXT),$(NOTICE))
+	$(call touch,$(incbase)/$(C_MODULE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(C_MODULE)$(INC_EXT))
 	$(call cat,''                                                      )
 	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_MODULE))_DEFINED'      )
@@ -2432,7 +2434,7 @@ ifdef CXX_MODULE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
 	
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
-	$(call touch,$(incbase)/$(CXX_MODULE)$(INC_EXT),$(NOTICE))
+	$(call touch,$(incbase)/$(CXX_MODULE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CXX_MODULE)$(INC_EXT))
 	$(call cat,''                                                      )
 	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_MODULE))_DEFINED'  )
@@ -2660,6 +2662,12 @@ endef
 
 .PHONY: dump
 dump: 
+	@echo "${WHITE}\nDOCUMENTATION         ${RES}"
+	@echo "--------------------------------------"
+	$(call prompt,"license:     ",$(license)     )
+	$(call prompt,"notice:      ",$(notice)      )
+	$(call prompt,"doxyfile:    ",$(doxyfile)    )
+	
 	@echo "${WHITE}\nIGNORED FILES         ${RES}"
 	@echo "--------------------------------------"
 	$(call prompt,"ignored:     ",$(ignored)     )

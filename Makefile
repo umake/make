@@ -2286,17 +2286,19 @@ override srcbase   := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
 # C/C++ Artifacts that may be created by this Makefile
 override NAMESPACE  := $(strip $(notdir $(NAMESPACE)))
 override CLASS      := $(strip $(basename $(notdir $(CLASS))))
-override C_FILE     := $(strip $(basename $(notdir $(C_FILE))))
 override F_FILE     := $(strip $(basename $(notdir $(F_FILE))))
+override C_FILE     := $(strip $(basename $(notdir $(C_FILE))))
 override CXX_FILE   := $(strip $(basename $(notdir $(CXX_FILE))))
+override C_MAIN     := $(strip $(basename $(notdir $(C_MAIN))))
+override CXX_MAIN   := $(strip $(basename $(notdir $(CXX_MAIN))))
 override TEMPLATE   := $(strip $(basename $(notdir $(TEMPLATE))))
 override C_MODULE   := $(strip $(basename $(notdir $(C_MODULE))))
 override CXX_MODULE := $(strip $(basename $(notdir $(CXX_MODULE))))
 
 .PHONY: new
 new:
-	$(if $(or $(NAMESPACE),$(CLASS),$(C_FILE),$(F_FILE),$(CXX_FILE),\
-         $(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
+	$(if $(or $(NAMESPACE),$(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),\
+         $(C_MAIN),$(CXX_MAIN),$(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
          $(error No filetype defined. Type 'make projecthelp' for info))
 ifdef NAMESPACE
 	$(call mkdir,$(incbase)/$(NAMESPACE))
@@ -2333,6 +2335,20 @@ ifdef CLASS
 	
 	$(call select,stdout)
 endif
+ifdef F_FILE
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
+	                        
+	$(call invalid-ext,$(SRC_EXT),$(fext))
+	$(call touch,$(srcbase)/$(F_FILE)$(SRC_EXT),$(notice))
+	$(call select,$(srcbase)/$(F_FILE)$(SRC_EXT))
+	$(call cat,'c $(call lc,$(F_FILE))$(SRC_EXT)'                      )
+	$(call cat,''                                                      )
+	$(call cat,'      program $(call lc,$(F_FILE))'                    )
+	$(call cat,'          stop'                                        )
+	$(call cat,'      end'                                             )
+	
+	$(call select,stdout)
+endif
 ifdef C_FILE                                                            
 	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
@@ -2353,20 +2369,6 @@ ifdef C_FILE
 	$(call cat,'/* Libraries */'                                       )
 	$(call cat,'#include "$(C_FILE)$(INC_EXT)"'                        )
 	$(call cat,''                                                      )
-	
-	$(call select,stdout)
-endif
-ifdef F_FILE
-	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
-	                        
-	$(call invalid-ext,$(SRC_EXT),$(fext))
-	$(call touch,$(srcbase)/$(F_FILE)$(SRC_EXT),$(notice))
-	$(call select,$(srcbase)/$(F_FILE)$(SRC_EXT))
-	$(call cat,'c $(call lc,$(F_FILE))$(SRC_EXT)'                      )
-	$(call cat,''                                                      )
-	$(call cat,'      program $(call lc,$(F_FILE))'                    )
-	$(call cat,'          stop'                                        )
-	$(call cat,'      end'                                             )
 	
 	$(call select,stdout)
 endif
@@ -2395,6 +2397,37 @@ ifdef CXX_FILE
 	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"'                      )
 	$(call cat,$(if $(IN),'using namespace $(subst /,::,$(IN));')      )
 	$(call cat,''                                                      )
+	
+	$(call select,stdout)
+endif
+ifdef C_MAIN
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
+	
+	$(call invalid-ext,$(SRC_EXT),$(cext))
+	$(call touch,$(srcbase)/$(C_MAIN)$(SRC_EXT),$(notice))
+	$(call select,$(srcbase)/$(C_MAIN)$(SRC_EXT))
+	$(call cat,''                                                      )
+	$(call cat,'int main(int argc, char **argv)'                       )
+	$(call cat,'{'                                                     )
+	$(call cat,'    return 0;'                                         )
+	$(call cat,'}'                                                     )
+	
+	$(call select,stdout)
+endif
+ifdef CXX_MAIN
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
+	
+	$(call invalid-ext,$(SRC_EXT),$(cxxext))
+	$(call touch,$(srcbase)/$(CXX_MAIN)$(SRC_EXT),$(notice))
+	$(call select,$(srcbase)/$(CXX_MAIN)$(SRC_EXT))
+	$(call cat,''                                                      )
+	$(call cat,'// Default libraries'                                  )
+	$(call cat,'using namespace std;'                                  )
+	$(call cat,''                                                      )
+	$(call cat,'int main(int argc, char **argv)'                       )
+	$(call cat,'{'                                                     )
+	$(call cat,'    return 0;'                                         )
+	$(call cat,'}'                                                     )
 	
 	$(call select,stdout)
 endif
@@ -2459,8 +2492,8 @@ endef
 
 .PHONY: delete
 delete:
-	$(if $(or $(NAMESPACE),$(CLASS),$(C_FILE),$(F_FILE),$(CXX_FILE),\
-         $(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
+	$(if $(or $(NAMESPACE),$(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),\
+         $(C_MAIN),$(CXX_MAIN),$(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
          $(error No filetype defined. Type 'make projecthelp' for info))
 ifndef D
 	@echo $(MSG_DELETE_WARN)
@@ -2474,16 +2507,22 @@ ifdef CLASS
 	$(call delete-file,$(incbase)/$(CLASS),$(INC_EXT) $(hxxext))
 	$(call delete-file,$(srcbase)/$(CLASS),$(SRC_EXT) $(cxxext))
 endif
+ifdef F_FILE
+	$(call delete-file,$(srcbase)/$(F_FILE),$(SRC_EXT) $(fext))
+endif
 ifdef C_FILE
 	$(call delete-file,$(incbase)/$(C_FILE),$(INC_EXT) $(hext))
 	$(call delete-file,$(srcbase)/$(C_FILE),$(SRC_EXT) $(cext))
 endif
-ifdef F_FILE
-	$(call delete-file,$(srcbase)/$(F_FILE),$(SRC_EXT) $(fext))
-endif
 ifdef CXX_FILE
 	$(call delete-file,$(incbase)/$(CXX_FILE),$(INC_EXT) $(hxxext))
 	$(call delete-file,$(srcbase)/$(CXX_FILE),$(SRC_EXT) $(cxxext))
+endif
+ifdef C_MAIN
+	$(call delete-file,$(srcbase)/$(C_MAIN),$(SRC_EXT) $(cext))
+endif
+ifdef CXX_MAIN
+	$(call delete-file,$(srcbase)/$(CXX_MAIN),$(SRC_EXT) $(cxxext))
 endif
 ifdef TEMPLATE
 	$(call delete-file,$(incbase)/$(TEMPLATE),$(INC_EXT) $(tlext))
@@ -2644,8 +2683,11 @@ projecthelp:
 	@echo "-----------------                                           "
 	@echo "* NAMESPACE:     Create new directory for namespace         "
 	@echo "* CLASS:         Create new file for a C++ class            "
-	@echo "* C_FILE:        Create ordinaries C files                  "
-	@echo "* CXX_FILE:      Create ordinaries C++ files                "
+	@echo "* F_FILE:        Create ordinary C file                     "
+	@echo "* C_FILE:        Create ordinary C source and header file   "
+	@echo "* CXX_FILE:      Create ordinary C++ source and header file "
+	@echo "* C_MAIN:        Create ordinary C main                     "
+	@echo "* CXX_MAIN:      Create ordinary C++ main                   "
 	@echo "* C_MODULE:      Create C header and dir for its sources    "
 	@echo "* CXX_MODULE:    Create C++ header and dif for its sources  "
 	@echo "* TEMPLATE:      Create C++ template file                   "

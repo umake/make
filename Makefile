@@ -196,14 +196,14 @@ localedir      := $(datarootdir)/locale
 ASMEXT  := .asm .S
 
 # Header extensions
-HEXT    := .h .ih
+HEXT    := .h
 HFEXT   := .mod .MOD
-HXXEXT  := .H .hh .hpp .hxx .h++
+HXXEXT  := .H .hh .hpp .HPP .hxx .h++ .ih
 
 # Source extensions
 CEXT    := .c
 FEXT    := .f .FOR .for .f77 .f90 .f95 .F .fpp .FPP
-CXXEXT  := .C .cc .cpp .cxx .c++
+CXXEXT  := .C .cc .cpp .CPP .cxx .c++
 TLEXT   := .tcc .icc
 
 # Library extensions
@@ -268,9 +268,6 @@ RMDIR           := rm -rf
 FIND            := find
 FIND_FLAGS      := -type d -print 2> /dev/null
 
-# Documentations
-DOXYGEN         := doxygen
-
 # Parser and Lexer
 LEX             := flex
 LEX_CXX         := flexc++
@@ -279,7 +276,14 @@ YACC            := bison
 YACC_CXX        := bisonc++
 YACCFLAGS       := 
 
+# Tags
+CTAGS           := ctags
+CTAGSFLAGS      :=
+ETAGS           := etags
+ETAGSFLAGS      :=
+
 # Documentation
+DOXYGEN         := doxygen
 MAKEINFO        := makeinfo
 INSTALL_INFO    := install-info
 TEXI2HTML       := makeinfo --no-split --html
@@ -1243,6 +1247,23 @@ uninstall-info:
     ))
 
 ########################################################################
+##                               TAGS                                 ##
+########################################################################
+
+.PHONY: TAGS
+TAGS: ctags etags
+
+ctags: $(incall) $(srcall)
+	$(call phony-status,$(MSG_CTAGS))
+	$(quiet) $(CTAGS) $(CTAGSFLAGS) $^ -o $@
+	$(call phony-ok,$(MSG_CTAGS))
+
+etags: $(incall) $(srcall)
+	$(call phony-status,$(MSG_ETAGS))
+	$(quiet) $(ETAGS) $(ETAGSFLAGS) $^ -o $@
+	$(call phony-ok,$(MSG_ETAGS))
+
+########################################################################
 ##                          DOCUMENTATION                             ##
 ########################################################################
 
@@ -1852,14 +1873,25 @@ packageclean:
 	$(call rm-if-empty,$(distdir)/$(DEB_PROJECT)-$(VERSION))
 	$(call rm-if-empty,$(debdir),$(debdep))
 
+.PHONY: warnclean
+warnclean:
+	@echo $(MSG_WARNCLEAN_BEG)
+	@echo $(MSG_WARNCLEAN_END)
+
 .PHONY: realclean
-realclean: docclean distclean packageclean
+realclean: warnclean docclean distclean packageclean
 	$(if $(lexall),\
         $(call rm,$(lexall)),\
         $(call phony-ok,$(MSG_LEX_NONE))  )
 	$(if $(yaccall),\
         $(call rm,$(yaccall)),\
         $(call phony-ok,$(MSG_YACC_NONE)) )
+	$(if $(wildcard ctags),\
+		$(call rm,ctags),\
+        $(call phony-ok,$(MSG_CTAGS_NONE))  )
+	$(if $(wildcard etags),\
+		$(call rm,etags),\
+        $(call phony-ok,$(MSG_ETAGS_NONE)) )
 
 .PHONY: mainteiner-clean
 mainteiner-clean: 
@@ -1927,9 +1959,19 @@ MSG_NEW_EXT       = "${RED}Extension '$1' invalid${RES}"
 MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
 MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
 
+MSG_WARNCLEAN_BEG = "${RED}This command is intended for maintainers"\
+                    "to use; it${RES}"
+MSG_WARNCLEAN_END = "${RED}deletes files that may need special tools"\
+                    "to rebuild.${RES}"
+
 MSG_RMDIR         = "${BLUE}Removing directory ${CYAN}$1${RES}"
 MSG_RM_NOT_EMPTY  = "${PURPLE}Directory ${WHITE}$d${RES} not empty"
 MSG_RM_EMPTY      = "${PURPLE}Nothing to remove in $d${RES}"
+
+MSG_CTAGS         = "${BLUE}Creating tags for ${YELLOW}Vi${RES}"
+MSG_CTAGS_NONE    = "${PURPLE}No auto-generated tags for Vi${RES}"
+MSG_ETAGS         = "${BLUE}Creating tags for ${YELLOW}Emacs${RES}"
+MSG_ETAGS_NONE    = "${PURPLE}No auto-generated tags for Emacs${RES}"
 
 MSG_TEXI_FILE     = "${DEF}Generating $1 file ${WHITE}$@${RES}"
 MSG_TEXI_DOCS     = "${BLUE}Generating docs in ${WHITE}$@${RES}"
@@ -2669,6 +2711,12 @@ projecthelp:
 	@echo " * standard:     Move files to their standard directories   "
 	@echo " * tar:          Create .tar with binaries and libraries    "
 	@echo " * uninstall:    Uninstall anything created by any install  "
+	@echo "                                                            "
+	@echo "Tags targets:                                               "
+	@echo "---------------                                             "
+	@echo " * ctags:        Create tags for VI/Vim editor              "
+	@echo " * etags:        Create tags for Emacs editor               "
+	@echo " * TAGS:         Create tags for both VI/Vim and Emacs      "
 	@echo "                                                            "
 	@echo "Debug targets:                                              "
 	@echo "---------------                                             "

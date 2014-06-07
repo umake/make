@@ -1464,8 +1464,10 @@ $(foreach root,$(srcdir),$(foreach E,$(fext),\
 $(foreach E,$(fext),\
     $(eval $(call compile-fortran,$E,$(testdir)/,$(testdir)/)))
 
-# Include dependencies for each src extension
+# Include dependencies for each src extension, unless cleaning files
+ifneq ($(patsubst %clean,clean,$(MAKECMDGOALS)),clean)
 -include $(depall)
+endif
 
 #======================================================================#
 # Function: compile-sharedlib-linux-c                                  #
@@ -2222,23 +2224,30 @@ endef
 ##                           MANAGEMENT                               ##
 ########################################################################
 
+# Executes iff one of the make goals is 'new' or 'delete'
+ifneq (,$(sort $(foreach g,$(MAKECMDGOALS),$(filter $g,new delete))))
+
 # Namespace/Module variable
 # ===========================
 # 1) Remove trailing bars if it is a directory-only name
-# 2) If the name includes a root src/inc directory, remove-it.
-# 3) Manipulates IN to be used in a #ifndef C/C++ preproc directive
-# 4) Define identation accordingly to namespace depth
+# 2) Substitute C++ namespace style (::) by path style (/)
+# 3) If the name includes a root src/inc directory, remove-it.
+# 4) Manipulates IN to be used in a #ifndef C/C++ preproc directive
+# 5) Define identation accordingly to namespace depth
 ifdef IN
 #------------------------------------------------------------------[ 1 ]
 override IN := $(strip $(call remove-trailing-bar,$(IN)))
 #------------------------------------------------------------------[ 2 ]
+override IN := $(subst ::,/,$(IN))
+#------------------------------------------------------------------[ 3 ]
 override IN := $(strip $(or $(strip $(foreach d,$(srcdir) $(incdir),\
                    $(if $(strip $(patsubst $d%,%,$(call root,$(IN)))),,\
                        $(call not-root,$(IN))\
                ))),$(IN)))
-#------------------------------------------------------------------[ 3 ]
+$(shell echo $(wildcard $(IN)/*))
+#------------------------------------------------------------------[ 4 ]
 indef       := $(strip $(call uc,$(subst /,_,$(strip $(IN)))))_
-#------------------------------------------------------------------[ 3 ]
+#------------------------------------------------------------------[ 5 ]
 idnt        := $(if $(strip $(IN)),    )
 endif
 
@@ -2260,10 +2269,17 @@ endef
 
 # Function: start-namespace
 # Create new namespaces from the IN variable
+# If there is 'n' namespace, put the first 'n-1' with open curly-braces
+# in the same line, and the last one in the last line
 define start-namespace
 $(if $(strip $(IN)),\
     $(call cat,$(subst \\n ,\\n,\
-        $(patsubst %,namespace % {\\n,$(subst /, ,$(IN)))\
+        $(patsubst %,namespace % {\\n,\
+            $(subst $(lastword $(subst /, ,$(IN))),,\
+                $(subst /, ,$(IN))\
+            )\
+        )$(patsubst %,namespace % \\n{,\
+            $(lastword $(subst /, ,$(IN))))\
 )))
 endef
 
@@ -2280,6 +2296,10 @@ endef
 # files created by this makefile (usually the first inc/src dirs)
 override incbase   := $(strip $(firstword $(incdir)))$(if $(IN),/$(IN))
 override srcbase   := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
+
+# Check if namespace exists
+$(if $(or $(call rsubdir,$(incbase)),$(call rsubdir,$(srcbase))),,\
+    $(error Namespace "$(IN)" does not exist))
 
 # Artifacts
 # ===========
@@ -2536,6 +2556,8 @@ ifdef CXX_MODULE
 	$(call rm-if-empty,$(srcbase)/$(CXX_MODULE))
 endif
 endif
+
+endif # Check if one goal is 'new' or 'delete'
 
 ########################################################################
 ##                         HELP AND CONFIGS                           ##
@@ -2841,5 +2863,3 @@ dump:
 	$(call prompt,"cxxlibs:     ",$(cxxlibs)     )
 	$(call prompt,"ldlibs:      ",$(ldlibs)      )
 	$(call prompt,"ldflags:     ",$(ldflags)     )
-	
-	$(call prompt,"lib_in:      ",$(lib_in)      )

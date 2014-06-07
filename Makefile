@@ -1873,13 +1873,14 @@ packageclean:
 	$(call rm-if-empty,$(distdir)/$(DEB_PROJECT)-$(VERSION))
 	$(call rm-if-empty,$(debdir),$(debdep))
 
-.PHONY: warnclean
-warnclean:
+.PHONY: realclean
+ifndef D
+realclean:
 	@echo $(MSG_WARNCLEAN_BEG)
 	@echo $(MSG_WARNCLEAN_END)
-
-.PHONY: realclean
-realclean: warnclean docclean distclean packageclean
+	@echo $(MSG_WARNCLEAN_ALT)
+else
+realclean: docclean distclean packageclean
 	$(if $(lexall),\
         $(call rm,$(lexall)),\
         $(call phony-ok,$(MSG_LEX_NONE))  )
@@ -1892,10 +1893,18 @@ realclean: warnclean docclean distclean packageclean
 	$(if $(wildcard etags),\
 		$(call rm,etags),\
         $(call phony-ok,$(MSG_ETAGS_NONE)) )
+endif
 
 .PHONY: mainteiner-clean
+ifndef D
 mainteiner-clean: 
-	@$(MAKE) realclean MAINTEINER_CLEAN=1
+	@echo $(MSG_WARNCLEAN_BEG)
+	@echo $(MSG_WARNCLEAN_END)
+	@echo $(MSG_WARNCLEAN_ALT)
+else
+mainteiner-clean: 
+	@$(MAKE) realclean MAINTEINER_CLEAN=1 D=1
+endif
 
 .PHONY: uninitialize
 ifndef U
@@ -1963,6 +1972,8 @@ MSG_WARNCLEAN_BEG = "${RED}This command is intended for maintainers"\
                     "to use; it${RES}"
 MSG_WARNCLEAN_END = "${RED}deletes files that may need special tools"\
                     "to rebuild.${RES}"
+MSG_WARNCLEAN_ALT = "${RED}Run ${BLUE}'make $@ D=1'${RED} to confirm."\
+					"${RES}"
 
 MSG_RMDIR         = "${BLUE}Removing directory ${CYAN}$1${RES}"
 MSG_RM_NOT_EMPTY  = "${PURPLE}Directory ${WHITE}$d${RES} not empty"
@@ -2357,11 +2368,13 @@ override TEMPLATE   := $(strip $(basename $(notdir $(TEMPLATE))))
 override C_MODULE   := $(strip $(basename $(notdir $(C_MODULE))))
 override CXX_MODULE := $(strip $(basename $(notdir $(CXX_MODULE))))
 
+# Check if there is at least one artifact to be created/deleted
+$(if $(or $(NAMESPACE),$(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),\
+	 $(C_MAIN),$(CXX_MAIN),$(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
+	 $(error No filetype defined. Type 'make projecthelp' for info))
+
 .PHONY: new
 new:
-	$(if $(or $(NAMESPACE),$(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),\
-         $(C_MAIN),$(CXX_MAIN),$(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
-         $(error No filetype defined. Type 'make projecthelp' for info))
 ifdef NAMESPACE
 	$(call mkdir,$(incbase)/$(NAMESPACE))
 	$(call mkdir,$(srcbase)/$(NAMESPACE))
@@ -2554,9 +2567,6 @@ endef
 
 .PHONY: delete
 delete:
-	$(if $(or $(NAMESPACE),$(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),\
-         $(C_MAIN),$(CXX_MAIN),$(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
-         $(error No filetype defined. Type 'make projecthelp' for info))
 ifndef D
 	@echo $(MSG_DELETE_WARN)
 	@echo $(MSG_DELETE_ALT)

@@ -1292,6 +1292,7 @@ $(docdir)/$(doxyfile).mk: $(doxyfile) $(srcall) $(incall)
 	@echo "# Project info                                        " >> $@
 	@echo "PROJECT_NAME     = $(PROJECT)                         " >> $@
 	@echo "PROJECT_NUMBER   = $(VERSION)                         " >> $@
+	@echo "PROJECT_BRIEF    = $(SYNOPSIS)                        " >> $@
 	@echo "                                                      " >> $@
 	@echo "# Source info                                         " >> $@
 	@echo "INPUT            = $(call rsubdir,$(srcdir) $(incdir))" >> $@
@@ -1862,11 +1863,13 @@ distclean: clean
 .PHONY: docclean
 docclean:
 	$(call rm-if-empty,$(docdir)/doxygen)
+	$(call rm-if-exists,$(docdir)/Doxyfile.mk,$(MSG_DOXY_NONE))
 	$(call rm-if-empty,$(docdir)/info,$(texiinfo))
 	$(call rm-if-empty,$(docdir)/html,$(texihtml))
 	$(call rm-if-empty,$(docdir)/dvi,$(texidvi))
 	$(call rm-if-empty,$(docdir)/pdf,$(texipdf))
 	$(call rm-if-empty,$(docdir)/ps,$(texips))
+	$(call rm-if-empty,$(docdir))
 
 .PHONY: packageclean
 packageclean:
@@ -1881,18 +1884,10 @@ realclean:
 	@echo $(MSG_WARNCLEAN_ALT)
 else
 realclean: docclean distclean packageclean
-	$(if $(lexall),\
-        $(call rm,$(lexall)),\
-        $(call phony-ok,$(MSG_LEX_NONE))  )
-	$(if $(yaccall),\
-        $(call rm,$(yaccall)),\
-        $(call phony-ok,$(MSG_YACC_NONE)) )
-	$(if $(wildcard ctags),\
-		$(call rm,ctags),\
-        $(call phony-ok,$(MSG_CTAGS_NONE))  )
-	$(if $(wildcard etags),\
-		$(call rm,etags),\
-        $(call phony-ok,$(MSG_ETAGS_NONE)) )
+	$(call rm-if-exists,$(lexall),$(MSG_LEX_NONE))
+	$(call rm-if-exists,$(yaccall),$(MSG_YACC_NONE))
+	$(call rm-if-exists,ctags,$(MSG_CTAGS_NONE))
+	$(call rm-if-exists,etags,$(MSG_ETAGS_NONE))
 endif
 
 .PHONY: mainteiner-clean
@@ -1916,8 +1911,10 @@ uninitialize: mainteiner-clean
 	$(call rm-if-empty,$(srcdir),$(srcall))
 	$(call rm-if-empty,$(incdir),$(incall))
 	$(call rm-if-empty,$(docdir),$(texiall))
-	$(call rm,Config.mk config.mk)
-	$(call rm,Config_os.mk config_os.mk)
+	$(call rm-if-exists,Config.mk)
+	$(call rm-if-exists,config.mk)
+	$(call rm-if-exists,Config_os.mk)
+	$(call rm-if-exists,config_os.mk)
 endif
 
 ########################################################################
@@ -1973,7 +1970,7 @@ MSG_WARNCLEAN_BEG = "${RED}This command is intended for maintainers"\
 MSG_WARNCLEAN_END = "${RED}deletes files that may need special tools"\
                     "to rebuild.${RES}"
 MSG_WARNCLEAN_ALT = "${RED}Run ${BLUE}'make $@ D=1'${RED} to confirm."\
-					"${RES}"
+                    "${RES}"
 
 MSG_RMDIR         = "${BLUE}Removing directory ${CYAN}$1${RES}"
 MSG_RM_NOT_EMPTY  = "${PURPLE}Directory ${WHITE}$d${RES} not empty"
@@ -1990,6 +1987,7 @@ MSG_TEXI_DOCS     = "${BLUE}Generating docs in ${WHITE}$@${RES}"
 MSG_DOXY_DOCS     = "${YELLOW}Generating Doxygen docs${RES}"
 MSG_DOXY_FILE     = "${BLUE}Generating Doxygen file ${WHITE}$@${RES}"
 MSG_DOXY_MAKE     = "${BLUE}Generating Doxygen config ${WHITE}$@${RES}"
+MSG_DOXY_NONE     = "${PURPLE}No auto-generated Doxyfile.mk${RES}"
 
 MSG_INSTALL_BIN   = "${DEF}Installing binary file ${GREEN}$@${RES}"
 MSG_UNINSTALL_BIN = "${DEF}Uninstalling binary file ${GREEN}$@${RES}"
@@ -2183,6 +2181,16 @@ define rm-if-empty
                 $(call phony-ok,$(MSG_RM_EMPTY))\
             )\
     ))
+endef
+
+#======================================================================#
+# Function: rm-if-exists                                               #
+# @param $1 File to be removed                                         #
+# @param $1 Message to be outputed if the file was not found           #
+#======================================================================#
+define rm-if-exists
+$(if $(wildcard $1),\
+    $(call rm,$1),$(if $(strip $2),$(call phony-ok,$2)))
 endef
 
 ## STATUS ##############################################################

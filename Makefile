@@ -1920,9 +1920,6 @@ endif
 ########################################################################
 ##                              OUTPUT                                ##
 ########################################################################
-ifdef SILENT
-V := 1
-endif
 
 # Hide command execution details
 V   ?= 0
@@ -1948,11 +1945,6 @@ RES     := \033[0m
 ERR     := \033[0;37m
 endif
 
-MSG_CMD_UNRECOG   = "${RED}Command $@ unknown. Type '${DEF}make"\
-                    "projecthelp${RED}' for valid targets.${RES}"
-
-MSG_RM            = "${BLUE}Removing ${RES}$1${RES}"
-MSG_MKDIR         = "${CYAN}Creating directory $1${RES}"
 MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
                     "sources, headers and configuration files?"
 MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
@@ -1961,6 +1953,7 @@ MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
+MSG_UPDATE_NINC   = "${YELLOW}Updating namespace ${DEF}${NAMESPACE_INC}"
 MSG_NEW_EXT       = "${RED}Extension '$1' invalid${RES}"
 MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
 MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
@@ -1972,6 +1965,8 @@ MSG_WARNCLEAN_END = "${RED}deletes files that may need special tools"\
 MSG_WARNCLEAN_ALT = "${RED}Run ${BLUE}'make $@ D=1'${RED} to confirm."\
                     "${RES}"
 
+MSG_MKDIR         = "${CYAN}Creating directory $1${RES}"
+MSG_RM            = "${BLUE}Removing ${RES}$1${RES}"
 MSG_RMDIR         = "${BLUE}Removing directory ${CYAN}$1${RES}"
 MSG_RM_NOT_EMPTY  = "${PURPLE}Directory ${WHITE}$d${RES} not empty"
 MSG_RM_EMPTY      = "${PURPLE}Nothing to remove in $d${RES}"
@@ -2018,7 +2013,6 @@ MSG_TEST_COMPILE  = "${DEF}Generating test executable"\
 MSG_TEST_FAILURE  = "${CYAN}Test $(notdir $@) not passed${RES}"
 MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
 
-MSG_STATLIB       = "${RED}Generating static library $@${RES}"
 MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
 MSG_MAKEZIP       = "${RED}Generating zip file ${BLUE}$@${RES}"
 MSG_MAKETGZ       = "${YELLOW}Compressing file ${BLUE}$@"\
@@ -2027,6 +2021,7 @@ MSG_MAKETBZ2      = "${YELLOW}Compressing file ${BLUE}$@"\
                     "${YELLOW}(bzip2)${RES}"
 
 MSG_ASM_COMPILE   = "${DEF}Generating Assembly artifact ${WHITE}$@${RES}"
+MSG_STATLIB       = "${RED}Generating static library $@${RES}"
 
 MSG_C_COMPILE     = "${DEF}Generating C artifact ${WHITE}$@${RES}"
 MSG_C_LINKAGE     = "${YELLOW}Generating C executable ${GREEN}$@${RES}"
@@ -2286,7 +2281,7 @@ endef
 ########################################################################
 
 # Executes iff one of the make goals is 'new' or 'delete'
-ifneq (,$(sort $(foreach g,$(MAKECMDGOALS),$(filter $g,new delete))))
+ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,new delete update)))
 
 # Namespace/Module variable
 # ===========================
@@ -2318,6 +2313,13 @@ override SRC_EXT := $(strip $(if $(strip $(SRC_EXT)),\
     $(or $(filter .%,$(SRC_EXT)),.$(SRC_EXT))))
 override INC_EXT := $(strip $(if $(strip $(INC_EXT)),\
     $(or $(filter .%,$(INC_EXT)),.$(INC_EXT))))
+
+# Function: sfmt
+# Format to make a preprocessor symbol
+# $1 File name
+define sfmt
+$(subst _,-,$(call uc,$1))
+endef
 
 # Function: invalid-ext
 # $1 File extension
@@ -2365,27 +2367,60 @@ $(if $(or $(call rsubdir,$(incbase)),$(call rsubdir,$(srcbase))),,\
 # Artifacts
 # ===========
 # C/C++ Artifacts that may be created by this Makefile
-override NAMESPACE  := $(strip $(notdir $(NAMESPACE)))
-override CLASS      := $(strip $(basename $(notdir $(CLASS))))
-override F_FILE     := $(strip $(basename $(notdir $(F_FILE))))
-override C_FILE     := $(strip $(basename $(notdir $(C_FILE))))
-override CXX_FILE   := $(strip $(basename $(notdir $(CXX_FILE))))
-override C_MAIN     := $(strip $(basename $(notdir $(C_MAIN))))
-override CXX_MAIN   := $(strip $(basename $(notdir $(CXX_MAIN))))
-override TEMPLATE   := $(strip $(basename $(notdir $(TEMPLATE))))
-override C_MODULE   := $(strip $(basename $(notdir $(C_MODULE))))
-override CXX_MODULE := $(strip $(basename $(notdir $(CXX_MODULE))))
+override NAMESPACE     := $(strip $(notdir $(NAMESPACE)))
+override NAMESPACE_INC := $(strip $(notdir $(NAMESPACE_INC)))
+override CLASS         := $(strip $(basename $(notdir $(CLASS))))
+override F_FILE        := $(strip $(basename $(notdir $(F_FILE))))
+override C_FILE        := $(strip $(basename $(notdir $(C_FILE))))
+override CXX_FILE      := $(strip $(basename $(notdir $(CXX_FILE))))
+override C_MAIN        := $(strip $(basename $(notdir $(C_MAIN))))
+override CXX_MAIN      := $(strip $(basename $(notdir $(CXX_MAIN))))
+override TEMPLATE      := $(strip $(basename $(notdir $(TEMPLATE))))
+override C_MODULE      := $(strip $(basename $(notdir $(C_MODULE))))
+override CXX_MODULE    := $(strip $(basename $(notdir $(CXX_MODULE))))
 
 # Check if there is at least one artifact to be created/deleted
-$(if $(or $(NAMESPACE),$(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),\
-	 $(C_MAIN),$(CXX_MAIN),$(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
-	 $(error No filetype defined. Type 'make projecthelp' for info))
+$(if $(or $(NAMESPACE),$(NAMESPACE_INC),$(CLASS),\
+     $(F_FILE),$(C_FILE),$(CXX_FILE),$(C_MAIN),$(CXX_MAIN),\
+     $(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
+     $(error No filetype defined. Type 'make projecthelp' for info))
 
 .PHONY: new
 new:
 ifdef NAMESPACE
 	$(call mkdir,$(incbase)/$(NAMESPACE))
 	$(call mkdir,$(srcbase)/$(NAMESPACE))
+endif
+ifdef NAMESPACE_INC
+	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
+	
+	@# NINC: Namespace directory
+	$(eval NINC       := $(subst ::,/,$(NAMESPACE_INC)))
+	$(eval NINC       := $(if $(strip $(IN)),$(IN)/)$(NINC))
+	$(eval NINC       := $(firstword $(filter %$(NINC)/,\
+                                $(sort $(dir $(incall))))))
+	$(eval NINC       := $(call remove-trailing-bar,$(NINC)))
+	
+	@# NINC_NAME: Namespace include files
+	$(eval NINC_NAME  := $(notdir $(basename $(NINC))))
+	
+	@# NINC_FILES: Files to be put in the nickname
+	$(eval NINC_FILES := $(filter $(NINC)/%,$(incall)))
+	$(eval NINC_FILES := $(filter-out $(NINC)/$(NINC_NAME),\
+        $(foreach f,$(NINC_FILES),\
+            $(firstword $(filter %$f,$(incall)))\
+    )))
+	
+	$(call invalid-ext,$(INC_EXT),$(hxxext))
+	$(call touch,$(NINC)/$(NINC_NAME)$(INC_EXT),$(notice))
+	$(call select,$(NINC)/$(NINC_NAME)$(INC_EXT))
+	$(call cat,''                                                      )
+	$(call cat,'#ifndef HPP_$(indef)$(call sfmt,$(NINC_NAME))_DEFINED' )
+	$(call cat,'#define HPP_$(indef)$(call sfmt,$(NINC_NAME))_DEFINED' )
+	$(call cat,''                                                      )
+	$(call cat,'// Libraries'                                          )
+	$(call cat,$(foreach f,$(NINC_FILES),'#include "$f"'\\n)           )
+	$(call cat,'#endif'                                                )
 endif
 ifdef CLASS
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
@@ -2395,8 +2430,8 @@ ifdef CLASS
 	$(call touch,$(incbase)/$(CLASS)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CLASS)$(INC_EXT))
 	$(call cat,''                                                      )
-	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CLASS))_DEFINED'       )
-	$(call cat,'#define HPP_$(indef)$(call uc,$(CLASS))_DEFINED'       )
+	$(call cat,'#ifndef HPP_$(indef)$(call sfmt,$(CLASS))_DEFINED'     )
+	$(call cat,'#define HPP_$(indef)$(call sfmt,$(CLASS))_DEFINED'     )
 	$(call cat,''                                                      )
 	$(call start-namespace                                             )
 	$(call cat,'$(idnt)class $(CLASS)'                                 )
@@ -2440,8 +2475,8 @@ ifdef C_FILE
 	$(call touch,$(incbase)/$(C_FILE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(C_FILE)$(INC_EXT))
 	$(call cat,''                                                      )
-	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_FILE))_DEFINED'        )
-	$(call cat,'#define H_$(indef)$(call uc,$(C_FILE))_DEFINED'        )
+	$(call cat,'#ifndef H_$(indef)$(call sfmt,$(C_FILE))_DEFINED'      )
+	$(call cat,'#define H_$(indef)$(call sfmt,$(C_FILE))_DEFINED'      )
 	$(call cat,''                                                      )
 	$(call cat,'#endif'                                                )
 	
@@ -2463,8 +2498,8 @@ ifdef CXX_FILE
 	$(call touch,$(incbase)/$(CXX_FILE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CXX_FILE)$(INC_EXT))
 	$(call cat,''                                                      )
-	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_FILE))_DEFINED'    )
-	$(call cat,'#define HPP_$(indef)$(call uc,$(CXX_FILE))_DEFINED'    )
+	$(call cat,'#ifndef HPP_$(indef)$(call sfmt,$(CXX_FILE))_DEFINED'  )
+	$(call cat,'#define HPP_$(indef)$(call sfmt,$(CXX_FILE))_DEFINED'  )
 	$(call cat,''                                                      )
 	$(call start-namespace                                             )
 	$(call cat,'$(idnt)'                                               )
@@ -2521,8 +2556,8 @@ ifdef TEMPLATE
 	$(call touch,$(incbase)/$(TEMPLATE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(TEMPLATE)$(INC_EXT))
 	$(call cat,''                                                      )
-	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(TEMPLATE))_DEFINED'    )
-	$(call cat,'#define HPP_$(indef)$(call uc,$(TEMPLATE))_DEFINED'    )
+	$(call cat,'#ifndef HPP_$(indef)$(call sfmt,$(TEMPLATE))_DEFINED'  )
+	$(call cat,'#define HPP_$(indef)$(call sfmt,$(TEMPLATE))_DEFINED'  )
 	$(call cat,''                                                      )
 	$(call start-namespace                                             )
 	$(call cat,'$(idnt)'                                               )
@@ -2539,8 +2574,8 @@ ifdef C_MODULE
 	$(call touch,$(incbase)/$(C_MODULE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(C_MODULE)$(INC_EXT))
 	$(call cat,''                                                      )
-	$(call cat,'#ifndef H_$(indef)$(call uc,$(C_MODULE))_DEFINED'      )
-	$(call cat,'#define H_$(indef)$(call uc,$(C_MODULE))_DEFINED'      )
+	$(call cat,'#ifndef H_$(indef)$(call sfmt,$(C_MODULE))_DEFINED'    )
+	$(call cat,'#define H_$(indef)$(call sfmt,$(C_MODULE))_DEFINED'    )
 	$(call cat,''                                                      )
 	$(call cat,'#endif'                                                )
 	
@@ -2553,8 +2588,8 @@ ifdef CXX_MODULE
 	$(call touch,$(incbase)/$(CXX_MODULE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CXX_MODULE)$(INC_EXT))
 	$(call cat,''                                                      )
-	$(call cat,'#ifndef HPP_$(indef)$(call uc,$(CXX_MODULE))_DEFINED'  )
-	$(call cat,'#define HPP_$(indef)$(call uc,$(CXX_MODULE))_DEFINED'  )
+	$(call cat,'#ifndef HPP_$(indef)$(call sfmt,$(CXX_MODULE))_DEFINED')
+	$(call cat,'#define HPP_$(indef)$(call sfmt,$(CXX_MODULE))_DEFINED')
 	$(call cat,''                                                      )
 	$(call start-namespace                                             )
 	$(call cat,'$(idnt)'                                               )
@@ -2563,6 +2598,14 @@ ifdef CXX_MODULE
 	$(call cat,'#endif'                                                )
 	
 	$(call mkdir,$(srcbase)/$(CXX_MODULE))
+endif
+
+.PHONY: update
+update:
+ifdef NAMESPACE_INC
+	$(call phony-status,$(MSG_UPDATE_NINC))
+	@$(MAKE) delete new NAMESPACE_INC=$(NAMESPACE_INC) D=1 SILENT=1
+	$(call phony-ok,$(MSG_UPDATE_NINC))
 endif
 
 # Function: delete-file
@@ -2582,6 +2625,19 @@ else
 ifdef NAMESPACE
 	$(call rm-if-empty,$(incbase)/$(NAMESPACE))
 	$(call rm-if-empty,$(srcbase)/$(NAMESPACE))
+endif
+ifdef NAMESPACE_INC
+	@# NINC: Namespace directory
+	$(eval NINC       := $(subst ::,/,$(NAMESPACE_INC)))
+	$(eval NINC       := $(if $(strip $(IN)),$(IN)/)$(NINC))
+	$(eval NINC       := $(firstword $(filter %$(NINC)/,\
+                                $(sort $(dir $(incall))))))
+	$(eval NINC       := $(call remove-trailing-bar,$(NINC)))
+	
+	@# NINC_NAME: Namespace include files
+	$(eval NINC_NAME  := $(notdir $(basename $(NINC))))
+	
+	$(call delete-file,$(NINC)/$(NINC_NAME),$(INC_EXT) $(hxxext))
 endif
 ifdef CLASS
 	$(call delete-file,$(incbase)/$(CLASS),$(INC_EXT) $(hxxext))
@@ -2760,9 +2816,9 @@ projecthelp:
 	@echo "---------------                                             "
 	@echo " * D:            Allow deletion of a C/C++ artifact         "
 	@echo " * U:            Allow uninitilization of the project       "
-	@echo " * V:            Allow the verbose mode                     "
-	@echo " * MORE:         With error, use 'more' to read stderr      "
-	@echo " * SILENT:       Just output the plain commands as executed "
+	@echo " * V:            Allow printing the command line rules      "
+	@echo " * MORE:         With errors, use 'more' to read stderr     "
+	@echo " * SILENT:       Outputs no default messagens in execution  "
 	@echo " * INC_EXT:      Include extension for files made by 'new'  "
 	@echo " * SRC_EXT:      Source extension for files made by 'new'   "
 	@echo " * NO_COLORS:    Outputs are made without any color         "

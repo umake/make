@@ -2734,8 +2734,8 @@ compiler:
 	@echo "AR     := # Create static libraries (default: ar)"
 	@echo "AS     := # Compile assembly        (default: nasm)"
 	@echo "CC     := # Compile C               (default: gcc)"
-	@echo "FC     := # Compile C++             (default: gfortran)"
-	@echo "CXX    := # Compile Fortran         (default: g++)"
+	@echo "FC     := # Compile Fortran         (default: gfortran)"
+	@echo "CXX    := # Compile C++             (default: g++)"
 	@echo "RANLIB := # Update static libraries (default: ranlib)"
 
 .PHONY: gitignore

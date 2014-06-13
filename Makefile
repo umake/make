@@ -26,8 +26,8 @@
 ########################################################################
 
 # Project setting 
-PROJECT     := Default
-VERSION     := 1.0
+PROJECT  := Default
+VERSION  := 1.0
 
 # Package info
 AUXFILES        :=

@@ -2369,6 +2369,7 @@ $(if $(or $(call rsubdir,$(incbase)),$(call rsubdir,$(srcbase))),,\
 # ===========
 # C/C++ Artifacts that may be created by this Makefile
 override NAMESPACE     := $(strip $(notdir $(NAMESPACE)))
+override LIBRARY       := $(strip $(notdir $(LIBRARY)))
 override NAMESPACE_INC := $(strip $(notdir $(NAMESPACE_INC)))
 override CLASS         := $(strip $(basename $(notdir $(CLASS))))
 override F_FILE        := $(strip $(basename $(notdir $(F_FILE))))
@@ -2381,7 +2382,7 @@ override C_MODULE      := $(strip $(basename $(notdir $(C_MODULE))))
 override CXX_MODULE    := $(strip $(basename $(notdir $(CXX_MODULE))))
 
 # Check if there is at least one artifact to be created/deleted
-$(if $(or $(NAMESPACE),$(NAMESPACE_INC),$(CLASS),\
+$(if $(or $(NAMESPACE),$(LIBRARY),$(NAMESPACE_INC),$(CLASS),\
      $(F_FILE),$(C_FILE),$(CXX_FILE),$(C_MAIN),$(CXX_MAIN),\
      $(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
      $(error No filetype defined. Type 'make projecthelp' for info))
@@ -2391,6 +2392,9 @@ new:
 ifdef NAMESPACE
 	$(call mkdir,$(incbase)/$(NAMESPACE))
 	$(call mkdir,$(srcbase)/$(NAMESPACE))
+endif
+ifdef LIBRARY
+	$(call mkdir,$(incbase)/$(LIBRARY))
 endif
 ifdef NAMESPACE_INC
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
@@ -2627,6 +2631,9 @@ ifdef NAMESPACE
 	$(call rm-if-empty,$(incbase)/$(NAMESPACE))
 	$(call rm-if-empty,$(srcbase)/$(NAMESPACE))
 endif
+ifdef LIBRARY
+	$(call rm-if-empty,$(incbase)/$(LIBRARY))
+endif
 ifdef NAMESPACE_INC
 	@# NINC: Namespace directory
 	$(eval NINC       := $(subst ::,/,$(NAMESPACE_INC)))
@@ -2734,8 +2741,8 @@ compiler:
 	@echo "AR     := # Create static libraries (default: ar)"
 	@echo "AS     := # Compile assembly        (default: nasm)"
 	@echo "CC     := # Compile C               (default: gcc)"
-	@echo "FC     := # Compile Fortran         (default: gfortran)"
-	@echo "CXX    := # Compile C++             (default: g++)"
+	@echo "FC     := # Compile C++             (default: gfortran)"
+	@echo "CXX    := # Compile Fortran         (default: g++)"
 	@echo "RANLIB := # Update static libraries (default: ranlib)"
 
 .PHONY: gitignore
@@ -2841,7 +2848,8 @@ projecthelp:
 	@echo "                                                            "
 	@echo "Management flags                                            "
 	@echo "-----------------                                           "
-	@echo " * NAMESPACE:    Create new directory for namespace         "
+	@echo " * NAMESPACE:    Create directory for namespace (src + inc) "
+	@echo " * LIBRARY:      Create directory for lib (template only)   "
 	@echo " * CLASS:        Create new file for a C++ class            "
 	@echo " * F_FILE:       Create ordinary C file                     "
 	@echo " * C_FILE:       Create ordinary C source and header file   "

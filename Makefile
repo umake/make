@@ -82,8 +82,7 @@ ARFLAGS   := -rcv
 SOFLAGS   := -shared 
 
 # Include configuration file if exists
--include config.mk
--include Config.mk
+-include .config.mk config.mk Config.mk
 
 ########################################################################
 ##                            DIRECTORIES                             ##
@@ -250,6 +249,9 @@ FC              := gfortran
 CXX             := g++
 RANLIB          := ranlib
 
+# Include configuration file for compiler if exists
+-include .compiler.mk compiler.mk Compiler.mk
+
 # Installation
 INSTALL         := install
 INSTALL_DATA    := $(INSTALL)
@@ -299,9 +301,8 @@ DCH             := dch --create -v $(VERSION)-$(DEB_VERSION) \
 # Make
 MAKE            += --no-print-directory
 
-# Include configuration file if exists
--include config_os.mk
--include Config_os.mk
+# Include configuration file for programs if exists
+-include .config_os.mk config_os.mk Config_os.mk
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
@@ -2723,6 +2724,20 @@ config:
 	@echo "DESCRIPTION     := # Longer description of the program"
 	@echo ""
 
+.PHONY: compiler
+compiler:
+	@echo ""
+	@echo "############################################################"
+	@echo "##         DELETE ANY TARGET TO USE THE DEFAULT!          ##"
+	@echo "############################################################"
+	@echo ""
+	@echo "AR     := # Create static libraries (default: ar)"
+	@echo "AS     := # Compile assembly        (default: nasm)"
+	@echo "CC     := # Compile C               (default: gcc)"
+	@echo "FC     := # Compile C++             (default: gfortran)"
+	@echo "CXX    := # Compile Fortran         (default: g++)"
+	@echo "RANLIB := # Update static libraries (default: ranlib)"
+
 .PHONY: gitignore
 gitignore:
 	@echo ""
@@ -2767,6 +2782,7 @@ projecthelp:
 	@echo " * all-docs:     Generate docs in all formats avaiable      "
 	@echo " * all:          Generate all executables                   "
 	@echo " * check:        Compile and run Unit Tests                 "
+	@echo " * compiler:     Outputs Compiler.mk to define compilers    "
 	@echo " * config:       Outputs Config.mk model for user's options "
 	@echo " * delete:       Remove C/C++ artifact (see above)          "
 	@echo " * dpkg:         Create a debian package from the project   "
@@ -2825,16 +2841,16 @@ projecthelp:
 	@echo "                                                            "
 	@echo "Management flags                                            "
 	@echo "-----------------                                           "
-	@echo "* NAMESPACE:     Create new directory for namespace         "
-	@echo "* CLASS:         Create new file for a C++ class            "
-	@echo "* F_FILE:        Create ordinary C file                     "
-	@echo "* C_FILE:        Create ordinary C source and header file   "
-	@echo "* CXX_FILE:      Create ordinary C++ source and header file "
-	@echo "* C_MAIN:        Create ordinary C main                     "
-	@echo "* CXX_MAIN:      Create ordinary C++ main                   "
-	@echo "* C_MODULE:      Create C header and dir for its sources    "
-	@echo "* CXX_MODULE:    Create C++ header and dif for its sources  "
-	@echo "* TEMPLATE:      Create C++ template file                   "
+	@echo " * NAMESPACE:    Create new directory for namespace         "
+	@echo " * CLASS:        Create new file for a C++ class            "
+	@echo " * F_FILE:       Create ordinary C file                     "
+	@echo " * C_FILE:       Create ordinary C source and header file   "
+	@echo " * CXX_FILE:     Create ordinary C++ source and header file "
+	@echo " * C_MAIN:       Create ordinary C main                     "
+	@echo " * CXX_MAIN:     Create ordinary C++ main                   "
+	@echo " * C_MODULE:     Create C header and dir for its sources    "
+	@echo " * CXX_MODULE:   Create C++ header and dif for its sources  "
+	@echo " * TEMPLATE:     Create C++ template file                   "
 	@echo "                                                            "
 
 ########################################################################

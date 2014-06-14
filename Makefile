@@ -2401,8 +2401,8 @@ $(if $(or $(NAMESPACE),$(NMS_HEADER),$(LIBRARY),$(LIB_HEADER),\
 .PHONY: new
 new:
 ifdef NAMESPACE
-	$(call mkdir,$(incbase)/$(NAMESPACE))
-	$(call mkdir,$(srcbase)/$(NAMESPACE))
+	$(call mkdir,$(incbase)/$(subst ::,/,$(NAMESPACE)))
+	$(call mkdir,$(srcbase)/$(subst ::,/,$(NAMESPACE)))
 endif
 ifdef NMS_HEADER
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
@@ -2436,7 +2436,7 @@ ifdef NMS_HEADER
 	$(call cat,'#endif'                                                )
 endif
 ifdef LIBRARY
-	$(call mkdir,$(incbase)/$(LIBRARY))
+	$(call mkdir,$(incbase)/$(subst ::,/,$(LIBRARY)))
 endif
 ifdef LIB_HEADER
 	$(if $(INC_EXT),,$(eval override INC_EXT := .tcc))
@@ -2675,8 +2675,8 @@ ifndef D
 	@echo $(MSG_DELETE_ALT)
 else
 ifdef NAMESPACE
-	$(call rm-if-empty,$(incbase)/$(NAMESPACE))
-	$(call rm-if-empty,$(srcbase)/$(NAMESPACE))
+	$(call rm-if-empty,$(incbase)/$(subst ::,/,$(NAMESPACE)))
+	$(call rm-if-empty,$(srcbase)/$(subst ::,/,$(NAMESPACE)))
 endif
 ifdef NMS_HEADER
 	@# NMSH: Namespace directory
@@ -2692,7 +2692,7 @@ ifdef NMS_HEADER
 	$(call delete-file,$(NMSH)/$(NMSH_NAME),$(INC_EXT) $(hxxext))
 endif
 ifdef LIBRARY
-	$(call rm-if-empty,$(incbase)/$(LIBRARY))
+	$(call rm-if-empty,$(incbase)/$(subst ::,/,$(LIBRARY)))
 endif
 ifdef LIB_HEADER
 	@# LIBH: Namespace directory

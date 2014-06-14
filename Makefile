@@ -1954,7 +1954,10 @@ MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
-MSG_UPDATE_NINC   = "${YELLOW}Updating namespace ${DEF}${NAMESPACE_INC}"
+MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\
+					"$(subst /,::,${NMS_HEADER})"
+MSG_UPDATE_LIBH   = "${YELLOW}Updating library${DEF}"\
+					"$(subst /,::,${LIB_HEADER})"
 MSG_NEW_EXT       = "${RED}Extension '$1' invalid${RES}"
 MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
 MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
@@ -2354,6 +2357,13 @@ $(if $(strip $(IN)),\
     $(call cat,$(subst } ,},$(foreach n,$(subst /, ,$(IN)),}))))
 endef
 
+# Function: include-files
+# Create include directives (#include) for all files in $1
+define include-files
+$(call cat,$(subst \\n ,\\n,\
+    $(patsubst %,'#include "%"'\\n,$(sort $1))))
+endef
+
 # Path variables
 # ================
 # Auxiliar variables to the default place to create/remove 
@@ -2369,8 +2379,9 @@ $(if $(or $(call rsubdir,$(incbase)),$(call rsubdir,$(srcbase))),,\
 # ===========
 # C/C++ Artifacts that may be created by this Makefile
 override NAMESPACE     := $(strip $(notdir $(NAMESPACE)))
+override NMS_HEADER    := $(strip $(notdir $(NMS_HEADER)))
 override LIBRARY       := $(strip $(notdir $(LIBRARY)))
-override NAMESPACE_INC := $(strip $(notdir $(NAMESPACE_INC)))
+override LIB_HEADER    := $(strip $(notdir $(LIB_HEADER)))
 override CLASS         := $(strip $(basename $(notdir $(CLASS))))
 override F_FILE        := $(strip $(basename $(notdir $(F_FILE))))
 override C_FILE        := $(strip $(basename $(notdir $(C_FILE))))
@@ -2382,8 +2393,8 @@ override C_MODULE      := $(strip $(basename $(notdir $(C_MODULE))))
 override CXX_MODULE    := $(strip $(basename $(notdir $(CXX_MODULE))))
 
 # Check if there is at least one artifact to be created/deleted
-$(if $(or $(NAMESPACE),$(LIBRARY),$(NAMESPACE_INC),$(CLASS),\
-     $(F_FILE),$(C_FILE),$(CXX_FILE),$(C_MAIN),$(CXX_MAIN),\
+$(if $(or $(NAMESPACE),$(NMS_HEADER),$(LIBRARY),$(LIB_HEADER),\
+     $(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),$(C_MAIN),$(CXX_MAIN),\
      $(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
      $(error No filetype defined. Type 'make projecthelp' for info))
 
@@ -2393,38 +2404,69 @@ ifdef NAMESPACE
 	$(call mkdir,$(incbase)/$(NAMESPACE))
 	$(call mkdir,$(srcbase)/$(NAMESPACE))
 endif
-ifdef LIBRARY
-	$(call mkdir,$(incbase)/$(LIBRARY))
-endif
-ifdef NAMESPACE_INC
+ifdef NMS_HEADER
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
 	
-	@# NINC: Namespace directory
-	$(eval NINC       := $(subst ::,/,$(NAMESPACE_INC)))
-	$(eval NINC       := $(if $(strip $(IN)),$(IN)/)$(NINC))
-	$(eval NINC       := $(firstword $(filter %$(NINC)/,\
+	@# NMSH: Namespace directory
+	$(eval NMSH       := $(subst ::,/,$(NMS_HEADER)))
+	$(eval NMSH       := $(if $(strip $(IN)),$(IN)/)$(NMSH))
+	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
                                 $(sort $(dir $(incall))))))
-	$(eval NINC       := $(call remove-trailing-bar,$(NINC)))
+	$(eval NMSH       := $(call remove-trailing-bar,$(NMSH)))
 	
-	@# NINC_NAME: Namespace include files
-	$(eval NINC_NAME  := $(notdir $(basename $(NINC))))
+	@# NMSH_NAME: File name for the Namespace header
+	$(eval NMSH_NAME  := $(notdir $(basename $(NMSH))))
 	
-	@# NINC_FILES: Files to be put in the nickname
-	$(eval NINC_FILES := $(filter $(NINC)/%,$(incall)))
-	$(eval NINC_FILES := $(filter-out $(NINC)/$(NINC_NAME),\
-        $(foreach f,$(NINC_FILES),\
+	@# NMSH_FILES: Files to be put in the Namespace Header
+	$(eval NMSH_FILES := $(filter $(NMSH)/%,$(incall)))
+	$(eval NMSH_FILES := $(filter-out $(NMSH)/$(NMSH_NAME).%,\
+        $(foreach f,$(NMSH_FILES),\
             $(firstword $(filter %$f,$(incall)))\
     )))
 	
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
-	$(call touch,$(NINC)/$(NINC_NAME)$(INC_EXT),$(notice))
-	$(call select,$(NINC)/$(NINC_NAME)$(INC_EXT))
+	$(call touch,$(NMSH)/$(NMSH_NAME)$(INC_EXT),$(notice))
+	$(call select,$(NMSH)/$(NMSH_NAME)$(INC_EXT))
 	$(call cat,''                                                      )
-	$(call cat,'#ifndef HPP_$(indef)$(call sfmt,$(NINC_NAME))_DEFINED' )
-	$(call cat,'#define HPP_$(indef)$(call sfmt,$(NINC_NAME))_DEFINED' )
+	$(call cat,'#ifndef NMS_$(indef)$(call sfmt,$(NMSH_NAME))_DEFINED' )
+	$(call cat,'#define NMS_$(indef)$(call sfmt,$(NMSH_NAME))_DEFINED' )
 	$(call cat,''                                                      )
 	$(call cat,'// Libraries'                                          )
-	$(call cat,$(foreach f,$(NINC_FILES),'#include "$f"'\\n)           )
+	$(call include-files,$(NMSH_FILES)                                 )
+	$(call cat,'#endif'                                                )
+endif
+ifdef LIBRARY
+	$(call mkdir,$(incbase)/$(LIBRARY))
+endif
+ifdef LIB_HEADER
+	$(if $(INC_EXT),,$(eval override INC_EXT := .tcc))
+	
+	@# LIBH: Library directory
+	$(eval LIBH       := $(subst ::,/,$(LIB_HEADER)))
+	$(eval LIBH       := $(if $(strip $(IN)),$(IN)/)$(LIBH))
+	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
+                                $(sort $(dir $(incall))))))
+	$(eval LIBH       := $(call remove-trailing-bar,$(LIBH)))
+	
+	@# LIBH_NAME: File name for the Library header
+	$(eval LIBH_NAME  := $(notdir $(basename $(LIBH))))
+	
+	@# LIBH_FILES: Files to be put in the Library header
+	$(eval LIBH_FILES := $(filter $(LIBH)/%,$(incall)))
+	$(eval LIBH_FILES := $(filter-out $(LIBH)/$(LIBH_NAME).%,\
+        $(foreach f,$(LIBH_FILES),\
+            $(firstword $(filter %$f,$(incall)))\
+    )))
+	
+	$(call invalid-ext,$(INC_EXT),$(tlext))
+	$(call touch,$(LIBH)/$(LIBH_NAME)$(INC_EXT),$(notice))
+	$(call select,$(LIBH)/$(LIBH_NAME)$(INC_EXT))
+	$(call cat,''                                                      )
+	$(call cat,'#ifndef LIB_$(indef)$(call sfmt,$(LIBH_NAME))_DEFINED' )
+	$(call cat,'#define LIB_$(indef)$(call sfmt,$(LIBH_NAME))_DEFINED' )
+	$(call cat,''                                                      )
+	$(call cat,'// Libraries'                                          )
+	$(call include-files,$(LIBH_FILES)                                 )
 	$(call cat,'#endif'                                                )
 endif
 ifdef CLASS
@@ -2607,10 +2649,15 @@ endif
 
 .PHONY: update
 update:
-ifdef NAMESPACE_INC
-	$(call phony-status,$(MSG_UPDATE_NINC))
-	@$(MAKE) delete new NAMESPACE_INC=$(NAMESPACE_INC) D=1 SILENT=1
-	$(call phony-ok,$(MSG_UPDATE_NINC))
+ifdef NMS_HEADER
+	$(call phony-status,$(MSG_UPDATE_NMSH))
+	@$(MAKE) delete new NMS_HEADER=$(NMS_HEADER) D=1 SILENT=1
+	$(call phony-ok,$(MSG_UPDATE_NMSH))
+endif
+ifdef LIB_HEADER
+	$(call phony-status,$(MSG_UPDATE_LIBH))
+	@$(MAKE) delete new LIB_HEADER=$(LIB_HEADER) D=1 SILENT=1
+	$(call phony-ok,$(MSG_UPDATE_LIBH))
 endif
 
 # Function: delete-file
@@ -2631,21 +2678,34 @@ ifdef NAMESPACE
 	$(call rm-if-empty,$(incbase)/$(NAMESPACE))
 	$(call rm-if-empty,$(srcbase)/$(NAMESPACE))
 endif
+ifdef NMS_HEADER
+	@# NMSH: Namespace directory
+	$(eval NMSH       := $(subst ::,/,$(NMS_HEADER)))
+	$(eval NMSH       := $(if $(strip $(IN)),$(IN)/)$(NMSH))
+	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
+                                $(sort $(dir $(incall))))))
+	$(eval NMSH       := $(call remove-trailing-bar,$(NMSH)))
+	
+	@# NMSH_NAME: Namespace include files
+	$(eval NMSH_NAME  := $(notdir $(basename $(NMSH))))
+	
+	$(call delete-file,$(NMSH)/$(NMSH_NAME),$(INC_EXT) $(hxxext))
+endif
 ifdef LIBRARY
 	$(call rm-if-empty,$(incbase)/$(LIBRARY))
 endif
-ifdef NAMESPACE_INC
-	@# NINC: Namespace directory
-	$(eval NINC       := $(subst ::,/,$(NAMESPACE_INC)))
-	$(eval NINC       := $(if $(strip $(IN)),$(IN)/)$(NINC))
-	$(eval NINC       := $(firstword $(filter %$(NINC)/,\
+ifdef LIB_HEADER
+	@# LIBH: Namespace directory
+	$(eval LIBH       := $(subst ::,/,$(LIB_HEADER)))
+	$(eval LIBH       := $(if $(strip $(IN)),$(IN)/)$(LIBH))
+	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
                                 $(sort $(dir $(incall))))))
-	$(eval NINC       := $(call remove-trailing-bar,$(NINC)))
+	$(eval LIBH       := $(call remove-trailing-bar,$(LIBH)))
 	
-	@# NINC_NAME: Namespace include files
-	$(eval NINC_NAME  := $(notdir $(basename $(NINC))))
+	@# LIBH_NAME: Namespace include files
+	$(eval LIBH_NAME  := $(notdir $(basename $(LIBH))))
 	
-	$(call delete-file,$(NINC)/$(NINC_NAME),$(INC_EXT) $(hxxext))
+	$(call delete-file,$(LIBH)/$(LIBH_NAME),$(INC_EXT) $(tlext))
 endif
 ifdef CLASS
 	$(call delete-file,$(incbase)/$(CLASS),$(INC_EXT) $(hxxext))
@@ -2691,59 +2751,59 @@ endif # Check if one goal is 'new' or 'delete'
 config:
 	@echo ""
 	@echo "############################################################"
-	@echo "##         DELETE ANY TARGET TO USE THE DEFAULT!          ##"
+	@echo "##     UNCOMMENT ANY TARGET TO OVERWRITE THE DEFAULT!     ##"
 	@echo "############################################################"
 	@echo ""
 	@echo "# Project setting"
-	@echo "PROJECT  := # Project name. Default is 'Default'"
-	@echo "VERSION  := # Version. Default is '1.0'"
+	@echo "# PROJECT  := # Project name. Default is 'Default'"
+	@echo "# VERSION  := # Version. Default is '1.0'"
 	@echo ""
 	@echo "# Program settings"
-	@echo "BIN      := # Binaries' names. If a subdir of the source"
-	@echo "            # directories has the same name of this binary,"
-	@echo "            # this dir and all subdir will be compiled"
-	@echo "            # only for this specific binary."
-	@echo "SBIN     := # Same as above, but for shell-only binaries."
-	@echo "LIBEXEC  := # Again, but for binaries runnable only by"
-	@echo "            # other programs, not normal users."
+	@echo "# BIN      := # Binaries' names. If a subdir of the source"
+	@echo "#             # directories has the same name of this bin,"
+	@echo "#             # this dir and all subdir will be compiled"
+	@echo "#             # only for this specific binary."
+	@echo "# SBIN     := # Same as above, but for shell-only binaries."
+	@echo "# LIBEXEC  := # Again, but for binaries runnable only by"
+	@echo "#             # other programs, not normal users."
 	@echo ""
-	@echo "IGNORED  := # Files within Make dirs and bins to be ignored."
+	@echo "# IGNORED  := # Files within Make dirs to be ignored."
 	@echo ""
-	@echo "ARLIB    := # Static/Shared libraries' names. If one is a"
-	@echo "SHRLIB   := # lib, all source files will make the library."
+	@echo "# ARLIB    := # Static/Shared libraries' names. If one is a"
+	@echo "# SHRLIB   := # lib, all source files will make the library."
 	@echo ""
 	@echo "# Flags"
-	@echo "ASFLAGS  := # Assembly Flags"
-	@echo "CFLAGS   := # C Flags"
-	@echo "CXXFLAGS := # C++ Flags"
-	@echo "LDFLAGS  := # Linker flags"
+	@echo "# ASFLAGS  := # Assembly Flags"
+	@echo "# CFLAGS   := # C Flags"
+	@echo "# CXXFLAGS := # C++ Flags"
+	@echo "# LDFLAGS  := # Linker flags"
 	@echo ""
 	@echo "# Documentation"
-	@echo "LICENSE  := # File with a License (def: LICENSE)"
-	@echo "NOTICE   := # File with a Notice of the License, to be used"
-	@echo "            # in the beggining of any file (def: NOTICE)."
-	@echo "DOXYFILE := # Config file for Doxygen (def: Doxyfile)"
+	@echo "# LICENSE  := # File with a License (def: LICENSE)"
+	@echo "# NOTICE   := # File with a Notice of the License, to be used"
+	@echo "#             # in the beggining of any file (def: NOTICE)."
+	@echo "# DOXYFILE := # Config file for Doxygen (def: Doxyfile)"
 	@echo ""
 	@echo "# Package info"
-	@echo "MAINTEINER_NAME := # Your name"
-	@echo "MAINTEINER_MAIL := # your_name@mail.com"
-	@echo "SYNOPSIS        := # One-line description of the program"
-	@echo "DESCRIPTION     := # Longer description of the program"
+	@echo "# MAINTEINER_NAME := # Your name"
+	@echo "# MAINTEINER_MAIL := # your_name@mail.com"
+	@echo "# SYNOPSIS        := # One-line description of the program"
+	@echo "# DESCRIPTION     := # Longer description of the program"
 	@echo ""
 
 .PHONY: compiler
 compiler:
 	@echo ""
 	@echo "############################################################"
-	@echo "##         DELETE ANY TARGET TO USE THE DEFAULT!          ##"
+	@echo "##     UNCOMMENT ANY TARGET TO OVERWRITE THE DEFAULT!     ##"
 	@echo "############################################################"
 	@echo ""
-	@echo "AR     := # Create static libraries (default: ar)"
-	@echo "AS     := # Compile assembly        (default: nasm)"
-	@echo "CC     := # Compile C               (default: gcc)"
-	@echo "FC     := # Compile C++             (default: gfortran)"
-	@echo "CXX    := # Compile Fortran         (default: g++)"
-	@echo "RANLIB := # Update static libraries (default: ranlib)"
+	@echo "# AR     := # Create static libraries (default: ar)"
+	@echo "# AS     := # Compile assembly        (default: nasm)"
+	@echo "# CC     := # Compile C               (default: gcc)"
+	@echo "# FC     := # Compile C++             (default: gfortran)"
+	@echo "# CXX    := # Compile Fortran         (default: g++)"
+	@echo "# RANLIB := # Update static libraries (default: ranlib)"
 
 .PHONY: gitignore
 gitignore:
@@ -2849,7 +2909,9 @@ projecthelp:
 	@echo "Management flags                                            "
 	@echo "-----------------                                           "
 	@echo " * NAMESPACE:    Create directory for namespace (src + inc) "
+	@echo " * NMS_HEADER:   Create header to include all in a namespace"
 	@echo " * LIBRARY:      Create directory for lib (template only)   "
+	@echo " * LIB_HEADER:   Create header to include all in a library  "
 	@echo " * CLASS:        Create new file for a C++ class            "
 	@echo " * F_FILE:       Create ordinary C file                     "
 	@echo " * C_FILE:       Create ordinary C source and header file   "

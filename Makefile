@@ -2419,10 +2419,11 @@ ifdef NMS_HEADER
 	
 	@# NMSH_FILES: Files to be put in the Namespace Header
 	$(eval NMSH_FILES := $(filter $(NMSH)/%,$(incall)))
-	$(eval NMSH_FILES := $(filter-out $(NMSH)/$(NMSH_NAME).%,\
-        $(foreach f,$(NMSH_FILES),\
-            $(firstword $(filter %$f,$(incall)))\
-    )))
+	$(eval NMSH_FILES := $(call not-root,\
+        $(filter-out $(NMSH)/$(NMSH_NAME).%,\
+            $(foreach f,$(NMSH_FILES),\
+                $(firstword $(filter %$f,$(incall)))\
+    ))))
 	
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(NMSH)/$(NMSH_NAME)$(INC_EXT),$(notice))
@@ -2453,10 +2454,11 @@ ifdef LIB_HEADER
 	
 	@# LIBH_FILES: Files to be put in the Library header
 	$(eval LIBH_FILES := $(filter $(LIBH)/%,$(incall)))
-	$(eval LIBH_FILES := $(filter-out $(LIBH)/$(LIBH_NAME).%,\
-        $(foreach f,$(LIBH_FILES),\
-            $(firstword $(filter %$f,$(incall)))\
-    )))
+	$(eval LIBH_FILES := $(call not-root,\
+        $(filter-out $(LIBH)/$(LIBH_NAME).%,\
+            $(foreach f,$(LIBH_FILES),\
+                $(firstword $(filter %$f,$(incall)))\
+    ))))
 	
 	$(call invalid-ext,$(INC_EXT),$(tlext))
 	$(call touch,$(LIBH)/$(LIBH_NAME)$(INC_EXT),$(notice))

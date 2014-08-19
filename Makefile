@@ -2225,8 +2225,10 @@ endif
 ## ERROR ###############################################################
 ifndef MORE
     define ERROR 
-    2>&1 | sed '1 i error' | sed 's/^/> /' | sed ''/"> error"/s//`printf "${ERR}"`/''
+    2>&1 | sed '1 i\ error' | sed 's/^/> /' 
     endef
+    #| sed ''/"> error"/s//`printf "${ERR}"`/'' # Adds gray color when
+    #                                           # connected to above
 else
     define ERROR 
     2>&1 | more

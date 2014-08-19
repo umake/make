@@ -1045,7 +1045,7 @@ debdep := $(sort $(strip $(addprefix $(debdir)/,$(debdep))))
 ########################################################################
 
 .PHONY: all
-all: $(binall)
+all: $(binall) $(liball)
 
 .PHONY: package
 package: package-tar.gz

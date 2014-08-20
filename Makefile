@@ -25,7 +25,7 @@
 ##                             PROGRAM                                ##
 ########################################################################
 
-# Project setting 
+# Project setting
 PROJECT  := Default
 VERSION  := 1.0
 
@@ -49,9 +49,14 @@ ARLIB    :=
 SHRLIB   :=
 
 # Documentation settings
-LICENSE  := LICENSE
-NOTICE   := NOTICE
-DOXYFILE := Doxyfile
+LICENSE      := LICENSE
+NOTICE       := NOTICE
+CONTRIBUTORS := CONTRIBUTORS
+DOXYFILE     := Doxyfile
+
+# Dependencies
+GIT_DEPENDENCY :=
+HG_DEPENDENCY  :=
 
 ########################################################################
 ##                              FLAGS                                 ##
@@ -70,16 +75,16 @@ CXXFLAGS  := $(CFLAGS) -std=c++11
 FFLAGS    := -cpp
 
 # Linker flags
-LDFLAGS   := 
-LDC       := 
+LDFLAGS   :=
+LDC       :=
 LDF       := -lgfortran
-LDCXX     := 
+LDCXX     :=
 LDLEX     := -lfl
-LDYACC    := 
+LDYACC    :=
 
 # Library flags
 ARFLAGS   := -rcv
-SOFLAGS   := -shared 
+SOFLAGS   := -shared
 
 # Include configuration file if exists
 -include .config.mk config.mk Config.mk
@@ -100,7 +105,7 @@ SBINDIR := sbin
 EXECDIR := libexec
 DISTDIR := dist
 TESTDIR := test
-DATADIR := 
+DATADIR :=
 DESTDIR :=
 else
 $(foreach var,\
@@ -133,9 +138,9 @@ libdir         := $(exec_prefix)/lib
 # * datarootdir:   Read-only machine-independent files (docs and data)
 # * datadir:       Read-only machine-independent files (data, no docs)
 # * sysconfdir:    Read-only single-machine files (as server configs)
-# * localstatedir: Exec-modifiable single-machine single-exec files 
+# * localstatedir: Exec-modifiable single-machine single-exec files
 # * runstatedir:   Exec-modifiable single-machine run-persistent files
-install_dirs   += datarootdir datadir sysconfdir 
+install_dirs   += datarootdir datadir sysconfdir
 install_dirs   += sharedstatedir localstatedir runstatedir
 datarootdir    := $(prefix)/share
 datadir        := $(datarootdir)
@@ -153,7 +158,7 @@ oldincludedir  := /usr/include
 
 ### DOCUMENTATION FILES
 # * infodir:       Doc directory for info files
-# * docdir:        Doc directory for files other than info     
+# * docdir:        Doc directory for files other than info
 # * htmldir:       Doc directory for HTML files (with subdir for locale)
 # * dvidir:        Doc directory for DVI files (with subdir for locale)
 # * pdfdir:        Doc directory for PDF files (with subdir for locale)
@@ -169,7 +174,7 @@ psdir          := $(docdir)
 ### MAN FILES
 # * mandir:       Manual main directory
 # * manXdir:      Manual section X (X from 1 to 7)
-install_dirs   += mandir man1dir man2dir man3dir 
+install_dirs   += mandir man1dir man2dir man3dir
 install_dirs   += man4dir man5dir man6dir man7dir
 mandir         := $(datarootdir)/man
 man1dir        := $(mandir)/man1
@@ -273,10 +278,10 @@ FIND_FLAGS      := -type d -print 2> /dev/null
 # Parser and Lexer
 LEX             := flex
 LEX_CXX         := flexc++
-LEXFLAGS        := 
+LEXFLAGS        :=
 YACC            := bison
 YACC_CXX        := bisonc++
-YACCFLAGS       := 
+YACCFLAGS       :=
 
 # Tags
 CTAGS           := ctags
@@ -315,9 +320,10 @@ MAKE            += --no-print-directory
 ########################################################################
 
 # Documentation:
-license   := $(strip $(firstword $(wildcard $(LICENSE))))
-notice    := $(strip $(firstword $(wildcard $(NOTICE))))
-doxyfile  := $(strip $(firstword $(DOXYFILE)))
+license      := $(strip $(firstword $(wildcard $(LICENSE))))
+notice       := $(strip $(firstword $(wildcard $(NOTICE))))
+contributors := $(strip $(firstword $(wildcard $(CONTRIBUTORS))))
+doxyfile     := $(strip $(firstword $(DOXYFILE)))
 
 # Flags:
 # Redefine flags to avoid conflict with user's local definitions
@@ -412,8 +418,8 @@ srcext := $(cext) $(cxxext) $(fext)
 docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 
 # Check all extensions
-allext := $(incext) $(srcext) $(asmext) $(libext) 
-allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext) 
+allext := $(incext) $(srcext) $(asmext) $(libext)
+allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext)
 allext += $(depext) $(objext) $(binext)
 allext := $(strip $(allext))
 $(foreach ext,$(allext),\
@@ -458,6 +464,27 @@ $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 ##                              FILES                                 ##
 ########################################################################
 
+# Auxiliar data structures
+# ==========================
+# 1) hash-table.new: Create a hash table with elements accessible by
+#                    hash-table.key and a list of keys hash-table.keys
+# 2) hash-table.new_impl: Auxiliar function for hash-table.new
+
+define hash-table.new
+$(call hash-table.new_impl,$(strip $1),$($(strip $1)))
+endef
+
+define hash-table.new_impl
+$(if $(strip $2),$(or\
+    $(if $(strip $(subst =>,,$(strip $(wordlist 2,2,$2)))),\
+        $(error "Hash separator must be a => at variable '$1'")),\
+    $(eval $1.keys += $(strip $(firstword $2))),\
+    $(eval $1.$(strip $(firstword $2)) :=\
+        $(patsubst %\,%,$(wordlist 3,3,$2))),\
+    $(call hash-table.new_impl,$1,$(wordlist 4,$(words $2),$2))\
+))
+endef
+
 # Auxiliar functions
 # ===================
 # 1) root: Gets the root directory (first in the path) of a path or file
@@ -465,7 +492,12 @@ $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 # 3) invert: Invert a list of elements
 # 4) not: Returns empty if its argument was defined, or T otherwise
 # 5) remove-trailing-bar: Removes the last / of a directory-only name
-# 6) is-cxx: find out if there is a C++ file in its single argument
+# 6) has-c: figure out if there is a C file in a list
+# 7) is-f: figure out if all files in a list are C files
+# 6) has-c: figure out if there is a Fortran file in a list
+# 7) is-f: figure out if all files in a list are Fortran files
+# 6) has-cxx: figure out if there is a C++ file in a list
+# 7) is-cxx: figure out if all files in a list are C++ files
 define root
 $(foreach s,$1,\
     $(if $(findstring /,$s),\
@@ -477,7 +509,7 @@ $(foreach s,$1,$(strip $(patsubst $(strip $(call root,$s))/%,%,$s)))
 endef
 
 define invert
-$(if $(strip $1),$(call invert,$(wordlist 2,$(words $1),$1))) $(firstword $1) 
+$(if $(strip $1),$(call invert,$(wordlist 2,$(words $1),$1))) $(firstword $1)
 endef
 
 define not
@@ -525,7 +557,7 @@ endef
 # 3) rfilter-out: For filtering a list of text from another list
 rsubdir   = $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS)))
 rwildcard = $(foreach d,$(wildcard $1/*),\
-                $(call rwildcard,$d,$2)$(filter $(subst *,%,$2),$d)) 
+                $(call rwildcard,$d,$2)$(filter $(subst *,%,$2),$d))
 rfilter-out = \
   $(eval rfilter-out_aux = $2)\
   $(foreach d,$1,\
@@ -534,7 +566,7 @@ rfilter-out = \
 
 # Configuration Files
 # =====================
-make_configs := $(AUXFILES) $(license) $(notice)
+make_configs := $(AUXFILES) $(license) $(notice) $(contributors)
 make_configs += Config.mk config.mk Config_os.mk config_os.mk
 make_configs := $(sort $(foreach f,$(make_configs),$(wildcard $f)))
 
@@ -554,12 +586,27 @@ define filter-ignored
 $(call rfilter-out,$(ignored),$1)
 endef
 
-# Default variable names 
+# Default variable names
 # ======================
 # fooall: complete path WITH root directories
 # foosrc: complete path WITHOUT root directories
 # foopat: incomplete paths WITH root directories
 # foolib: library names WITHOUT root directories
+
+# Dependency files
+# =================
+# 1) git/hg_dependency: Internally defined variables for dependencies
+# 2) Make variables above hash tables
+# 3) Create variable for all cvs dependencies
+#------------------------------------------------------------------[ 1 ]
+git_dependency := $(strip $(GIT_DEPENDENCY))
+hg_dependency  := $(strip $(HG_DEPENDENCY))
+#------------------------------------------------------------------[ 2 ]
+$(call hash-table.new,git_dependency)
+$(call hash-table.new,hg_dependency)
+#------------------------------------------------------------------[ 3 ]
+cvsdep := $(addprefix $(libdir)/,$(git_dependency.keys))
+cvsdep += $(addprefix $(libdir)/,$(hg_dependency.keys))
 
 # Library files
 # ==============
@@ -575,11 +622,11 @@ endef
 # | 6 |     |  X   |  X  | Ok     | Find all bases with this ext    |
 # | 7 |  X  |  X   |  X  | Ok     | Find the specific file          |
 # '---'-----'------'-----'--------'---------------------------------'
-# Examples: 1: test1/  2: test2 .c      4: test4/test4       5: test5/.c 
+# Examples: 1: test1/  2: test2 .c      4: test4/test4       5: test5/.c
 #           6: test6.c 7: test7/test7.c 8: src/test8/test8.c
 # 1) ar_in/shr_in: Remove the last / if there is a path only
 # 2) lib_in      : Store libraries as being shared and static libs.
-#                  If there is only a suffix, throw an error. 
+#                  If there is only a suffix, throw an error.
 #------------------------------------------------------------------[ 1 ]
 ar_in     := $(call remove-trailing-bar,$(ARLIB))
 shr_in    := $(call remove-trailing-bar,$(SHRLIB))
@@ -685,7 +732,7 @@ srcall := $(sort\
         $(foreach E,$(srcext),\
             $(call rwildcard,$(root),*$E)\
 )))
-else 
+else
 $(warning Source directory is '.'. Deep search for source disabled.)
 srcall := $(sort\
     $(foreach E,$(srcext),\
@@ -889,7 +936,7 @@ incall  := $(call filter-ignored,$(incall))
 # ==============
 # 1) lib: all static and shared libraries
 # 2) libname: all static and shared libraries names
-# 3) Get all subdirectories of the library dirs and 
+# 3) Get all subdirectories of the library dirs and
 #    add them as paths to be searched for libraries
 lib     := $(arlib) $(shrlib) $(externlib)
 libname := $(arname) $(shrname) $(externname)
@@ -910,7 +957,7 @@ $(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
 # 1) testall: Get all source files in the test directory
 # 2) testall: Filter out ignored files from above
 # 3) testdep: Basenames without test suffix, root dirs and extensions
-# 4) testrun: Alias to execute tests, prefixing run_ and 
+# 4) testrun: Alias to execute tests, prefixing run_ and
 #             substituting / for _ in $(testdep)
 #------------------------------------------------------------------[ 1 ]
 $(foreach E,$(srcext),\
@@ -1036,7 +1083,7 @@ $(foreach doc,info html dvi pdf ps,\
 # Debian packaging files
 # =======================
 # 1) debdep: debian packaging files in the default debian directory
-debdep := changelog compat control copyright 
+debdep := changelog compat control copyright
 debdep += rules source/format $(DEB_PROJECT).dirs
 debdep := $(sort $(strip $(addprefix $(debdir)/,$(debdep))))
 
@@ -1045,7 +1092,7 @@ debdep := $(sort $(strip $(addprefix $(debdir)/,$(debdep))))
 ########################################################################
 
 .PHONY: all
-all: $(binall) $(liball)
+all: $(cvsdep) $(binall) $(liball)
 
 .PHONY: package
 package: package-tar.gz
@@ -1188,7 +1235,7 @@ install-docs: install-info install-html install-dvi
 install-docs: install-pdf install-ps
 
 .PHONY: install-info
-install-info: 
+install-info:
 	$(if $(strip $(texiinfo)),$(foreach f,$(texiinfo),\
         $(INSTALL_DATA) $f $(i_infodir)/$(notdir $f);\
         if $(SHELL) -c '$(INSTALL_INFO) --version' $(NO_OUTOUT) 2>&1; \
@@ -1231,7 +1278,7 @@ mainteiner-uninstall:
 	@$(MAKE) uninstall DESTDIR=$(destdir) MAINTEINER_CLEAN=1
 
 .PHONY: uninstall
-uninstall: 
+uninstall:
 	$(call uninstall,lib)
 	$(call uninstall,bin)
 	$(call uninstall,sbin)
@@ -1242,7 +1289,7 @@ uninstall-docs: uninstall-info uninstall-html uninstall-dvi
 uninstall-docs: uninstall-pdf uninstall-ps
 
 .PHONY: uninstall-info
-uninstall-info: 
+uninstall-info:
 	$(if $(strip $(texiinfo)),$(call rm-if-empty,$(i_infodir),\
         $(addprefix $(i_infodir)/,$(notdir $(texiinfo)))\
     ))
@@ -1269,7 +1316,7 @@ etags: $(incall) $(srcall)
 ########################################################################
 
 .PHONY: docs
-all-docs: $(if $(strip $(doxyfile)),doxy) 
+all-docs: $(if $(strip $(doxyfile)),doxy)
 all-docs: $(if $(strip $(texiall)),info html dvi pdf ps)
 
 ifneq ($(strip $(doxyfile)),) ####
@@ -1316,6 +1363,24 @@ endif # ifneq($(strip $(doxyfile)),) ####
 ########################################################################
 ##                              RULES                                 ##
 ########################################################################
+
+#======================================================================#
+# Function: cvs-factory                                                #
+# @param  $1 Dependency nick (hash key)                                #
+# @param  $2 CVS executable                                            #
+# @param  $3 Dependency path (hash value)                              #
+# @return Target to generate source files according to its type        #
+#======================================================================#
+define cvs-dependency
+$$(libdir)/$$(strip $1): | $$(libdir)
+	$$(call phony-status,$$(MSG_CVS_CLONE))
+	$$(quiet) $2 clone $$(strip $3) $$@ $$(ERROR)
+	$$(call phony-ok,$$(MSG_CVS_CLONE))
+endef
+$(foreach cvs,git hg,\
+    $(foreach d,$($(cvs)_dependency.keys),$(eval\
+        $(call cvs-dependency,$d,$(cvs),$($(cvs)_dependency.$d))\
+)))
 
 #======================================================================#
 # Function: scanner-factory                                            #
@@ -1829,7 +1894,7 @@ define dist-factory
 .PHONY: package-$1
 package-$1: dirs := Makefile $$(make_configs)
 package-$1: dirs += $$(srcdir) $$(incdir) $$(datadir) $$(docdir)
-package-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir) 
+package-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir)
 package-$1: $$(distdir)/$$(PROJECT)-$$(VERSION)_src.$1
 
 .PHONY: dist-$1
@@ -1893,12 +1958,12 @@ endif
 
 .PHONY: mainteiner-clean
 ifndef D
-mainteiner-clean: 
+mainteiner-clean:
 	@echo $(MSG_WARNCLEAN_BEG)
 	@echo $(MSG_WARNCLEAN_END)
 	@echo $(MSG_WARNCLEAN_ALT)
 else
-mainteiner-clean: 
+mainteiner-clean:
 	@$(MAKE) realclean MAINTEINER_CLEAN=1 D=1
 endif
 
@@ -1952,6 +2017,8 @@ MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 
 MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
+
+MSG_CVS_CLONE     = "${CYAN}Cloning dependency ${DEF}$@${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\
@@ -2076,7 +2143,7 @@ define fortran-depend
 $(FC) -MM                     \
     -MF $(depdir)/$3$(depext) \
     -MP -MT $2                \
-    $(flibs) $(fflags)      \
+    $(flibs) $(fflags)        \
     $1
 endef
 
@@ -2197,11 +2264,11 @@ ifndef SILENT
 
 ifneq ($(strip $(quiet)),)
     define phony-status
-    	@echo -n $1 "... ";
+    	@printf "%b ... " $1;
     endef
     
     define status
-    	@$(RM) $@ && echo -n $1 "... ";
+    	@$(RM) $@ && printf "%b ... " $1;
     endef
 
     define vstatus
@@ -2222,18 +2289,19 @@ fi
 endef
 
 endif
+
 ## ERROR ###############################################################
 ifndef MORE
-    define ERROR 
-    2>&1 | sed '1 i\ error' | sed 's/^/> /' 
+    define ERROR
+	2>&1 | sed '1 s/^/stderr:\n/' | sed 's/^/> /'
     endef
     #| sed ''/"> error"/s//`printf "${ERR}"`/'' # Adds gray color when
     #                                           # connected to above
 else
-    define ERROR 
+    define ERROR
     2>&1 | more
     endef
-endif 
+endif
 
 define phony-error
 	@echo "${RED}[ERROR]${RES}" $1; exit 42;
@@ -2253,7 +2321,7 @@ define lc
 $(shell echo $1 | tr "A-Z" "a-z")
 endef
 
-# Function: select 
+# Function: select
 # Define which ostream should be used
 define select
 $(eval ostream = \
@@ -2270,7 +2338,7 @@ endef
 # Function: touch
 # Create a new file based on a model
 # @param $1 File to be created
-# @param $1 Model to be used in the creation (optional)
+# @param $2 Model to be used in the creation (optional)
 define touch
 $(if $(wildcard $1*),,\
     $(call phony-status,$(MSG_TOUCH)))
@@ -2368,7 +2436,7 @@ endef
 
 # Path variables
 # ================
-# Auxiliar variables to the default place to create/remove 
+# Auxiliar variables to the default place to create/remove
 # files created by this makefile (usually the first inc/src dirs)
 override incbase   := $(strip $(firstword $(incdir)))$(if $(IN),/$(IN))
 override srcbase   := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
@@ -2506,7 +2574,7 @@ ifdef CLASS
 endif
 ifdef F_FILE
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
-	                        
+	
 	$(call invalid-ext,$(SRC_EXT),$(fext))
 	$(call touch,$(srcbase)/$(F_FILE)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(F_FILE)$(SRC_EXT))
@@ -2518,7 +2586,7 @@ ifdef F_FILE
 	
 	$(call select,stdout)
 endif
-ifdef C_FILE                                                            
+ifdef C_FILE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
 	
@@ -2541,7 +2609,7 @@ ifdef C_FILE
 	
 	$(call select,stdout)
 endif
-ifdef CXX_FILE                                                          
+ifdef CXX_FILE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
 	
@@ -2602,7 +2670,7 @@ ifdef CXX_MAIN
 endif
 ifdef TEMPLATE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .tcc))
-	                        
+	
 	$(call invalid-ext,$(INC_EXT),$(tlext))
 	$(call touch,$(incbase)/$(TEMPLATE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(TEMPLATE)$(INC_EXT))
@@ -2788,6 +2856,9 @@ config:
 	@echo "#             # in the beggining of any file (def: NOTICE)."
 	@echo "# DOXYFILE := # Config file for Doxygen (def: Doxyfile)"
 	@echo ""
+	@echo "# GIT_DEPENDENCY  := # List of git dependencies in the format"
+	@echo "                     # DEP_NAME => dep_path                  "
+	@echo ""
 	@echo "# Package info"
 	@echo "# MAINTEINER_NAME := # Your name"
 	@echo "# MAINTEINER_MAIL := # your_name@mail.com"
@@ -2937,141 +3008,146 @@ define prompt
 endef
 
 .PHONY: dump
-dump: 
-	@echo "${WHITE}\nDOCUMENTATION         ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"license:     ",$(license)     )
-	$(call prompt,"notice:      ",$(notice)      )
-	$(call prompt,"doxyfile:    ",$(doxyfile)    )
+dump:
+	@echo "${WHITE}\nDOCUMENTATION           ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"license:      ",$(license)      )
+	$(call prompt,"notice:       ",$(notice)       )
+	$(call prompt,"contributors: ",$(contributors) )
+	$(call prompt,"doxyfile:     ",$(doxyfile)     )
 	
-	@echo "${WHITE}\nIGNORED FILES         ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"ignored:     ",$(ignored)     )
+	@echo "${WHITE}\nIGNORED FILES           ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"ignored:      ",$(ignored)      )
 	
-	@echo "${WHITE}\nACCEPTED EXTENSIONS   ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"srcext:      ",$(srcext)      )
-	$(call prompt,"incext:      ",$(incext)      )
-	$(call prompt,"libext:      ",$(libext)      )
-	$(call prompt,"lexext:      ",$(lexext)      )
-	$(call prompt,"lexxext:     ",$(lexxext)     )
-	$(call prompt,"yaccext:     ",$(yaccext)     )
-	$(call prompt,"yaxxext:     ",$(yaxxext)     )
-	$(call prompt,"docext:      ",$(docext)      )
+	@echo "${WHITE}\nCVS DEPENDENCIES        ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"cvsdep:       ",$(cvsdep)       )
 	
-	@echo "${WHITE}\nLEXER                 ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"alllexer:    ",$(alllexer)    )
-	$(call prompt,"clexer:      ",$(clexer)      )
-	$(call prompt,"cxxlexer:    ",$(cxxlexer)    )
-	$(call prompt,"lexall:      ",$(lexall)      )
+	@echo "${WHITE}\nACCEPTED EXTENSIONS     ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"srcext:       ",$(srcext)       )
+	$(call prompt,"incext:       ",$(incext)       )
+	$(call prompt,"libext:       ",$(libext)       )
+	$(call prompt,"lexext:       ",$(lexext)       )
+	$(call prompt,"lexxext:      ",$(lexxext)      )
+	$(call prompt,"yaccext:      ",$(yaccext)      )
+	$(call prompt,"yaxxext:      ",$(yaxxext)      )
+	$(call prompt,"docext:       ",$(docext)       )
 	
-	@echo "${WHITE}\nPARSER                ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"allparser:   ",$(allparser)   )
-	$(call prompt,"cparser:     ",$(cparser)     )
-	$(call prompt,"cxxparser:   ",$(cxxparser)   )
-	$(call prompt,"yaccall:     ",$(yaccall)     )
+	@echo "${WHITE}\nLEXER                   ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"alllexer:     ",$(alllexer)     )
+	$(call prompt,"clexer:       ",$(clexer)       )
+	$(call prompt,"cxxlexer:     ",$(cxxlexer)     )
+	$(call prompt,"lexall:       ",$(lexall)       )
 	
-	@echo "${WHITE}\nSOURCE                ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"srcall:      ",$(srcall)      )
-	$(call prompt,"srccln:      ",$(srccln)      )
-	$(call prompt,"src:         ",$(src)         )
-	$(call prompt,"asmall:      ",$(asmall)      )
-	$(call prompt,"asmcln:      ",$(asmcln)      )
-	$(call prompt,"asmsrc:      ",$(asmsrc)      )
-	$(call prompt,"autoall:     ",$(autoall)     )
-	$(call prompt,"autocln:     ",$(autocln)     )
-	$(call prompt,"autosrc:     ",$(autosrc)     )
+	@echo "${WHITE}\nPARSER                  ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"allparser:    ",$(allparser)    )
+	$(call prompt,"cparser:      ",$(cparser)      )
+	$(call prompt,"cxxparser:    ",$(cxxparser)    )
+	$(call prompt,"yaccall:      ",$(yaccall)      )
 	
-	@echo "${WHITE}\nHEADERS               ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"incall:      ",$(incall)      )
-	$(call prompt,"autoinc:     ",$(autoinc)     )
+	@echo "${WHITE}\nSOURCE                  ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"srcall:       ",$(srcall)       )
+	$(call prompt,"srccln:       ",$(srccln)       )
+	$(call prompt,"src:          ",$(src)          )
+	$(call prompt,"asmall:       ",$(asmall)       )
+	$(call prompt,"asmcln:       ",$(asmcln)       )
+	$(call prompt,"asmsrc:       ",$(asmsrc)       )
+	$(call prompt,"autoall:      ",$(autoall)      )
+	$(call prompt,"autocln:      ",$(autocln)      )
+	$(call prompt,"autosrc:      ",$(autosrc)      )
 	
-	@echo "${WHITE}\nTEST                  ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"testall:     ",$(testall)     )
-	$(call prompt,"testdep:     ",$(testdep)     )
-	$(call prompt,"testrun:     ",$(testrun)     )
+	@echo "${WHITE}\nHEADERS                 ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"incall:       ",$(incall)       )
+	$(call prompt,"autoinc:      ",$(autoinc)      )
 	
-	@echo "${WHITE}\nLIBRARY               ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"lib_in:      ",$(lib_in)      )
-	$(call prompt,"libpat:      ",$(libpat)      )
-	$(call prompt,"liball:      ",$(liball)      )
-	$(call prompt,"libsrc:      ",$(libsrc)      )
-	$(call prompt,"libname:     ",$(libname)     )
-	$(call prompt,"lib:         ",$(lib)         )
+	@echo "${WHITE}\nTEST                    ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"testall:      ",$(testall)      )
+	$(call prompt,"testdep:      ",$(testdep)      )
+	$(call prompt,"testrun:      ",$(testrun)      )
 	
-	@echo "${WHITE}\nEXTERNAL LIBRARY      ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"externlib:   ",$(externlib)   )
-	$(call prompt,"externname:  ",$(externname)  )
+	@echo "${WHITE}\nLIBRARY                 ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"lib_in:       ",$(lib_in)       )
+	$(call prompt,"libpat:       ",$(libpat)       )
+	$(call prompt,"liball:       ",$(liball)       )
+	$(call prompt,"libsrc:       ",$(libsrc)       )
+	$(call prompt,"libname:      ",$(libname)      )
+	$(call prompt,"lib:          ",$(lib)          )
 	
-	@echo "${WHITE}\nSTATIC LIBRARY        ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"ar_in:       ",$(ar_in)       )
-	$(call prompt,"arpat:       ",$(arpat)       )
-	$(call prompt,"arpatsrc:    ",$(arpatsrc)    )
-	$(call prompt,"arname:      ",$(arname)      )
-	$(call prompt,"arlib:       ",$(arlib)       )
+	@echo "${WHITE}\nEXTERNAL LIBRARY        ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"externlib:    ",$(externlib)    )
+	$(call prompt,"externname:   ",$(externname)   )
 	
-	@echo "${WHITE}\nDYNAMIC LIBRARY       ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"shr_in:      ",$(shr_in)      )
-	$(call prompt,"shrpat:      ",$(shrpat)      )
-	$(call prompt,"shrpatsrc:   ",$(shrpatsrc)   )
-	$(call prompt,"shrall:      ",$(shrall)      )
-	$(call prompt,"shrname:     ",$(shrname)     )
-	$(call prompt,"shrlib:      ",$(shrlib)      )
+	@echo "${WHITE}\nSTATIC LIBRARY          ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"ar_in:        ",$(ar_in)        )
+	$(call prompt,"arpat:        ",$(arpat)        )
+	$(call prompt,"arpatsrc:     ",$(arpatsrc)     )
+	$(call prompt,"arname:       ",$(arname)       )
+	$(call prompt,"arlib:        ",$(arlib)        )
 	
-	@echo "${WHITE}\nOBJECT                ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"obj:         ",$(obj)         )
-	$(call prompt,"arobj:       ",$(arobj)       )
-	$(call prompt,"shrobj:      ",$(shrobj)      )
-	$(call prompt,"autoobj:     ",$(autoobj)     )
-	$(call prompt,"objall:      ",$(objall)      )
+	@echo "${WHITE}\nDYNAMIC LIBRARY         ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"shr_in:       ",$(shr_in)       )
+	$(call prompt,"shrpat:       ",$(shrpat)       )
+	$(call prompt,"shrpatsrc:    ",$(shrpatsrc)    )
+	$(call prompt,"shrall:       ",$(shrall)       )
+	$(call prompt,"shrname:      ",$(shrname)      )
+	$(call prompt,"shrlib:       ",$(shrlib)       )
 	
-	@echo "${WHITE}\nDEPENDENCY            ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"depall:      ",$(depall)      )
+	@echo "${WHITE}\nOBJECT                  ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"obj:          ",$(obj)          )
+	$(call prompt,"arobj:        ",$(arobj)        )
+	$(call prompt,"shrobj:       ",$(shrobj)       )
+	$(call prompt,"autoobj:      ",$(autoobj)      )
+	$(call prompt,"objall:       ",$(objall)       )
 	
-	@echo "${WHITE}\nBINARY                ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"bin:         ",$(bin)         )
-	$(call prompt,"sbin:        ",$(sbin)        )
-	$(call prompt,"libexec:     ",$(libexec)     )
+	@echo "${WHITE}\nDEPENDENCY              ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"depall:       ",$(depall)       )
 	
-	@echo "${WHITE}\nINSTALLATION          ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"destdir:     ",$(destdir)     )
-	$(call prompt,"prefix:      ",$(prefix)      )
-	$(call prompt,"exec_prefix: ",$(exec_prefix) )
-	$(call prompt,"i_bindir:    ",$(i_bindir)    )
-	$(call prompt,"i_sbindir:   ",$(i_sbindir)   )
-	$(call prompt,"i_libexecdir:",$(i_libexecdir))
-	$(call prompt,"i_docdir:    ",$(i_docdir)    )
+	@echo "${WHITE}\nBINARY                  ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"bin:          ",$(bin)          )
+	$(call prompt,"sbin:         ",$(sbin)         )
+	$(call prompt,"libexec:      ",$(libexec)      )
 	
-	@echo "${WHITE}\nDOCUMENTATION         ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"texiall:     ",$(texiall)     )
-	$(call prompt,"texisrc:     ",$(texiall)     )
-	$(call prompt,"texiinfo:    ",$(texiinfo)    )
-	$(call prompt,"texihtml:    ",$(texihtml)    )
-	$(call prompt,"texidvi:     ",$(texidvi)     )
-	$(call prompt,"texipdf:     ",$(texipdf)     )
-	$(call prompt,"texips:      ",$(texips)      )
+	@echo "${WHITE}\nINSTALLATION            ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"destdir:      ",$(destdir)      )
+	$(call prompt,"prefix:       ",$(prefix)       )
+	$(call prompt,"exec_prefix:  ",$(exec_prefix)  )
+	$(call prompt,"i_bindir:     ",$(i_bindir)     )
+	$(call prompt,"i_sbindir:    ",$(i_sbindir)    )
+	$(call prompt,"i_libexecdir: ",$(i_libexecdir) )
+	$(call prompt,"i_docdir:     ",$(i_docdir)     )
 	
-	@echo "${WHITE}\nFLAGS                 ${RES}"
-	@echo "--------------------------------------"
-	$(call prompt,"cflags:      ",$(cflags)      )
-	$(call prompt,"clibs:       ",$(clibs)       )
-	$(call prompt,"fflags:      ",$(fflags)      )
-	$(call prompt,"flibs:       ",$(flibs)       )
-	$(call prompt,"cxxflags:    ",$(cxxflags)    )
-	$(call prompt,"cxxlibs:     ",$(cxxlibs)     )
-	$(call prompt,"ldlibs:      ",$(ldlibs)      )
-	$(call prompt,"ldflags:     ",$(ldflags)     )
+	@echo "${WHITE}\nDOCUMENTATION           ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"texiall:      ",$(texiall)      )
+	$(call prompt,"texisrc:      ",$(texiall)      )
+	$(call prompt,"texiinfo:     ",$(texiinfo)     )
+	$(call prompt,"texihtml:     ",$(texihtml)     )
+	$(call prompt,"texidvi:      ",$(texidvi)      )
+	$(call prompt,"texipdf:      ",$(texipdf)      )
+	$(call prompt,"texips:       ",$(texips)       )
+	
+	@echo "${WHITE}\nFLAGS                   ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"cflags:       ",$(cflags)       )
+	$(call prompt,"clibs:        ",$(clibs)        )
+	$(call prompt,"fflags:       ",$(fflags)       )
+	$(call prompt,"flibs:        ",$(flibs)        )
+	$(call prompt,"cxxflags:     ",$(cxxflags)     )
+	$(call prompt,"cxxlibs:      ",$(cxxlibs)      )
+	$(call prompt,"ldlibs:       ",$(ldlibs)       )
+	$(call prompt,"ldflags:      ",$(ldflags)      )

@@ -1372,10 +1372,21 @@ endif # ifneq($(strip $(doxyfile)),) ####
 # @return Target to generate source files according to its type        #
 #======================================================================#
 define cvs-dependency
+$$(libdir)/$$(strip $1): PWD = $$(shell pwd)
 $$(libdir)/$$(strip $1): | $$(libdir)
 	$$(call phony-status,$$(MSG_CVS_CLONE))
 	$$(quiet) $2 clone $$(strip $3) $$@ $$(ERROR)
 	$$(call phony-ok,$$(MSG_CVS_CLONE))
+	
+	$$(call phony-status,$$(MSG_MAKE_DEP))
+	$$(quiet) if [ -f $$@/[Mm]akefile ]; then \
+                  cd $$@ && $$(MAKE) -f [Mm]akefile; \
+              elif [ -f $$@/make/[Mm]akefile ]; then \
+                  cd $$@/make && $$(MAKE) -f [Mm]akefile; \
+              else \
+                  echo "$${MSG_MAKE_NONE}"; \
+              fi $$(ERROR)
+	$$(call phony-ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach cvs,git hg,\
     $(foreach d,$($(cvs)_dependency.keys),$(eval\
@@ -2019,6 +2030,8 @@ MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
 MSG_CVS_CLONE     = "${CYAN}Cloning dependency ${DEF}$@${RES}"
+MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$@${RES}"
+MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\

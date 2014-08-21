@@ -14,7 +14,13 @@ more! Everything just 4 letters far from you.
 ## Wants to start? ##
 
 Good tools are simple. That's why make still has so many success. And
-that's what this Makefile wants most. To begin a new project, just type:
+that's what this Makefile wants most.
+
+First of all, download the Makefile:
+
+    curl -O https://raw.githubusercontent.com/renatocf/make/master/Makefile
+
+To begin a new project, just type:
 
     make init
 

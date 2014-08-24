@@ -452,8 +452,8 @@ SHELL = /bin/sh
 
 # Paths
 # ======
-vpath %.tar    $(distdir) # All tar files in distdir
-vpath %.tar.gz $(distdir) # All tar.gz files in distdir
+$(foreach e,.zip .tar .tgz .tbz2 .tar.gz .tar.bz2,\
+    $(eval vpath %.$e $(distdir)))
 
 # Binaries, libraries and source extensions
 $(foreach e,$(libext),$(eval vpath lib%$e $(libdir)))
@@ -463,6 +463,23 @@ $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 ########################################################################
 ##                              FILES                                 ##
 ########################################################################
+
+# Useful definitions
+comma := ,
+empty :=
+space := $(empty) $(empty)
+define newline
+
+endef
+
+# List manipulation functions
+define car
+$(strip $(firstword $(strip $1)))
+endef
+
+define cdr
+$(strip $(wordlist 2,$(words $(strip $1)),$(strip $1)))
+endef
 
 # Auxiliar data structures
 # ==========================
@@ -476,12 +493,34 @@ endef
 
 define hash-table.new_impl
 $(if $(strip $2),$(or\
-    $(if $(strip $(subst =>,,$(strip $(wordlist 2,2,$2)))),\
-        $(error "Hash separator must be a => at variable '$1'")),\
-    $(eval $1.keys += $(strip $(firstword $2))),\
-    $(eval $1.$(strip $(firstword $2)) :=\
-        $(patsubst %\,%,$(wordlist 3,3,$2))),\
-    $(call hash-table.new_impl,$1,$(wordlist 4,$(words $2),$2))\
+  $(if $(strip $(subst =>,,$(strip $(wordlist 2,2,$2)))),\
+    $(error "Hash separator must be a => at variable '$1'")\
+  ),\
+  $(eval $1.keys += $(firstword $2)),\
+  $(eval $1.$(firstword $2) := 0),\
+  $(strip $(foreach w,$(wordlist 3,$(words $2),$2),\
+    $(if $(strip $(filter =>,$w)),\
+      $(error "Hash entry must end with a comma"),\
+      $(if $(strip $(filter 0,$(firstword $($1.$(firstword $2))))),\
+        $(if $(strip $(filter-out %$(comma),$w)),\
+          $(eval $1.$(firstword $2) += $w),\
+          $(or \
+            $(eval $1.$(firstword $2) +=\
+              $(strip $(patsubst %$(comma),%,$w))),\
+            $(eval $1.$(firstword $2) := \
+                $(words $(call cdr,$1.$(firstword $2)))),\
+            $(eval $1.$(firstword $2) += \
+                $(call cdr,$1.$(firstword $2))),\
+          )\
+        )\
+      )\
+    )\
+  )),\
+  $(call hash-table.new_impl,$1,\
+    $(wordlist 4,$(firstword $(words $($1.$(firstword $2)))),$2)\
+    $(eval $1.$(firstword $2) := \
+      $(call cdr,$($1.$(strip $(firstword $2)))))
+  )\
 ))
 endef
 
@@ -1009,7 +1048,7 @@ libexec := $(if $(strip $(binext)),\
 
 $(if $(strip $(bin) $(sbin) $(libexec)),\
     $(eval binall := $(bin) $(sbin) $(libexec)),\
-    $(eval binall := $(bindir)/a.out)\
+    $(if $(strip $(srcall)),$(eval binall := $(bindir)/a.out))\
 )
 #------------------------------------------------------------------[ 2 ]
 $(foreach sep,/ .,$(foreach b,$(notdir $(binall)),$(or\

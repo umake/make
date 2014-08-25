@@ -595,8 +595,9 @@ endef
 # 2) rwildcard: For wildcard deep-search in the directory tree
 # 3) rfilter-out: For filtering a list of text from another list
 rsubdir   = $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS)))
-rwildcard = $(foreach d,$(wildcard $1/*),\
-                $(call rwildcard,$d,$2)$(filter $(subst *,%,$2),$d))
+rwildcard = $(if $(strip $(wildcard $1/*)),\
+                $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)),\
+                $(filter $(subst *,%,$2),$d))
 rfilter-out = \
   $(eval rfilter-out_aux = $2)\
   $(foreach d,$1,\

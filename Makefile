@@ -499,27 +499,28 @@ $(if $(strip $2),$(or\
   $(eval $1.keys += $(firstword $2)),\
   $(eval $1.$(firstword $2) := 0),\
   $(strip $(foreach w,$(wordlist 3,$(words $2),$2),\
-    $(if $(strip $(filter =>,$w)),\
-      $(error "Hash entry must end with a comma"),\
-      $(if $(strip $(filter 0,$(firstword $($1.$(firstword $2))))),\
-        $(if $(strip $(filter-out %$(comma),$w)),\
-          $(eval $1.$(firstword $2) += $w),\
-          $(or \
-            $(eval $1.$(firstword $2) +=\
-              $(strip $(patsubst %$(comma),%,$w))),\
-            $(eval $1.$(firstword $2) := \
-                $(words $(call cdr,$1.$(firstword $2)))),\
-            $(eval $1.$(firstword $2) += \
-                $(call cdr,$1.$(firstword $2))),\
+    $(if $(strip $(filter 0,$(firstword $($1.$(firstword $2))))),\
+      $(if $(strip $(filter =>,$w)),\
+        $(error "Hash entry must end with ',' (key: $(firstword $2))"),\
+		$(warning "Add: $w")$(eval $1.$(firstword $2) += $w)\
+        $(if $(strip $(filter %$(comma),$w)),\
+          $(warning "Comma: $w")\
+          $(eval $1.$(firstword $2) := \
+            $(words $(call cdr,$($1.$(firstword $2))))\
+            $(call cdr,$($1.$(firstword $2)))\
           )\
         )\
-      )\
+      ),$(warning "Not checking $w")\
     )\
   )),\
+  $(warning "before - $1.$(firstword $2): $($1.$(firstword $2))")\
+  $(eval $1.$(firstword $2) := \
+    $(call cdr,$($1.$(strip $(firstword $2)))))\
   $(call hash-table.new_impl,$1,\
-    $(wordlist 4,$(firstword $(words $($1.$(firstword $2)))),$2)\
+    $(wordlist $(words a a a $($1.$(firstword $2))),$(words $2),$2)\
     $(eval $1.$(firstword $2) := \
-      $(call cdr,$($1.$(strip $(firstword $2)))))
+        $(patsubst %$(comma),%,$($1.$(firstword $2))))\
+    $(warning "after - $1.$(firstword $2): $($1.$(firstword $2))")\
   )\
 ))
 endef
@@ -1130,6 +1131,66 @@ debdep := $(sort $(strip $(addprefix $(debdir)/,$(debdep))))
 ########################################################################
 ##                              BUILD                                 ##
 ########################################################################
+
+build_dependency := \
+    AR     => $(arlib),\
+    AS     => $(asmall),\
+    CC     => $(call has_c,$(srcall)),\
+    FC     => $(call has_f,$(srcall)),\
+    CXX    => $(call has_cxx,$(srcall)),\
+    RANLIB => $(arlib)
+$(call hash-table.new,build_dependency)
+
+# # Compilation
+# 
+# # Include configuration file for compiler if exists
+# -include .compiler.mk compiler.mk Compiler.mk
+# 
+# # Installation
+# INSTALL         := install
+# INSTALL_DATA    := $(INSTALL)
+# INSTALL_PROGRAM := $(INSTALL) -m 644
+# 
+# # File manipulation
+# CP              := cp -rap
+# MV              := mv
+# RM              := rm -f
+# TAR             := tar -cvf
+# ZIP             := zip
+# GZIP            := gzip
+# BZIP2           := bzip2
+# MKDIR           := mkdir -p
+# RMDIR           := rm -rf
+# FIND            := find
+# FIND_FLAGS      := -type d -print 2> /dev/null
+# 
+# # Parser and Lexer
+# LEX             := flex
+# LEX_CXX         := flexc++
+# LEXFLAGS        :=
+# YACC            := bison
+# YACC_CXX        := bisonc++
+# YACCFLAGS       :=
+# 
+# # Tags
+# CTAGS           := ctags
+# CTAGSFLAGS      :=
+# ETAGS           := etags
+# ETAGSFLAGS      :=
+# 
+# # Documentation
+# DOXYGEN         := doxygen
+# MAKEINFO        := makeinfo
+# INSTALL_INFO    := install-info
+# TEXI2HTML       := makeinfo --no-split --html
+# TEXI2DVI        := texi2dvi
+# TEXI2PDF        := texi2pdf
+# TEXI2PS         := texi2dvi --ps
+# 
+# # Packages (Debian)
+# DEBUILD         := debuild -us -uc
+# DCH             := dch --create -v $(VERSION)-$(DEB_VERSION) \
+#                        --package $(DEB_PROJECT)
 
 .PHONY: all
 all: $(cvsdep) $(binall) $(liball)

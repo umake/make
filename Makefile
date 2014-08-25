@@ -1137,6 +1137,11 @@ build_dependency := \
     CXX    => $(call has_cxx,$(srcall)),\
     RANLIB => $(arlib)
 $(call hash-table.new,build_dependency)
+$(foreach d,$(build_dependency.keys),\
+  $(if $(strip $(build_dependency.$d)),\
+    $(if $(strip $(shell which $($d))),,\
+      $(error Missing dependency "$($d)")\
+)))
 
 # # Compilation
 # 

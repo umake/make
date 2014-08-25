@@ -502,25 +502,22 @@ $(if $(strip $2),$(or\
     $(if $(strip $(filter 0,$(firstword $($1.$(firstword $2))))),\
       $(if $(strip $(filter =>,$w)),\
         $(error "Hash entry must end with ',' (key: $(firstword $2))"),\
-		$(warning "Add: $w")$(eval $1.$(firstword $2) += $w)\
+		$(eval $1.$(firstword $2) += $w)\
         $(if $(strip $(filter %$(comma),$w)),\
-          $(warning "Comma: $w")\
           $(eval $1.$(firstword $2) := \
             $(words $(call cdr,$($1.$(firstword $2))))\
             $(call cdr,$($1.$(firstword $2)))\
           )\
         )\
-      ),$(warning "Not checking $w")\
+      )\
     )\
   )),\
-  $(warning "before - $1.$(firstword $2): $($1.$(firstword $2))")\
   $(eval $1.$(firstword $2) := \
     $(call cdr,$($1.$(strip $(firstword $2)))))\
   $(call hash-table.new_impl,$1,\
     $(wordlist $(words a a a $($1.$(firstword $2))),$(words $2),$2)\
     $(eval $1.$(firstword $2) := \
         $(patsubst %$(comma),%,$($1.$(firstword $2))))\
-    $(warning "after - $1.$(firstword $2): $($1.$(firstword $2))")\
   )\
 ))
 endef

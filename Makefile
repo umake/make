@@ -1129,19 +1129,27 @@ debdep := $(sort $(strip $(addprefix $(debdir)/,$(debdep))))
 ##                              BUILD                                 ##
 ########################################################################
 
+ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,all)))
 build_dependency := \
-    AR     => $(arlib),\
-    AS     => $(asmall),\
-    CC     => $(call has_c,$(srcall)),\
-    FC     => $(call has_f,$(srcall)),\
-    CXX    => $(call has_cxx,$(srcall)),\
-    RANLIB => $(arlib)
+    AR       => $(arlib),\
+    AS       => $(asmall),\
+    CC       => $(call has_c,$(srcall)),\
+    FC       => $(call has_f,$(srcall)),\
+    CXX      => $(call has_cxx,$(srcall)),\
+    RANLIB   => $(arlib),\
+    LEX      => $(clexer),\
+    LEX_CXX  => $(cxxlexer),\
+    YACC     => $(cparser),\
+    YACC_CXX => $(cxxparser)
 $(call hash-table.new,build_dependency)
 $(foreach d,$(build_dependency.keys),\
   $(if $(strip $(build_dependency.$d)),\
     $(if $(strip $(shell which $($d))),,\
-      $(error Missing dependency "$($d)")\
+      $(error Missing dependency "$($d)" to build \
+        "$(subst $(space),$(space)$(comma),\
+         $(strip $(build_dependency.$d)))")\
 )))
+endif
 
 # # Compilation
 # 

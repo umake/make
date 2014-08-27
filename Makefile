@@ -468,7 +468,9 @@ $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 comma := ,
 empty :=
 space := $(empty) $(empty)
+tab   := $(empty)	$(empty)
 define newline
+
 
 endef
 
@@ -486,6 +488,8 @@ endef
 # 1) hash-table.new: Create a hash table with elements accessible by
 #                    hash-table.key and a list of keys hash-table.keys
 # 2) hash-table.new_impl: Auxiliar function for hash-table.new
+# 3) procedure.new: Create a multi-line set of commands (for list
+# 					of arguments in a target)
 
 define hash-table.new
 $(call hash-table.new_impl,$(strip $1),$($(strip $1)))
@@ -520,6 +524,10 @@ $(if $(strip $2),$(or\
         $(patsubst %$(comma),%,$($1.$(firstword $2))))\
   )\
 ))
+endef
+
+define procedure.new
+$(subst ;,$(newline),$1)
 endef
 
 # Auxiliar functions
@@ -1129,7 +1137,6 @@ debdep := $(sort $(strip $(addprefix $(debdir)/,$(debdep))))
 ##                              BUILD                                 ##
 ########################################################################
 
-ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,all)))
 build_dependency := \
     AR       => $(arlib),\
     AS       => $(asmall),\
@@ -1142,14 +1149,25 @@ build_dependency := \
     YACC     => $(cparser),\
     YACC_CXX => $(cxxparser)
 $(call hash-table.new,build_dependency)
+
+ifneq (,$(if $(strip $(MAKECMDGOALS)),$(foreach g,$(MAKECMDGOALS),$(filter $g,all))))
 $(foreach d,$(build_dependency.keys),\
-  $(if $(strip $(build_dependency.$d)),\
-    $(if $(strip $(shell which $($d))),,\
-      $(error Missing dependency "$($d)" to build \
-        "$(subst $(space),$(space)$(comma),\
-         $(strip $(build_dependency.$d)))")\
+    $(if $(strip $(build_dependency.$d)),\
+        $(if $(strip $(shell which $($d))),,\
+            $(error Missing dependency "$($d)" to build \
+                "$(subst $(space),$(space)$(comma),\
+                 $(strip $(build_dependency.$d)))")\
 )))
 endif
+
+# .PHONY: builddep
+# builddep:
+# 	@echo $(build_dependency.AR)
+# 	@$(subst ;,$(newline),\
+#         $(foreach d,$(build_dependency.keys),\
+#           $(if $(strip $(build_dependency.$d)),\
+#             $(quiet) which $($d);\
+#     )))
 
 # # Compilation
 # 
@@ -1173,14 +1191,6 @@ endif
 # RMDIR           := rm -rf
 # FIND            := find
 # FIND_FLAGS      := -type d -print 2> /dev/null
-# 
-# # Parser and Lexer
-# LEX             := flex
-# LEX_CXX         := flexc++
-# LEXFLAGS        :=
-# YACC            := bison
-# YACC_CXX        := bisonc++
-# YACCFLAGS       :=
 # 
 # # Tags
 # CTAGS           := ctags

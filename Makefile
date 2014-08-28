@@ -1160,14 +1160,18 @@ $(foreach d,$(build_dependency.keys),\
 )))
 endif
 
-# .PHONY: builddep
-# builddep:
-# 	@echo $(build_dependency.AR)
-# 	@$(subst ;,$(newline),\
-#         $(foreach d,$(build_dependency.keys),\
-#           $(if $(strip $(build_dependency.$d)),\
-#             $(quiet) which $($d);\
-#     )))
+.PHONY: builddep
+builddep: $(depdir)/builddep
+
+$(depdir)/builddep:
+	$(quiet) $(foreach d,$(build_dependency.keys),\
+       $(if $(strip $(build_dependency.$d)),\
+         $(call phony-status,$(MSG_BUILDDEP))$(newline)\
+         $(quiet) which $($d) $(NO_OUTPUT) $(NO_ERROR)$(newline)\
+         $(call phony-ok,$(MSG_BUILDDEP))$(newline)\
+    ))
+	$(quiet) touch $@
+	$(call phony-ok,$(MSG_BUILDDEP_ALL))
 
 # # Compilation
 # 
@@ -1213,7 +1217,7 @@ endif
 #                        --package $(DEB_PROJECT)
 
 .PHONY: all
-all: $(cvsdep) $(binall) $(liball)
+all: builddep $(cvsdep) $(binall) $(liball)
 
 .PHONY: package
 package: package-tar.gz
@@ -2154,6 +2158,9 @@ MSG_CVS_CLONE     = "${CYAN}Cloning dependency ${DEF}$@${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$@${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 
+MSG_BUILDDEP      = "${DEF}Searching for program ${GREEN}$($(d))${RES}"
+MSG_BUILDDEP_ALL  = "${YELLOW}All program dependencies avaiable${RES}"
+
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\
 					"$(subst /,::,${NMS_HEADER})"
@@ -2411,7 +2418,11 @@ ifneq ($(strip $(quiet)),)
 endif
 
 define phony-ok
-	@echo "\r${GREEN}[OK]${RES}" $1 "     ";
+	@if [ $$? ];\
+         then echo "\r${GREEN}[OK]${RES}" $1 "     ";\
+         else echo "${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}";\
+              exit 42;\
+     fi;
 endef
 
 define ok

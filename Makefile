@@ -1211,12 +1211,6 @@ check: $(testrun)
 
 .PHONY: nothing
 nothing:
-	@echo $(foreach d,$(strip $1),\
-			        $(strip $(call rwildcard,$d,*)))
-	@echo $(filter $(subst *,%,$2),$(wildcard doc/doxygen*))
-	@echo $(call rwildcard,doc/doxygen,*)
-	@echo $(call rwildcard,build,*)
-	@echo $(firstword $(MAKEFILE_LIST))
 
 ifneq (,$(if $(strip $(MAKECMDGOALS)),\
           $(foreach g,$(MAKECMDGOALS),$(filter $g,all)),OK))

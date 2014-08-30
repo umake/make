@@ -2398,15 +2398,15 @@ ifndef SILENT
 
 ifneq ($(strip $(quiet)),)
     define phony-status
-    	@printf "%b ... " $1;
+    	@printf "%b " $1; printf "..." 
     endef
     
     define status
-    	@$(RM) $@ && printf "%b ... " $1;
+    	@$(RM) $@ && printf "%b " $1; printf "...";
     endef
 
     define vstatus
-    	@$(RM) $@ && echo $1 "... ";
+    	@$(RM) $@ && echo $1 "...";
     endef
 endif
 

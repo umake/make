@@ -1431,6 +1431,9 @@ dpkg: package-tar.gz $(debdep)
 	         && $(DEBUILD) $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP4))
 
+# Executes iff one of the make goals is 'dpkg'
+ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,dpkg)))
+
 $(debdir)/changelog: | $(debdir)
 	$(quiet) $(DCH)
 
@@ -1487,6 +1490,8 @@ $(debdir)/$(DEB_PROJECT).dirs: | $(debdir)
 	$(if $(strip $(lib)),     $(call cat,'$(i_libdir)                '))
 	$(if $(strip $(texiinfo)),$(call cat,'$(i_docdir)/info           '))
 	$(call select,stdout)
+
+endif
 
 ########################################################################
 ##                              RULES                                 ##

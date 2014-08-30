@@ -1234,93 +1234,6 @@ $(depdir)/builddep: | $(depdir)
 	$(call phony-ok,$(MSG_BUILDDEP_ALL))
 endif
 
-.PHONY: dpkg
-dpkg: package-tar.gz $(debdep)
-	
-	@# Step 1: Rename the upstream tarball
-	$(call phony-status,$(MSG_DEB_STEP1))
-	$(quiet) $(MV) $(distdir)/$(PROJECT)-$(VERSION)_src.tar.gz \
-	         $(distdir)/$(DEB_PROJECT)_$(VERSION).orig.tar.gz $(ERROR)
-	$(call phony-ok,$(MSG_DEB_STEP1))
-	
-	@# Step 2: Unpack the upstream tarball
-	$(call phony-status,$(MSG_DEB_STEP2))
-	$(quiet) cd $(distdir) \
-	         && tar xf $(DEB_PROJECT)_$(VERSION).orig.tar.gz $(ERROR)
-	$(call srmdir,$(distdir)/$(DEB_PROJECT)-$(VERSION))
-	$(quiet) $(MV) $(distdir)/$(PROJECT)-$(VERSION)_src \
-	         $(distdir)/$(DEB_PROJECT)-$(VERSION) $(ERROR)
-	$(call phony-ok,$(MSG_DEB_STEP2))
-	
-	@# Step 3: Add the Debian packaging files
-	$(call phony-status,$(MSG_DEB_STEP3))
-	$(quiet) $(CP) $(debdir) \
-             $(distdir)/$(DEB_PROJECT)-$(VERSION) $(ERROR)
-	$(call phony-ok,$(MSG_DEB_STEP3))
-	
-	@# Step 4: Install the package
-	$(call phony-status,$(MSG_DEB_STEP4))
-	$(quiet) cd $(distdir)/$(DEB_PROJECT)-$(VERSION) \
-	         && $(DEBUILD) $(ERROR)
-	$(call phony-ok,$(MSG_DEB_STEP4))
-
-$(debdir)/changelog: | $(debdir)
-	$(quiet) $(DCH)
-
-$(debdir)/compat: | $(debdir)
-	$(call touch,$@)
-	$(quiet) echo 9 >> $@
-
-$(debdir)/control: | $(debdir)
-	$(call touch,$@)
-	$(call select,$@)
-	@echo " "                                                 >> $@
-	@echo "Source: $(DEB_PROJECT)"                            >> $@
-	@echo "Maintainer: $(MAINTEINER_NAME) $(MAINTEINER_MAIL)" >> $@
-	@echo "Section: misc"                                     >> $@
-	@echo "Priority: $(DEB_PRIORITY)"                         >> $@
-	@echo "Standards-Version: $(VERSION)"                     >> $@
-	@echo "Build-Depends: debhelper (>= 9)"                   >> $@
-	@echo " "                                                 >> $@
-	@echo "Package: $(DEB_PROJECT)"                           >> $@
-	@echo "Architecture: any"                                 >> $@
-	@echo "Depends: "$$"{shlibs:Depends}, "$$"{misc:Depends}" >> $@
-	@echo "Description: $(SYNOPSIS)"                          >> $@
-	@echo " $(DESCRIPTION)"                                   >> $@
-	$(call select,stdout)
-
-$(debdir)/copyright: | $(debdir)
-	$(call touch,$@,$(notice))
-
-$(debdir)/rules: | $(debdir)
-	$(call touch,$@)
-	$(call select,$@)
-	$(call cat,"#!/usr/bin/make -f                                    ")
-	$(call cat,"                                                      ")
-	$(call cat,"%:                                                    ")
-	$(call cat,"\tdh "$$"@                                            ")
-	$(call cat,"                                                      ")
-	$(call cat,"override_dh_auto_install:                             ")
-	$(call cat,"\t"$$"(MAKE) \\"                                       )
-	$(call cat,"    DESTDIR="$$""$$"(pwd)/debian/$(DEB_PROJECT) \\"    )
-	$(call cat,"    prefix=/usr install"                               )
-	$(call select,stdout)
-
-$(debdir)/source/format: | $(debdir)
-	$(call mksubdir,$(debdir),$@)
-	$(call touch,$@)
-	$(quiet) echo "3.0 (quilt)" >> $@
-
-$(debdir)/$(DEB_PROJECT).dirs: | $(debdir)
-	$(call touch,$@)
-	$(call select,$@)
-	$(if $(strip $(bin)),     $(call cat,'$(i_bindir)                '))
-	$(if $(strip $(sbin)),    $(call cat,'$(i_sbindir)               '))
-	$(if $(strip $(libexec)), $(call cat,'$(i_libexecdir)            '))
-	$(if $(strip $(lib)),     $(call cat,'$(i_libdir)                '))
-	$(if $(strip $(texiinfo)),$(call cat,'$(i_docdir)/info           '))
-	$(call select,stdout)
-
 ########################################################################
 ##                          INITIALIZATION                            ##
 ########################################################################
@@ -1483,6 +1396,97 @@ $(docdir)/doxygen:
 	$(call mkdir,$(docdir)/doxygen)
 
 endif # ifneq($(strip $(doxyfile)),) ####
+
+########################################################################
+##                          DEBIAN PACKAGE                            ##
+########################################################################
+
+.PHONY: dpkg
+dpkg: package-tar.gz $(debdep)
+	
+	@# Step 1: Rename the upstream tarball
+	$(call phony-status,$(MSG_DEB_STEP1))
+	$(quiet) $(MV) $(distdir)/$(PROJECT)-$(VERSION)_src.tar.gz \
+	         $(distdir)/$(DEB_PROJECT)_$(VERSION).orig.tar.gz $(ERROR)
+	$(call phony-ok,$(MSG_DEB_STEP1))
+	
+	@# Step 2: Unpack the upstream tarball
+	$(call phony-status,$(MSG_DEB_STEP2))
+	$(quiet) cd $(distdir) \
+	         && tar xf $(DEB_PROJECT)_$(VERSION).orig.tar.gz $(ERROR)
+	$(call srmdir,$(distdir)/$(DEB_PROJECT)-$(VERSION))
+	$(quiet) $(MV) $(distdir)/$(PROJECT)-$(VERSION)_src \
+	         $(distdir)/$(DEB_PROJECT)-$(VERSION) $(ERROR)
+	$(call phony-ok,$(MSG_DEB_STEP2))
+	
+	@# Step 3: Add the Debian packaging files
+	$(call phony-status,$(MSG_DEB_STEP3))
+	$(quiet) $(CP) $(debdir) \
+             $(distdir)/$(DEB_PROJECT)-$(VERSION) $(ERROR)
+	$(call phony-ok,$(MSG_DEB_STEP3))
+	
+	@# Step 4: Install the package
+	$(call phony-status,$(MSG_DEB_STEP4))
+	$(quiet) cd $(distdir)/$(DEB_PROJECT)-$(VERSION) \
+	         && $(DEBUILD) $(ERROR)
+	$(call phony-ok,$(MSG_DEB_STEP4))
+
+$(debdir)/changelog: | $(debdir)
+	$(quiet) $(DCH)
+
+$(debdir)/compat: | $(debdir)
+	$(call touch,$@)
+	$(quiet) echo 9 >> $@
+
+$(debdir)/control: | $(debdir)
+	$(call touch,$@)
+	$(call select,$@)
+	@echo " "                                                 >> $@
+	@echo "Source: $(DEB_PROJECT)"                            >> $@
+	@echo "Maintainer: $(MAINTEINER_NAME) $(MAINTEINER_MAIL)" >> $@
+	@echo "Section: misc"                                     >> $@
+	@echo "Priority: $(DEB_PRIORITY)"                         >> $@
+	@echo "Standards-Version: $(VERSION)"                     >> $@
+	@echo "Build-Depends: debhelper (>= 9)"                   >> $@
+	@echo " "                                                 >> $@
+	@echo "Package: $(DEB_PROJECT)"                           >> $@
+	@echo "Architecture: any"                                 >> $@
+	@echo "Depends: "$$"{shlibs:Depends}, "$$"{misc:Depends}" >> $@
+	@echo "Description: $(SYNOPSIS)"                          >> $@
+	@echo " $(DESCRIPTION)"                                   >> $@
+	$(call select,stdout)
+
+$(debdir)/copyright: | $(debdir)
+	$(call touch,$@,$(notice))
+
+$(debdir)/rules: | $(debdir)
+	$(call touch,$@)
+	$(call select,$@)
+	$(call cat,"#!/usr/bin/make -f                                    ")
+	$(call cat,"                                                      ")
+	$(call cat,"%:                                                    ")
+	$(call cat,"\tdh "$$"@                                            ")
+	$(call cat,"                                                      ")
+	$(call cat,"override_dh_auto_install:                             ")
+	$(call cat,"\t"$$"(MAKE) \\"                                       )
+	$(call cat,"    DESTDIR="$$""$$"(pwd)/debian/$(DEB_PROJECT) \\"    )
+	$(call cat,"    prefix=/usr install"                               )
+	$(call select,stdout)
+
+$(debdir)/source/format: | $(debdir)
+	$(call mksubdir,$(debdir),$@)
+	$(call touch,$@)
+	$(quiet) echo "3.0 (quilt)" >> $@
+
+$(debdir)/$(DEB_PROJECT).dirs: | $(debdir)
+	$(call touch,$@)
+	$(call select,$@)
+	$(if $(strip $(bin)),     $(call cat,'$(i_bindir)                '))
+	$(if $(strip $(sbin)),    $(call cat,'$(i_sbindir)               '))
+	$(if $(strip $(libexec)), $(call cat,'$(i_libexecdir)            '))
+	$(if $(strip $(lib)),     $(call cat,'$(i_libdir)                '))
+	$(if $(strip $(texiinfo)),$(call cat,'$(i_docdir)/info           '))
+	$(call select,stdout)
 
 ########################################################################
 ##                              RULES                                 ##

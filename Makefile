@@ -2106,7 +2106,8 @@ uninitialize:
 	@echo $(MSG_UNINIT_WARN)
 	@echo $(MSG_UNINIT_ALT)
 else
-uninitialize: mainteiner-clean
+uninitialize:
+	@$(MAKE) mainteiner-clean D=1
 	$(call rm-if-empty,$(srcdir),$(srcall))
 	$(call rm-if-empty,$(incdir),$(incall))
 	$(call rm-if-empty,$(docdir),$(texiall))

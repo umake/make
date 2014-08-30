@@ -2113,8 +2113,11 @@ uninitialize:
 	$(call rm-if-empty,$(docdir),$(texiall))
 	$(call rm-if-exists,Config.mk)
 	$(call rm-if-exists,config.mk)
+	$(call rm-if-exists,.config.mk)
 	$(call rm-if-exists,Config_os.mk)
 	$(call rm-if-exists,config_os.mk)
+	$(call rm-if-exists,.config_os.mk)
+	$(call rm-if-exists,.gitignore)
 endif
 
 ########################################################################

@@ -500,7 +500,7 @@ $(if $(strip $2),$(or\
   $(if $(strip $(subst =>,,$(strip $(wordlist 2,2,$2)))),\
     $(error "Hash separator must be a => at variable '$1'")\
   ),\
-  $(eval $1.keys += $(firstword $2)),\
+  $(eval $1.__keys += $(firstword $2)),\
   $(eval $1.$(firstword $2) := 0),\
   $(strip $(foreach w,$(wordlist 3,$(words $2),$2),\
     $(if $(strip $(filter 0,$(firstword $($1.$(firstword $2))))),\
@@ -524,6 +524,14 @@ $(if $(strip $2),$(or\
         $(patsubst %$(comma),%,$($1.$(firstword $2))))\
   )\
 ))
+endef
+
+define hash-table.keys
+$(strip $($(strip $1).__keys))
+endef
+
+define hash-table.values
+$(strip $(foreach k,$(call hash-table.keys,$1),$($1.$k)))
 endef
 
 # Auxiliar functions
@@ -647,8 +655,8 @@ hg_dependency  := $(strip $(HG_DEPENDENCY))
 $(call hash-table.new,git_dependency)
 $(call hash-table.new,hg_dependency)
 #------------------------------------------------------------------[ 3 ]
-cvsdep := $(addprefix $(libdir)/,$(git_dependency.keys))
-cvsdep += $(addprefix $(libdir)/,$(hg_dependency.keys))
+cvsdep := $(addprefix $(libdir)/,$(call hash-table.keys,git_dependency))
+cvsdep += $(addprefix $(libdir)/,$(call hash-table.keys,hg_dependency))
 
 # Library files
 # ==============
@@ -1208,13 +1216,15 @@ check: $(testrun)
 .PHONY: nothing
 nothing:
 
+## DEPENDENCY ##########################################################
 ifneq (,$(if $(strip $(MAKECMDGOALS)),\
           $(foreach g,$(MAKECMDGOALS),$(filter $g,all)),OK))
 .PHONY: builddep
-builddep: $(depdir)/builddep
+builddep: \
+    $(if $(call hash-table.values,build_dependency),$(depdir)/builddep)
 
 $(depdir)/builddep: | $(depdir)
-	$(quiet) $(foreach d,$(build_dependency.keys),\
+	$(quiet) $(foreach d,$(call hash-table.keys,build_dependency),\
        $(if $(strip $(build_dependency.$d)),\
          $(call phony-status,$(MSG_BUILDDEP))$(newline)\
          $(quiet) which $($d) $(NO_OUTPUT) $(NO_ERROR)$(newline)\
@@ -1503,7 +1513,7 @@ $$(libdir)/$$(strip $1): | $$(libdir)
 	$$(call phony-ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach cvs,git hg,\
-    $(foreach d,$($(cvs)_dependency.keys),$(eval\
+    $(foreach d,$(call hash-table.keys,$(cvs)_dependency),$(eval\
         $(call cvs-dependency,$d,$(cvs),$($(cvs)_dependency.$d))\
 )))
 

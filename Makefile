@@ -304,7 +304,7 @@ DCH             := dch --create -v $(VERSION)-$(DEB_VERSION) \
                        --package $(DEB_PROJECT)
 
 # Make
-MAKE            += --no-print-directory
+MAKE            += -f $(firstword $(MAKEFILE_LIST)) --no-print-directory
 
 # Include configuration file for programs if exists
 -include .config_os.mk config_os.mk Config_os.mk
@@ -603,7 +603,7 @@ endef
 rsubdir   = $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS)))
 rwildcard = $(if $(strip $(wildcard $1/*)),\
                 $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)),\
-                $(filter $(subst *,%,$2),$d))
+                $(if $(wildcard $1*),$(filter $(subst *,%,$2),$1)))
 rfilter-out = \
   $(eval rfilter-out_aux = $2)\
   $(foreach d,$1,\
@@ -1150,29 +1150,6 @@ build_dependency := \
     YACC_CXX => $(cxxparser)
 $(call hash-table.new,build_dependency)
 
-ifneq (,$(if $(strip $(MAKECMDGOALS)),$(foreach g,$(MAKECMDGOALS),$(filter $g,all))))
-$(foreach d,$(build_dependency.keys),\
-    $(if $(strip $(build_dependency.$d)),\
-        $(if $(strip $(shell which $($d))),,\
-            $(error Missing dependency "$($d)" to build \
-                "$(subst $(space),$(space)$(comma),\
-                 $(strip $(build_dependency.$d)))")\
-)))
-endif
-
-.PHONY: builddep
-builddep: $(depdir)/builddep
-
-$(depdir)/builddep:
-	$(quiet) $(foreach d,$(build_dependency.keys),\
-       $(if $(strip $(build_dependency.$d)),\
-         $(call phony-status,$(MSG_BUILDDEP))$(newline)\
-         $(quiet) which $($d) $(NO_OUTPUT) $(NO_ERROR)$(newline)\
-         $(call phony-ok,$(MSG_BUILDDEP))$(newline)\
-    ))
-	$(quiet) touch $@
-	$(call phony-ok,$(MSG_BUILDDEP_ALL))
-
 # # Compilation
 # 
 # # Include configuration file for compiler if exists
@@ -1234,6 +1211,28 @@ check: $(testrun)
 
 .PHONY: nothing
 nothing:
+	@echo $(foreach d,$(strip $1),\
+			        $(strip $(call rwildcard,$d,*)))
+	@echo $(filter $(subst *,%,$2),$(wildcard doc/doxygen*))
+	@echo $(call rwildcard,doc/doxygen,*)
+	@echo $(call rwildcard,build,*)
+	@echo $(firstword $(MAKEFILE_LIST))
+
+ifneq (,$(if $(strip $(MAKECMDGOALS)),\
+          $(foreach g,$(MAKECMDGOALS),$(filter $g,all)),OK))
+.PHONY: builddep
+builddep: $(depdir)/builddep
+
+$(depdir)/builddep: | $(depdir)
+	$(quiet) $(foreach d,$(build_dependency.keys),\
+       $(if $(strip $(build_dependency.$d)),\
+         $(call phony-status,$(MSG_BUILDDEP))$(newline)\
+         $(quiet) which $($d) $(NO_OUTPUT) $(NO_ERROR)$(newline)\
+         $(call phony-ok,$(MSG_BUILDDEP))$(newline)\
+    ))
+	$(quiet) touch $@
+	$(call phony-ok,$(MSG_BUILDDEP_ALL))
+endif
 
 .PHONY: dpkg
 dpkg: package-tar.gz $(debdep)
@@ -2087,7 +2086,9 @@ realclean:
 else
 realclean: docclean distclean packageclean
 	$(call rm-if-exists,$(lexall),$(MSG_LEX_NONE))
+	$(foreach d,$(lexinc),$(call rm-if-empty,$d)$(newline))
 	$(call rm-if-exists,$(yaccall),$(MSG_YACC_NONE))
+	$(foreach d,$(yaccinc),$(call rm-if-empty,$d)$(newline))
 	$(call rm-if-exists,ctags,$(MSG_CTAGS_NONE))
 	$(call rm-if-exists,etags,$(MSG_ETAGS_NONE))
 endif
@@ -2375,9 +2376,7 @@ define rm-if-empty
                 $(if $(strip $(MAINTEINER_CLEAN)),\
                     $(call rmdir,$d),\
                     $(if $(strip $(call rfilter-out,$2,\
-                            $(call rfilter-out,\
-                                $(filter-out $d,$(call rsubdir,$d)),\
-                                $(call rwildcard,$d,*)))),\
+                                 $(call rwildcard,$d,*))),\
                         $(call phony-ok,$(MSG_RM_NOT_EMPTY)),\
                         $(call rmdir,$d)\
                 )),\
@@ -3186,6 +3185,7 @@ dump:
 	$(call prompt,"clexer:       ",$(clexer)       )
 	$(call prompt,"cxxlexer:     ",$(cxxlexer)     )
 	$(call prompt,"lexall:       ",$(lexall)       )
+	$(call prompt,"lexinc:       ",$(lexinc)       )
 	
 	@echo "${WHITE}\nPARSER                  ${RES}"
 	@echo "----------------------------------------"
@@ -3193,6 +3193,7 @@ dump:
 	$(call prompt,"cparser:      ",$(cparser)      )
 	$(call prompt,"cxxparser:    ",$(cxxparser)    )
 	$(call prompt,"yaccall:      ",$(yaccall)      )
+	$(call prompt,"yaccinc:      ",$(yaccinc)      )
 	
 	@echo "${WHITE}\nSOURCE                  ${RES}"
 	@echo "----------------------------------------"

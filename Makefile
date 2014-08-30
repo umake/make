@@ -1797,6 +1797,7 @@ $(foreach a,$(arpatsrc),\
 #            substituting / for _ in $(testdep)                        #
 # @return Target to generate binary file for the unit test             #
 #======================================================================#
+ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,check)))
 define test-factory
 $1: $2 $3 | $$(bindir)
 	$$(call status,$$(MSG_TEST_COMPILE))
@@ -1821,6 +1822,7 @@ $(foreach s,$(testdep),$(eval\
         ),\
         run_$(subst /,_,$s)\
 )))
+endif
 
 #======================================================================#
 # Function: binary-factory                                             #

@@ -526,10 +526,6 @@ $(if $(strip $2),$(or\
 ))
 endef
 
-define procedure.new
-$(subst ;,$(newline),$1)
-endef
-
 # Auxiliar functions
 # ===================
 # 1) root: Gets the root directory (first in the path) of a path or file

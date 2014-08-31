@@ -1034,9 +1034,13 @@ testrun := $(addprefix run_,$(subst /,_,$(testdep)))
 # 1) Dependencies will be generated for sources, auto sources and tests
 # 2) Get the not-root basenames of all source directories
 # 3) Create dependency names and directories
+# 4) Files that indicate the correctness of some dependencies
+# 3) Add dependency directory
 depall  := $(testall) $(call not-root,$(srcall) $(autoall))
 depall  := $(strip $(basename $(depall)))
 depall  := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
+depdep  := $(addsuffix dep,build tags docs dist dpkg install)
+depdep  := $(addprefix $(depdir)/,$(depdep))
 
 # Binary
 # =======
@@ -1179,6 +1183,7 @@ check: $(testrun)
 
 .PHONY: nothing
 nothing:
+	@echo $(depdep)
 
 .PHONY: upgrade
 upgrade:
@@ -1518,7 +1523,7 @@ $$(depdir)/$1dep: | $$(depdir)
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
-$(foreach d,build install tags dpkg docs dist,\
+$(foreach d,build tags docs dist dpkg install,\
     $(eval $(call dep-factory,$d,$d_dependency)))
 
 #======================================================================#
@@ -2090,7 +2095,7 @@ clean: mostlyclean
 
 .PHONY: distclean
 distclean: clean
-	$(call rm-if-empty,$(depdir),$(depall))
+	$(call rm-if-empty,$(depdir),$(depall) $(depdep))
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
         $(filter $(firstword $(libdir))/%,$(lib))\
@@ -3308,6 +3313,7 @@ dump:
 	@echo "${WHITE}\nDEPENDENCY              ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"depall:       ",$(depall)       )
+	$(call prompt,"depdep:       ",$(depdep)       )
 	
 	@echo "${WHITE}\nBINARY                  ${RES}"
 	@echo "----------------------------------------"

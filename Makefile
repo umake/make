@@ -1151,6 +1151,13 @@ deball := $(sort $(strip $(addprefix $(debdir)/,$(deball))))
 ##                              BUILD                                 ##
 ########################################################################
 
+# CP              := cp -rap
+# MV              := mv
+# RM              := rm -f
+# MKDIR           := mkdir -p
+# RMDIR           := rm -rf
+# FIND            := find
+
 build_dependency := \
     AR       => $(arlib),\
     AS       => $(asmall),\
@@ -1163,39 +1170,8 @@ build_dependency := \
     YACC     => $(cparser),\
     YACC_CXX => $(cxxparser)
 
-# # Compilation
-# 
-# # Include configuration file for compiler if exists
-# -include .compiler.mk compiler.mk Compiler.mk
-# 
-# # Installation
-# 
-# # File manipulation
-# CP              := cp -rap
-# MV              := mv
-# RM              := rm -f
-# TAR             := tar -cvf
-# ZIP             := zip
-# GZIP            := gzip
-# BZIP2           := bzip2
-# MKDIR           := mkdir -p
-# RMDIR           := rm -rf
-# FIND            := find
-# FIND_FLAGS      := -type d -print 2> /dev/null
-# 
-# # Packages (Debian)
-
 .PHONY: all
 all: builddep $(cvsdep) $(binall) $(liball)
-
-.PHONY: package
-package: package-tar.gz
-
-.PHONY: dist
-dist: dist-tar.gz
-
-.PHONY: tar
-tar: dist-tar
 
 .PHONY: check
 check: $(testrun)
@@ -1232,86 +1208,6 @@ standard:
 	$(call mv,$(srcext) $(asmext),$(firstword srcdir))
 	$(call mv,$(lexext) $(lexxext) $(yaccext) $(yaxxext),\
         $(firstword srcdir))
-
-########################################################################
-##                           INSTALLATION                             ##
-########################################################################
-
-install_dependency := \
-    INSTALL         => $(i_lib) $(i_bin) $(i_sbin) $(i_libexec),\
-    INSTALL_DATA    => $(i_lib),\
-    INSTALL_PROGRAM => $(i_bin) $(i_sbin) $(i_libexec)
-
-.PHONY: install-strip
-install-strip: installdep 
-	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
-
-.PHONY: install
-install: installdep $(i_lib) $(i_bin) $(i_sbin) $(i_libexec) install-docs
-
-.PHONY: install-docs
-install-docs: installdep install-info install-html install-dvi
-install-docs: install-pdf install-ps
-
-.PHONY: install-info
-install-info:
-	$(if $(strip $(texiinfo)),$(foreach f,$(texiinfo),\
-        $(INSTALL_DATA) $f $(i_infodir)/$(notdir $f);\
-        if $(SHELL) -c '$(INSTALL_INFO) --version' $(NO_OUTPUT) 2>&1; \
-        then \
-            $(INSTALL_INFO) --dir-file="$(i_infodir)/dir" \
-            "$(i_infodir)/$(notdir $f)"; \
-        else true; fi;\
-    ))
-
-.PHONY: installcheck
-installcheck:
-	$(call phony-ok,"No installation test avaiable")
-
-########################################################################
-##                          UNINSTALLATION                            ##
-########################################################################
-
-# Remove subdirectories of this directory
-# Remove files if no subdir was identified
-define uninstall
-$(if $(strip $(i_$1)),\
-    $(if $(sort $(foreach d,\
-        $(call root,$(call not-root,$($1))),\
-        $(call rsubdir,$(i_$1dir)/$d)\
-    )),
-        $(call rm-if-empty,\
-            $(call invert,$(sort $(foreach d,\
-                $(call root,$(call not-root,$($1))),\
-                $(call rsubdir,$(i_$1dir)/$d)\
-            ))),\
-            $(i_$1)\
-        ),\
-        $(if $(strip $(foreach f,$(i_$1),$(wildcard $f))),\
-            $(call rm,$(i_$1)))\
-))
-endef
-
-.PHONY: mainteiner-uninstall
-mainteiner-uninstall:
-	@$(MAKE) uninstall DESTDIR=$(destdir) MAINTEINER_CLEAN=1
-
-.PHONY: uninstall
-uninstall:
-	$(call uninstall,lib)
-	$(call uninstall,bin)
-	$(call uninstall,sbin)
-	$(call uninstall,libexec)
-
-.PHONY: uninstall-docs
-uninstall-docs: uninstall-info uninstall-html uninstall-dvi
-uninstall-docs: uninstall-pdf uninstall-ps
-
-.PHONY: uninstall-info
-uninstall-info:
-	$(if $(strip $(texiinfo)),$(call rm-if-empty,$(i_infodir),\
-        $(addprefix $(i_infodir)/,$(notdir $(texiinfo)))\
-    ))
 
 ########################################################################
 ##                               TAGS                                 ##
@@ -1390,6 +1286,29 @@ $(docdir)/doxygen:
 	$(call mkdir,$(docdir)/doxygen)
 
 endif # ifneq($(strip $(doxyfile)),) ####
+
+########################################################################
+##                            DISTRIBUTION                            ##
+########################################################################
+
+dist_dependency := \
+    TAR   => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
+             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir),\
+    ZIP   => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
+             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir),\
+    GZIP  => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
+             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir),\
+    BZIP2 => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
+             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir)
+
+.PHONY: package
+package: distdep package-tar.gz
+
+.PHONY: dist
+dist: distdep dist-tar.gz
+
+.PHONY: tar
+tar: distdep dist-tar
 
 ########################################################################
 ##                          DEBIAN PACKAGE                            ##
@@ -1491,6 +1410,86 @@ $(debdir)/$(DEB_PROJECT).dirs: | $(debdir)
 endif
 
 ########################################################################
+##                           INSTALLATION                             ##
+########################################################################
+
+install_dependency := \
+    INSTALL         => $(i_lib) $(i_bin) $(i_sbin) $(i_libexec),\
+    INSTALL_DATA    => $(i_lib),\
+    INSTALL_PROGRAM => $(i_bin) $(i_sbin) $(i_libexec)
+
+.PHONY: install-strip
+install-strip: installdep 
+	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
+
+.PHONY: install
+install: installdep $(i_lib) $(i_bin) $(i_sbin) $(i_libexec) install-docs
+
+.PHONY: install-docs
+install-docs: installdep install-info install-html install-dvi
+install-docs: install-pdf install-ps
+
+.PHONY: install-info
+install-info:
+	$(if $(strip $(texiinfo)),$(foreach f,$(texiinfo),\
+        $(INSTALL_DATA) $f $(i_infodir)/$(notdir $f);\
+        if $(SHELL) -c '$(INSTALL_INFO) --version' $(NO_OUTPUT) 2>&1; \
+        then \
+            $(INSTALL_INFO) --dir-file="$(i_infodir)/dir" \
+            "$(i_infodir)/$(notdir $f)"; \
+        else true; fi;\
+    ))
+
+.PHONY: installcheck
+installcheck:
+	$(call phony-ok,"No installation test avaiable")
+
+########################################################################
+##                          UNINSTALLATION                            ##
+########################################################################
+
+# Remove subdirectories of this directory
+# Remove files if no subdir was identified
+define uninstall
+$(if $(strip $(i_$1)),\
+    $(if $(sort $(foreach d,\
+        $(call root,$(call not-root,$($1))),\
+        $(call rsubdir,$(i_$1dir)/$d)\
+    )),
+        $(call rm-if-empty,\
+            $(call invert,$(sort $(foreach d,\
+                $(call root,$(call not-root,$($1))),\
+                $(call rsubdir,$(i_$1dir)/$d)\
+            ))),\
+            $(i_$1)\
+        ),\
+        $(if $(strip $(foreach f,$(i_$1),$(wildcard $f))),\
+            $(call rm,$(i_$1)))\
+))
+endef
+
+.PHONY: mainteiner-uninstall
+mainteiner-uninstall:
+	@$(MAKE) uninstall DESTDIR=$(destdir) MAINTEINER_CLEAN=1
+
+.PHONY: uninstall
+uninstall:
+	$(call uninstall,lib)
+	$(call uninstall,bin)
+	$(call uninstall,sbin)
+	$(call uninstall,libexec)
+
+.PHONY: uninstall-docs
+uninstall-docs: uninstall-info uninstall-html uninstall-dvi
+uninstall-docs: uninstall-pdf uninstall-ps
+
+.PHONY: uninstall-info
+uninstall-info:
+	$(if $(strip $(texiinfo)),$(call rm-if-empty,$(i_infodir),\
+        $(addprefix $(i_infodir)/,$(notdir $(texiinfo)))\
+    ))
+
+########################################################################
 ##                              RULES                                 ##
 ########################################################################
 
@@ -1519,7 +1518,7 @@ $$(depdir)/$1dep: | $$(depdir)
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
-$(foreach d,build install tags dpkg docs,\
+$(foreach d,build install tags dpkg docs dist,\
     $(eval $(call dep-factory,$d,$d_dependency)))
 
 #======================================================================#
@@ -2066,12 +2065,12 @@ define dist-factory
 package-$1: dirs := Makefile $$(make_configs)
 package-$1: dirs += $$(srcdir) $$(incdir) $$(datadir) $$(docdir)
 package-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir)
-package-$1: $$(distdir)/$$(PROJECT)-$$(VERSION)_src.$1
+package-$1: distdep $$(distdir)/$$(PROJECT)-$$(VERSION)_src.$1
 
 .PHONY: dist-$1
 dist-$1: dirs := Makefile $$(make_configs)
 dist-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir)
-dist-$1: $$(distdir)/$$(PROJECT)-$$(VERSION).$1
+dist-$1: distdep $$(distdir)/$$(PROJECT)-$$(VERSION).$1
 endef
 $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
     $(eval $(call dist-factory,$e)))

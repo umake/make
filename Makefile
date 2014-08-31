@@ -1537,10 +1537,10 @@ $$(libdir)/$$(strip $1): | $$(libdir)
               fi $$(ERROR)
 	$$(call phony-ok,$$(MSG_MAKE_DEP))
 endef
-$(foreach cvs,git hg,\
-    $(foreach d,$(call hash-table.keys,$(cvs)_dependency),$(eval\
-        $(call cvs-dependency,$d,$(cvs),$($(cvs)_dependency.$d))\
-)))
+$(foreach d,$(call hash-table.keys,git_dependency),$(eval\
+	$(call cvs-dependency,$d,$(GIT),$(git_dependency.$d))))
+$(foreach d,$(call hash-table.keys,hg_dependency),$(eval\
+	$(call cvs-dependency,$d,$(HG),$(hg_dependency.$d))))
 
 #======================================================================#
 # Function: scanner-factory                                            #

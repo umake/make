@@ -1229,7 +1229,7 @@ nothing:
 .PHONY: upgrade
 upgrade:
 	$(call phony-status,$(MSG_MAKE_UPGRADE))
-	$(quiet) $(CURL) -O $(MAKEREMOTE)
+	$(quiet) $(CURL) -O $(MAKEREMOTE) $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_MAKE_UPGRADE))
 
 ## DEPENDENCY ##########################################################

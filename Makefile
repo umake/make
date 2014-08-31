@@ -1162,7 +1162,6 @@ build_dependency := \
     LEX_CXX  => $(cxxlexer),\
     YACC     => $(cparser),\
     YACC_CXX => $(cxxparser)
-$(call hash-table.new,build_dependency)
 
 # # Compilation
 # 
@@ -1170,9 +1169,6 @@ $(call hash-table.new,build_dependency)
 # -include .compiler.mk compiler.mk Compiler.mk
 # 
 # # Installation
-# INSTALL         := install
-# INSTALL_DATA    := $(INSTALL)
-# INSTALL_PROGRAM := $(INSTALL) -m 644
 # 
 # # File manipulation
 # CP              := cp -rap
@@ -1233,24 +1229,6 @@ upgrade:
 	$(quiet) $(MV) Makefile $(firstword $(MAKEFILE_LIST))
 	$(call phony-ok,$(MSG_MAKE_UPGRADE))
 
-## DEPENDENCY ##########################################################
-ifneq (,$(if $(strip $(MAKECMDGOALS)),\
-          $(foreach g,$(MAKECMDGOALS),$(filter $g,all)),OK))
-.PHONY: builddep
-builddep: \
-    $(if $(call hash-table.values,build_dependency),$(depdir)/builddep)
-
-$(depdir)/builddep: | $(depdir)
-	$(quiet) $(foreach d,$(call hash-table.keys,build_dependency),\
-       $(if $(strip $(build_dependency.$d)),\
-         $(call phony-status,$(MSG_BUILDDEP))$(newline)\
-         $(quiet) which $($d) $(NO_OUTPUT) $(NO_ERROR)$(newline)\
-         $(call phony-ok,$(MSG_BUILDDEP))$(newline)\
-    ))
-	$(quiet) touch $@
-	$(call phony-ok,$(MSG_BUILDDEP_ALL))
-endif
-
 ########################################################################
 ##                          INITIALIZATION                            ##
 ########################################################################
@@ -1277,15 +1255,20 @@ standard:
 ##                           INSTALLATION                             ##
 ########################################################################
 
+install_dependency := \
+    INSTALL         => $(i_lib) $(i_bin) $(i_sbin) $(i_libexec),\
+    INSTALL_DATA    => $(i_lib),\
+    INSTALL_PROGRAM => $(i_bin) $(i_sbin) $(i_libexec)
+
 .PHONY: install-strip
-install-strip:
+install-strip: installdep 
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
 
 .PHONY: install
-install: $(i_lib) $(i_bin) $(i_sbin) $(i_libexec) install-docs
+install: installdep $(i_lib) $(i_bin) $(i_sbin) $(i_libexec) install-docs
 
 .PHONY: install-docs
-install-docs: install-info install-html install-dvi
+install-docs: installdep install-info install-html install-dvi
 install-docs: install-pdf install-ps
 
 .PHONY: install-info
@@ -1352,17 +1335,21 @@ uninstall-info:
 ##                               TAGS                                 ##
 ########################################################################
 
+tags_dependency := \
+    CTAGS => ctags,\
+    ETAGS => etags
+
 .PHONY: TAGS
-TAGS: ctags etags
+TAGS: tagsdep ctags etags
 
 ctags: $(incall) $(srcall)
 	$(call phony-status,$(MSG_CTAGS))
-	$(quiet) $(CTAGS) $(CTAGSFLAGS) $^ -o $@
+	$(quiet) $(CTAGS) $(CTAGSFLAGS) $^ -o $@ $(ERROR)
 	$(call phony-ok,$(MSG_CTAGS))
 
 etags: $(incall) $(srcall)
 	$(call phony-status,$(MSG_ETAGS))
-	$(quiet) $(ETAGS) $(ETAGSFLAGS) $^ -o $@
+	$(quiet) $(ETAGS) $(ETAGSFLAGS) $^ -o $@ $(ERROR)
 	$(call phony-ok,$(MSG_ETAGS))
 
 ########################################################################
@@ -1515,11 +1502,39 @@ endif
 ########################################################################
 
 #======================================================================#
+# Function: dep-factory                                                #
+# @param  $1 Dependency name (for targets)                             #
+# @param  $3 Dependency nick (hash key)                                #
+# @return Target to check a set of dependencies defined in $2          #
+#======================================================================#
+define dep-factory
+# Creates hash from hash-key
+$$(call hash-table.new,$2)
+
+.PHONY: $1dep
+$1dep: \
+    $$(if $$(call hash-table.values,$2),$$(depdir)/$1dep)
+
+$$(depdir)/$1dep: | $$(depdir)
+	$$(quiet) $$(foreach d,$$(call hash-table.keys,$2),\
+       $$(if $$(strip $$($2.$$d)),\
+         $$(call phony-status,$$(MSG_DEP))$$(newline)\
+         $$(quiet) which $$(firstword $$($$d)) \
+             $$(NO_OUTPUT) $$(NO_ERROR)$$(newline)\
+         $$(call phony-ok,$$(MSG_DEP))$$(newline)\
+    ))
+	$$(quiet) touch $$@
+	$$(call phony-ok,$$(MSG_DEP_ALL))
+endef
+$(foreach d,build install tags,\
+    $(eval $(call dep-factory,$d,$d_dependency)))
+
+#======================================================================#
 # Function: cvs-factory                                                #
 # @param  $1 Dependency nick (hash key)                                #
 # @param  $2 CVS executable                                            #
 # @param  $3 Dependency path (hash value)                              #
-# @return Target to generate source files according to its type        #
+# @return Target to download cvs dependencies for building             #
 #======================================================================#
 define cvs-dependency
 $$(libdir)/$$(strip $1): PWD = $$(shell pwd)
@@ -2193,8 +2208,9 @@ MSG_CVS_CLONE     = "${CYAN}Cloning dependency ${DEF}$@${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$@${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 
-MSG_BUILDDEP      = "${DEF}Searching for program ${GREEN}$($(d))${RES}"
-MSG_BUILDDEP_ALL  = "${YELLOW}All program dependencies avaiable${RES}"
+MSG_DEP           = "${DEF}Searching for $d dependecy"\
+                    "${GREEN}$($(d))${RES}"
+MSG_DEP_ALL       = "${YELLOW}All dependencies avaiable${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\

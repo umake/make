@@ -1230,6 +1230,7 @@ nothing:
 upgrade:
 	$(call phony-status,$(MSG_MAKE_UPGRADE))
 	$(quiet) $(CURL) -O $(MAKEREMOTE) $(NO_OUTPUT) $(NO_ERROR)
+	$(quiet) $(MV) Makefile $(firstword $(MAKEFILE_LIST))
 	$(call phony-ok,$(MSG_MAKE_UPGRADE))
 
 ## DEPENDENCY ##########################################################

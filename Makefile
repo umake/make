@@ -246,6 +246,7 @@ TESTSUF := _tests
 ########################################################################
 ##                             PROGRAMS                               ##
 ########################################################################
+
 # Compilation
 AR              := ar
 AS              := nasm
@@ -302,6 +303,11 @@ TEXI2PS         := texi2dvi --ps
 DEBUILD         := debuild -us -uc
 DCH             := dch --create -v $(VERSION)-$(DEB_VERSION) \
                        --package $(DEB_PROJECT)
+
+# Remote
+CURL            := curl
+GIT             := git
+HG              := hg
 
 # Make
 MAKE            += -f $(firstword $(MAKEFILE_LIST)) --no-print-directory
@@ -442,6 +448,10 @@ endif
 ########################################################################
 ##                              PATHS                                 ##
 ########################################################################
+
+# Remote path
+MAKEREMOTE := \
+    https://raw.githubusercontent.com/renatocf/make/master/Makefile
 
 # Define the shell to be used
 SHELL = /bin/sh
@@ -1215,6 +1225,10 @@ check: $(testrun)
 
 .PHONY: nothing
 nothing:
+
+.PHONY: upgrade
+upgrade:
+	$(CURL) -O $(MAKEREMOTE) 
 
 ## DEPENDENCY ##########################################################
 ifneq (,$(if $(strip $(MAKECMDGOALS)),\

@@ -1183,7 +1183,6 @@ check: $(testrun)
 
 .PHONY: nothing
 nothing:
-	@echo $(depdep)
 
 .PHONY: upgrade
 upgrade:
@@ -1512,7 +1511,7 @@ $$(call hash-table.new,$2)
 $1dep: \
     $$(if $$(call hash-table.values,$2),$$(depdir)/$1dep)
 
-$$(depdir)/$1dep: | $$(depdir)
+$$(depdir)/$1dep: $$(call cdr,$$(MAKEFILE_LIST)) | $$(depdir)
 	$$(quiet) $$(foreach d,$$(call hash-table.keys,$2),\
        $$(if $$(strip $$($2.$$d)),\
          $$(call phony-status,$$(MSG_DEP))$$(newline)\

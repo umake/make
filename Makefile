@@ -1142,10 +1142,10 @@ $(foreach doc,info html dvi pdf ps,\
 
 # Debian packaging files
 # =======================
-# 1) debdep: debian packaging files in the default debian directory
-debdep := changelog compat control copyright
-debdep += rules source/format $(DEB_PROJECT).dirs
-debdep := $(sort $(strip $(addprefix $(debdir)/,$(debdep))))
+# 1) deball: debian packaging files in the default debian directory
+deball := changelog compat control copyright
+deball += rules source/format $(DEB_PROJECT).dirs
+deball := $(sort $(strip $(addprefix $(debdir)/,$(deball))))
 
 ########################################################################
 ##                              BUILD                                 ##
@@ -1183,12 +1183,6 @@ build_dependency := \
 # FIND            := find
 # FIND_FLAGS      := -type d -print 2> /dev/null
 # 
-# # Tags
-# CTAGS           := ctags
-# CTAGSFLAGS      :=
-# ETAGS           := etags
-# ETAGSFLAGS      :=
-# 
 # # Documentation
 # DOXYGEN         := doxygen
 # MAKEINFO        := makeinfo
@@ -1199,9 +1193,6 @@ build_dependency := \
 # TEXI2PS         := texi2dvi --ps
 # 
 # # Packages (Debian)
-# DEBUILD         := debuild -us -uc
-# DCH             := dch --create -v $(VERSION)-$(DEB_VERSION) \
-#                        --package $(DEB_PROJECT)
 
 .PHONY: all
 all: builddep $(cvsdep) $(binall) $(liball)
@@ -1405,8 +1396,12 @@ endif # ifneq($(strip $(doxyfile)),) ####
 ##                          DEBIAN PACKAGE                            ##
 ########################################################################
 
+dpkg_dependency := \
+    DEBUILD => $(deball),\
+    DCH     => $(debdir)/changelog,
+
 .PHONY: dpkg
-dpkg: package-tar.gz $(debdep)
+dpkg: dpkgdep package-tar.gz $(deball)
 	
 	@# Step 1: Rename the upstream tarball
 	$(call phony-status,$(MSG_DEB_STEP1))
@@ -1494,7 +1489,6 @@ $(debdir)/$(DEB_PROJECT).dirs: | $(debdir)
 	$(if $(strip $(lib)),     $(call cat,'$(i_libdir)                '))
 	$(if $(strip $(texiinfo)),$(call cat,'$(i_docdir)/info           '))
 	$(call select,stdout)
-
 endif
 
 ########################################################################
@@ -1519,14 +1513,14 @@ $$(depdir)/$1dep: | $$(depdir)
 	$$(quiet) $$(foreach d,$$(call hash-table.keys,$2),\
        $$(if $$(strip $$($2.$$d)),\
          $$(call phony-status,$$(MSG_DEP))$$(newline)\
-         $$(quiet) which $$(firstword $$($$d)) \
-             $$(NO_OUTPUT) $$(NO_ERROR)$$(newline)\
+         $$(quiet) which $$(firstword $$($$d)) $$(NO_OUTPUT) $$(NO_ERROR)\
+            || $$(call phony-error,$$(MSG_DEP_FAILURE)) $$(newline)\
          $$(call phony-ok,$$(MSG_DEP))$$(newline)\
     ))
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
-$(foreach d,build install tags,\
+$(foreach d,build install tags dpkg,\
     $(eval $(call dep-factory,$d,$d_dependency)))
 
 #======================================================================#
@@ -2118,7 +2112,7 @@ docclean:
 .PHONY: packageclean
 packageclean:
 	$(call rm-if-empty,$(distdir)/$(DEB_PROJECT)-$(VERSION))
-	$(call rm-if-empty,$(debdir),$(debdep))
+	$(call rm-if-empty,$(debdir),$(deball))
 
 .PHONY: realclean
 ifndef D
@@ -2211,6 +2205,7 @@ MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 MSG_DEP           = "${DEF}Searching for $d dependecy"\
                     "${GREEN}$($(d))${RES}"
 MSG_DEP_ALL       = "${YELLOW}All dependencies avaiable${RES}"
+MSG_DEP_FAILURE   = "${DEF}Dependency ${GREEN}$($d)${DEF} not found${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\
@@ -2498,7 +2493,7 @@ else
 endif
 
 define phony-error
-	@echo "${RED}[ERROR]${RES}" $1; exit 42;
+(echo "\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}"; exit 42)
 endef
 
 define test-error
@@ -2594,7 +2589,7 @@ endef
 # $2 List of extensions to validate as correct $1, if it is not empty
 define invalid-ext
 $(if $(strip $1),$(if $(findstring $(strip $1),$2),,\
-    $(call phony-error,$(MSG_NEW_EXT))\
+    $(quiet) $(call phony-error,$(MSG_NEW_EXT))\
 ))
 endef
 

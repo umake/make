@@ -1228,7 +1228,9 @@ nothing:
 
 .PHONY: upgrade
 upgrade:
-	$(CURL) -O $(MAKEREMOTE) 
+	$(call phony-status,$(MSG_MAKE_UPGRADE))
+	$(quiet) $(CURL) -O $(MAKEREMOTE)
+	$(call phony-ok,$(MSG_MAKE_UPGRADE))
 
 ## DEPENDENCY ##########################################################
 ifneq (,$(if $(strip $(MAKECMDGOALS)),\
@@ -2176,6 +2178,8 @@ WHITE   := \033[1;37m
 RES     := \033[0m
 ERR     := \033[0;37m
 endif
+
+MSG_MAKE_UPGRADE  = "${YELLOW}Upgrading Makefile${RES}"
 
 MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
                     "sources, headers and configuration files?"

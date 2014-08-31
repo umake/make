@@ -614,20 +614,20 @@ endef
 # ==============================
 # 1) rsubdir:     For listing all subdirectories of a given dir
 # 2) rwildcard:   For wildcard deep-search in the directory tree
-# 3) rfilter:     For filtering out a list of text from another list
+# 3) rfilter:     For filtering a list of text from another list
 # 3) rfilter-out: For filtering out a list of text from another list
-rsubdir     = $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS)))
-rwildcard   = $(if $(strip $(wildcard $1/*)),\
+rsubdir     = $(strip $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS))))
+rwildcard   = $(strip $(if $(strip $(wildcard $1/*)),\
                   $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)),\
-                  $(if $(wildcard $1*),$(filter $(subst *,%,$2),$1)))
-rfilter     = $(if $(strip $1),\
+                  $(if $(wildcard $1*),$(filter $(subst *,%,$2),$1))))
+rfilter     = $(strip $(if $(strip $1),\
                  $(call rfilter,$(call cdr,$1),$2)\
-                 $(filter $(call car,$1),$2))
-rfilter-out = $(if $(strip $1),\
+                 $(filter $(call car,$1),$2)))
+rfilter-out = $(strip $(if $(strip $1),\
                  $(call rfilter-out,\
                      $(call cdr,$1),\
                      $(filter-out $(call car,$1),$2)),\
-                 $(sort $2))
+                 $(sort $2)))
 
 # Configuration Files
 # =====================
@@ -787,15 +787,20 @@ autoinc := $(yaccinc) $(lexinc)
 
 # Source files
 # =============
-# 1) srcall : Find in the dir trees all source files (with dir names)
-# 2) srcall : Filter out ignored files from above
-# 2) srcall : Remove automatically generated source files from srcall
-# 3) liball : Save complete paths for libraries (wildcard-expanded)
-# 4) libpat : Save complete paths for libraries (non-wildcard-expanded)
-# 5) srccln : Remove library src from normal src
-# 5) autocln: Remove library src from normal auto generated src
-# 6) src    : Remove root directory names from dir paths
-# 6) autosrc: Remove root directory names from dir paths
+# 1) srcall  : Find in the dir trees all source files (with dir names)
+# 2) srcall  : Filter out ignored files from above
+# 3) srcall  : Remove automatically generated source files from srcall
+# 4) liball  : Save complete paths for libraries (wildcard-expanded)
+# 5) libpat  : Save complete paths for libraries (non-wildcard-expanded)
+# 6) srccln  : Remove library src from normal src
+# 6) asmcln  : Remove library src from assembly src
+# 6) autocln : Remove library src from normal auto generated src
+# 7) src     : Remove root directory names from dir paths
+# 7) asmsrc  : Remove root directory names from dir paths
+# 7) autosrc : Remove root directory names from dir paths
+# 8) c_all   : C files from srcall
+# 8) f_all   : Fortran files from srcall
+# 8) cxx_all : C++ files from srcall
 #------------------------------------------------------------------[ 1 ]
 ifneq ($(srcdir),.)
 srcall := $(sort\
@@ -860,6 +865,10 @@ autocln := $(call rfilter-out,$(liball),$(autocln))
 src     := $(call not-root,$(srccln))
 asmsrc  := $(call not-root,$(asmcln))
 autosrc := $(call not-root,$(autocln))
+#------------------------------------------------------------------[ 8 ]
+c_all   := $(call rfilter,$(addprefix %,$(cext)),$(srcall))
+f_all   := $(call rfilter,$(addprefix %,$(fext)),$(srcall))
+cxx_all := $(call rfilter,$(addprefix %,$(cxxext)),$(srcall))
 
 # Static libraries
 # =================
@@ -1017,9 +1026,9 @@ ldlibs   = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(libsub))))
 # Type-specific libraries
 # ========================
 # 1) Add c, f, cxx, lex and yacc only libraries in linker flags
-$(if $(strip $(call has_c,$(srcall))),$(eval ldflags += $(LDC)))
-$(if $(strip $(call has_f,$(srcall))),$(eval ldflags += $(LDF)))
-$(if $(strip $(call has_cxx,$(srcall))),$(eval ldflags += $(LDCXX)))
+$(if $(strip $(c_all)),$(eval ldflags += $(LDC)))
+$(if $(strip $(f_all)),$(eval ldflags += $(LDF)))
+$(if $(strip $(cxx_all)),$(eval ldflags += $(LDCXX)))
 $(if $(strip $(lexall)),$(eval ldflags += $(LDLEX)))
 $(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
 
@@ -3293,6 +3302,9 @@ dump:
 	$(call prompt,"autoall:      ",$(autoall)      )
 	$(call prompt,"autocln:      ",$(autocln)      )
 	$(call prompt,"autosrc:      ",$(autosrc)      )
+	$(call prompt,"c_all:        ",$(c_all)        )
+	$(call prompt,"f_all:        ",$(f_all)        )
+	$(call prompt,"cxx_all:      ",$(cxx_all)      )
 	
 	@echo "${WHITE}\nHEADERS                 ${RES}"
 	@echo "----------------------------------------"

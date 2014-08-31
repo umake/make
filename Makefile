@@ -1347,8 +1347,8 @@ docs_dependency := \
     TEXI2PS   => $(texips)
 
 .PHONY: docs
-all-docs: docsdep $(if $(strip $(doxyfile)),doxy)
-all-docs: $(if $(strip $(texiall)),info html dvi pdf ps)
+docs: docsdep $(if $(strip $(doxyfile)),doxy)
+docs: $(if $(strip $(texiall)),info html dvi pdf ps)
 
 ifneq ($(strip $(doxyfile)),) ####
 
@@ -3109,7 +3109,6 @@ projecthelp:
 	@echo "                                                            "
 	@echo "Default targets:                                            "
 	@echo "-----------------                                           "
-	@echo " * all-docs:     Generate docs in all formats avaiable      "
 	@echo " * all:          Generate all executables                   "
 	@echo " * check:        Compile and run Unit Tests                 "
 	@echo " * compiler:     Outputs Compiler.mk to define compilers    "
@@ -3117,6 +3116,7 @@ projecthelp:
 	@echo " * dpkg:         Create a debian package from the project   "
 	@echo " * dist-*:       As 'dist', with many types of compression  "
 	@echo " * dist:         Create .tar.gz with binaries and libraries "
+	@echo " * docs:         Generate docs in all formats avaiable      "
 	@echo " * doxy:         Create Doxygen docs (if doxyfile defined)  "
 	@echo " * gitignore:    Outputs .gitignore model for user          "
 	@echo " * init:         Create directories for beggining projects  "

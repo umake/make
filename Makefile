@@ -3068,7 +3068,7 @@ config:
 	@echo "# IGNORED  := # Files within Make dirs to be ignored."
 	@echo ""
 	@echo "# ARLIB    := # Static/Shared libraries' names. If one is a"
-	@echo "# SHRLIB   := # lib, all source files will make the library."
+	@echo "# SHRLIB   := # dir, all source files will make the library."
 	@echo ""
 	@echo "# Flags"
 	@echo "# ASFLAGS  := # Assembly Flags"

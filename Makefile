@@ -1183,15 +1183,6 @@ build_dependency := \
 # FIND            := find
 # FIND_FLAGS      := -type d -print 2> /dev/null
 # 
-# # Documentation
-# DOXYGEN         := doxygen
-# MAKEINFO        := makeinfo
-# INSTALL_INFO    := install-info
-# TEXI2HTML       := makeinfo --no-split --html
-# TEXI2DVI        := texi2dvi
-# TEXI2PDF        := texi2pdf
-# TEXI2PS         := texi2dvi --ps
-# 
 # # Packages (Debian)
 
 .PHONY: all
@@ -1347,16 +1338,24 @@ etags: $(incall) $(srcall)
 ##                          DOCUMENTATION                             ##
 ########################################################################
 
+docs_dependency := \
+    DOXYGEN   => $(doxyfile),\
+    MAKEINFO  => $(texiinfo),\
+    TEXI2HTML => $(texihtml),\
+    TEXI2DVI  => $(texidvi),\
+    TEXI2PDF  => $(texipdf),\
+    TEXI2PS   => $(texips)
+
 .PHONY: docs
-all-docs: $(if $(strip $(doxyfile)),doxy)
+all-docs: docsdep $(if $(strip $(doxyfile)),doxy)
 all-docs: $(if $(strip $(texiall)),info html dvi pdf ps)
 
 ifneq ($(strip $(doxyfile)),) ####
 
 .PHONY: doxy
-doxy: $(docdir)/$(doxyfile).mk
+doxy: docsdep $(docdir)/$(doxyfile).mk
 	$(call phony-status,$(MSG_DOXY_DOCS))
-	$(quiet) $(DOXYGEN) $< $(NO_OUTPUT) $(NO_ERROR)
+	$(quiet) $(DOXYGEN) $(word 2,2,$^) $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_DOXY_DOCS))
 
 $(docdir)/$(doxyfile).mk: | $(docdir) $(docdir)/doxygen
@@ -1520,7 +1519,7 @@ $$(depdir)/$1dep: | $$(depdir)
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
-$(foreach d,build install tags dpkg,\
+$(foreach d,build install tags dpkg docs,\
     $(eval $(call dep-factory,$d,$d_dependency)))
 
 #======================================================================#
@@ -1906,7 +1905,7 @@ $(foreach b,$(binall),$(eval\
 #======================================================================#
 define texinfo-factory
 .PHONY: $1
-$1: $$(texi$1)
+$1: docsdep $$(texi$1)
 	$$(call phony-ok,$$(MSG_TEXI_DOCS))
 
 $$(docdir)/$1/%$2: $$(filter $$(docdir)/$$*%,$$(texiall)) | $$(docdir)/$1

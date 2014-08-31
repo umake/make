@@ -612,13 +612,17 @@ endef
 
 # Auxiliar recursive functions
 # ==============================
-# 1) rsubdir: For listing all subdirectories of a given dir
-# 2) rwildcard: For wildcard deep-search in the directory tree
-# 3) rfilter-out: For filtering a list of text from another list
+# 1) rsubdir:     For listing all subdirectories of a given dir
+# 2) rwildcard:   For wildcard deep-search in the directory tree
+# 3) rfilter:     For filtering out a list of text from another list
+# 3) rfilter-out: For filtering out a list of text from another list
 rsubdir     = $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS)))
 rwildcard   = $(if $(strip $(wildcard $1/*)),\
                   $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)),\
                   $(if $(wildcard $1*),$(filter $(subst *,%,$2),$1)))
+rfilter     = $(if $(strip $1),\
+                 $(call rfilter,$(call cdr,$1),$2)\
+                 $(filter $(call car,$1),$2))
 rfilter-out = $(if $(strip $1),\
                  $(call rfilter-out,\
                      $(call cdr,$1),\

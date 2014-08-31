@@ -580,29 +580,14 @@ define remove-trailing-bar
 $(foreach s,$1,$(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s)))
 endef
 
-define has_c
-$(if $(strip $(sort $(foreach s,$(sort $(suffix $1)),\
-    $(findstring $s,$(cext))))),has_c)
-endef
-
 define is_c
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
     $(if $(strip $(findstring $s,$(cext))),,$s))),,is_c)
 endef
 
-define has_f
-$(if $(strip $(sort $(foreach s,$(sort $(suffix $1)),\
-    $(findstring $s,$(fext))))),has_f)
-endef
-
 define is_f
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
     $(if $(strip $(findstring $s,$(fext))),,$s))),,is_f)
-endef
-
-define has_cxx
-$(if $(strip $(sort $(foreach s,$(sort $(suffix $1)),\
-    $(findstring $s,$(cxxext))))),has_cxx)
 endef
 
 define is_cxx
@@ -1185,9 +1170,9 @@ deball := $(sort $(strip $(addprefix $(debdir)/,$(deball))))
 build_dependency := \
     AR       => $(arlib),\
     AS       => $(asmall),\
-    CC       => $(call has_c,$(srcall)),\
-    FC       => $(call has_f,$(srcall)),\
-    CXX      => $(call has_cxx,$(srcall)),\
+    CC       => $(c_all),\
+    FC       => $(f_all),\
+    CXX      => $(cxx_all),\
     RANLIB   => $(arlib),\
     LEX      => $(clexer),\
     LEX_CXX  => $(cxxlexer),\

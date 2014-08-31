@@ -1216,8 +1216,8 @@ nothing:
 .PHONY: upgrade
 upgrade:
 	$(call phony-status,$(MSG_MAKE_UPGRADE))
-	$(quiet) $(CURL) -O $(MAKEREMOTE) $(NO_OUTPUT) $(NO_ERROR)
-	$(quiet) $(MV) Makefile $(firstword $(MAKEFILE_LIST))
+	$(quiet) $(CURL) $(MAKEREMOTE) -o $(firstword $(MAKEFILE_LIST))\
+        $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_MAKE_UPGRADE))
 
 ########################################################################
@@ -1266,7 +1266,7 @@ install-docs: install-pdf install-ps
 install-info:
 	$(if $(strip $(texiinfo)),$(foreach f,$(texiinfo),\
         $(INSTALL_DATA) $f $(i_infodir)/$(notdir $f);\
-        if $(SHELL) -c '$(INSTALL_INFO) --version' $(NO_OUTOUT) 2>&1; \
+        if $(SHELL) -c '$(INSTALL_INFO) --version' $(NO_OUTPUT) 2>&1; \
         then \
             $(INSTALL_INFO) --dir-file="$(i_infodir)/dir" \
             "$(i_infodir)/$(notdir $f)"; \

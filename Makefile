@@ -57,6 +57,7 @@ DOXYFILE     := Doxyfile
 # Dependencies
 GIT_DEPENDENCY :=
 HG_DEPENDENCY  :=
+WEB_DEPENDENCY :=
 
 ########################################################################
 ##                              FLAGS                                 ##
@@ -655,18 +656,24 @@ endef
 
 # Dependency files
 # =================
-# 1) git/hg_dependency: Internally defined variables for dependencies
+# 1) git/hg/web_dependency: Internally defined vars for dependencies
 # 2) Make variables above hash tables
-# 3) Create variable for all cvs dependencies
+# 3) Create variable for all dependencies
+# 4) Add path to libdir to store new dependencies
 #------------------------------------------------------------------[ 1 ]
 git_dependency := $(strip $(GIT_DEPENDENCY))
 hg_dependency  := $(strip $(HG_DEPENDENCY))
+web_dependency := $(strip $(WEB_DEPENDENCY))
 #------------------------------------------------------------------[ 2 ]
 $(call hash-table.new,git_dependency)
 $(call hash-table.new,hg_dependency)
+$(call hash-table.new,web_dependency)
 #------------------------------------------------------------------[ 3 ]
-cvsdep := $(addprefix $(libdir)/,$(call hash-table.keys,git_dependency))
-cvsdep += $(addprefix $(libdir)/,$(call hash-table.keys,hg_dependency))
+externdep := $(call hash-table.keys,git_dependency)
+externdep += $(call hash-table.keys,hg_dependency)
+externdep += $(call hash-table.keys,web_dependency)
+#------------------------------------------------------------------[ 4 ]
+externdep := $(addprefix $(firstword $(libdir))/,$(externdep))
 
 # Library files
 # ==============
@@ -1036,11 +1043,11 @@ testrun := $(addprefix run_,$(subst /,_,$(testdep)))
 # 3) Create dependency names and directories
 # 4) Files that indicate the correctness of some dependencies
 # 3) Add dependency directory
-depall  := $(testall) $(call not-root,$(srcall) $(autoall))
-depall  := $(strip $(basename $(depall)))
-depall  := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
-depdep  := $(addsuffix dep,build tags docs dist dpkg install)
-depdep  := $(addprefix $(depdir)/,$(depdep))
+depall    := $(testall) $(call not-root,$(srcall) $(autoall))
+depall    := $(strip $(basename $(depall)))
+depall    := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
+interndep := $(addsuffix dep,build tags docs dist dpkg install)
+interndep := $(addprefix $(depdir)/,$(interndep))
 
 # Binary
 # =======
@@ -1175,7 +1182,7 @@ build_dependency := \
     YACC_CXX => $(cxxparser)
 
 .PHONY: all
-all: builddep $(cvsdep) $(binall) $(liball)
+all: builddep $(externdep) $(binall) $(liball)
 
 .PHONY: check
 check: $(testrun)
@@ -1526,7 +1533,7 @@ $(foreach d,build tags docs dist dpkg install,\
     $(eval $(call dep-factory,$d,$d_dependency)))
 
 #======================================================================#
-# Function: cvs-factory                                                #
+# Function: cvs-dependency                                             #
 # @param  $1 Dependency nick (hash key)                                #
 # @param  $2 CVS executable                                            #
 # @param  $3 Dependency path (hash value)                              #
@@ -1550,9 +1557,36 @@ $$(libdir)/$$(strip $1): | $$(libdir)
 	$$(call phony-ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
-	$(call cvs-dependency,$d,$(GIT),$(git_dependency.$d))))
+	$(call cvs-dependency,$d,$(GIT) clone,$(git_dependency.$d))))
 $(foreach d,$(call hash-table.keys,hg_dependency),$(eval\
-	$(call cvs-dependency,$d,$(HG),$(hg_dependency.$d))))
+	$(call cvs-dependency,$d,$(HG) clone,$(hg_dependency.$d))))
+
+#======================================================================#
+# Function: web-dependency                                             #
+# @param  $1 Dependency nick (hash key)                                #
+# @param  $2 Web downloader                                            #
+# @param  $3 Dependency path (hash value)                              #
+# @return Target to download web dependencies for building             #
+#======================================================================#
+define web-dependency
+$$(libdir)/$$(strip $1): PWD = $$(shell pwd)
+$$(libdir)/$$(strip $1): | $$(libdir)
+	$$(call phony-status,$$(MSG_WEB_DOWNLOAD))
+	$$(quiet) $2 $$(strip $3) -o $$@ $$(NO_OUTPUT) $$(NO_ERROR)
+	$$(call phony-ok,$$(MSG_WEB_DOWNLOAD))
+	
+	$$(call phony-status,$$(MSG_MAKE_DEP))
+	$$(quiet) if [ -f $$@/[Mm]akefile ]; then \
+                  cd $$@ && $$(MAKE) -f [Mm]akefile; \
+              elif [ -f $$@/make/[Mm]akefile ]; then \
+                  cd $$@/make && $$(MAKE) -f [Mm]akefile; \
+              else \
+                  echo $${MSG_MAKE_NONE}; \
+              fi $$(ERROR)
+	$$(call phony-ok,$$(MSG_MAKE_DEP))
+endef
+$(foreach d,$(call hash-table.keys,web_dependency),$(eval\
+	$(call web-dependency,$d,$(CURL),$(web_dependency.$d))))
 
 #======================================================================#
 # Function: scanner-factory                                            #
@@ -2094,7 +2128,7 @@ clean: mostlyclean
 
 .PHONY: distclean
 distclean: clean
-	$(call rm-if-empty,$(depdir),$(depall) $(depdep))
+	$(call rm-if-empty,$(depdir),$(depall) $(interndep))
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
         $(filter $(firstword $(libdir))/%,$(lib))\
@@ -2201,6 +2235,7 @@ MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
 MSG_CVS_CLONE     = "${CYAN}Cloning dependency ${DEF}$@${RES}"
+MSG_WEB_DOWNLOAD  = "${CYAN}Downloading dependency ${DEF}$@${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$@${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 
@@ -3216,10 +3251,6 @@ dump:
 	@echo "----------------------------------------"
 	$(call prompt,"ignored:      ",$(ignored)      )
 	
-	@echo "${WHITE}\nCVS DEPENDENCIES        ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"cvsdep:       ",$(cvsdep)       )
-	
 	@echo "${WHITE}\nACCEPTED EXTENSIONS     ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"srcext:       ",$(srcext)       )
@@ -3312,7 +3343,8 @@ dump:
 	@echo "${WHITE}\nDEPENDENCY              ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"depall:       ",$(depall)       )
-	$(call prompt,"depdep:       ",$(depdep)       )
+	$(call prompt,"interndep:    ",$(interndep)    )
+	$(call prompt,"externdep:    ",$(externdep)    )
 	
 	@echo "${WHITE}\nBINARY                  ${RES}"
 	@echo "----------------------------------------"

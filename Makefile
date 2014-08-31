@@ -1034,9 +1034,13 @@ testrun := $(addprefix run_,$(subst /,_,$(testdep)))
 # 1) Dependencies will be generated for sources, auto sources and tests
 # 2) Get the not-root basenames of all source directories
 # 3) Create dependency names and directories
+# 4) Files that indicate the correctness of some dependencies
+# 3) Add dependency directory
 depall  := $(testall) $(call not-root,$(srcall) $(autoall))
 depall  := $(strip $(basename $(depall)))
 depall  := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
+depdep  := $(addsuffix dep,build tags docs dist dpkg install)
+depdep  := $(addprefix $(depdir)/,$(depdep))
 
 # Binary
 # =======
@@ -1151,6 +1155,13 @@ deball := $(sort $(strip $(addprefix $(debdir)/,$(deball))))
 ##                              BUILD                                 ##
 ########################################################################
 
+# CP              := cp -rap
+# MV              := mv
+# RM              := rm -f
+# MKDIR           := mkdir -p
+# RMDIR           := rm -rf
+# FIND            := find
+
 build_dependency := \
     AR       => $(arlib),\
     AS       => $(asmall),\
@@ -1163,48 +1174,8 @@ build_dependency := \
     YACC     => $(cparser),\
     YACC_CXX => $(cxxparser)
 
-# # Compilation
-# 
-# # Include configuration file for compiler if exists
-# -include .compiler.mk compiler.mk Compiler.mk
-# 
-# # Installation
-# 
-# # File manipulation
-# CP              := cp -rap
-# MV              := mv
-# RM              := rm -f
-# TAR             := tar -cvf
-# ZIP             := zip
-# GZIP            := gzip
-# BZIP2           := bzip2
-# MKDIR           := mkdir -p
-# RMDIR           := rm -rf
-# FIND            := find
-# FIND_FLAGS      := -type d -print 2> /dev/null
-# 
-# # Documentation
-# DOXYGEN         := doxygen
-# MAKEINFO        := makeinfo
-# INSTALL_INFO    := install-info
-# TEXI2HTML       := makeinfo --no-split --html
-# TEXI2DVI        := texi2dvi
-# TEXI2PDF        := texi2pdf
-# TEXI2PS         := texi2dvi --ps
-# 
-# # Packages (Debian)
-
 .PHONY: all
 all: builddep $(cvsdep) $(binall) $(liball)
-
-.PHONY: package
-package: package-tar.gz
-
-.PHONY: dist
-dist: dist-tar.gz
-
-.PHONY: tar
-tar: dist-tar
 
 .PHONY: check
 check: $(testrun)
@@ -1243,86 +1214,6 @@ standard:
         $(firstword srcdir))
 
 ########################################################################
-##                           INSTALLATION                             ##
-########################################################################
-
-install_dependency := \
-    INSTALL         => $(i_lib) $(i_bin) $(i_sbin) $(i_libexec),\
-    INSTALL_DATA    => $(i_lib),\
-    INSTALL_PROGRAM => $(i_bin) $(i_sbin) $(i_libexec)
-
-.PHONY: install-strip
-install-strip: installdep 
-	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
-
-.PHONY: install
-install: installdep $(i_lib) $(i_bin) $(i_sbin) $(i_libexec) install-docs
-
-.PHONY: install-docs
-install-docs: installdep install-info install-html install-dvi
-install-docs: install-pdf install-ps
-
-.PHONY: install-info
-install-info:
-	$(if $(strip $(texiinfo)),$(foreach f,$(texiinfo),\
-        $(INSTALL_DATA) $f $(i_infodir)/$(notdir $f);\
-        if $(SHELL) -c '$(INSTALL_INFO) --version' $(NO_OUTPUT) 2>&1; \
-        then \
-            $(INSTALL_INFO) --dir-file="$(i_infodir)/dir" \
-            "$(i_infodir)/$(notdir $f)"; \
-        else true; fi;\
-    ))
-
-.PHONY: installcheck
-installcheck:
-	$(call phony-ok,"No installation test avaiable")
-
-########################################################################
-##                          UNINSTALLATION                            ##
-########################################################################
-
-# Remove subdirectories of this directory
-# Remove files if no subdir was identified
-define uninstall
-$(if $(strip $(i_$1)),\
-    $(if $(sort $(foreach d,\
-        $(call root,$(call not-root,$($1))),\
-        $(call rsubdir,$(i_$1dir)/$d)\
-    )),
-        $(call rm-if-empty,\
-            $(call invert,$(sort $(foreach d,\
-                $(call root,$(call not-root,$($1))),\
-                $(call rsubdir,$(i_$1dir)/$d)\
-            ))),\
-            $(i_$1)\
-        ),\
-        $(if $(strip $(foreach f,$(i_$1),$(wildcard $f))),\
-            $(call rm,$(i_$1)))\
-))
-endef
-
-.PHONY: mainteiner-uninstall
-mainteiner-uninstall:
-	@$(MAKE) uninstall DESTDIR=$(destdir) MAINTEINER_CLEAN=1
-
-.PHONY: uninstall
-uninstall:
-	$(call uninstall,lib)
-	$(call uninstall,bin)
-	$(call uninstall,sbin)
-	$(call uninstall,libexec)
-
-.PHONY: uninstall-docs
-uninstall-docs: uninstall-info uninstall-html uninstall-dvi
-uninstall-docs: uninstall-pdf uninstall-ps
-
-.PHONY: uninstall-info
-uninstall-info:
-	$(if $(strip $(texiinfo)),$(call rm-if-empty,$(i_infodir),\
-        $(addprefix $(i_infodir)/,$(notdir $(texiinfo)))\
-    ))
-
-########################################################################
 ##                               TAGS                                 ##
 ########################################################################
 
@@ -1347,16 +1238,24 @@ etags: $(incall) $(srcall)
 ##                          DOCUMENTATION                             ##
 ########################################################################
 
+docs_dependency := \
+    DOXYGEN   => $(doxyfile),\
+    MAKEINFO  => $(texiinfo),\
+    TEXI2HTML => $(texihtml),\
+    TEXI2DVI  => $(texidvi),\
+    TEXI2PDF  => $(texipdf),\
+    TEXI2PS   => $(texips)
+
 .PHONY: docs
-all-docs: $(if $(strip $(doxyfile)),doxy)
-all-docs: $(if $(strip $(texiall)),info html dvi pdf ps)
+docs: docsdep $(if $(strip $(doxyfile)),doxy)
+docs: $(if $(strip $(texiall)),info html dvi pdf ps)
 
 ifneq ($(strip $(doxyfile)),) ####
 
 .PHONY: doxy
-doxy: $(docdir)/$(doxyfile).mk
+doxy: docsdep $(docdir)/$(doxyfile).mk
 	$(call phony-status,$(MSG_DOXY_DOCS))
-	$(quiet) $(DOXYGEN) $< $(NO_OUTPUT) $(NO_ERROR)
+	$(quiet) $(DOXYGEN) $(word 2,2,$^) $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_DOXY_DOCS))
 
 $(docdir)/$(doxyfile).mk: | $(docdir) $(docdir)/doxygen
@@ -1391,6 +1290,29 @@ $(docdir)/doxygen:
 	$(call mkdir,$(docdir)/doxygen)
 
 endif # ifneq($(strip $(doxyfile)),) ####
+
+########################################################################
+##                            DISTRIBUTION                            ##
+########################################################################
+
+dist_dependency := \
+    TAR   => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
+             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir),\
+    ZIP   => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
+             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir),\
+    GZIP  => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
+             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir),\
+    BZIP2 => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
+             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir)
+
+.PHONY: package
+package: distdep package-tar.gz
+
+.PHONY: dist
+dist: distdep dist-tar.gz
+
+.PHONY: tar
+tar: distdep dist-tar
 
 ########################################################################
 ##                          DEBIAN PACKAGE                            ##
@@ -1492,6 +1414,86 @@ $(debdir)/$(DEB_PROJECT).dirs: | $(debdir)
 endif
 
 ########################################################################
+##                           INSTALLATION                             ##
+########################################################################
+
+install_dependency := \
+    INSTALL         => $(i_lib) $(i_bin) $(i_sbin) $(i_libexec),\
+    INSTALL_DATA    => $(i_lib),\
+    INSTALL_PROGRAM => $(i_bin) $(i_sbin) $(i_libexec)
+
+.PHONY: install-strip
+install-strip: installdep 
+	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
+
+.PHONY: install
+install: installdep $(i_lib) $(i_bin) $(i_sbin) $(i_libexec) install-docs
+
+.PHONY: install-docs
+install-docs: installdep install-info install-html install-dvi
+install-docs: install-pdf install-ps
+
+.PHONY: install-info
+install-info:
+	$(if $(strip $(texiinfo)),$(foreach f,$(texiinfo),\
+        $(INSTALL_DATA) $f $(i_infodir)/$(notdir $f);\
+        if $(SHELL) -c '$(INSTALL_INFO) --version' $(NO_OUTPUT) 2>&1; \
+        then \
+            $(INSTALL_INFO) --dir-file="$(i_infodir)/dir" \
+            "$(i_infodir)/$(notdir $f)"; \
+        else true; fi;\
+    ))
+
+.PHONY: installcheck
+installcheck:
+	$(call phony-ok,"No installation test avaiable")
+
+########################################################################
+##                          UNINSTALLATION                            ##
+########################################################################
+
+# Remove subdirectories of this directory
+# Remove files if no subdir was identified
+define uninstall
+$(if $(strip $(i_$1)),\
+    $(if $(sort $(foreach d,\
+        $(call root,$(call not-root,$($1))),\
+        $(call rsubdir,$(i_$1dir)/$d)\
+    )),
+        $(call rm-if-empty,\
+            $(call invert,$(sort $(foreach d,\
+                $(call root,$(call not-root,$($1))),\
+                $(call rsubdir,$(i_$1dir)/$d)\
+            ))),\
+            $(i_$1)\
+        ),\
+        $(if $(strip $(foreach f,$(i_$1),$(wildcard $f))),\
+            $(call rm,$(i_$1)))\
+))
+endef
+
+.PHONY: mainteiner-uninstall
+mainteiner-uninstall:
+	@$(MAKE) uninstall DESTDIR=$(destdir) MAINTEINER_CLEAN=1
+
+.PHONY: uninstall
+uninstall:
+	$(call uninstall,lib)
+	$(call uninstall,bin)
+	$(call uninstall,sbin)
+	$(call uninstall,libexec)
+
+.PHONY: uninstall-docs
+uninstall-docs: uninstall-info uninstall-html uninstall-dvi
+uninstall-docs: uninstall-pdf uninstall-ps
+
+.PHONY: uninstall-info
+uninstall-info:
+	$(if $(strip $(texiinfo)),$(call rm-if-empty,$(i_infodir),\
+        $(addprefix $(i_infodir)/,$(notdir $(texiinfo)))\
+    ))
+
+########################################################################
 ##                              RULES                                 ##
 ########################################################################
 
@@ -1509,7 +1511,7 @@ $$(call hash-table.new,$2)
 $1dep: \
     $$(if $$(call hash-table.values,$2),$$(depdir)/$1dep)
 
-$$(depdir)/$1dep: | $$(depdir)
+$$(depdir)/$1dep: $$(call cdr,$$(MAKEFILE_LIST)) | $$(depdir)
 	$$(quiet) $$(foreach d,$$(call hash-table.keys,$2),\
        $$(if $$(strip $$($2.$$d)),\
          $$(call phony-status,$$(MSG_DEP))$$(newline)\
@@ -1520,7 +1522,7 @@ $$(depdir)/$1dep: | $$(depdir)
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
-$(foreach d,build install tags dpkg,\
+$(foreach d,build tags docs dist dpkg install,\
     $(eval $(call dep-factory,$d,$d_dependency)))
 
 #======================================================================#
@@ -1906,7 +1908,7 @@ $(foreach b,$(binall),$(eval\
 #======================================================================#
 define texinfo-factory
 .PHONY: $1
-$1: $$(texi$1)
+$1: docsdep $$(texi$1)
 	$$(call phony-ok,$$(MSG_TEXI_DOCS))
 
 $$(docdir)/$1/%$2: $$(filter $$(docdir)/$$*%,$$(texiall)) | $$(docdir)/$1
@@ -2067,12 +2069,12 @@ define dist-factory
 package-$1: dirs := Makefile $$(make_configs)
 package-$1: dirs += $$(srcdir) $$(incdir) $$(datadir) $$(docdir)
 package-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir)
-package-$1: $$(distdir)/$$(PROJECT)-$$(VERSION)_src.$1
+package-$1: distdep $$(distdir)/$$(PROJECT)-$$(VERSION)_src.$1
 
 .PHONY: dist-$1
 dist-$1: dirs := Makefile $$(make_configs)
 dist-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir)
-dist-$1: $$(distdir)/$$(PROJECT)-$$(VERSION).$1
+dist-$1: distdep $$(distdir)/$$(PROJECT)-$$(VERSION).$1
 endef
 $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
     $(eval $(call dist-factory,$e)))
@@ -2092,7 +2094,7 @@ clean: mostlyclean
 
 .PHONY: distclean
 distclean: clean
-	$(call rm-if-empty,$(depdir),$(depall))
+	$(call rm-if-empty,$(depdir),$(depall) $(depdep))
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
         $(filter $(firstword $(libdir))/%,$(lib))\
@@ -3110,7 +3112,6 @@ projecthelp:
 	@echo "                                                            "
 	@echo "Default targets:                                            "
 	@echo "-----------------                                           "
-	@echo " * all-docs:     Generate docs in all formats avaiable      "
 	@echo " * all:          Generate all executables                   "
 	@echo " * check:        Compile and run Unit Tests                 "
 	@echo " * compiler:     Outputs Compiler.mk to define compilers    "
@@ -3118,6 +3119,7 @@ projecthelp:
 	@echo " * dpkg:         Create a debian package from the project   "
 	@echo " * dist-*:       As 'dist', with many types of compression  "
 	@echo " * dist:         Create .tar.gz with binaries and libraries "
+	@echo " * docs:         Generate docs in all formats avaiable      "
 	@echo " * doxy:         Create Doxygen docs (if doxyfile defined)  "
 	@echo " * gitignore:    Outputs .gitignore model for user          "
 	@echo " * init:         Create directories for beggining projects  "
@@ -3310,6 +3312,7 @@ dump:
 	@echo "${WHITE}\nDEPENDENCY              ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"depall:       ",$(depall)       )
+	$(call prompt,"depdep:       ",$(depdep)       )
 	
 	@echo "${WHITE}\nBINARY                  ${RES}"
 	@echo "----------------------------------------"

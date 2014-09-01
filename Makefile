@@ -1555,9 +1555,9 @@ $$(libdir)/$$(strip $1): | $$(libdir)
 	$$(call phony-ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
-	$(call cvs-dependency,$d,$(GIT) clone,$(git_dependency.$d))))
+	$(call cvs-dependency,$d,$(GIT),$(git_dependency.$d))))
 $(foreach d,$(call hash-table.keys,hg_dependency),$(eval\
-	$(call cvs-dependency,$d,$(HG) clone,$(hg_dependency.$d))))
+	$(call cvs-dependency,$d,$(HG),$(hg_dependency.$d))))
 
 #======================================================================#
 # Function: web-dependency                                             #

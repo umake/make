@@ -45,6 +45,7 @@ DEB_PRIORITY    := optional
 BIN      :=
 SBIN     :=
 LIBEXEC  :=
+TESTBIN  :=
 ARLIB    :=
 SHRLIB   :=
 
@@ -236,7 +237,7 @@ PDFEXT  := .pdf
 PSEXT   := .ps
 
 # Test suffix
-TESTSUF := _tests
+TESTSUF := Test
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
@@ -980,22 +981,24 @@ autoobj := $(addprefix $(objdir)/,$(autoobj))
 
 # Header files
 # =============
-# 1) Get all subdirectories of the included dirs
-# 2) Add them as paths to be searched for headers
-# 3) Get all files able to be included
-# 4) Filter out ignored files from above
+# 1) Get all files able to be included
+# 2) Filter out ignored files from above
+# 3) Get all subdirectories of the included dirs
+# 4) Add them as paths to be searched for headers
 #------------------------------------------------------------------[ 1 ]
-incsub  := $(foreach i,$(incdir),$(call rsubdir,$i))
-incsub  += $(lexinc) $(yaccinc)
+incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
+                $(call rwildcard,$i,*$e)))
 #------------------------------------------------------------------[ 2 ]
+incall  := $(call filter-ignored,$(incall))
+#------------------------------------------------------------------[ 3 ]
+incsub  := $(sort $(call remove-trailing-bar,$(dir $(incall))))
+incsub  += $(patsubst %,$(libdir)/%/include,\
+               $(call hash-table.keys,git_dependency))
+incsub  += $(lexinc) $(yaccinc)
+#------------------------------------------------------------------[ 4 ]
 clibs   := $(patsubst %,-I%,$(incsub))
 flibs   := $(patsubst %,-I%,$(incsub))
 cxxlibs := $(patsubst %,-I%,$(incsub))
-#------------------------------------------------------------------[ 3 ]
-incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
-                $(call rwildcard,$i,*$e)))
-#------------------------------------------------------------------[ 4 ]
-incall  := $(call filter-ignored,$(incall))
 
 # Library files
 # ==============
@@ -1025,14 +1028,46 @@ $(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
 # 4) testrun: Alias to execute tests, prefixing run_ and
 #             substituting / for _ in $(testdep)
 #------------------------------------------------------------------[ 1 ]
-$(foreach E,$(srcext),\
-    $(eval testall += $(call rwildcard,$(testdir),*$(testsuf)$E)))
+$(foreach e,$(srcext),\
+    $(eval testall += $(call rwildcard,$(testdir),*$e)))
 #------------------------------------------------------------------[ 2 ]
 testall := $(call filter-ignored,$(testall))
-#------------------------------------------------------------------[ 3 ]
-testdep := $(basename $(call not-root,$(subst $(testsuf).,.,$(testall))))
 #------------------------------------------------------------------[ 4 ]
-testrun := $(addprefix run_,$(subst /,_,$(testdep)))
+testsrc := $(call not-root,$(testall))
+#------------------------------------------------------------------[ 5 ]
+testobj := $(addsuffix $(firstword $(objext)),$(basename $(testsrc)))
+testobj := $(addprefix $(objdir)/$(testdir)/,$(testobj))
+#------------------------------------------------------------------[ 6 ]
+testbin := $(notdir $(sort $(strip $(TESTBIN))))
+testbin := $(addprefix $(bindir)/$(testdir)/,$(testbin))
+#------------------------------------------------------------------[ 7 ]
+$(foreach t,$(notdir $(testbin)),$(or\
+    $(eval $t_src := $(foreach e,$(srcext),$(filter %$t$e,$(testsrc)))),\
+    $(eval $t_obj := $(foreach e,$(objext),\
+                       $(filter $(objdir)/$(testdir)/%$t$e,$(testobj))))\
+))
+# $(eval testsrc := $(filter-out $b.%,$(testsrc))),\
+# $(eval testobj := $(filter-out $(objdir)/$(testdir)/$b.%,$(testobj))),
+#------------------------------------------------------------------[ 8 ]
+define common-test-factory
+$(call rfilter-out,$(foreach t,$(notdir $(testbin)),$($t_$1)),$2)
+endef
+comtestsrc := $(call common-test-factory,src,$(testsrc))
+comtestobj := $(call common-test-factory,obj,$(testobj))
+#------------------------------------------------------------------[ 9 ]
+$(foreach t,$(notdir $(testbin)),$(or\
+    $(eval $t_src := $(comtestsrc) $($t_src)),\
+    $(eval $t_obj := $(comtestobj) $($t_obj)),\
+))
+#------------------------------------------------------------------[ 10 ]
+$(foreach s,$(comtestsrc),\
+    $(if $(strip $(filter-out %$(testsuf),$(basename $s))),\
+        $(error "Test $(testdir)/$s does not have suffix $(testsuf)")))
+$(foreach s,$(comtestsrc),\
+    $(if $(strip $(filter $(subst $(testsuf).,.,$s),$(src))),,\
+        $(error "Test $(testdir)/$s has no corresponding source file")))
+#------------------------------------------------------------------[ 11 ]
+testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 
 # Dependency files
 # =================
@@ -1182,6 +1217,11 @@ check: $(testrun)
 
 .PHONY: nothing
 nothing:
+	@echo $(call hash-table.keys,git_dependency)
+	@echo $(foreach t,$(notdir $(testbin)),$(foreach e,$(srcext),\
+              $(filter %$t$e,$(testsrc))))
+	@echo $(Command_tests_src)
+	@echo $(Command_tests_obj)
 
 .PHONY: upgrade
 upgrade:
@@ -1868,29 +1908,22 @@ $(foreach a,$(arpatsrc),\
 #======================================================================#
 ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,check)))
 define test-factory
-$1: $2 $3 | $$(bindir)
+$1$2: $$($2_obj) | $$(call root,$1)
 	$$(call status,$$(MSG_TEST_COMPILE))
-	$$(quiet) $$(call mksubdir,$$(bindir),$$@)
+	$$(quiet) $$(call mksubdir,$$(call root,$1),$$@)
 	$$(quiet) $$(CXX) $$^ -o $$@ $$(ldflags) $$(ldlibs)
 	$$(call ok,$$(MSG_TEST_COMPILE),$$@)
 
-.PHONY: $4
-$4: $1
-	$$(call phony-status,$$(MSG_TEST))
-	@./$$< $$(NO_OUTPUT) || $$(call test-error,$$(MSG_TEST_FAILURE))
-	$$(call phony-ok,$$(MSG_TEST))
+.PHONY: $3
+$3: $1$2
+	$$(call phony-vstatus,$$(MSG_TEST))
+	@./$$< || $$(call test-error,$$(MSG_TEST_FAILURE))
+	$$(call ok,$$(MSG_TEST))
 endef
-$(foreach s,$(testdep),$(eval\
-    $(call test-factory,\
-        $(bindir)/$(testdir)/$s$(testsuf)$(binext),\
-        $(objdir)/$(testdir)/$s$(testsuf)$(firstword $(objext)),\
-        $(if $(strip \
-            $(filter $(objdir)/$s$(firstword $(objext)),$(objall))),\
-                $(objdir)/$s$(firstword $(objext)),\
-                $(warning "$(objdir)/$s$(firstword $(objext)) not found")\
-        ),\
-        run_$(subst /,_,$s)\
+$(foreach t,$(testbin),$(eval\
+    $(call test-factory,$(dir $t),$(notdir $t),run_$(subst /,_,$t)\
 )))
+
 endif
 
 #======================================================================#
@@ -2297,7 +2330,7 @@ MSG_YACC_COMPILE  = "${DEF}Compiling parser ${WHITE}$@${RES}"
 MSG_TEST          = "${BLUE}Testing ${WHITE}$(notdir $<)${RES}"
 MSG_TEST_COMPILE  = "${DEF}Generating test executable"\
                     "${GREEN}$(notdir $(strip $@))${RES}"
-MSG_TEST_FAILURE  = "${CYAN}Test $(notdir $@) not passed${RES}"
+MSG_TEST_FAILURE  = "${CYAN}Test '$(notdir $<)' did not passed${RES}"
 MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
 
 MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
@@ -2479,6 +2512,10 @@ ifndef SILENT
 ifneq ($(strip $(quiet)),)
     define phony-status
     	@printf "%b " $1; printf "... " 
+    endef
+
+    define phony-vstatus
+    	@echo $1 "... ";
     endef
     
     define status
@@ -3288,12 +3325,15 @@ dump:
 	@echo "${WHITE}\nHEADERS                 ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"incall:       ",$(incall)       )
+	$(call prompt,"incsub:       ",$(incsub)       )
 	$(call prompt,"autoinc:      ",$(autoinc)      )
 	
 	@echo "${WHITE}\nTEST                    ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"testall:      ",$(testall)      )
-	$(call prompt,"testdep:      ",$(testdep)      )
+	$(call prompt,"testsrc:      ",$(testsrc)      )
+	$(call prompt,"testobj:      ",$(testobj)      )
+	$(call prompt,"testbin:      ",$(testbin)      )
 	$(call prompt,"testrun:      ",$(testrun)      )
 	
 	@echo "${WHITE}\nLIBRARY                 ${RES}"

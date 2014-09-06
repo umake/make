@@ -1061,20 +1061,14 @@ interndep := $(addprefix $(depdir)/,$(interndep))
 #    4.6) binary-name_asrc, for binary's specific auto-generated sources;
 #    4.7) binary-name_is_cxx, to test if the binary may be C's or C++'s
 #------------------------------------------------------------------[ 1 ]
-bin     := $(addprefix $(bindir)/,$(notdir $(sort $(strip $(BIN)))))
-bin     := $(call filter-ignored,$(bin))
-bin     := $(if $(strip $(binext)),\
-                $(addsuffix $(binext),$(bin)),$(bin))
-
-sbin    := $(addprefix $(sbindir)/,$(notdir $(sort $(strip $(SBIN)))))
-sbin    := $(call filter-ignored,$(sbin))
-sbin    := $(if $(strip $(binext)),\
-                $(addsuffix $(binext),$(sbin)),$(sbin))
-
-libexec := $(addprefix $(execdir)/,$(notdir $(sort $(strip $(LIBEXEC)))))
-libexec := $(call filter-ignored,$(libexec))
-libexec := $(if $(strip $(binext)),\
-                $(addsuffix $(binext),$(libexec)),$(libexec))
+define binary-name
+$1 := $$(addprefix $$(strip $3)/,$$(notdir $$(sort $$(strip $2))))
+$1 := $$(call filter-ignored,$$($1))
+$1 := $$(if $$(strip $$(binext)),$$(addsuffix $$(binext),$$($1)),$$($1))
+endef
+$(eval $(call binary-name,bin,$(BIN),$(bindir)))
+$(eval $(call binary-name,sbin,$(SBIN),$(sbindir)))
+$(eval $(call binary-name,libexec,$(LIBEXEC),$(execdir)))
 
 $(if $(strip $(bin) $(sbin) $(libexec)),\
     $(eval binall := $(bin) $(sbin) $(libexec)),\

@@ -45,6 +45,7 @@ DEB_PRIORITY    := optional
 BIN      :=
 SBIN     :=
 LIBEXEC  :=
+TESTBIN  :=
 ARLIB    :=
 SHRLIB   :=
 
@@ -236,7 +237,7 @@ PDFEXT  := .pdf
 PSEXT   := .ps
 
 # Test suffix
-TESTSUF := _tests
+TESTSUF := Test
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
@@ -311,7 +312,8 @@ GIT             := git
 HG              := hg
 
 # Make
-MAKE            += -f $(firstword $(MAKEFILE_LIST)) --no-print-directory
+MAKEFLAGS       := --no-print-directory
+MAKE            += -f $(firstword $(MAKEFILE_LIST)) $(MAKEFLAGS)
 
 # Include configuration file for programs if exists
 -include .config_os.mk config_os.mk Config_os.mk
@@ -980,22 +982,24 @@ autoobj := $(addprefix $(objdir)/,$(autoobj))
 
 # Header files
 # =============
-# 1) Get all subdirectories of the included dirs
-# 2) Add them as paths to be searched for headers
-# 3) Get all files able to be included
-# 4) Filter out ignored files from above
+# 1) Get all files able to be included
+# 2) Filter out ignored files from above
+# 3) Get all subdirectories of the included dirs
+# 4) Add them as paths to be searched for headers
 #------------------------------------------------------------------[ 1 ]
-incsub  := $(foreach i,$(incdir),$(call rsubdir,$i))
-incsub  += $(lexinc) $(yaccinc)
+incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
+                $(call rwildcard,$i,*$e)))
 #------------------------------------------------------------------[ 2 ]
+incall  := $(call filter-ignored,$(incall))
+#------------------------------------------------------------------[ 3 ]
+incsub  := $(sort $(call remove-trailing-bar,$(dir $(incall))))
+incsub  += $(patsubst %,$(libdir)/%/include,\
+               $(call hash-table.keys,git_dependency))
+incsub  += $(lexinc) $(yaccinc)
+#------------------------------------------------------------------[ 4 ]
 clibs   := $(patsubst %,-I%,$(incsub))
 flibs   := $(patsubst %,-I%,$(incsub))
 cxxlibs := $(patsubst %,-I%,$(incsub))
-#------------------------------------------------------------------[ 3 ]
-incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
-                $(call rwildcard,$i,*$e)))
-#------------------------------------------------------------------[ 4 ]
-incall  := $(call filter-ignored,$(incall))
 
 # Library files
 # ==============
@@ -1025,14 +1029,46 @@ $(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
 # 4) testrun: Alias to execute tests, prefixing run_ and
 #             substituting / for _ in $(testdep)
 #------------------------------------------------------------------[ 1 ]
-$(foreach E,$(srcext),\
-    $(eval testall += $(call rwildcard,$(testdir),*$(testsuf)$E)))
+$(foreach e,$(srcext),\
+    $(eval testall += $(call rwildcard,$(testdir),*$e)))
 #------------------------------------------------------------------[ 2 ]
 testall := $(call filter-ignored,$(testall))
-#------------------------------------------------------------------[ 3 ]
-testdep := $(basename $(call not-root,$(subst $(testsuf).,.,$(testall))))
 #------------------------------------------------------------------[ 4 ]
-testrun := $(addprefix run_,$(subst /,_,$(testdep)))
+testsrc := $(call not-root,$(testall))
+#------------------------------------------------------------------[ 5 ]
+testobj := $(addsuffix $(firstword $(objext)),$(basename $(testsrc)))
+testobj := $(addprefix $(objdir)/$(testdir)/,$(testobj))
+#------------------------------------------------------------------[ 6 ]
+testbin := $(notdir $(sort $(strip $(TESTBIN))))
+testbin := $(addprefix $(bindir)/$(testdir)/,$(testbin))
+#------------------------------------------------------------------[ 7 ]
+$(foreach t,$(notdir $(testbin)),$(or\
+    $(eval $t_src := $(foreach e,$(srcext),$(filter %$t$e,$(testsrc)))),\
+    $(eval $t_obj := $(foreach e,$(objext),\
+                       $(filter $(objdir)/$(testdir)/%$t$e,$(testobj))))\
+))
+# $(eval testsrc := $(filter-out $b.%,$(testsrc))),\
+# $(eval testobj := $(filter-out $(objdir)/$(testdir)/$b.%,$(testobj))),
+#------------------------------------------------------------------[ 8 ]
+define common-test-factory
+$(call rfilter-out,$(foreach t,$(notdir $(testbin)),$($t_$1)),$2)
+endef
+comtestsrc := $(call common-test-factory,src,$(testsrc))
+comtestobj := $(call common-test-factory,obj,$(testobj))
+#------------------------------------------------------------------[ 9 ]
+$(foreach t,$(notdir $(testbin)),$(or\
+    $(eval $t_src := $(comtestsrc) $($t_src)),\
+    $(eval $t_obj := $(comtestobj) $($t_obj)),\
+))
+#------------------------------------------------------------------[ 10 ]
+$(foreach s,$(comtestsrc),\
+    $(if $(strip $(filter-out %$(testsuf),$(basename $s))),\
+        $(error "Test $(testdir)/$s does not have suffix $(testsuf)")))
+$(foreach s,$(comtestsrc),\
+    $(if $(strip $(filter $(subst $(testsuf).,.,$s),$(src))),,\
+        $(error "Test $(testdir)/$s has no corresponding source file")))
+#------------------------------------------------------------------[ 11 ]
+testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 
 # Dependency files
 # =================
@@ -1061,20 +1097,14 @@ interndep := $(addprefix $(depdir)/,$(interndep))
 #    4.6) binary-name_asrc, for binary's specific auto-generated sources;
 #    4.7) binary-name_is_cxx, to test if the binary may be C's or C++'s
 #------------------------------------------------------------------[ 1 ]
-bin     := $(addprefix $(bindir)/,$(notdir $(sort $(strip $(BIN)))))
-bin     := $(call filter-ignored,$(bin))
-bin     := $(if $(strip $(binext)),\
-                $(addsuffix $(binext),$(bin)),$(bin))
-
-sbin    := $(addprefix $(sbindir)/,$(notdir $(sort $(strip $(SBIN)))))
-sbin    := $(call filter-ignored,$(sbin))
-sbin    := $(if $(strip $(binext)),\
-                $(addsuffix $(binext),$(sbin)),$(sbin))
-
-libexec := $(addprefix $(execdir)/,$(notdir $(sort $(strip $(LIBEXEC)))))
-libexec := $(call filter-ignored,$(libexec))
-libexec := $(if $(strip $(binext)),\
-                $(addsuffix $(binext),$(libexec)),$(libexec))
+define binary-name
+$1 := $$(addprefix $$(strip $3)/,$$(notdir $$(sort $$(strip $2))))
+$1 := $$(call filter-ignored,$$($1))
+$1 := $$(if $$(strip $$(binext)),$$(addsuffix $$(binext),$$($1)),$$($1))
+endef
+$(eval $(call binary-name,bin,$(BIN),$(bindir)))
+$(eval $(call binary-name,sbin,$(SBIN),$(sbindir)))
+$(eval $(call binary-name,libexec,$(LIBEXEC),$(execdir)))
 
 $(if $(strip $(bin) $(sbin) $(libexec)),\
     $(eval binall := $(bin) $(sbin) $(libexec)),\
@@ -1180,7 +1210,7 @@ build_dependency := \
     YACC_CXX => $(cxxparser)
 
 .PHONY: all
-all: builddep $(externdep) $(binall) $(liball)
+all: builddep externdep $(binall) $(liball)
 
 .PHONY: check
 check: $(testrun)
@@ -1188,6 +1218,11 @@ check: $(testrun)
 
 .PHONY: nothing
 nothing:
+	@echo $(call hash-table.keys,git_dependency)
+	@echo $(foreach t,$(notdir $(testbin)),$(foreach e,$(srcext),\
+              $(filter %$t$e,$(testsrc))))
+	@echo $(Command_tests_src)
+	@echo $(Command_tests_obj)
 
 .PHONY: upgrade
 upgrade:
@@ -1195,6 +1230,9 @@ upgrade:
 	$(quiet) $(CURL) $(MAKEREMOTE) -o $(firstword $(MAKEFILE_LIST))\
         $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_MAKE_UPGRADE))
+
+.PHONY: externdep
+externdep: $(patsubst $(libdir)/%,$(depdir)/%dep,$(externdep))
 
 ########################################################################
 ##                          INITIALIZATION                            ##
@@ -1538,26 +1576,33 @@ $(foreach d,build tags docs dist dpkg install,\
 # @return Target to download cvs dependencies for building             #
 #======================================================================#
 define cvs-dependency
-$$(libdir)/$$(strip $1): PWD = $$(shell pwd)
 $$(libdir)/$$(strip $1): | $$(libdir)
 	$$(call phony-status,$$(MSG_CVS_CLONE))
-	$$(quiet) $2 clone $$(strip $3) $$@ $$(ERROR)
+	$$(quiet) $2 clone $$(call car,$$(strip $3)) $$@ \
+              $$(NO_OUTPUT) $$(ERROR)
 	$$(call phony-ok,$$(MSG_CVS_CLONE))
 	
-	$$(call phony-status,$$(MSG_MAKE_DEP))
-	$$(quiet) if [ -f $$@/[Mm]akefile ]; then \
-                  cd $$@ && $$(MAKE) -f [Mm]akefile; \
-              elif [ -f $$@/make/[Mm]akefile ]; then \
-                  cd $$@/make && $$(MAKE) -f [Mm]akefile; \
+$$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
+	$$(call status,$$(MSG_MAKE_DEP))
+	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $3))),0)\
+                        $$(NO_OUTPUT) $$(ERROR)\
+              || \
+              if [ -f $$</[Mm]akefile ]; then \
+                  cd $$< && $$(MAKE) -f [Mm]akefile; \
+              elif [ -f $$</make/[Mm]akefile ]; then \
+                  cd $$</make && $$(MAKE) -f [Mm]akefile; \
               else \
                   echo "$${MSG_MAKE_NONE}"; \
               fi $$(ERROR)
-	$$(call phony-ok,$$(MSG_MAKE_DEP))
+	
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	$$(quiet) touch $$@
+	$$(call ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
-	$(call cvs-dependency,$d,$(GIT) clone,$(git_dependency.$d))))
+	$(call cvs-dependency,$d,$(GIT),$(git_dependency.$d))))
 $(foreach d,$(call hash-table.keys,hg_dependency),$(eval\
-	$(call cvs-dependency,$d,$(HG) clone,$(hg_dependency.$d))))
+	$(call cvs-dependency,$d,$(HG),$(hg_dependency.$d))))
 
 #======================================================================#
 # Function: web-dependency                                             #
@@ -1874,29 +1919,22 @@ $(foreach a,$(arpatsrc),\
 #======================================================================#
 ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,check)))
 define test-factory
-$1: $2 $3 | $$(bindir)
+$1$2: $$($2_obj) | $$(call root,$1)
 	$$(call status,$$(MSG_TEST_COMPILE))
-	$$(quiet) $$(call mksubdir,$$(bindir),$$@)
+	$$(quiet) $$(call mksubdir,$$(call root,$1),$$@)
 	$$(quiet) $$(CXX) $$^ -o $$@ $$(ldflags) $$(ldlibs)
 	$$(call ok,$$(MSG_TEST_COMPILE),$$@)
 
-.PHONY: $4
-$4: $1
-	$$(call phony-status,$$(MSG_TEST))
-	@./$$< $$(NO_OUTPUT) || $$(call test-error,$$(MSG_TEST_FAILURE))
-	$$(call phony-ok,$$(MSG_TEST))
+.PHONY: $3
+$3: $1$2
+	$$(call phony-vstatus,$$(MSG_TEST))
+	@./$$< || $$(call test-error,$$(MSG_TEST_FAILURE))
+	$$(call ok,$$(MSG_TEST))
 endef
-$(foreach s,$(testdep),$(eval\
-    $(call test-factory,\
-        $(bindir)/$(testdir)/$s$(testsuf)$(binext),\
-        $(objdir)/$(testdir)/$s$(testsuf)$(firstword $(objext)),\
-        $(if $(strip \
-            $(filter $(objdir)/$s$(firstword $(objext)),$(objall))),\
-                $(objdir)/$s$(firstword $(objext)),\
-                $(warning "$(objdir)/$s$(firstword $(objext)) not found")\
-        ),\
-        run_$(subst /,_,$s)\
+$(foreach t,$(testbin),$(eval\
+    $(call test-factory,$(dir $t),$(notdir $t),run_$(subst /,_,$t)\
 )))
+
 endif
 
 #======================================================================#
@@ -2232,7 +2270,7 @@ MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
-MSG_CVS_CLONE     = "${CYAN}Cloning dependency ${DEF}$@${RES}"
+MSG_CVS_CLONE     = "${BLUE}Cloning dependency ${DEF}$@${RES}"
 MSG_WEB_DOWNLOAD  = "${CYAN}Downloading dependency ${DEF}$@${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$@${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
@@ -2303,7 +2341,7 @@ MSG_YACC_COMPILE  = "${DEF}Compiling parser ${WHITE}$@${RES}"
 MSG_TEST          = "${BLUE}Testing ${WHITE}$(notdir $<)${RES}"
 MSG_TEST_COMPILE  = "${DEF}Generating test executable"\
                     "${GREEN}$(notdir $(strip $@))${RES}"
-MSG_TEST_FAILURE  = "${CYAN}Test $(notdir $@) not passed${RES}"
+MSG_TEST_FAILURE  = "${CYAN}Test '$(notdir $<)' did not passed${RES}"
 MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
 
 MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
@@ -2485,6 +2523,10 @@ ifndef SILENT
 ifneq ($(strip $(quiet)),)
     define phony-status
     	@printf "%b " $1; printf "... " 
+    endef
+
+    define phony-vstatus
+    	@echo $1 "... ";
     endef
     
     define status
@@ -3294,12 +3336,15 @@ dump:
 	@echo "${WHITE}\nHEADERS                 ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"incall:       ",$(incall)       )
+	$(call prompt,"incsub:       ",$(incsub)       )
 	$(call prompt,"autoinc:      ",$(autoinc)      )
 	
 	@echo "${WHITE}\nTEST                    ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"testall:      ",$(testall)      )
-	$(call prompt,"testdep:      ",$(testdep)      )
+	$(call prompt,"testsrc:      ",$(testsrc)      )
+	$(call prompt,"testobj:      ",$(testobj)      )
+	$(call prompt,"testbin:      ",$(testbin)      )
 	$(call prompt,"testrun:      ",$(testrun)      )
 	
 	@echo "${WHITE}\nLIBRARY                 ${RES}"

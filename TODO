@@ -51,6 +51,7 @@
     [X] Support automatic compilation of git/hg with recursive make.
     [X] Add compatibility with MACOSX shell (echo and sed).
     [ ] Integrate actions of Makefile with git/hg commits.
+    [ ] Commits in git/hg when upgrading the Makefile.
     [ ] Manage submodules of Makefile with git/hg submodules.
     [ ] Test if flex/bison still compile correctly.
     [ ] Add option to automatically create a RPM package.

@@ -312,7 +312,8 @@ GIT             := git
 HG              := hg
 
 # Make
-MAKE            += -f $(firstword $(MAKEFILE_LIST)) --no-print-directory
+MAKEFLAGS       := --no-print-directory
+MAKE            += -f $(firstword $(MAKEFILE_LIST)) $(MAKEFLAGS)
 
 # Include configuration file for programs if exists
 -include .config_os.mk config_os.mk Config_os.mk
@@ -1209,7 +1210,7 @@ build_dependency := \
     YACC_CXX => $(cxxparser)
 
 .PHONY: all
-all: builddep $(externdep) $(binall) $(liball)
+all: builddep externdep $(binall) $(liball)
 
 .PHONY: check
 check: $(testrun)
@@ -1229,6 +1230,9 @@ upgrade:
 	$(quiet) $(CURL) $(MAKEREMOTE) -o $(firstword $(MAKEFILE_LIST))\
         $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_MAKE_UPGRADE))
+
+.PHONY: externdep
+externdep: $(patsubst $(libdir)/%,$(depdir)/%dep,$(externdep))
 
 ########################################################################
 ##                          INITIALIZATION                            ##
@@ -1572,21 +1576,28 @@ $(foreach d,build tags docs dist dpkg install,\
 # @return Target to download cvs dependencies for building             #
 #======================================================================#
 define cvs-dependency
-$$(libdir)/$$(strip $1): PWD = $$(shell pwd)
 $$(libdir)/$$(strip $1): | $$(libdir)
 	$$(call phony-status,$$(MSG_CVS_CLONE))
-	$$(quiet) $2 clone $$(strip $3) $$@ $$(ERROR)
+	$$(quiet) $2 clone $$(call car,$$(strip $3)) $$@ \
+              $$(NO_OUTPUT) $$(ERROR)
 	$$(call phony-ok,$$(MSG_CVS_CLONE))
 	
-	$$(call phony-status,$$(MSG_MAKE_DEP))
-	$$(quiet) if [ -f $$@/[Mm]akefile ]; then \
-                  cd $$@ && $$(MAKE) -f [Mm]akefile; \
-              elif [ -f $$@/make/[Mm]akefile ]; then \
-                  cd $$@/make && $$(MAKE) -f [Mm]akefile; \
+$$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
+	$$(call status,$$(MSG_MAKE_DEP))
+	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $3))),0)\
+                        $$(NO_OUTPUT) $$(ERROR)\
+              || \
+              if [ -f $$</[Mm]akefile ]; then \
+                  cd $$< && $$(MAKE) -f [Mm]akefile; \
+              elif [ -f $$</make/[Mm]akefile ]; then \
+                  cd $$</make && $$(MAKE) -f [Mm]akefile; \
               else \
                   echo "$${MSG_MAKE_NONE}"; \
               fi $$(ERROR)
-	$$(call phony-ok,$$(MSG_MAKE_DEP))
+	
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	$$(quiet) touch $$@
+	$$(call ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
 	$(call cvs-dependency,$d,$(GIT),$(git_dependency.$d))))
@@ -2259,7 +2270,7 @@ MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
-MSG_CVS_CLONE     = "${CYAN}Cloning dependency ${DEF}$@${RES}"
+MSG_CVS_CLONE     = "${BLUE}Cloning dependency ${DEF}$@${RES}"
 MSG_WEB_DOWNLOAD  = "${CYAN}Downloading dependency ${DEF}$@${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$@${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"

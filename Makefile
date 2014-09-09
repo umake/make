@@ -1245,6 +1245,7 @@ init:
 	$(call mkdir,$(docdir))
 	$(quiet) $(MAKE) config > Config.mk
 	$(quiet) $(MAKE) gitignore > .gitignore
+	$(call cvs-init)
 
 .PHONY: standard
 standard:
@@ -2270,7 +2271,18 @@ MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
-MSG_CVS_CLONE     = "${BLUE}Cloning dependency ${DEF}$@${RES}"
+MSG_CVS_INIT      = "${YELLOW}[$(CVS)]"\
+                    "${BLUE}Initializing empty repository${RES}"
+MSG_CVS_CLONE     = "${YELLOW}[$(CVS)]"\
+                    "${BLUE}Cloning dependency ${DEF}$@${RES}"
+MSG_CVS_ADD       = "${YELLOW}[$(CVS)]${BLUE}Adding"\
+                    "$(if $(wordlist 2,2,$1),files,file)${DEF}"\
+                    "$(subst $(space),$(space)$(comma),$(strip $1))${RES}"
+MSG_CVS_COMMIT    = "${YELLOW}[$(CVS)]"\
+                    "${BLUE}Commiting message ${DEF}\"$1\"${RES}"
+MSG_CVS_SUB_ADD   = "${YELLOW}[$(CVS)]"\
+                    "${BLUE}Adding dependency ${DEF}$2${RES}"
+
 MSG_WEB_DOWNLOAD  = "${CYAN}Downloading dependency ${DEF}$@${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$@${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
@@ -2614,6 +2626,31 @@ $(if $(wildcard $1*),,\
         $(quiet) touch $1))
 $(if $(wildcard $1*),,\
     $(call phony-ok,$(MSG_TOUCH)))
+endef
+
+## VERSIONMENT #########################################################
+define cvs-init
+	$(call phony-status,$(MSG_CVS_INIT))
+	$(quiet) $(GIT) init $(ERROR)
+	$(call phony-ok,$(MSG_CVS_INIT))
+endef
+
+define cvs-add
+	$(call phony-status,$(MSG_CVS_ADD))
+	$(quiet) $(GIT) add $1 $(ERROR)
+	$(call phony-ok,$(MSG_CVS_ADD))
+endef
+
+define cvs-commit
+	$(call phony-status,$(MSG_CVS_COMMIT))
+	$(quiet) $(GIT) commit -m "$1" $(ERROR)
+	$(call phony-ok,$(MSG_CVS_COMMIT))
+endef
+
+define cvs-submodule-add
+	$(call phony-status,$(MSG_CVS_SUB_ADD))
+	$(GIT) submodule add $1 $2
+	$(call phony-ok,$(MSG_CVS_SUB_ADD))
 endef
 
 ########################################################################

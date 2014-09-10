@@ -57,7 +57,6 @@ DOXYFILE     := Doxyfile
 
 # Dependencies
 GIT_DEPENDENCY :=
-HG_DEPENDENCY  :=
 WEB_DEPENDENCY :=
 
 ########################################################################
@@ -309,7 +308,7 @@ DCH             := dch --create -v $(VERSION)-$(DEB_VERSION) \
 # Remote
 CURL            := curl
 GIT             := git
-HG              := hg
+GIT             := git
 
 # Make
 MAKEFLAGS       := --no-print-directory
@@ -647,21 +646,18 @@ endef
 
 # Dependency files
 # =================
-# 1) git/hg/web_dependency: Internally defined vars for dependencies
+# 1) git/web_dependency: Internally defined vars for dependencies
 # 2) Make variables above hash tables
 # 3) Create variable for all dependencies
 # 4) Add path to libdir to store new dependencies
 #------------------------------------------------------------------[ 1 ]
 git_dependency := $(strip $(GIT_DEPENDENCY))
-hg_dependency  := $(strip $(HG_DEPENDENCY))
 web_dependency := $(strip $(WEB_DEPENDENCY))
 #------------------------------------------------------------------[ 2 ]
 $(call hash-table.new,git_dependency)
-$(call hash-table.new,hg_dependency)
 $(call hash-table.new,web_dependency)
 #------------------------------------------------------------------[ 3 ]
 externdep := $(call hash-table.keys,git_dependency)
-externdep += $(call hash-table.keys,hg_dependency)
 externdep += $(call hash-table.keys,web_dependency)
 #------------------------------------------------------------------[ 4 ]
 externdep := $(addprefix $(firstword $(libdir))/,$(externdep))
@@ -1226,10 +1222,12 @@ nothing:
 
 .PHONY: upgrade
 upgrade:
-	$(call phony-status,$(MSG_MAKE_UPGRADE))
+	$(call phony-status,$(MSG_MAKE_DOWNLOAD))
 	$(quiet) $(CURL) $(MAKEREMOTE) -o $(firstword $(MAKEFILE_LIST))\
         $(NO_OUTPUT) $(NO_ERROR)
-	$(call phony-ok,$(MSG_MAKE_UPGRADE))
+	$(call phony-ok,$(MSG_MAKE_DOWNLOAD))
+	$(call git-add,$(firstword $(MAKEFILE_LIST)))
+	$(call git-commit,$(firstword $(MAKEFILE_LIST)))
 
 .PHONY: externdep
 externdep: $(patsubst $(libdir)/%,$(depdir)/%dep,$(externdep))
@@ -1238,13 +1236,19 @@ externdep: $(patsubst $(libdir)/%,$(depdir)/%dep,$(externdep))
 ##                          INITIALIZATION                            ##
 ########################################################################
 
+init_dependency := \
+    GIT      => $(firstword $(MAKEFILE_LIST))
+
 .PHONY: init
-init:
+init: initdep
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
 	$(call mkdir,$(docdir))
 	$(quiet) $(MAKE) config > Config.mk
 	$(quiet) $(MAKE) gitignore > .gitignore
+	$(call git-init)
+	$(call git-add,Config.mk .gitignore)
+	$(call git-commit,"Adds configuration files")
 
 .PHONY: standard
 standard:
@@ -1565,26 +1569,23 @@ $$(depdir)/$1dep: $$(call cdr,$$(MAKEFILE_LIST)) | $$(depdir)
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
-$(foreach d,build tags docs dist dpkg install,\
+$(foreach d,build init tags docs dist dpkg install,\
     $(eval $(call dep-factory,$d,$d_dependency)))
 
 #======================================================================#
-# Function: cvs-dependency                                             #
+# Function: git-dependency                                             #
 # @param  $1 Dependency nick (hash key)                                #
-# @param  $2 CVS executable                                            #
+# @param  $2 GIT executable                                            #
 # @param  $3 Dependency path (hash value)                              #
-# @return Target to download cvs dependencies for building             #
+# @return Target to download git dependencies for building             #
 #======================================================================#
-define cvs-dependency
+define git-dependency
 $$(libdir)/$$(strip $1): | $$(libdir)
-	$$(call phony-status,$$(MSG_CVS_CLONE))
-	$$(quiet) $2 clone $$(call car,$$(strip $3)) $$@ \
-              $$(NO_OUTPUT) $$(ERROR)
-	$$(call phony-ok,$$(MSG_CVS_CLONE))
+	$$(call git-submodule-add,$$(call car,$$(strip $2)),$$@)
 	
 $$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
 	$$(call status,$$(MSG_MAKE_DEP))
-	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $3))),0)\
+	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $2))),0)\
                         $$(NO_OUTPUT) $$(ERROR)\
               || \
               if [ -f $$</[Mm]akefile ]; then \
@@ -1600,9 +1601,7 @@ $$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
 	$$(call ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
-	$(call cvs-dependency,$d,$(GIT),$(git_dependency.$d))))
-$(foreach d,$(call hash-table.keys,hg_dependency),$(eval\
-	$(call cvs-dependency,$d,$(HG),$(hg_dependency.$d))))
+	$(call git-dependency,$d,$(GIT),$(git_dependency.$d))))
 
 #======================================================================#
 # Function: web-dependency                                             #
@@ -2231,6 +2230,7 @@ uninitialize:
 	$(call rm-if-exists,config_os.mk)
 	$(call rm-if-exists,.config_os.mk)
 	$(call rm-if-exists,.gitignore)
+	$(call rm-if-empty,.git)
 endif
 
 ########################################################################
@@ -2261,7 +2261,7 @@ RES     := \033[0m
 ERR     := \033[0;37m
 endif
 
-MSG_MAKE_UPGRADE  = "${YELLOW}Upgrading Makefile${RES}"
+MSG_MAKE_DOWNLOAD = "${YELLOW}Downloading Makefile${RES}"
 
 MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
                     "sources, headers and configuration files?"
@@ -2270,7 +2270,18 @@ MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
-MSG_CVS_CLONE     = "${BLUE}Cloning dependency ${DEF}$@${RES}"
+MSG_GIT_INIT      = "${YELLOW}[$(GIT)]"\
+                    "${BLUE}Initializing empty repository${RES}"
+MSG_GIT_CLONE     = "${YELLOW}[$(GIT)]"\
+                    "${BLUE}Cloning dependency ${DEF}$@${RES}"
+MSG_GIT_ADD       = "${YELLOW}[$(GIT)]${BLUE} Adding"\
+                    "$(if $(wordlist 2,2,$1),files,file)${DEF}"\
+                    "$(subst $(space),$(comma)$(space),$(strip $1))${RES}"
+MSG_GIT_COMMIT    = "${YELLOW}[$(GIT)]"\
+                    "${BLUE}Commiting message ${DEF}\"$1\"${RES}"
+MSG_GIT_SUB_ADD   = "${YELLOW}[$(GIT)]"\
+                    "${BLUE}Adding dependency ${DEF}$2${RES}"
+
 MSG_WEB_DOWNLOAD  = "${CYAN}Downloading dependency ${DEF}$@${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$@${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
@@ -2615,6 +2626,35 @@ $(if $(wildcard $1*),,\
 $(if $(wildcard $1*),,\
     $(call phony-ok,$(MSG_TOUCH)))
 endef
+
+## VERSIONMENT #########################################################
+ifneq (,$(strip $(GIT)))
+
+define git-init
+	$(call phony-status,$(MSG_GIT_INIT))
+	$(quiet) $(GIT) init $(NO_OUTPUT) $(NO_ERROR)
+	$(call phony-ok,$(MSG_GIT_INIT))
+endef
+
+define git-add
+	$(call phony-status,$(MSG_GIT_ADD))
+	$(quiet) $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR)
+	$(call phony-ok,$(MSG_GIT_ADD))
+endef
+
+define git-commit
+	$(call phony-status,$(MSG_GIT_COMMIT))
+	$(quiet) $(GIT) commit -m $1 $(NO_OUTPUT) $(NO_ERROR)
+	$(call phony-ok,$(MSG_GIT_COMMIT))
+endef
+
+define git-submodule-add
+	$(call phony-status,$(MSG_GIT_SUB_ADD))
+	$(GIT) submodule add $1 $2 $(NO_OUTPUT) $(NO_ERROR)
+	$(call phony-ok,$(MSG_GIT_SUB_ADD))
+endef
+
+endif
 
 ########################################################################
 ##                           MANAGEMENT                               ##

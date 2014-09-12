@@ -2644,7 +2644,7 @@ define git-add
 	$(quiet) if $(GIT) diff --exit-code $1;\
              then\
                  $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR)\
-             fi\
+             fi
 	$(call phony-ok,$(MSG_GIT_ADD))
 endef
 

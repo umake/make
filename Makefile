@@ -308,7 +308,6 @@ DCH             := dch --create -v $(VERSION)-$(DEB_VERSION) \
 # Remote
 CURL            := curl
 GIT             := git
-GIT             := git
 
 # Make
 MAKEFLAGS       := --no-print-directory

@@ -1227,7 +1227,7 @@ upgrade:
         $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_MAKE_DOWNLOAD))
 	$(call git-add,$(firstword $(MAKEFILE_LIST)))
-	$(call git-commit,$(firstword $(MAKEFILE_LIST)))
+	$(call git-commit,"Upgrading $(firstword $(MAKEFILE_LIST))")
 
 .PHONY: externdep
 externdep: $(patsubst $(libdir)/%,$(depdir)/%dep,$(externdep))
@@ -1575,13 +1575,12 @@ $(foreach d,build init tags docs dist dpkg install,\
 #======================================================================#
 # Function: git-dependency                                             #
 # @param  $1 Dependency nick (hash key)                                #
-# @param  $2 GIT executable                                            #
-# @param  $3 Dependency path (hash value)                              #
+# @param  $2 Dependency path (hash value)                              #
 # @return Target to download git dependencies for building             #
 #======================================================================#
 define git-dependency
 $$(libdir)/$$(strip $1): | $$(libdir)
-	$$(call git-submodule-add,$$(call car,$$(strip $2)),$$@)
+	$$(call git-clone,$$(call car,$$(strip $2)),$$@)
 	
 $$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
 	$$(call status,$$(MSG_MAKE_DEP))
@@ -1601,7 +1600,7 @@ $$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
 	$$(call ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
-	$(call git-dependency,$d,$(GIT),$(git_dependency.$d))))
+	$(call git-dependency,$d,$(git_dependency.$d))))
 
 #======================================================================#
 # Function: web-dependency                                             #
@@ -2273,17 +2272,15 @@ MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 MSG_GIT_INIT      = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Initializing empty repository${RES}"
 MSG_GIT_CLONE     = "${YELLOW}[$(GIT)]"\
-                    "${BLUE}Cloning dependency ${DEF}$@${RES}"
+                    "${BLUE}Cloning repository ${DEF}$2${RES}"
 MSG_GIT_ADD       = "${YELLOW}[$(GIT)]${BLUE} Adding"\
                     "$(if $(wordlist 2,2,$1),files,file)${DEF}"\
                     "$(subst $(space),$(comma)$(space),$(strip $1))${RES}"
 MSG_GIT_COMMIT    = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Commiting message ${DEF}\"$1\"${RES}"
-MSG_GIT_SUB_ADD   = "${YELLOW}[$(GIT)]"\
-                    "${BLUE}Adding dependency ${DEF}$2${RES}"
 
 MSG_WEB_DOWNLOAD  = "${CYAN}Downloading dependency ${DEF}$@${RES}"
-MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$@${RES}"
+MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$<${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 
 MSG_DEP           = "${DEF}Searching for $d dependecy"\
@@ -2630,6 +2627,12 @@ endef
 ## VERSIONMENT #########################################################
 ifneq (,$(strip $(GIT)))
 
+define git-clone
+	$(call phony-status,$(MSG_GIT_CLONE))
+	$(quiet) $(GIT) clone $1 $2 $(NO_OUTPUT) $(ERROR)
+	$(call phony-ok,$(MSG_GIT_CLONE))
+endef
+
 define git-init
 	$(call phony-status,$(MSG_GIT_INIT))
 	$(quiet) $(GIT) init $(NO_OUTPUT) $(NO_ERROR)
@@ -2638,20 +2641,20 @@ endef
 
 define git-add
 	$(call phony-status,$(MSG_GIT_ADD))
-	$(quiet) $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR)
+	$(quiet) if ! $(GIT) diff --exit-code $1;\
+             then\
+                 $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
+             fi
 	$(call phony-ok,$(MSG_GIT_ADD))
 endef
 
 define git-commit
 	$(call phony-status,$(MSG_GIT_COMMIT))
-	$(quiet) $(GIT) commit -m $1 $(NO_OUTPUT) $(NO_ERROR)
+	$(quiet) if ! $(GIT) diff --cached --exit-code;\
+             then\
+                 $(GIT) commit -m $1 $(NO_OUTPUT) $(NO_ERROR);\
+             fi
 	$(call phony-ok,$(MSG_GIT_COMMIT))
-endef
-
-define git-submodule-add
-	$(call phony-status,$(MSG_GIT_SUB_ADD))
-	$(GIT) submodule add $1 $2 $(NO_OUTPUT) $(NO_ERROR)
-	$(call phony-ok,$(MSG_GIT_SUB_ADD))
 endef
 
 endif

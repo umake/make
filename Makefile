@@ -1546,32 +1546,32 @@ uninstall-info:
 ########################################################################
 
 #======================================================================#
-# Function: dep-factory                                                #
+# Function: system-dependency                                          #
 # @param  $1 Dependency name (for targets)                             #
 # @param  $3 Dependency nick (hash key)                                #
 # @return Target to check a set of dependencies defined in $2          #
 #======================================================================#
-define dep-factory
+define system-dependency
 # Creates hash from hash-key
 $$(call hash-table.new,$2)
 
 .PHONY: $1dep
-$1dep: \
-    $$(if $$(call hash-table.values,$2),$$(depdir)/$1dep)
+$1dep: $$(if $$(call hash-table.values,$2),$$(depdir)/$1dep)
 
 $$(depdir)/$1dep: $$(call cdr,$$(MAKEFILE_LIST)) | $$(depdir)
 	$$(quiet) $$(foreach d,$$(call hash-table.keys,$2),\
        $$(if $$(strip $$($2.$$d)),\
          $$(call phony-status,$$(MSG_DEP))$$(newline)\
-         $$(quiet) which $$(firstword $$($$d)) $$(NO_OUTPUT) $$(NO_ERROR)\
-            || $$(call phony-error,$$(MSG_DEP_FAILURE)) $$(newline)\
+         $$(quiet) which $$(firstword $$($$d)) \
+                   $$(NO_OUTPUT) $$(NO_ERROR)\
+                || $$(call phony-error,$$(MSG_DEP_FAILURE))$$(newline)\
          $$(call phony-ok,$$(MSG_DEP))$$(newline)\
     ))
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
 $(foreach d,build init tags docs dist dpkg install,\
-    $(eval $(call dep-factory,$d,$d_dependency)))
+    $(eval $(call system-dependency,$d,$d_dependency)))
 
 #======================================================================#
 # Function: extern-dependency                                          #

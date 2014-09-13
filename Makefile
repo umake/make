@@ -1227,7 +1227,8 @@ upgrade:
         $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_MAKE_DOWNLOAD))
 	$(call git-add,$(firstword $(MAKEFILE_LIST)))
-	$(call git-commit,"Upgrading $(firstword $(MAKEFILE_LIST))")
+	$(call git-commit,$(firstword $(MAKEFILE_LIST)),\
+                      "Upgrading $(firstword $(MAKEFILE_LIST))")
 
 .PHONY: externdep
 externdep: $(patsubst $(libdir)/%,$(depdir)/%dep,$(externdep))
@@ -1248,7 +1249,8 @@ init: initdep
 	$(quiet) $(MAKE) gitignore > .gitignore
 	$(call git-init)
 	$(call git-add,Config.mk .gitignore)
-	$(call git-commit,"Adds configuration files")
+	$(call git-commit,Config.mk .gitignore,\
+                      "Adds configuration files")
 
 .PHONY: standard
 standard:

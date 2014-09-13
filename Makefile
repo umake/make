@@ -1574,18 +1574,18 @@ $(foreach d,build init tags docs dist dpkg install,\
     $(eval $(call dep-factory,$d,$d_dependency)))
 
 #======================================================================#
-# Function: git-dependency                                             #
+# Function: extern-dependency                                          #
 # @param  $1 Dependency nick (hash key)                                #
 # @param  $2 Dependency path (hash value)                              #
 # @return Target to download git dependencies for building             #
 #======================================================================#
-define git-dependency
+define extern-dependency
 $$(libdir)/$$(strip $1): | $$(libdir)
-	$$(call git-clone,$$(call car,$$(strip $2)),$$@)
+	$$(call $$(strip $2),$$(call car,$$(strip $3)),$$@)
 	
 $$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
 	$$(call status,$$(MSG_MAKE_DEP))
-	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $2))),0)\
+	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $3))),0)\
                         $$(NO_OUTPUT) $$(ERROR)\
               || \
               if [ -f $$</[Mm]akefile ]; then \
@@ -1601,32 +1601,9 @@ $$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
 	$$(call ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
-	$(call git-dependency,$d,$(git_dependency.$d))))
-
-#======================================================================#
-# Function: web-dependency                                             #
-# @param  $1 Dependency nick (hash key)                                #
-# @param  $2 Dependency path (hash value)                              #
-# @return Target to download web dependencies for building             #
-#======================================================================#
-define web-dependency
-$$(libdir)/$$(strip $1): | $$(libdir)
-	$$(call phony-status,$$(MSG_WEB_DOWNLOAD))
-	$$(quiet) $$(CURL) $$(strip $2) -o $$@ $$(NO_OUTPUT) $$(NO_ERROR)
-	$$(call phony-ok,$$(MSG_WEB_DOWNLOAD))
-	
-	$$(call phony-status,$$(MSG_MAKE_DEP))
-	$$(quiet) if [ -f $$@/[Mm]akefile ]; then \
-                  cd $$@ && $$(MAKE) -f [Mm]akefile; \
-              elif [ -f $$@/make/[Mm]akefile ]; then \
-                  cd $$@/make && $$(MAKE) -f [Mm]akefile; \
-              else \
-                  echo $${MSG_MAKE_NONE}; \
-              fi $$(ERROR)
-	$$(call phony-ok,$$(MSG_MAKE_DEP))
-endef
+	$(call extern-dependency,$d,git-clone,$(git_dependency.$d))))
 $(foreach d,$(call hash-table.keys,web_dependency),$(eval\
-	$(call web-dependency,$d,$(web_dependency.$d))))
+	$(call extern-dependency,$d,web-clone,$(web_dependency.$d))))
 
 #======================================================================#
 # Function: scanner-factory                                            #
@@ -2631,6 +2608,13 @@ $(if $(wildcard $1*),,\
         $(quiet) touch $1))
 $(if $(wildcard $1*),,\
     $(call phony-ok,$(MSG_TOUCH)))
+endef
+
+## WEB DEPENDENCIES ####################################################
+define web-clone
+	$(call phony-status,$(MSG_WEB_DOWNLOAD))
+	$(quiet) $(CURL) $1 -o $2 $(NO_OUTPUT) $(NO_ERROR)
+	$(call phony-ok,$(MSG_WEB_DOWNLOAD))
 endef
 
 ## VERSIONMENT #########################################################

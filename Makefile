@@ -1606,15 +1606,14 @@ $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
 #======================================================================#
 # Function: web-dependency                                             #
 # @param  $1 Dependency nick (hash key)                                #
-# @param  $2 Web downloader                                            #
-# @param  $3 Dependency path (hash value)                              #
+# @param  $2 Dependency path (hash value)                              #
 # @return Target to download web dependencies for building             #
 #======================================================================#
 define web-dependency
 $$(libdir)/$$(strip $1): PWD = $$(shell pwd)
 $$(libdir)/$$(strip $1): | $$(libdir)
 	$$(call phony-status,$$(MSG_WEB_DOWNLOAD))
-	$$(quiet) $2 $$(strip $3) -o $$@ $$(NO_OUTPUT) $$(NO_ERROR)
+	$$(quiet) $$(CURL) $$(strip $2) -o $$@ $$(NO_OUTPUT) $$(NO_ERROR)
 	$$(call phony-ok,$$(MSG_WEB_DOWNLOAD))
 	
 	$$(call phony-status,$$(MSG_MAKE_DEP))
@@ -1628,7 +1627,7 @@ $$(libdir)/$$(strip $1): | $$(libdir)
 	$$(call phony-ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,web_dependency),$(eval\
-	$(call web-dependency,$d,$(CURL),$(web_dependency.$d))))
+	$(call web-dependency,$d,$(web_dependency.$d))))
 
 #======================================================================#
 # Function: scanner-factory                                            #

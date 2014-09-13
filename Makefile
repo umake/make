@@ -2660,7 +2660,7 @@ endef
 
 define git-add-commit
 $(if $(or $(call not,$(shell $(GIT) ls-files $1)),\
-          $(shell $(GIT) diff --exit-code $1)),\
+          $(call not,$(shell $(GIT) diff --exit-code $1))),\
     $(call git-add,$1)$(newline)$(call git-commit,$1,$2))
 endef
 

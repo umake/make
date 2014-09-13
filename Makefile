@@ -308,7 +308,6 @@ DCH             := dch --create -v $(VERSION)-$(DEB_VERSION) \
 # Remote
 CURL            := curl
 GIT             := git
-GIT             := git
 
 # Make
 MAKEFLAGS       := --no-print-directory
@@ -501,7 +500,7 @@ endef
 #                    hash-table.key and a list of keys hash-table.keys
 # 2) hash-table.new_impl: Auxiliar function for hash-table.new
 # 3) procedure.new: Create a multi-line set of commands (for list
-# 					of arguments in a target)
+#                   of arguments in a target)
 
 define hash-table.new
 $(call hash-table.new_impl,$(strip $1),$($(strip $1)))
@@ -518,7 +517,7 @@ $(if $(strip $2),$(or\
     $(if $(strip $(filter 0,$(firstword $($1.$(firstword $2))))),\
       $(if $(strip $(filter =>,$w)),\
         $(error "Hash entry must end with ',' (key: $(firstword $2))"),\
-		$(eval $1.$(firstword $2) += $w)\
+        $(eval $1.$(firstword $2) += $w)\
         $(if $(strip $(filter %$(comma),$w)),\
           $(eval $1.$(firstword $2) := \
             $(words $(call cdr,$($1.$(firstword $2))))\
@@ -1214,43 +1213,37 @@ check: $(testrun)
 
 .PHONY: nothing
 nothing:
-	@echo $(call hash-table.keys,git_dependency)
-	@echo $(foreach t,$(notdir $(testbin)),$(foreach e,$(srcext),\
-              $(filter %$t$e,$(testsrc))))
-	@echo $(Command_tests_src)
-	@echo $(Command_tests_obj)
-
-.PHONY: upgrade
-upgrade:
-	$(call phony-status,$(MSG_MAKE_DOWNLOAD))
-	$(quiet) $(CURL) $(MAKEREMOTE) -o $(firstword $(MAKEFILE_LIST))\
-        $(NO_OUTPUT) $(NO_ERROR)
-	$(call phony-ok,$(MSG_MAKE_DOWNLOAD))
-	$(call git-add,$(firstword $(MAKEFILE_LIST)))
-	$(call git-commit,$(firstword $(MAKEFILE_LIST)),\
-                      "Upgrades $(firstword $(MAKEFILE_LIST))")
 
 .PHONY: externdep
 externdep: $(patsubst $(libdir)/%,$(depdir)/%dep,$(externdep))
 
 ########################################################################
+##                               UPGRADE                              ##
+########################################################################
+
+upgrade_dependency := \
+	CURL     => $(firstword $(MAKEFILE_LIST))
+
+.PHONY: upgrade
+upgrade: upgradedep
+	$(call web-clone,$(MAKEREMOTE),$(firstword $(MAKEFILE_LIST)))
+	$(call git-add-commit,$(firstword $(MAKEFILE_LIST)),\
+                          "Upgrades $(firstword $(MAKEFILE_LIST))")
+
+########################################################################
 ##                          INITIALIZATION                            ##
 ########################################################################
 
-init_dependency := \
-    GIT      => $(firstword $(MAKEFILE_LIST))
-
 .PHONY: init
-init: initdep
+init:
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
 	$(call mkdir,$(docdir))
-	$(quiet) $(MAKE) config > Config.mk
-	$(quiet) $(MAKE) gitignore > .gitignore
+	$(call make-create,config,Config.mk)
+	$(call make-create,gitignore,.gitignore)
 	$(call git-init)
-	$(call git-add,Config.mk .gitignore)
-	$(call git-commit,Config.mk .gitignore,\
-                      "Adds configuration files")
+	$(call git-add-commit,Config.mk,"Adds Config.mk")
+	$(call git-add-commit,.gitignore,"Adds .gitignore")
 
 .PHONY: standard
 standard:
@@ -1547,46 +1540,46 @@ uninstall-info:
 ########################################################################
 
 #======================================================================#
-# Function: dep-factory                                                #
+# Function: system-dependency                                          #
 # @param  $1 Dependency name (for targets)                             #
 # @param  $3 Dependency nick (hash key)                                #
 # @return Target to check a set of dependencies defined in $2          #
 #======================================================================#
-define dep-factory
+define system-dependency
 # Creates hash from hash-key
 $$(call hash-table.new,$2)
 
 .PHONY: $1dep
-$1dep: \
-    $$(if $$(call hash-table.values,$2),$$(depdir)/$1dep)
+$1dep: $$(if $$(call hash-table.values,$2),$$(depdir)/$1dep)
 
 $$(depdir)/$1dep: $$(call cdr,$$(MAKEFILE_LIST)) | $$(depdir)
 	$$(quiet) $$(foreach d,$$(call hash-table.keys,$2),\
        $$(if $$(strip $$($2.$$d)),\
          $$(call phony-status,$$(MSG_DEP))$$(newline)\
-         $$(quiet) which $$(firstword $$($$d)) $$(NO_OUTPUT) $$(NO_ERROR)\
-            || $$(call phony-error,$$(MSG_DEP_FAILURE)) $$(newline)\
+         $$(quiet) which $$(firstword $$($$d)) \
+                   $$(NO_OUTPUT) $$(NO_ERROR)\
+                || $$(call phony-error,$$(MSG_DEP_FAILURE))$$(newline)\
          $$(call phony-ok,$$(MSG_DEP))$$(newline)\
     ))
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
-$(foreach d,build init tags docs dist dpkg install,\
-    $(eval $(call dep-factory,$d,$d_dependency)))
+$(foreach d,build upgrade tags docs dist dpkg install,\
+    $(eval $(call system-dependency,$d,$d_dependency)))
 
 #======================================================================#
-# Function: git-dependency                                             #
+# Function: extern-dependency                                          #
 # @param  $1 Dependency nick (hash key)                                #
 # @param  $2 Dependency path (hash value)                              #
 # @return Target to download git dependencies for building             #
 #======================================================================#
-define git-dependency
+define extern-dependency
 $$(libdir)/$$(strip $1): | $$(libdir)
-	$$(call git-clone,$$(call car,$$(strip $2)),$$@)
+	$$(call $$(strip $2),$$(call car,$$(strip $3)),$$@)
 	
 $$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
 	$$(call status,$$(MSG_MAKE_DEP))
-	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $2))),0)\
+	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $3))),:)\
                         $$(NO_OUTPUT) $$(ERROR)\
               || \
               if [ -f $$</[Mm]akefile ]; then \
@@ -1602,34 +1595,9 @@ $$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
 	$$(call ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
-	$(call git-dependency,$d,$(git_dependency.$d))))
-
-#======================================================================#
-# Function: web-dependency                                             #
-# @param  $1 Dependency nick (hash key)                                #
-# @param  $2 Web downloader                                            #
-# @param  $3 Dependency path (hash value)                              #
-# @return Target to download web dependencies for building             #
-#======================================================================#
-define web-dependency
-$$(libdir)/$$(strip $1): PWD = $$(shell pwd)
-$$(libdir)/$$(strip $1): | $$(libdir)
-	$$(call phony-status,$$(MSG_WEB_DOWNLOAD))
-	$$(quiet) $2 $$(strip $3) -o $$@ $$(NO_OUTPUT) $$(NO_ERROR)
-	$$(call phony-ok,$$(MSG_WEB_DOWNLOAD))
-	
-	$$(call phony-status,$$(MSG_MAKE_DEP))
-	$$(quiet) if [ -f $$@/[Mm]akefile ]; then \
-                  cd $$@ && $$(MAKE) -f [Mm]akefile; \
-              elif [ -f $$@/make/[Mm]akefile ]; then \
-                  cd $$@/make && $$(MAKE) -f [Mm]akefile; \
-              else \
-                  echo $${MSG_MAKE_NONE}; \
-              fi $$(ERROR)
-	$$(call phony-ok,$$(MSG_MAKE_DEP))
-endef
+	$(call extern-dependency,$d,git-clone,$(git_dependency.$d))))
 $(foreach d,$(call hash-table.keys,web_dependency),$(eval\
-	$(call web-dependency,$d,$(CURL),$(web_dependency.$d))))
+	$(call extern-dependency,$d,web-clone,$(web_dependency.$d))))
 
 #======================================================================#
 # Function: scanner-factory                                            #
@@ -2262,8 +2230,6 @@ RES     := \033[0m
 ERR     := \033[0;37m
 endif
 
-MSG_MAKE_DOWNLOAD = "${YELLOW}Downloading Makefile${RES}"
-
 MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
                     "sources, headers and configuration files?"
 MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
@@ -2271,30 +2237,35 @@ MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
+MSG_WEB_CLONE     = "${YELLOW}Downloading ${DEF}$2${RES}"
+
 MSG_GIT_INIT      = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Initializing empty repository${RES}"
 MSG_GIT_CLONE     = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Cloning repository ${DEF}$2${RES}"
 MSG_GIT_ADD       = "${YELLOW}[$(GIT)]${BLUE} Adding"\
                     "$(if $(wordlist 2,2,$1),files,file)${DEF}"\
-                    "$(subst $(space),$(comma)$(space),$(strip $1))${RES}"
-MSG_GIT_COMMIT    = "${YELLOW}[$(GIT)]"\
-                    "${BLUE}Commiting message ${DEF}\"$2\"${RES}"
+                    "$(subst $(space),$(comma)$(space),$(strip $1))"\
+                    "${RES}"
+MSG_GIT_COMMIT    = "${YELLOW}[$(GIT)]${BLUE}"\
+                    "Commiting message ${DEF}\"$(strip $2)\"${RES}"
 
-MSG_WEB_DOWNLOAD  = "${CYAN}Downloading dependency ${DEF}$@${RES}"
+MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
+                    "${PURPLE}from target ${DEF}$1${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$<${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 
 MSG_DEP           = "${DEF}Searching for $d dependecy"\
                     "${GREEN}$($(d))${RES}"
 MSG_DEP_ALL       = "${YELLOW}All dependencies avaiable${RES}"
-MSG_DEP_FAILURE   = "${DEF}Dependency ${GREEN}$($d)${DEF} not found${RES}"
+MSG_DEP_FAILURE   = "${DEF}Dependency ${GREEN}$($d)${DEF}"\
+                    "not found${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\
-					"$(subst /,::,${NMS_HEADER})"
+                    "$(subst /,::,${NMS_HEADER})"
 MSG_UPDATE_LIBH   = "${YELLOW}Updating library${DEF}"\
-					"$(subst /,::,${LIB_HEADER})"
+                    "$(subst /,::,${LIB_HEADER})"
 MSG_NEW_EXT       = "${RED}Extension '$1' invalid${RES}"
 MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
 MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
@@ -2387,6 +2358,14 @@ MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
 ##                            FUNCTIONS                               ##
 ########################################################################
 
+## TARGET FILES ########################################################
+define make-create
+$(if $(wildcard $2),,\
+	$(call phony-status,$(MSG_MAKE_CREATE))$(newline)\
+    $(quiet) $(MAKE) $1 $(if $(filter -k,$(MAKE)),,> $2)$(newline)\
+	$(call phony-ok,$(MSG_MAKE_CREATE)))$(newline)
+endef
+
 ## DEPENDENCIES ########################################################
 # Functions: *-depend
 # @param $1 Source name (with path)
@@ -2425,9 +2404,11 @@ $(sort $(objdir) $(depdir) $(libdir) $(docdir) $(debdir) ):
 	$(call mkdir,$@)
 
 define mkdir
+$(if $(shell if ! [ -d $(strip $(patsubst .,,$1)) ]; then echo 1; fi),\
 	$(if $(strip $(patsubst .,,$1)), $(call phony-status,$(MSG_MKDIR)) )
 	$(if $(strip $(patsubst .,,$1)), $(quiet) $(MKDIR) $1              )
 	$(if $(strip $(patsubst .,,$1)), $(call phony-ok,$(MSG_MKDIR))     )
+)
 endef
 
 # Create a subdirectory tree in the first element of a list of roots
@@ -2531,8 +2512,12 @@ endef
 ifndef SILENT
 
 ifneq ($(strip $(quiet)),)
+    define model-status
+    printf "%b " $1; printf "... ";
+    endef
+
     define phony-status
-    	@printf "%b " $1; printf "... " 
+    	@$(call model-status,$1)
     endef
 
     define phony-vstatus
@@ -2540,7 +2525,7 @@ ifneq ($(strip $(quiet)),)
     endef
     
     define status
-    	@$(RM) $@ && printf "%b " $1; printf "... ";
+    	@$(RM) $@ && $(call model-status,$1)
     endef
 
     define vstatus
@@ -2548,19 +2533,27 @@ ifneq ($(strip $(quiet)),)
     endef
 endif
 
+define model-ok
+echo "\r${GREEN}[OK]${RES}" $1 "     ";
+endef
+
+define model-error
+echo "${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}";
+endef
+
 define phony-ok
-	@if [ $$? ];\
-         then echo "\r${GREEN}[OK]${RES}" $1 "     ";\
-         else echo "${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}";\
-              exit 42;\
-     fi;
+@if [ $$? ];\
+    then $(call model-ok,$1)\
+    else $(call model-error,$1)\
+         exit 42;\
+fi;
 endef
 
 define ok
-@if [ -f $2 ]; then\
-	echo "\r${GREEN}[OK]${RES}" $1 "     ";\
-else\
-	echo "\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}"; exit 42;\
+@if [ -f $2 ];\
+    then $(call model-ok,$1)\
+    else $(call model-error,$1)\
+         exit 42;\
 fi
 endef
 
@@ -2569,7 +2562,7 @@ endif
 ## ERROR ###############################################################
 ifndef MORE
     define ERROR
-	2>&1 | sed '1 s/^/stderr:\n/' | sed 's/^/> /'
+    2>&1 | sed '1 s/^/stderr:\n/' | sed 's/^/> /'
     endef
     #| sed ''/"> error"/s//`printf "${ERR}"`/'' # Adds gray color when
     #                                           # connected to above
@@ -2626,6 +2619,13 @@ $(if $(wildcard $1*),,\
     $(call phony-ok,$(MSG_TOUCH)))
 endef
 
+## WEB DEPENDENCIES ####################################################
+define web-clone
+	$(call phony-status,$(MSG_WEB_CLONE))
+	$(quiet) $(CURL) $1 -o $2 $(NO_OUTPUT) $(NO_ERROR)
+	$(call phony-ok,$(MSG_WEB_CLONE))
+endef
+
 ## VERSIONMENT #########################################################
 ifneq (,$(strip $(GIT)))
 
@@ -2636,27 +2636,39 @@ define git-clone
 endef
 
 define git-init
-	$(call phony-status,$(MSG_GIT_INIT))
-	$(quiet) $(GIT) init $(NO_OUTPUT) $(NO_ERROR)
-	$(call phony-ok,$(MSG_GIT_INIT))
+	$(if $(wildcard .git/*),,\
+    $(quiet) if ! [ -d .git ];\
+             then\
+                 $(call model-status,$(MSG_GIT_INIT))\
+                 $(GIT) init $(NO_OUTPUT) $(NO_ERROR);\
+                 $(call model-ok,$(MSG_GIT_INIT))\
+             fi
+    )
 endef
 
 define git-add
-	$(call phony-status,$(MSG_GIT_ADD))
-	$(quiet) if ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
+	$(quiet) if ! $(GIT) ls-files $1 --error-unmatch 2>/dev/null 1>&2\
+             || ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
              then\
+                 $(call model-status,$(MSG_GIT_ADD))\
                  $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
+                 $(call model-ok,$(MSG_GIT_ADD))\
              fi
-	$(call phony-ok,$(MSG_GIT_ADD))
 endef
 
 define git-commit
-	$(call phony-status,$(MSG_GIT_COMMIT))
 	$(quiet) if ! $(GIT) diff --cached --exit-code $1 $(NO_OUTPUT);\
              then\
+                 $(call model-status,$(MSG_GIT_COMMIT))\
                  $(GIT) commit -m $(strip $2) $(NO_OUTPUT) $(NO_ERROR);\
+                 $(call model-ok,$(MSG_GIT_COMMIT))\
              fi
-	$(call phony-ok,$(MSG_GIT_COMMIT))
+endef
+
+define git-add-commit
+$(if $(or $(call not,$(shell $(GIT) ls-files $1)),\
+          $(shell $(GIT) diff --exit-code $1)),\
+    $(call git-add,$1)$(newline)$(call git-commit,$1,$2))
 endef
 
 endif

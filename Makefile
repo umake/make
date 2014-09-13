@@ -1228,7 +1228,7 @@ upgrade:
 	$(call phony-ok,$(MSG_MAKE_DOWNLOAD))
 	$(call git-add,$(firstword $(MAKEFILE_LIST)))
 	$(call git-commit,$(firstword $(MAKEFILE_LIST)),\
-                      "Upgrading $(firstword $(MAKEFILE_LIST))")
+                      "Upgrades $(firstword $(MAKEFILE_LIST))")
 
 .PHONY: externdep
 externdep: $(patsubst $(libdir)/%,$(depdir)/%dep,$(externdep))

@@ -2259,7 +2259,8 @@ MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 MSG_DEP           = "${DEF}Searching for $d dependecy"\
                     "${GREEN}$($(d))${RES}"
 MSG_DEP_ALL       = "${YELLOW}All dependencies avaiable${RES}"
-MSG_DEP_FAILURE   = "${DEF}Dependency ${GREEN}$($d)${DEF} not found${RES}"
+MSG_DEP_FAILURE   = "${DEF}Dependency ${GREEN}$($d)${DEF}"\
+                    "not found${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\

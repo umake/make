@@ -1227,9 +1227,8 @@ upgrade_dependency := \
 .PHONY: upgrade
 upgrade: upgradedep
 	$(call web-clone,$(MAKEREMOTE),$(firstword $(MAKEFILE_LIST)))
-	$(call git-add,$(firstword $(MAKEFILE_LIST)))
-	$(call git-commit,$(firstword $(MAKEFILE_LIST)),\
-                      "Upgrades $(firstword $(MAKEFILE_LIST))")
+	$(call git-add-commit,$(firstword $(MAKEFILE_LIST)),\
+                          "Upgrades $(firstword $(MAKEFILE_LIST))")
 
 ########################################################################
 ##                          INITIALIZATION                            ##
@@ -1240,11 +1239,11 @@ init:
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
 	$(call mkdir,$(docdir))
-	$(quiet) $(MAKE) config > Config.mk
-	$(quiet) $(MAKE) gitignore > .gitignore
+	$(if $(wildcard Config.mk),,$(quiet) $(MAKE) config > Config.mk)
+	$(if $(wildcard .gitignore),,$(quiet) $(MAKE) gitignore > .gitignore)
 	$(call git-init)
-	$(call git-add,Config.mk .gitignore)
-	$(call git-commit,Config.mk .gitignore,"Adds configuration files")
+	$(call git-add-commit,Config.mk .gitignore,\
+                          "Adds configuration files")
 
 .PHONY: standard
 standard:
@@ -2395,9 +2394,11 @@ $(sort $(objdir) $(depdir) $(libdir) $(docdir) $(debdir) ):
 	$(call mkdir,$@)
 
 define mkdir
+$(if $(shell if ! [ -d $(strip $(patsubst .,,$1)) ]; then echo 1; fi),\
 	$(if $(strip $(patsubst .,,$1)), $(call phony-status,$(MSG_MKDIR)) )
 	$(if $(strip $(patsubst .,,$1)), $(quiet) $(MKDIR) $1              )
 	$(if $(strip $(patsubst .,,$1)), $(call phony-ok,$(MSG_MKDIR))     )
+)
 endef
 
 # Create a subdirectory tree in the first element of a list of roots
@@ -2625,9 +2626,14 @@ define git-clone
 endef
 
 define git-init
-	$(call phony-status,$(MSG_GIT_INIT))
-	$(quiet) $(GIT) init $(NO_OUTPUT) $(NO_ERROR)
-	$(call phony-ok,$(MSG_GIT_INIT))
+	$(if $(wildcard .git/*),,\
+    $(quiet) if ! [ -d .git ];\
+             then\
+                 $(call model-status,$(MSG_GIT_INIT))\
+                 $(GIT) init $(NO_OUTPUT) $(NO_ERROR);\
+                 $(call model-ok,$(MSG_GIT_INIT))\
+             fi
+    )
 endef
 
 define git-add
@@ -2646,6 +2652,12 @@ define git-commit
                  $(GIT) commit -m $(strip $2) $(NO_OUTPUT) $(NO_ERROR);\
                  $(call model-ok,$(MSG_GIT_COMMIT))\
              fi
+endef
+
+define git-add-commit
+$(if $(foreach f,$1,$(wildcard $f)),\
+    $(if $(shell $(GIT) diff --exit-code $1),\
+        $(call git-add,$1)$(newline)$(call git-commit,$1,$2)))
 endef
 
 endif

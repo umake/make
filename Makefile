@@ -2240,7 +2240,7 @@ MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
-MSG_WEB_CLONE     = "${YELLOW}Downloading ${DEF}$2${RES}"
+MSG_WEB_CLONE     = "${CYAN}Downloading ${DEF}$2${RES}"
 
 MSG_GIT_INIT      = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Initializing empty repository${RES}"
@@ -2502,11 +2502,11 @@ ifndef SILENT
 
 ifneq ($(strip $(quiet)),)
     define model-status
-    printf "%b " $1; printf "... "
+    printf "%b " $1; printf "... ";
     endef
 
     define phony-status
-    	@$(call model-status,$1);
+    	@$(call model-status,$1)
     endef
 
     define phony-vstatus
@@ -2514,7 +2514,7 @@ ifneq ($(strip $(quiet)),)
     endef
     
     define status
-    	@$(RM) $@ && $(call model-status,$1);
+    	@$(RM) $@ && $(call model-status,$1)
     endef
 
     define vstatus
@@ -2523,24 +2523,26 @@ ifneq ($(strip $(quiet)),)
 endif
 
 define model-ok
-echo "\r${GREEN}[OK]${RES}" $1 "     "
+echo "\r${GREEN}[OK]${RES}" $1 "     ";
 endef
 
 define model-error
-echo "${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}"
+echo "${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}";
 endef
 
 define phony-ok
 @if [ $$? ];\
-    then $(call model-ok,$1);\
-    else $(call model-error,$1); exit 42;\
+    then $(call model-ok,$1)\
+    else $(call model-error,$1)\
+         exit 42;\
 fi;
 endef
 
 define ok
 @if [ -f $2 ];\
-    then $(call model-ok,$1);\
-    else $(call model-error,$1); exit 42;\
+    then $(call model-ok,$1)\
+    else $(call model-error,$1)\
+         exit 42;\
 fi
 endef
 
@@ -2631,18 +2633,18 @@ endef
 define git-add
 	$(quiet) if ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
              then\
-                 $(call model-status,$(MSG_GIT_ADD));\
+                 $(call model-status,$(MSG_GIT_ADD))\
                  $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
-                 $(call model-ok,$(MSG_GIT_ADD));\
+                 $(call model-ok,$(MSG_GIT_ADD))\
              fi
 endef
 
 define git-commit
 	$(quiet) if ! $(GIT) diff --cached --exit-code $1 $(NO_OUTPUT);\
              then\
-                 $(call model-status,$(MSG_GIT_COMMIT));\
+                 $(call model-status,$(MSG_GIT_COMMIT))\
                  $(GIT) commit -m $(strip $2) $(NO_OUTPUT) $(NO_ERROR);\
-                 $(call model-ok,$(MSG_GIT_COMMIT));\
+                 $(call model-ok,$(MSG_GIT_COMMIT))\
              fi
 endef
 

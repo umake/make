@@ -1213,11 +1213,6 @@ check: $(testrun)
 
 .PHONY: nothing
 nothing:
-	@echo $(call hash-table.keys,git_dependency)
-	@echo $(foreach t,$(notdir $(testbin)),$(foreach e,$(srcext),\
-              $(filter %$t$e,$(testsrc))))
-	@echo $(Command_tests_src)
-	@echo $(Command_tests_obj)
 
 .PHONY: upgrade
 upgrade:

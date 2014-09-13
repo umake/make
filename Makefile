@@ -3337,7 +3337,7 @@ endef
 
 .PHONY: dump
 dump:
-	@echo "${WHITE}\nDOCUMENTATION           ${RES}"
+	@echo "${WHITE}\nCONFIGURATION           ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"license:      ",$(license)      )
 	$(call prompt,"notice:       ",$(notice)       )
@@ -3396,15 +3396,6 @@ dump:
 	$(call prompt,"incsub:       ",$(incsub)       )
 	$(call prompt,"autoinc:      ",$(autoinc)      )
 	
-	@echo "${WHITE}\nTEST                    ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"testall:      ",$(testall)      )
-	$(call prompt,"testsrc:      ",$(testsrc)      )
-	$(call prompt,"testobj:      ",$(testobj)      )
-	$(call prompt,"testdep:      ",$(testdep)      )
-	$(call prompt,"testbin:      ",$(testbin)      )
-	$(call prompt,"testrun:      ",$(testrun)      )
-	
 	@echo "${WHITE}\nLIBRARY                 ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"lib_in:       ",$(lib_in)       )
@@ -3435,6 +3426,15 @@ dump:
 	@echo "----------------------------------------"
 	$(call prompt,"systemlib:    ",$(systemlib)    )
 	$(call prompt,"systemname:   ",$(systemname)   )
+	
+	@echo "${WHITE}\nTEST                    ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"testall:      ",$(testall)      )
+	$(call prompt,"testsrc:      ",$(testsrc)      )
+	$(call prompt,"testobj:      ",$(testobj)      )
+	$(call prompt,"testdep:      ",$(testdep)      )
+	$(call prompt,"testbin:      ",$(testbin)      )
+	$(call prompt,"testrun:      ",$(testrun)      )
 	
 	@echo "${WHITE}\nOBJECT                  ${RES}"
 	@echo "----------------------------------------"

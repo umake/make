@@ -2248,9 +2248,10 @@ MSG_GIT_CLONE     = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Cloning repository ${DEF}$2${RES}"
 MSG_GIT_ADD       = "${YELLOW}[$(GIT)]${BLUE} Adding"\
                     "$(if $(wordlist 2,2,$1),files,file)${DEF}"\
-                    "$(subst $(space),$(comma)$(space),$(strip $1))${RES}"
-MSG_GIT_COMMIT    = "${YELLOW}[$(GIT)]"\
-                    "${BLUE}Commiting message ${DEF}\"$(strip $2)\"${RES}"
+                    "$(subst $(space),$(comma)$(space),$(strip $1))"\
+                    "${RES}"
+MSG_GIT_COMMIT    = "${YELLOW}[$(GIT)]${BLUE}"\
+                    "Commiting message ${DEF}\"$(strip $2)\"${RES}"
 
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$<${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"

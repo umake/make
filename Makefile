@@ -2240,7 +2240,7 @@ MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
 
-MSG_WEB_CLONE     = "${YEALLOW}Downloading ${DEF}$2${RES}"
+MSG_WEB_CLONE     = "${YELLOW}Downloading ${DEF}$2${RES}"
 
 MSG_GIT_INIT      = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Initializing empty repository${RES}"

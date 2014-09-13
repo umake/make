@@ -1239,11 +1239,11 @@ init:
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
 	$(call mkdir,$(docdir))
-	$(if $(wildcard Config.mk),,$(quiet) $(MAKE) config > Config.mk)
-	$(if $(wildcard .gitignore),,$(quiet) $(MAKE) gitignore > .gitignore)
+	$(call make-create,config,Config.mk)
+	$(call make-create,gitignore,.gitignore)
 	$(call git-init)
-	$(call git-add-commit,Config.mk .gitignore,\
-                          "Adds configuration files")
+	$(call git-add-commit,Config.mk,"Adds Config.mk")
+	$(call git-add-commit,.gitignore,"Adds .gitignore")
 
 .PHONY: standard
 standard:
@@ -1579,7 +1579,7 @@ $$(libdir)/$$(strip $1): | $$(libdir)
 	
 $$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
 	$$(call status,$$(MSG_MAKE_DEP))
-	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $3))),0)\
+	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $3))),:)\
                         $$(NO_OUTPUT) $$(ERROR)\
               || \
               if [ -f $$</[Mm]akefile ]; then \
@@ -2250,6 +2250,8 @@ MSG_GIT_ADD       = "${YELLOW}[$(GIT)]${BLUE} Adding"\
 MSG_GIT_COMMIT    = "${YELLOW}[$(GIT)]${BLUE}"\
                     "Commiting message ${DEF}\"$(strip $2)\"${RES}"
 
+MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
+                    "${PURPLE}from target ${DEF}$1${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$<${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 
@@ -2355,6 +2357,14 @@ MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
 ########################################################################
 ##                            FUNCTIONS                               ##
 ########################################################################
+
+## TARGET FILES ########################################################
+define make-create
+$(if $(wildcard $2),,\
+	$(call phony-status,$(MSG_MAKE_CREATE))$(newline)\
+    $(quiet) $(MAKE) $1 $(if $(filter -k,$(MAKE)),,> $2)$(newline)\
+	$(call phony-ok,$(MSG_MAKE_CREATE)))$(newline)
+endef
 
 ## DEPENDENCIES ########################################################
 # Functions: *-depend
@@ -2637,7 +2647,8 @@ define git-init
 endef
 
 define git-add
-	$(quiet) if ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
+	$(quiet) if ! $(GIT) ls-files $1 --error-unmatch 2>/dev/null 1>&2\
+             || ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
              then\
                  $(call model-status,$(MSG_GIT_ADD))\
                  $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
@@ -2655,9 +2666,9 @@ define git-commit
 endef
 
 define git-add-commit
-$(if $(foreach f,$1,$(wildcard $f)),\
-    $(if $(shell $(GIT) diff --exit-code $1),\
-        $(call git-add,$1)$(newline)$(call git-commit,$1,$2)))
+$(if $(or $(call not,$(shell $(GIT) ls-files $1)),\
+          $(shell $(GIT) diff --exit-code $1)),\
+    $(call git-add,$1)$(newline)$(call git-commit,$1,$2))
 endef
 
 endif

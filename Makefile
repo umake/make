@@ -501,7 +501,7 @@ endef
 #                    hash-table.key and a list of keys hash-table.keys
 # 2) hash-table.new_impl: Auxiliar function for hash-table.new
 # 3) procedure.new: Create a multi-line set of commands (for list
-# 					of arguments in a target)
+#                   of arguments in a target)
 
 define hash-table.new
 $(call hash-table.new_impl,$(strip $1),$($(strip $1)))
@@ -518,7 +518,7 @@ $(if $(strip $2),$(or\
     $(if $(strip $(filter 0,$(firstword $($1.$(firstword $2))))),\
       $(if $(strip $(filter =>,$w)),\
         $(error "Hash entry must end with ',' (key: $(firstword $2))"),\
-		$(eval $1.$(firstword $2) += $w)\
+        $(eval $1.$(firstword $2) += $w)\
         $(if $(strip $(filter %$(comma),$w)),\
           $(eval $1.$(firstword $2) := \
             $(words $(call cdr,$($1.$(firstword $2))))\
@@ -2292,9 +2292,9 @@ MSG_DEP_FAILURE   = "${DEF}Dependency ${GREEN}$($d)${DEF} not found${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\
-					"$(subst /,::,${NMS_HEADER})"
+                    "$(subst /,::,${NMS_HEADER})"
 MSG_UPDATE_LIBH   = "${YELLOW}Updating library${DEF}"\
-					"$(subst /,::,${LIB_HEADER})"
+                    "$(subst /,::,${LIB_HEADER})"
 MSG_NEW_EXT       = "${RED}Extension '$1' invalid${RES}"
 MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
 MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
@@ -2579,7 +2579,7 @@ endif
 ## ERROR ###############################################################
 ifndef MORE
     define ERROR
-	2>&1 | sed '1 s/^/stderr:\n/' | sed 's/^/> /'
+    2>&1 | sed '1 s/^/stderr:\n/' | sed 's/^/> /'
     endef
     #| sed ''/"> error"/s//`printf "${ERR}"`/'' # Adds gray color when
     #                                           # connected to above
@@ -2654,9 +2654,9 @@ endef
 define git-add
 	$(quiet) if ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
              then\
-	             $(call model-status,$(MSG_GIT_ADD));\
+                 $(call model-status,$(MSG_GIT_ADD));\
                  $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
-	             $(call model-ok,$(MSG_GIT_ADD));\
+                 $(call model-ok,$(MSG_GIT_ADD));\
              fi
 endef
 

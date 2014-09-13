@@ -2254,7 +2254,7 @@ MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$<${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 
-MSG_DEP           = "${DEF}Searching for $d dependecy"\
+MSG_DEP           = "${DEF}Searching for $d dependency"\
                     "${GREEN}$($(d))${RES}"
 MSG_DEP_ALL       = "${YELLOW}All dependencies avaiable${RES}"
 MSG_DEP_FAILURE   = "${DEF}Dependency ${GREEN}$($d)${DEF}"\

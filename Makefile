@@ -2650,9 +2650,9 @@ endef
 
 define git-commit
 	$(call phony-status,$(MSG_GIT_COMMIT))
-	$(quiet) if ! $(GIT) diff --cached --exit-code;\
+	$(quiet) if ! $(GIT) diff --cached --exit-code $1;\
              then\
-                 $(GIT) commit -m $1 $(NO_OUTPUT) $(NO_ERROR);\
+                 $(GIT) commit -m $2 $(NO_OUTPUT) $(NO_ERROR);\
              fi
 	$(call phony-ok,$(MSG_GIT_COMMIT))
 endef

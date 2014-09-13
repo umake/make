@@ -26,8 +26,8 @@
 ########################################################################
 
 # Project setting
-PROJECT  := Default
-VERSION  := 1.0
+PROJECT         := Default
+VERSION         := 1.0
 
 # Package info
 AUXFILES        :=
@@ -42,22 +42,22 @@ DEB_PROJECT     := Default
 DEB_PRIORITY    := optional
 
 # Program settings
-BIN      :=
-SBIN     :=
-LIBEXEC  :=
-TESTBIN  :=
-ARLIB    :=
-SHRLIB   :=
+BIN             :=
+SBIN            :=
+LIBEXEC         :=
+TESTBIN         :=
+ARLIB           :=
+SHRLIB          :=
 
 # Documentation settings
-LICENSE      := LICENSE
-NOTICE       := NOTICE
-CONTRIBUTORS := CONTRIBUTORS
-DOXYFILE     := Doxyfile
+LICENSE         := LICENSE
+NOTICE          := NOTICE
+CONTRIBUTORS    := CONTRIBUTORS
+DOXYFILE        := Doxyfile
 
 # Dependencies
-GIT_DEPENDENCY :=
-WEB_DEPENDENCY :=
+GIT_DEPENDENCY  :=
+WEB_DEPENDENCY  :=
 
 ########################################################################
 ##                              FLAGS                                 ##

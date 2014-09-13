@@ -648,7 +648,7 @@ endef
 # 1) git/web_dependency: Internally defined vars for dependencies
 # 2) Make variables above hash tables
 # 3) Create variable for all dependencies
-# 4) Add path to libdir to store new dependencies
+# 4) Paths (in first libdir) to store new dependencies
 #------------------------------------------------------------------[ 1 ]
 git_dependency := $(strip $(GIT_DEPENDENCY))
 web_dependency := $(strip $(WEB_DEPENDENCY))
@@ -658,8 +658,9 @@ $(call hash-table.new,web_dependency)
 #------------------------------------------------------------------[ 3 ]
 externdep := $(call hash-table.keys,git_dependency)
 externdep += $(call hash-table.keys,web_dependency)
+externdep := $(patsubst %,$(depdir)/%dep,$(externdep))
 #------------------------------------------------------------------[ 4 ]
-externdep := $(addprefix $(firstword $(libdir))/,$(externdep))
+externreq := $(patsubst $(depdir)/%dep,$(libdir)/%,$(externdep))
 
 # Library files
 # ==============
@@ -937,23 +938,23 @@ $(if $(strip $(shrpatsrc)),\
         $(eval ldflags := -Wl,-rpath=$d $(ldflags))\
 ))
 
-# External libraries
-# ====================
-# 1) externlib  : Extra libraries given by the user
-# 2) externlib  : Filter out ignored files from above
-# 2) externname : Extra libraries names, deduced from above
+# Other system libraries
+# ========================
+# 1) systemlib  : Extra libraries given by the user
+# 2) systemlib  : Filter out ignored files from above
+# 2) systemname : Extra libraries names, deduced from above
 #------------------------------------------------------------------[ 1 ]
-externlib  := \
+systemlib  := \
 $(foreach e,$(libext),\
     $(foreach d,$(wordlist 2,$(words $(libdir)),$(libdir)),\
         $(call rwildcard,$d,*$e)\
 ))
 #------------------------------------------------------------------[ 2 ]
-externlib  := $(call filter-ignored,$(externlib))
+systemlib  := $(call filter-ignored,$(systemlib))
 #------------------------------------------------------------------[ 3 ]
-externname := \
+systemname := \
 $(foreach e,$(libext),\
-    $(patsubst lib%$e,%,$(filter lib%$e,$(notdir $(externlib))))\
+    $(patsubst lib%$e,%,$(filter lib%$e,$(notdir $(systemlib))))\
 )
 
 # Object files
@@ -1002,9 +1003,10 @@ cxxlibs := $(patsubst %,-I%,$(incsub))
 # 2) libname: all static and shared libraries names
 # 3) Get all subdirectories of the library dirs and
 #    add them as paths to be searched for libraries
-lib     := $(arlib) $(shrlib) $(externlib)
-libname := $(arname) $(shrname) $(externname)
-libsub   = $(if $(strip $(lib)),$(foreach d,$(libdir),$(call rsubdir,$d)))
+lib     := $(arlib) $(shrlib) $(systemlib)
+libname := $(arname) $(shrname) $(systemname)
+libsub   = $(if $(strip $(lib)),\
+               $(foreach d,$(libdir),$(call rsubdir,$d)))
 ldlibs   = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(libsub))))
 
 # Type-specific libraries
@@ -1075,8 +1077,8 @@ testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 depall    := $(testall) $(call not-root,$(srcall) $(autoall))
 depall    := $(strip $(basename $(depall)))
 depall    := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
-interndep := $(addsuffix dep,build tags docs dist dpkg install)
-interndep := $(addprefix $(depdir)/,$(interndep))
+systemdep := $(addsuffix dep,build upgrade tags docs dist dpkg install)
+systemdep := $(addprefix $(depdir)/,$(systemdep))
 
 # Binary
 # =======
@@ -1205,7 +1207,7 @@ build_dependency := \
     YACC_CXX => $(cxxparser)
 
 .PHONY: all
-all: builddep externdep $(binall) $(liball)
+all: builddep $(externdep) $(binall) $(liball)
 
 .PHONY: check
 check: $(testrun)
@@ -1213,9 +1215,7 @@ check: $(testrun)
 
 .PHONY: nothing
 nothing:
-
-.PHONY: externdep
-externdep: $(patsubst $(libdir)/%,$(depdir)/%dep,$(externdep))
+	$(strip $(call rfilter-out,$2,$(call rwildcard,test/gmock,*)))
 
 ########################################################################
 ##                               UPGRADE                              ##
@@ -1577,7 +1577,7 @@ define extern-dependency
 $$(libdir)/$$(strip $1): | $$(libdir)
 	$$(call $$(strip $2),$$(call car,$$(strip $3)),$$@)
 	
-$$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externdep)
+$$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externreq)
 	$$(call status,$$(MSG_MAKE_DEP))
 	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $3))),:)\
                         $$(NO_OUTPUT) $$(ERROR)\
@@ -1902,7 +1902,6 @@ endef
 $(foreach t,$(testbin),$(eval\
     $(call test-factory,$(dir $t),$(notdir $t),run_$(subst /,_,$t)\
 )))
-
 endif
 
 #======================================================================#
@@ -2122,17 +2121,17 @@ $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
 ########################################################################
 .PHONY: mostlyclean
 mostlyclean:
-	$(call rm-if-empty,$(objdir),$(objall) $(autoobj))
+	$(call rm-if-empty,$(objdir),$(objall) $(autoobj) $(testobj))
 
 .PHONY: clean
 clean: mostlyclean
-	$(call rm-if-empty,$(bindir),$(bin))
+	$(call rm-if-empty,$(bindir),$(bin) $(testbin))
 	$(call rm-if-empty,$(sbindir),$(sbin))
 	$(call rm-if-empty,$(execdir),$(libexec))
 
 .PHONY: distclean
 distclean: clean
-	$(call rm-if-empty,$(depdir),$(depall) $(interndep))
+	$(call rm-if-empty,$(depdir),$(depall) $(systemdep) $(externdep))
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
         $(filter $(firstword $(libdir))/%,$(lib))\
@@ -2484,9 +2483,10 @@ define rm-if-empty
             $(if $(strip $2),
                 $(if $(strip $(MAINTEINER_CLEAN)),\
                     $(call rmdir,$d),\
-                    $(if $(strip $(call rfilter-out,$2,\
-                                 $(call rwildcard,$d,*))),\
-                        $(call phony-ok,$(MSG_RM_NOT_EMPTY)),\
+                    $(if $(strip
+                      $(call rfilter-out,$(call rsubdir,$d)),\
+                      $(call rfilter-out,$2,$(call rwildcard,$d,*))),\
+                        $(call phony-ok,$(MSG_RM_NOT_EMPTY))\
                         $(call rmdir,$d)\
                 )),\
                 $(call rmdir,$d)\
@@ -3401,6 +3401,7 @@ dump:
 	$(call prompt,"testall:      ",$(testall)      )
 	$(call prompt,"testsrc:      ",$(testsrc)      )
 	$(call prompt,"testobj:      ",$(testobj)      )
+	$(call prompt,"testdep:      ",$(testdep)      )
 	$(call prompt,"testbin:      ",$(testbin)      )
 	$(call prompt,"testrun:      ",$(testrun)      )
 	
@@ -3412,11 +3413,6 @@ dump:
 	$(call prompt,"libsrc:       ",$(libsrc)       )
 	$(call prompt,"libname:      ",$(libname)      )
 	$(call prompt,"lib:          ",$(lib)          )
-	
-	@echo "${WHITE}\nEXTERNAL LIBRARY        ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"externlib:    ",$(externlib)    )
-	$(call prompt,"externname:   ",$(externname)   )
 	
 	@echo "${WHITE}\nSTATIC LIBRARY          ${RES}"
 	@echo "----------------------------------------"
@@ -3435,6 +3431,11 @@ dump:
 	$(call prompt,"shrname:      ",$(shrname)      )
 	$(call prompt,"shrlib:       ",$(shrlib)       )
 	
+	@echo "${WHITE}\nOTHER SYSTEM LIBRARY    ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"systemlib:    ",$(systemlib)    )
+	$(call prompt,"systemname:   ",$(systemname)   )
+	
 	@echo "${WHITE}\nOBJECT                  ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"obj:          ",$(obj)          )
@@ -3446,7 +3447,7 @@ dump:
 	@echo "${WHITE}\nDEPENDENCY              ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"depall:       ",$(depall)       )
-	$(call prompt,"interndep:    ",$(interndep)    )
+	$(call prompt,"systemdep:    ",$(systemdep)    )
 	$(call prompt,"externdep:    ",$(externdep)    )
 	
 	@echo "${WHITE}\nBINARY                  ${RES}"

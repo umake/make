@@ -1610,7 +1610,6 @@ $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
 # @return Target to download web dependencies for building             #
 #======================================================================#
 define web-dependency
-$$(libdir)/$$(strip $1): PWD = $$(shell pwd)
 $$(libdir)/$$(strip $1): | $$(libdir)
 	$$(call phony-status,$$(MSG_WEB_DOWNLOAD))
 	$$(quiet) $$(CURL) $$(strip $2) -o $$@ $$(NO_OUTPUT) $$(NO_ERROR)

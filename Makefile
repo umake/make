@@ -1224,7 +1224,7 @@ nothing:
 upgrade:
 	$(call phony-status,$(MSG_MAKE_DOWNLOAD))
 	$(quiet) $(CURL) $(MAKEREMOTE) -o $(firstword $(MAKEFILE_LIST))\
-        $(NO_OUTPUT) $(NO_ERROR)
+             $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_MAKE_DOWNLOAD))
 	$(call git-add,$(firstword $(MAKEFILE_LIST)))
 	$(call git-commit,$(firstword $(MAKEFILE_LIST)),\
@@ -2531,8 +2531,12 @@ endef
 ifndef SILENT
 
 ifneq ($(strip $(quiet)),)
+    define model-status
+    printf "%b " $1; printf "... "
+    endef
+
     define phony-status
-    	@printf "%b " $1; printf "... " 
+    	@$(call model-status,$1);
     endef
 
     define phony-vstatus
@@ -2540,7 +2544,7 @@ ifneq ($(strip $(quiet)),)
     endef
     
     define status
-    	@$(RM) $@ && printf "%b " $1; printf "... ";
+    	@$(RM) $@ && $(call model-status,$1);
     endef
 
     define vstatus
@@ -2548,19 +2552,25 @@ ifneq ($(strip $(quiet)),)
     endef
 endif
 
+define model-ok
+echo "\r${GREEN}[OK]${RES}" $1 "     "
+endef
+
+define model-error
+echo "${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}"
+endef
+
 define phony-ok
-	@if [ $$? ];\
-         then echo "\r${GREEN}[OK]${RES}" $1 "     ";\
-         else echo "${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}";\
-              exit 42;\
-     fi;
+@if [ $$? ];\
+    then $(call model-ok,$1);\
+    else $(call model-error,$1); exit 42;\
+fi;
 endef
 
 define ok
-@if [ -f $2 ]; then\
-	echo "\r${GREEN}[OK]${RES}" $1 "     ";\
-else\
-	echo "\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}"; exit 42;\
+@if [ -f $2 ];\
+    then $(call model-ok,$1);\
+    else $(call model-error,$1); exit 42;\
 fi
 endef
 
@@ -2642,21 +2652,21 @@ define git-init
 endef
 
 define git-add
-	$(call phony-status,$(MSG_GIT_ADD))
 	$(quiet) if ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
              then\
+	             $(call model-status,$(MSG_GIT_ADD));\
                  $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
+	             $(call model-ok,$(MSG_GIT_ADD));\
              fi
-	$(call phony-ok,$(MSG_GIT_ADD))
 endef
 
 define git-commit
-	$(call phony-status,$(MSG_GIT_COMMIT))
 	$(quiet) if ! $(GIT) diff --cached --exit-code $1 $(NO_OUTPUT);\
              then\
+                 $(call model-status,$(MSG_GIT_COMMIT));\
                  $(GIT) commit -m $(strip $2) $(NO_OUTPUT) $(NO_ERROR);\
+                 $(call model-ok,$(MSG_GIT_COMMIT));\
              fi
-	$(call phony-ok,$(MSG_GIT_COMMIT))
 endef
 
 endif

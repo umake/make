@@ -1221,10 +1221,7 @@ nothing:
 
 .PHONY: upgrade
 upgrade:
-	$(call phony-status,$(MSG_MAKE_DOWNLOAD))
-	$(quiet) $(CURL) $(MAKEREMOTE) -o $(firstword $(MAKEFILE_LIST))\
-             $(NO_OUTPUT) $(NO_ERROR)
-	$(call phony-ok,$(MSG_MAKE_DOWNLOAD))
+	$(call web-clone,$(MAKEREMOTE),$(firstword $(MAKEFILE_LIST)))
 	$(call git-add,$(firstword $(MAKEFILE_LIST)))
 	$(call git-commit,$(firstword $(MAKEFILE_LIST)),\
                       "Upgrades $(firstword $(MAKEFILE_LIST))")
@@ -2236,14 +2233,14 @@ RES     := \033[0m
 ERR     := \033[0;37m
 endif
 
-MSG_MAKE_DOWNLOAD = "${YELLOW}Downloading Makefile${RES}"
-
 MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
                     "sources, headers and configuration files?"
 MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 
 MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
 MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
+
+MSG_WEB_CLONE     = "${YELLOW}Downloading ${DEF}$2${RES}"
 
 MSG_GIT_INIT      = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Initializing empty repository${RES}"
@@ -2255,7 +2252,6 @@ MSG_GIT_ADD       = "${YELLOW}[$(GIT)]${BLUE} Adding"\
 MSG_GIT_COMMIT    = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Commiting message ${DEF}\"$(strip $2)\"${RES}"
 
-MSG_WEB_DOWNLOAD  = "${CYAN}Downloading dependency ${DEF}$@${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$<${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 
@@ -2612,9 +2608,9 @@ endef
 
 ## WEB DEPENDENCIES ####################################################
 define web-clone
-	$(call phony-status,$(MSG_WEB_DOWNLOAD))
-	$(quiet) $(CURL) $1 -o $2 $(NO_OUTPUT) $(NO_ERROR)
-	$(call phony-ok,$(MSG_WEB_DOWNLOAD))
+	$(call phony-status,$(MSG_WEB_CLONE))
+	$(quiet) $(CURL) $1 -z $2 -o $2 $(NO_OUTPUT) $(NO_ERROR)
+	$(call phony-ok,$(MSG_WEB_CLONE))
 endef
 
 ## VERSIONMENT #########################################################

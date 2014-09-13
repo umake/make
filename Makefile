@@ -2641,9 +2641,8 @@ endef
 
 define git-add
 	$(call phony-status,$(MSG_GIT_ADD))
-	$(quiet) if $(GIT) diff --exit-code $1;\
+	$(quiet) if ! $(GIT) diff --exit-code $1;\
              then\
-				 echo "Adding";\
                  $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
              fi
 	$(call phony-ok,$(MSG_GIT_ADD))
@@ -2651,9 +2650,8 @@ endef
 
 define git-commit
 	$(call phony-status,$(MSG_GIT_COMMIT))
-	$(quiet) if $(GIT) diff --cached --exit-code;\
+	$(quiet) if ! $(GIT) diff --cached --exit-code;\
              then\
-				 echo "Commiting";\
                  $(GIT) commit -m $1 $(NO_OUTPUT) $(NO_ERROR);\
              fi
 	$(call phony-ok,$(MSG_GIT_COMMIT))

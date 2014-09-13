@@ -1214,25 +1214,29 @@ check: $(testrun)
 .PHONY: nothing
 nothing:
 
+.PHONY: externdep
+externdep: $(patsubst $(libdir)/%,$(depdir)/%dep,$(externdep))
+
+########################################################################
+##                               UPGRADE                              ##
+########################################################################
+
+upgrade_dependency := \
+	CURL     => $(firstword $(MAKEFILE_LIST))
+
 .PHONY: upgrade
-upgrade:
+upgrade: upgradedep
 	$(call web-clone,$(MAKEREMOTE),$(firstword $(MAKEFILE_LIST)))
 	$(call git-add,$(firstword $(MAKEFILE_LIST)))
 	$(call git-commit,$(firstword $(MAKEFILE_LIST)),\
                       "Upgrades $(firstword $(MAKEFILE_LIST))")
 
-.PHONY: externdep
-externdep: $(patsubst $(libdir)/%,$(depdir)/%dep,$(externdep))
-
 ########################################################################
 ##                          INITIALIZATION                            ##
 ########################################################################
 
-init_dependency := \
-    GIT      => $(firstword $(MAKEFILE_LIST))
-
 .PHONY: init
-init: initdep
+init:
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
 	$(call mkdir,$(docdir))
@@ -1240,8 +1244,7 @@ init: initdep
 	$(quiet) $(MAKE) gitignore > .gitignore
 	$(call git-init)
 	$(call git-add,Config.mk .gitignore)
-	$(call git-commit,Config.mk .gitignore,\
-                      "Adds configuration files")
+	$(call git-commit,Config.mk .gitignore,"Adds configuration files")
 
 .PHONY: standard
 standard:
@@ -1562,7 +1565,7 @@ $$(depdir)/$1dep: $$(call cdr,$$(MAKEFILE_LIST)) | $$(depdir)
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
-$(foreach d,build init tags docs dist dpkg install,\
+$(foreach d,build upgrade tags docs dist dpkg install,\
     $(eval $(call system-dependency,$d,$d_dependency)))
 
 #======================================================================#

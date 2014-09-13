@@ -2277,7 +2277,7 @@ MSG_GIT_ADD       = "${YELLOW}[$(GIT)]${BLUE} Adding"\
                     "$(if $(wordlist 2,2,$1),files,file)${DEF}"\
                     "$(subst $(space),$(comma)$(space),$(strip $1))${RES}"
 MSG_GIT_COMMIT    = "${YELLOW}[$(GIT)]"\
-                    "${BLUE}Commiting message ${DEF}\"$1\"${RES}"
+                    "${BLUE}Commiting message ${DEF}\"$2\"${RES}"
 
 MSG_WEB_DOWNLOAD  = "${CYAN}Downloading dependency ${DEF}$@${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$<${RES}"
@@ -2641,7 +2641,7 @@ endef
 
 define git-add
 	$(call phony-status,$(MSG_GIT_ADD))
-	$(quiet) if ! $(GIT) diff --exit-code $1;\
+	$(quiet) if ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
              then\
                  $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
              fi
@@ -2650,7 +2650,7 @@ endef
 
 define git-commit
 	$(call phony-status,$(MSG_GIT_COMMIT))
-	$(quiet) if ! $(GIT) diff --cached --exit-code $1;\
+	$(quiet) if ! $(GIT) diff --cached --exit-code $1 $(NO_OUTPUT);\
              then\
                  $(GIT) commit -m $2 $(NO_OUTPUT) $(NO_ERROR);\
              fi

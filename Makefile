@@ -1187,13 +1187,6 @@ deball := $(sort $(strip $(addprefix $(debdir)/,$(deball))))
 ##                              BUILD                                 ##
 ########################################################################
 
-# CP              := cp -rap
-# MV              := mv
-# RM              := rm -f
-# MKDIR           := mkdir -p
-# RMDIR           := rm -rf
-# FIND            := find
-
 build_dependency := \
     AR       => $(arlib),\
     AS       => $(asmall),\

@@ -1558,7 +1558,7 @@ $$(call hash-table.new,$2)
 .PHONY: $1dep
 $1dep: $$(if $$(call hash-table.values,$2),$$(depdir)/$1dep)
 
-$$(depdir)/$$(strip $1)dep: $$(call cdr,$$(MAKEFILE_LIST)) | $$(depdir)
+$$(depdir)/$1dep: $$(call cdr,$$(MAKEFILE_LIST)) | $$(depdir)
 	$$(quiet) $$(foreach d,$$(call hash-table.keys,$2),\
        $$(if $$(strip $$($2.$$d)),\
          $$(call phony-status,$$(MSG_DEP))$$(newline)\

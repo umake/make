@@ -2616,7 +2616,7 @@ endef
 ## WEB DEPENDENCIES ####################################################
 define web-clone
 	$(call phony-status,$(MSG_WEB_CLONE))
-	$(quiet) $(CURL) $1 -o $2 $(NO_OUTPUT) $(NO_ERROR)
+	$(quiet) $(CURL) $1 -z $2 -o $2 $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_WEB_CLONE))
 endef
 

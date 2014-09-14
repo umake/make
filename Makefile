@@ -1234,9 +1234,10 @@ init:
 	$(call mkdir,$(docdir))
 	$(call make-create,config,Config.mk)
 	$(call make-create,gitignore,.gitignore)
-	$(call git-init)
-	$(call git-add-commit,Config.mk,"Adds Config.mk")
-	$(call git-add-commit,.gitignore,"Adds .gitignore")
+	$(if $(wildcard .git/*),,\
+        $(call git-init)$(newline)\
+        $(call git-add-commit,Config.mk,"Adds Config.mk")$(newline)\
+        $(call git-add-commit,.gitignore,"Adds .gitignore"))
 
 .PHONY: standard
 standard:
@@ -2629,14 +2630,12 @@ define git-clone
 endef
 
 define git-init
-	$(if $(wildcard .git/*),,\
-    $(quiet) if ! [ -d .git ];\
+	$(quiet) if ! [ -d .git ];\
              then\
                  $(call model-status,$(MSG_GIT_INIT))\
                  $(GIT) init $(NO_OUTPUT) $(NO_ERROR);\
                  $(call model-ok,$(MSG_GIT_INIT))\
              fi
-    )
 endef
 
 define git-add
@@ -2659,9 +2658,8 @@ define git-commit
 endef
 
 define git-add-commit
-$(if $(or $(call not,$(shell $(GIT) ls-files $1)),\
-          $(call not,$(shell $(GIT) diff --exit-code $1))),\
-    $(call git-add,$1)$(newline)$(call git-commit,$1,$2))
+	$(call git-add,$1)
+	$(call git-commit,$1,$2)
 endef
 
 endif

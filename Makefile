@@ -76,6 +76,7 @@ CXXFLAGS  := $(CFLAGS) -std=c++11
 FFLAGS    := -cpp
 
 # Linker flags
+LDLIBS    :=
 LDFLAGS   :=
 LDC       :=
 LDF       := -lgfortran
@@ -87,8 +88,17 @@ LDYACC    :=
 ARFLAGS   := -rcv
 SOFLAGS   := -shared
 
-# Include configuration file if exists
--include .config.mk config.mk Config.mk
+########################################################################
+##                              LIBS                                  ##
+########################################################################
+
+# C/C++/Fortran include paths
+CLIBS     :=
+CXXLIBS   :=
+FLIBS     :=
+
+# Linker lib paths
+LDLIBS    :=
 
 ########################################################################
 ##                            DIRECTORIES                             ##
@@ -115,6 +125,9 @@ $(foreach var,\
     $(eval $(var) := .)\
 )
 endif
+
+# Include configuration file if exists
+-include .config.mk config.mk Config.mk
 
 ## INSTALLATION ########################################################
 
@@ -340,6 +353,7 @@ fflags    := $(FFLAGS)
 cxxflags  := $(CXXFLAGS)
 cxxlexer  := $(CXXLEXER)
 cxxparser := $(CXXPARSER)
+ldlibs    := $(LDLIBS)
 ldflags   := $(LDFLAGS)
 arflags   := $(ARFLAGS)
 soflags   := $(SOFLAGS)
@@ -993,9 +1007,9 @@ incsub  += $(patsubst %,$(libdir)/%/include,\
                $(call hash-table.keys,git_dependency))
 incsub  += $(lexinc) $(yaccinc)
 #------------------------------------------------------------------[ 4 ]
-clibs   := $(patsubst %,-I%,$(incsub))
-flibs   := $(patsubst %,-I%,$(incsub))
-cxxlibs := $(patsubst %,-I%,$(incsub))
+clibs   := $(CLIBS)   $(patsubst %,-I%,$(incsub))
+flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))
+cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
 
 # Library files
 # ==============
@@ -1007,7 +1021,7 @@ lib     := $(arlib) $(shrlib) $(systemlib)
 libname := $(arname) $(shrname) $(systemname)
 libsub   = $(if $(strip $(lib)),\
                $(foreach d,$(libdir),$(call rsubdir,$d)))
-ldlibs   = $(sort $(patsubst %/,%,$(patsubst %,-L%,$(libsub))))
+ldlibs   = $(LDLIBS) $(sort $(patsubst %/,%,$(addprefix -L,$(libsub))))
 
 # Type-specific libraries
 # ========================
@@ -1573,8 +1587,8 @@ $$(libdir)/$$(strip $1): | $$(libdir)
 	
 $$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externreq)
 	$$(call status,$$(MSG_MAKE_DEP))
-	$$(quiet) cd $$< && $$(or $$(strip $$(call cdr,$$(strip $3))),:)\
-                        $$(NO_OUTPUT) $$(ERROR)\
+	$$(quiet) $$$$(cd $$< && $$(or $$(call cdr,$$(strip $3)),:))\
+                  $$(ERROR)\
               || \
               if [ -f $$</[Mm]akefile ]; then \
                   cd $$< && $$(MAKE) -f [Mm]akefile; \
@@ -2154,7 +2168,7 @@ realclean:
 	@echo $(MSG_WARNCLEAN_END)
 	@echo $(MSG_WARNCLEAN_ALT)
 else
-realclean: docclean distclean packageclean
+realclean: distclean docclean packageclean
 	$(call rm-if-exists,$(lexall),$(MSG_LEX_NONE))
 	$(foreach d,$(lexinc),$(call rm-if-empty,$d)$(newline))
 	$(call rm-if-exists,$(yaccall),$(MSG_YACC_NONE))
@@ -2480,7 +2494,7 @@ define rm-if-empty
                     $(if $(strip
                       $(call rfilter-out,$(call rsubdir,$d)),\
                       $(call rfilter-out,$2,$(call rwildcard,$d,*))),\
-                        $(call phony-ok,$(MSG_RM_NOT_EMPTY))\
+                        $(call phony-ok,$(MSG_RM_NOT_EMPTY)),\
                         $(call rmdir,$d)\
                 )),\
                 $(call rmdir,$d)\
@@ -2555,15 +2569,15 @@ endif
 
 ## ERROR ###############################################################
 ifndef MORE
-    define ERROR
-    2>&1 | sed '1 s/^/stderr:\n/' | sed 's/^/> /'
-    endef
-    #| sed ''/"> error"/s//`printf "${ERR}"`/'' # Adds gray color when
-    #                                           # connected to above
+define ERROR
+2>&1 | sed '1 s/^/stderr:\n/' | sed 's/^/> /'
+endef
+#| sed ''/"> error"/s//`printf "${ERR}"`/'' # Adds gray color when
+#                                           # connected to above
 else
-    define ERROR
-    2>&1 | more
-    endef
+define ERROR
+2>&1 | more
+endef
 endif
 
 define phony-error

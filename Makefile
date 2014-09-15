@@ -1587,8 +1587,7 @@ $$(libdir)/$$(strip $1): | $$(libdir)
 	
 $$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externreq)
 	$$(call status,$$(MSG_MAKE_DEP))
-	$$(quiet) $$$$(cd $$< && $$(or $$(call cdr,$$(strip $3)),:))\
-                  $$(ERROR)\
+	$$(quiet) (cd $$< && $$(or $$(call cdr,$$(strip $3)),:)) $$(ERROR)\
               || \
               if [ -f $$</[Mm]akefile ]; then \
                   cd $$< && $$(MAKE) -f [Mm]akefile; \

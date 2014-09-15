@@ -319,7 +319,7 @@ DCH             := dch --create -v $(VERSION)-$(DEB_VERSION) \
                        --package $(DEB_PROJECT)
 
 # Remote
-CURL            := curl
+CURL            := curl -o
 GIT             := git
 
 # Make
@@ -2630,7 +2630,7 @@ endef
 ## WEB DEPENDENCIES ####################################################
 define web-clone
 	$(call phony-status,$(MSG_WEB_CLONE))
-	$(quiet) $(CURL) $1 -o $2 $(NO_OUTPUT) $(NO_ERROR)
+	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_WEB_CLONE))
 endef
 
@@ -3342,6 +3342,9 @@ endef
 
 .PHONY: dump
 dump:
+ifdef VAR ####
+	$(call prompt,"$(VAR):       ",$($(VAR))       )
+else
 	@echo "${WHITE}\nCONFIGURATION           ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"license:      ",$(license)      )
@@ -3491,3 +3494,5 @@ dump:
 	$(call prompt,"cxxlibs:      ",$(cxxlibs)      )
 	$(call prompt,"ldlibs:       ",$(ldlibs)       )
 	$(call prompt,"ldflags:      ",$(ldflags)      )
+
+endif #### ifdef VAR

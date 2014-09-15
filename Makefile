@@ -3342,6 +3342,9 @@ endef
 
 .PHONY: dump
 dump:
+ifdef VAR ####
+	$(call prompt,"$(VAR):       ",$($(VAR))       )
+else
 	@echo "${WHITE}\nCONFIGURATION           ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"license:      ",$(license)      )
@@ -3491,3 +3494,5 @@ dump:
 	$(call prompt,"cxxlibs:      ",$(cxxlibs)      )
 	$(call prompt,"ldlibs:       ",$(ldlibs)       )
 	$(call prompt,"ldflags:      ",$(ldflags)      )
+
+endif #### ifdef VAR

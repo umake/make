@@ -657,8 +657,8 @@ endef
 # foopat: incomplete paths WITH root directories
 # foolib: library names WITHOUT root directories
 
-# Dependency files
-# =================
+# External dependency files
+# ===========================
 # 1) git/web_dependency: Internally defined vars for dependencies
 # 2) Make variables above hash tables
 # 3) Create variable for all dependencies
@@ -952,8 +952,8 @@ $(if $(strip $(shrpatsrc)),\
         $(eval ldflags := -Wl,-rpath=$d $(ldflags))\
 ))
 
-# Other system libraries
-# ========================
+# System libraries
+# ==================
 # 1) systemlib  : Extra libraries given by the user
 # 2) systemlib  : Filter out ignored files from above
 # 2) systemname : Extra libraries names, deduced from above
@@ -1032,8 +1032,8 @@ $(if $(strip $(cxx_all)),$(eval ldflags += $(LDCXX)))
 $(if $(strip $(lexall)),$(eval ldflags += $(LDLEX)))
 $(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
 
-# Dependency files
-# =================
+# Source dependency files
+# =========================
 # 1) Dependencies will be generated for sources, auto sources and tests
 # 2) Get the not-root basenames of all source directories
 # 3) Create dependency names and directories
@@ -1045,8 +1045,8 @@ depall    := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
 systemdep := $(addsuffix dep,build upgrade tags docs dist dpkg install)
 systemdep := $(addprefix $(depdir)/,$(systemdep))
 
-# Binary
-# =======
+# Binaries
+# ==========
 # 1) Define all binary names (with extensions if avaiable)
 # 2) Store binary-specific files from source, objects and libs
 # 3) Store common source, objects and libs filtering the above ones
@@ -1109,8 +1109,8 @@ $(foreach b,$(notdir $(binall)),$(or\
     $(eval $b_is_cxx := $(strip $(call is_cxx,$($b_src)))),\
 ))
 
-# Install binary
-# ================
+# Binary installation
+# =====================
 i_lib     := $(addprefix $(i_libdir)/,$(call not-root,$(lib)))
 i_bin     := $(addprefix $(i_bindir)/,$(call not-root,$(bin)))
 i_sbin    := $(addprefix $(i_sbindir)/,$(call not-root,$(sbin)))

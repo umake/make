@@ -676,6 +676,27 @@ externdep := $(patsubst %,$(depdir)/%dep,$(externdep))
 #------------------------------------------------------------------[ 4 ]
 externreq := $(patsubst $(depdir)/%dep,$(libdir)/%,$(externdep))
 
+# Header files
+# =============
+# 1) Get all files able to be included
+# 2) Filter out ignored files from above
+# 3) Get all subdirectories of the included dirs
+# 4) Add them as paths to be searched for headers
+#------------------------------------------------------------------[ 1 ]
+incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
+                $(call rwildcard,$i,*$e)))
+#------------------------------------------------------------------[ 2 ]
+incall  := $(call filter-ignored,$(incall))
+#------------------------------------------------------------------[ 3 ]
+incsub  := $(sort $(call remove-trailing-bar,$(dir $(incall))))
+incsub  += $(patsubst %,$(libdir)/%/include,\
+               $(call hash-table.keys,git_dependency))
+incsub  += $(lexinc) $(yaccinc)
+#------------------------------------------------------------------[ 4 ]
+clibs   := $(CLIBS)   $(patsubst %,-I%,$(incsub))
+flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))
+cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
+
 # Library files
 # ==============
 # .---.-----.------.-----.--------.---------------------------------.
@@ -1010,27 +1031,6 @@ objall := $(obj) $(arobj) $(shrobj) #$(autoobj)
 #------------------------------------------------------------------[ 5 ]
 autoobj := $(addsuffix $(firstword $(objext)),$(basename $(autosrc)))
 autoobj := $(addprefix $(objdir)/,$(autoobj))
-
-# Header files
-# =============
-# 1) Get all files able to be included
-# 2) Filter out ignored files from above
-# 3) Get all subdirectories of the included dirs
-# 4) Add them as paths to be searched for headers
-#------------------------------------------------------------------[ 1 ]
-incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
-                $(call rwildcard,$i,*$e)))
-#------------------------------------------------------------------[ 2 ]
-incall  := $(call filter-ignored,$(incall))
-#------------------------------------------------------------------[ 3 ]
-incsub  := $(sort $(call remove-trailing-bar,$(dir $(incall))))
-incsub  += $(patsubst %,$(libdir)/%/include,\
-               $(call hash-table.keys,git_dependency))
-incsub  += $(lexinc) $(yaccinc)
-#------------------------------------------------------------------[ 4 ]
-clibs   := $(CLIBS)   $(patsubst %,-I%,$(incsub))
-flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))
-cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
 
 # Source dependency files
 # =========================

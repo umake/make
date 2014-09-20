@@ -1116,34 +1116,6 @@ i_bin     := $(addprefix $(i_bindir)/,$(call not-root,$(bin)))
 i_sbin    := $(addprefix $(i_sbindir)/,$(call not-root,$(sbin)))
 i_libexec := $(addprefix $(i_libexecdir)/,$(call not-root,$(libexec)))
 
-# Texinfo files
-# ===============
-# 1) texiall: All TexInfo files with complete path
-# 2) texiall: Filter out ignored files from above
-# 3) texisrc: Take out root dir reference from above
-# 4) Create variables:
-#    4.1) texiinfo, for INFO's to be generated from TexInfo files
-#    4.1) texihtml, for HTML's to be generated from TexInfo files
-#    4.2) texidvi, for DVI's to be generated from TexInfo files
-#    4.3) texipdf, for PDF's to be generated from TexInfo files
-#    4.4) texips, for PS's to be generated from TexInfo files
-#------------------------------------------------------------------[ 1 ]
-$(foreach root,$(docdir),\
-    $(foreach E,$(texiext),\
-        $(eval texiall += $(call rwildcard,$(root),*$E))\
-))
-#------------------------------------------------------------------[ 2 ]
-texiall := $(call filter-ignored,$(texiall))
-#------------------------------------------------------------------[ 3 ]
-texisrc := $(call not-root,$(texiall))
-#------------------------------------------------------------------[ 4 ]
-$(foreach doc,info html dvi pdf ps,\
-    $(eval texi$(doc) := \
-        $(addprefix $(firstword $(docdir))/$(doc)/,\
-            $(addsuffix $(firstword $($(doc)ext)),\
-                $(basename $(texisrc))\
-))))
-
 # Automated tests
 # =================
 # 1) testall: Get all source files in the test directory
@@ -1195,6 +1167,34 @@ $(foreach s,$(comtestsrc),\
         $(error "Test $(testdir)/$s has no corresponding source file")))
 #------------------------------------------------------------------[ 11 ]
 testrun := $(addprefix run_,$(subst /,_,$(testbin)))
+
+# Texinfo files
+# ===============
+# 1) texiall: All TexInfo files with complete path
+# 2) texiall: Filter out ignored files from above
+# 3) texisrc: Take out root dir reference from above
+# 4) Create variables:
+#    4.1) texiinfo, for INFO's to be generated from TexInfo files
+#    4.1) texihtml, for HTML's to be generated from TexInfo files
+#    4.2) texidvi, for DVI's to be generated from TexInfo files
+#    4.3) texipdf, for PDF's to be generated from TexInfo files
+#    4.4) texips, for PS's to be generated from TexInfo files
+#------------------------------------------------------------------[ 1 ]
+$(foreach root,$(docdir),\
+    $(foreach E,$(texiext),\
+        $(eval texiall += $(call rwildcard,$(root),*$E))\
+))
+#------------------------------------------------------------------[ 2 ]
+texiall := $(call filter-ignored,$(texiall))
+#------------------------------------------------------------------[ 3 ]
+texisrc := $(call not-root,$(texiall))
+#------------------------------------------------------------------[ 4 ]
+$(foreach doc,info html dvi pdf ps,\
+    $(eval texi$(doc) := \
+        $(addprefix $(firstword $(docdir))/$(doc)/,\
+            $(addsuffix $(firstword $($(doc)ext)),\
+                $(basename $(texisrc))\
+))))
 
 # Debian package files
 # ======================

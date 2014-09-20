@@ -651,7 +651,7 @@ $(call rfilter-out,$(ignored),$1)
 endef
 
 # Default variable names
-# ======================
+# ========================
 # fooall: complete path WITH root directories
 # foosrc: complete path WITHOUT root directories
 # foopat: incomplete paths WITH root directories
@@ -677,7 +677,7 @@ externdep := $(patsubst %,$(depdir)/%dep,$(externdep))
 externreq := $(patsubst $(depdir)/%dep,$(libdir)/%,$(externdep))
 
 # Header files
-# =============
+# ==============
 # 1) Get all files able to be included
 # 2) Filter out ignored files from above
 # 3) Get all subdirectories of the included dirs
@@ -698,7 +698,7 @@ flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))
 cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
 
 # Library files
-# ==============
+# ===============
 # .---.-----.------.-----.--------.---------------------------------.
 # | # | dir | base | ext | STATUS |             ACTION              |
 # |===|=====|======|=====|========|=================================|
@@ -730,7 +730,7 @@ $(foreach s,$(lib_in),                                                 \
 )
 
 # Assembly files
-# ==============
+# ================
 # 1) Find all assembly files in the source directory
 # 2) Filter out ignored files from above
 #------------------------------------------------------------------[ 1 ]
@@ -740,8 +740,8 @@ $(foreach root,$(srcdir),\
 #------------------------------------------------------------------[ 2 ]
 asmall := $(call filter-ignored,$(asmall))
 
-# Lexical analyzer
-# =================
+# Lexical analyzers
+# ===================
 # 1) Find in a directory tree all the lex files (with dir names)
 # 2) Filter out ignored files from above
 # 3) Split C++ and C lexers (to be compiled appropriately)
@@ -769,8 +769,8 @@ lexinc   := $(call not-root,$(basename $(basename $(lexall))))
 lexinc   := $(addprefix $(firstword $(incdir))/,$(lexinc))
 lexinc   := $(addsuffix -yy/,$(lexinc))
 
-# Syntatic analyzer
-# ==================
+# Syntatic analyzers
+# ====================
 # 1) Find in a directory tree all the yacc files (with dir names)
 # 3) Filter out ignored files from above
 # 3) Split C++ and C parsers (to be compiled appropriately)
@@ -799,12 +799,12 @@ yaccinc   := $(addprefix $(firstword $(incdir))/,$(yaccinc))
 yaccinc   := $(addsuffix -tab/,$(yaccinc))
 
 # Automatically generated files
-# =============================
+# ===============================
 autoall := $(yaccall) $(lexall)
 autoinc := $(yaccinc) $(lexinc)
 
 # Source files
-# =============
+# ==============
 # 1) srcall  : Find in the dir trees all source files (with dir names)
 # 2) srcall  : Filter out ignored files from above
 # 3) srcall  : Remove automatically generated source files from srcall
@@ -889,7 +889,7 @@ f_all   := $(call rfilter,$(addprefix %,$(fext)),$(srcall))
 cxx_all := $(call rfilter,$(addprefix %,$(cxxext)),$(srcall))
 
 # Static libraries
-# =================
+# ==================
 # 1) Get complete static library paths from all libraries
 # 2) Store static library paths without root directory
 # 3) Create one var with the object dependencies for each lib above
@@ -925,7 +925,7 @@ arlib   := $(foreach s,$(arpatsrc),\
 arlib   := $(patsubst %,$(firstword $(libdir))/%.a,$(basename $(arlib)))
 
 # Dynamic libraries
-# ==================
+# ===================
 # 1) Get all source files that may be compiled to create the shared lib
 # 2) Get complete dynamic library paths from all libraries
 # 3) Store dynamic library paths without root directory
@@ -1005,7 +1005,7 @@ libsub   = $(if $(strip $(lib)),\
 ldlibs   = $(LDLIBS) $(sort $(patsubst %/,%,$(addprefix -L,$(libsub))))
 
 # Type-specific libraries
-# ========================
+# =========================
 # 1) Add c, f, cxx, lex and yacc only libraries in linker flags
 $(if $(strip $(c_all)),$(eval ldflags += $(LDC)))
 $(if $(strip $(f_all)),$(eval ldflags += $(LDF)))
@@ -1014,7 +1014,7 @@ $(if $(strip $(lexall)),$(eval ldflags += $(LDLEX)))
 $(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
 
 # Object files
-# =============
+# ==============
 # 1) Add obj suffix for each 'naked' assembly source file name (basename)
 # 2) Add obj suffix for each 'naked' source file name (basename)
 # 3) Prefix the build dir before each name
@@ -1117,7 +1117,7 @@ i_sbin    := $(addprefix $(i_sbindir)/,$(call not-root,$(sbin)))
 i_libexec := $(addprefix $(i_libexecdir)/,$(call not-root,$(libexec)))
 
 # Texinfo files
-# ==============
+# ===============
 # 1) texiall: All TexInfo files with complete path
 # 2) texiall: Filter out ignored files from above
 # 3) texisrc: Take out root dir reference from above
@@ -1145,7 +1145,7 @@ $(foreach doc,info html dvi pdf ps,\
 ))))
 
 # Automated tests
-# ================
+# =================
 # 1) testall: Get all source files in the test directory
 # 2) testall: Filter out ignored files from above
 # 3) testdep: Basenames without test suffix, root dirs and extensions
@@ -1196,8 +1196,8 @@ $(foreach s,$(comtestsrc),\
 #------------------------------------------------------------------[ 11 ]
 testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 
-# Debian packaging files
-# =======================
+# Debian package files
+# ======================
 # 1) deball: debian packaging files in the default debian directory
 deball := changelog compat control copyright
 deball += rules source/format $(DEB_PROJECT).dirs

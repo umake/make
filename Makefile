@@ -1050,24 +1050,27 @@ testsrc := $(call not-root,$(testall))
 testobj := $(addsuffix $(firstword $(objext)),$(basename $(testsrc)))
 testobj := $(addprefix $(objdir)/$(testdir)/,$(testobj))
 #------------------------------------------------------------------[ 6 ]
-testbin := $(notdir $(sort $(strip $(TESTBIN))))
-testbin := $(addprefix $(bindir)/$(testdir)/,$(testbin))
+testbin := $(call remove-trailing-bar,$(TESTBIN))
+testbin := $(foreach b,$(testbin),$(or $(strip \
+               $(foreach d,$(testdir),$(wildcard $d/$b/*))),$b))
+testbin := $(call not-root,$(basename $(testbin)))
+testbin := $(addprefix $(strip $(bindir)/$(testdir))/,$(testbin))
+testbin := $(if $(strip $(binext)),\
+               $(addsuffix $(binext),$(testbin)),$(testbin))
+testbin := $(call filter-ignored,$(testbin))
 #------------------------------------------------------------------[ 7 ]
-$(foreach t,$(notdir $(testbin)),$(or\
-    $(eval $t_src := $(foreach e,$(srcext),$(filter %$t$e,$(testsrc)))),\
-    $(eval $t_obj := $(foreach e,$(objext),\
-                       $(filter $(objdir)/$(testdir)/%$t$e,$(testobj))))\
+$(foreach t,$(call not-root,$(testbin)),$(or\
+    $(eval $t_src := $(filter $(call not-root,$t)%,$(testsrc))),\
+    $(eval $t_obj := $(filter $(objdir)/$(testdir)/$t%,$(testobj)))\
 ))
-# $(eval testsrc := $(filter-out $b.%,$(testsrc))),\
-# $(eval testobj := $(filter-out $(objdir)/$(testdir)/$b.%,$(testobj))),
 #------------------------------------------------------------------[ 8 ]
 define common-test-factory
-$(call rfilter-out,$(foreach t,$(notdir $(testbin)),$($t_$1)),$2)
+$(call rfilter-out,$(foreach t,$(call not-root,$(testbin)),$($t_$1)),$2)
 endef
 comtestsrc := $(call common-test-factory,src,$(testsrc))
 comtestobj := $(call common-test-factory,obj,$(testobj))
 #------------------------------------------------------------------[ 9 ]
-$(foreach t,$(notdir $(testbin)),$(or\
+$(foreach t,$(call not-root,$(testbin)),$(or\
     $(eval $t_src := $(comtestsrc) $($t_src)),\
     $(eval $t_obj := $(comtestobj) $($t_obj)),\
 ))
@@ -1888,29 +1891,29 @@ $(foreach a,$(arpatsrc),\
 
 #======================================================================#
 # Function: test-factory                                               #
-# @param  $1 Binary name for the unit test module                      #
-# @param  $2 Object with main function for running unit test           #
-# @param  $3 Object with the code that will be tested by the unit test #
-# @param  $4 Alias to execute tests, prefixing run_ and                #
+# @param  $1 Unit test binary's directory name                         #
+# @param  $1 Unit test binary's name without root directory            #
+# @param  $3 Alias to execute tests, prefixing run_ and                #
 #            substituting / for _ in $(testdep)                        #
 # @return Target to generate binary file for the unit test             #
 #======================================================================#
 ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,check)))
 define test-factory
-$1$2: $$($2_obj) | $$(call root,$1)
+$1/$2: $$($2_obj) | $1
 	$$(call status,$$(MSG_TEST_COMPILE))
-	$$(quiet) $$(call mksubdir,$$(call root,$1),$$@)
+	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(CXX) $$^ -o $$@ $$(ldflags) $$(ldlibs)
 	$$(call ok,$$(MSG_TEST_COMPILE),$$@)
 
 .PHONY: $3
-$3: $1$2
+$3: $1/$2
 	$$(call phony-vstatus,$$(MSG_TEST))
 	@./$$< || $$(call test-error,$$(MSG_TEST_FAILURE))
 	$$(call ok,$$(MSG_TEST))
 endef
 $(foreach t,$(testbin),$(eval\
-    $(call test-factory,$(dir $t),$(notdir $t),run_$(subst /,_,$t)\
+    $(call test-factory,$(call root,$t),$(call not-root,$t),\
+    run_$(subst /,_,$t)\
 )))
 endif
 

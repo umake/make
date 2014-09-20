@@ -1109,9 +1109,12 @@ systemdep := $(addprefix $(depdir)/,$(systemdep))
 #    4.7) binary-name_is_cxx, to test if the binary may be C's or C++'s
 #------------------------------------------------------------------[ 1 ]
 define binary-name
-$1 := $$(addprefix $$(strip $3)/,$$(notdir $$(sort $$(strip $2))))
-$1 := $$(call filter-ignored,$$($1))
+$1 := $$(call remove-trailing-bar,$2)
+$1 := $$(foreach b,$$($1),$$(or $$(strip $$(wildcard $$b/*)),\
+          $$(strip $$(foreach d,$$(srcdir),$$(wildcard $$d/$$b/*))),$$b))
+$1 := $$(addprefix $$(strip $3)/,$$(basename $$(call not-root,$$($1))))
 $1 := $$(if $$(strip $$(binext)),$$(addsuffix $$(binext),$$($1)),$$($1))
+$1 := $$(call filter-ignored,$$($1))
 endef
 $(eval $(call binary-name,bin,$(BIN),$(bindir)))
 $(eval $(call binary-name,sbin,$(SBIN),$(sbindir)))
@@ -1122,7 +1125,7 @@ $(if $(strip $(bin) $(sbin) $(libexec)),\
     $(if $(strip $(srcall)),$(eval binall := $(bindir)/a.out))\
 )
 #------------------------------------------------------------------[ 2 ]
-$(foreach sep,/ .,$(foreach b,$(notdir $(binall)),$(or\
+$(foreach sep,/ .,$(foreach b,$(call not-root,$(binall)),$(or\
     $(eval $b_src  += $(filter $b$(sep)%,$(src))),\
     $(eval $b_obj  += $(filter $(objdir)/$b$(sep)%,$(objall))),\
     $(eval $b_aobj += $(filter $(objdir)/$b$(sep)%,$(autoobj))),\
@@ -1135,7 +1138,7 @@ $(foreach sep,/ .,$(foreach b,$(notdir $(binall)),$(or\
 )))
 #------------------------------------------------------------------[ 3 ]
 define common-factory
-$(call rfilter-out,$(foreach b,$(notdir $(binall)),$($b_$1)),$2)
+$(call rfilter-out,$(foreach b,$(call not-root,$(binall)),$($b_$1)),$2)
 endef
 comsrc  := $(call common-factory,src,$(src))
 comobj  := $(call common-factory,obj,$(objall))
@@ -1913,14 +1916,17 @@ endif
 
 #======================================================================#
 # Function: binary-factory                                             #
-# @param  $1 Binary name                                               #
-# @param  $2 Compiler to be used (C's or C++'s)                        #
+# @param  $1 Binary root directory                                     #
+# @param  $1 Binary name witout root dir                               #
+# @param  $3 Comments to be used (C's, Fortran's or C++'s)             #
+# @param  $4 Compiler to be used (C's, Fortran's or C++'s)             #
 # @return Target to generate binaries and dependencies of its object   #
 #         files (to create objdir and automatic source)                #
 #======================================================================#
 define binary-factory
-$1$2: $$($2_lib) $$($2_aobj) $$($2_obj) | $1
+$1/$2: $$($2_lib) $$($2_aobj) $$($2_obj) | $1
 	$$(call status,$$(MSG_$$(strip $3)_LINKAGE))
+	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $4 $$($2_aobj) $$($2_obj) -o $$@ \
               $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
 	$$(call ok,$$(MSG_$$(strip $3)_LINKAGE),$$@)
@@ -1930,14 +1936,14 @@ $$($2_obj): | $$(objdir)
 $$($2_aobj): $$($2_aall) | $$(objdir)
 endef
 $(foreach b,$(binall),$(eval\
-    $(call binary-factory,$(dir $b),$(notdir $b),\
-        $(if $($(strip $(notdir $b))_is_c),C,\
-        $(if $($(strip $(notdir $b))_is_f),F,\
-        $(if $($(strip $(notdir $b))_is_cxx),CXX,CXX\
+    $(call binary-factory,$(call root,$b),$(call not-root,$b),\
+        $(if $($(strip $(call not-root,$b))_is_c),C,\
+        $(if $($(strip $(call not-root,$b))_is_f),F,\
+        $(if $($(strip $(call not-root,$b))_is_cxx),CXX,CXX\
     ))),\
-        $(if $($(strip $(notdir $b))_is_c),$(CC),\
-        $(if $($(strip $(notdir $b))_is_f),$(FC),\
-        $(if $($(strip $(notdir $b))_is_cxx),$(CXX),$(CXX)\
+        $(if $($(strip $(call not-root,$b))_is_c),$(CC),\
+        $(if $($(strip $(call not-root,$b))_is_f),$(FC),\
+        $(if $($(strip $(call not-root,$b))_is_cxx),$(CXX),$(CXX)\
     ))),\
 )))
 

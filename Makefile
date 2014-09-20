@@ -971,6 +971,27 @@ $(foreach e,$(libext),\
     $(patsubst lib%$e,%,$(filter lib%$e,$(notdir $(systemlib))))\
 )
 
+# General libraries
+# ===================
+# 1) lib: all static and shared libraries
+# 2) libname: all static and shared libraries names
+# 3) Get all subdirectories of the library dirs and
+#    add them as paths to be searched for libraries
+lib     := $(arlib) $(shrlib) $(systemlib)
+libname := $(arname) $(shrname) $(systemname)
+libsub   = $(if $(strip $(lib)),\
+               $(foreach d,$(libdir),$(call rsubdir,$d)))
+ldlibs   = $(LDLIBS) $(sort $(patsubst %/,%,$(addprefix -L,$(libsub))))
+
+# Type-specific libraries
+# ========================
+# 1) Add c, f, cxx, lex and yacc only libraries in linker flags
+$(if $(strip $(c_all)),$(eval ldflags += $(LDC)))
+$(if $(strip $(f_all)),$(eval ldflags += $(LDF)))
+$(if $(strip $(cxx_all)),$(eval ldflags += $(LDCXX)))
+$(if $(strip $(lexall)),$(eval ldflags += $(LDLEX)))
+$(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
+
 # Object files
 # =============
 # 1) Add obj suffix for each 'naked' assembly source file name (basename)
@@ -1010,27 +1031,6 @@ incsub  += $(lexinc) $(yaccinc)
 clibs   := $(CLIBS)   $(patsubst %,-I%,$(incsub))
 flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))
 cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
-
-# Library files
-# ==============
-# 1) lib: all static and shared libraries
-# 2) libname: all static and shared libraries names
-# 3) Get all subdirectories of the library dirs and
-#    add them as paths to be searched for libraries
-lib     := $(arlib) $(shrlib) $(systemlib)
-libname := $(arname) $(shrname) $(systemname)
-libsub   = $(if $(strip $(lib)),\
-               $(foreach d,$(libdir),$(call rsubdir,$d)))
-ldlibs   = $(LDLIBS) $(sort $(patsubst %/,%,$(addprefix -L,$(libsub))))
-
-# Type-specific libraries
-# ========================
-# 1) Add c, f, cxx, lex and yacc only libraries in linker flags
-$(if $(strip $(c_all)),$(eval ldflags += $(LDC)))
-$(if $(strip $(f_all)),$(eval ldflags += $(LDF)))
-$(if $(strip $(cxx_all)),$(eval ldflags += $(LDCXX)))
-$(if $(strip $(lexall)),$(eval ldflags += $(LDLEX)))
-$(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
 
 # Source dependency files
 # =========================

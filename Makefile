@@ -1032,58 +1032,6 @@ $(if $(strip $(cxx_all)),$(eval ldflags += $(LDCXX)))
 $(if $(strip $(lexall)),$(eval ldflags += $(LDLEX)))
 $(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
 
-# Automated tests
-# ================
-# 1) testall: Get all source files in the test directory
-# 2) testall: Filter out ignored files from above
-# 3) testdep: Basenames without test suffix, root dirs and extensions
-# 4) testrun: Alias to execute tests, prefixing run_ and
-#             substituting / for _ in $(testdep)
-#------------------------------------------------------------------[ 1 ]
-$(foreach e,$(srcext),\
-    $(eval testall += $(call rwildcard,$(testdir),*$e)))
-#------------------------------------------------------------------[ 2 ]
-testall := $(call filter-ignored,$(testall))
-#------------------------------------------------------------------[ 4 ]
-testsrc := $(call not-root,$(testall))
-#------------------------------------------------------------------[ 5 ]
-testobj := $(addsuffix $(firstword $(objext)),$(basename $(testsrc)))
-testobj := $(addprefix $(objdir)/$(testdir)/,$(testobj))
-#------------------------------------------------------------------[ 6 ]
-testbin := $(call remove-trailing-bar,$(TESTBIN))
-testbin := $(foreach b,$(testbin),$(or $(strip \
-               $(foreach d,$(testdir),$(wildcard $d/$b/*))),$b))
-testbin := $(call not-root,$(basename $(testbin)))
-testbin := $(addprefix $(strip $(bindir)/$(testdir))/,$(testbin))
-testbin := $(if $(strip $(binext)),\
-               $(addsuffix $(binext),$(testbin)),$(testbin))
-testbin := $(call filter-ignored,$(testbin))
-#------------------------------------------------------------------[ 7 ]
-$(foreach t,$(call not-root,$(testbin)),$(or\
-    $(eval $t_src := $(filter $(call not-root,$t)%,$(testsrc))),\
-    $(eval $t_obj := $(filter $(objdir)/$(testdir)/$t%,$(testobj)))\
-))
-#------------------------------------------------------------------[ 8 ]
-define common-test-factory
-$(call rfilter-out,$(foreach t,$(call not-root,$(testbin)),$($t_$1)),$2)
-endef
-comtestsrc := $(call common-test-factory,src,$(testsrc))
-comtestobj := $(call common-test-factory,obj,$(testobj))
-#------------------------------------------------------------------[ 9 ]
-$(foreach t,$(call not-root,$(testbin)),$(or\
-    $(eval $t_src := $(comtestsrc) $($t_src)),\
-    $(eval $t_obj := $(comtestobj) $($t_obj)),\
-))
-#------------------------------------------------------------------[ 10 ]
-$(foreach s,$(comtestsrc),\
-    $(if $(strip $(filter-out %$(testsuf),$(basename $s))),\
-        $(error "Test $(testdir)/$s does not have suffix $(testsuf)")))
-$(foreach s,$(comtestsrc),\
-    $(if $(strip $(filter $(subst $(testsuf).,.,$s),$(src))),,\
-        $(error "Test $(testdir)/$s has no corresponding source file")))
-#------------------------------------------------------------------[ 11 ]
-testrun := $(addprefix run_,$(subst /,_,$(testbin)))
-
 # Dependency files
 # =================
 # 1) Dependencies will be generated for sources, auto sources and tests
@@ -1195,6 +1143,58 @@ $(foreach doc,info html dvi pdf ps,\
             $(addsuffix $(firstword $($(doc)ext)),\
                 $(basename $(texisrc))\
 ))))
+
+# Automated tests
+# ================
+# 1) testall: Get all source files in the test directory
+# 2) testall: Filter out ignored files from above
+# 3) testdep: Basenames without test suffix, root dirs and extensions
+# 4) testrun: Alias to execute tests, prefixing run_ and
+#             substituting / for _ in $(testdep)
+#------------------------------------------------------------------[ 1 ]
+$(foreach e,$(srcext),\
+    $(eval testall += $(call rwildcard,$(testdir),*$e)))
+#------------------------------------------------------------------[ 2 ]
+testall := $(call filter-ignored,$(testall))
+#------------------------------------------------------------------[ 4 ]
+testsrc := $(call not-root,$(testall))
+#------------------------------------------------------------------[ 5 ]
+testobj := $(addsuffix $(firstword $(objext)),$(basename $(testsrc)))
+testobj := $(addprefix $(objdir)/$(testdir)/,$(testobj))
+#------------------------------------------------------------------[ 6 ]
+testbin := $(call remove-trailing-bar,$(TESTBIN))
+testbin := $(foreach b,$(testbin),$(or $(strip \
+               $(foreach d,$(testdir),$(wildcard $d/$b/*))),$b))
+testbin := $(call not-root,$(basename $(testbin)))
+testbin := $(addprefix $(strip $(bindir)/$(testdir))/,$(testbin))
+testbin := $(if $(strip $(binext)),\
+               $(addsuffix $(binext),$(testbin)),$(testbin))
+testbin := $(call filter-ignored,$(testbin))
+#------------------------------------------------------------------[ 7 ]
+$(foreach t,$(call not-root,$(testbin)),$(or\
+    $(eval $t_src := $(filter $(call not-root,$t)%,$(testsrc))),\
+    $(eval $t_obj := $(filter $(objdir)/$(testdir)/$t%,$(testobj)))\
+))
+#------------------------------------------------------------------[ 8 ]
+define common-test-factory
+$(call rfilter-out,$(foreach t,$(call not-root,$(testbin)),$($t_$1)),$2)
+endef
+comtestsrc := $(call common-test-factory,src,$(testsrc))
+comtestobj := $(call common-test-factory,obj,$(testobj))
+#------------------------------------------------------------------[ 9 ]
+$(foreach t,$(call not-root,$(testbin)),$(or\
+    $(eval $t_src := $(comtestsrc) $($t_src)),\
+    $(eval $t_obj := $(comtestobj) $($t_obj)),\
+))
+#------------------------------------------------------------------[ 10 ]
+$(foreach s,$(comtestsrc),\
+    $(if $(strip $(filter-out %$(testsuf),$(basename $s))),\
+        $(error "Test $(testdir)/$s does not have suffix $(testsuf)")))
+$(foreach s,$(comtestsrc),\
+    $(if $(strip $(filter $(subst $(testsuf).,.,$s),$(src))),,\
+        $(error "Test $(testdir)/$s has no corresponding source file")))
+#------------------------------------------------------------------[ 11 ]
+testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 
 # Debian packaging files
 # =======================

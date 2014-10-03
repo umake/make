@@ -111,6 +111,7 @@ DOCDIR  := doc
 DEBDIR  := debian
 OBJDIR  := build
 LIBDIR  := lib
+EXTDIR  := external
 BINDIR  := bin
 SBINDIR := sbin
 EXECDIR := libexec
@@ -120,7 +121,7 @@ DATADIR :=
 DESTDIR :=
 else
 $(foreach var,\
-    SRCDIR BINDIR DEPDIR OBJDIR INCDIR LIBDIR \
+    SRCDIR DEPDIR INCDIR OBJDIR LIBDIR EXTDIR BINDIR \
     SBINDIR DISTDIR TESTDIR DATADIR,\
     $(eval $(var) := .)\
 )
@@ -378,6 +379,7 @@ override docdir  := $(strip $(foreach d,$(DOCDIR),$(patsubst %/,%,$d)))
 override debdir  := $(strip $(foreach d,$(DEBDIR),$(patsubst %/,%,$d)))
 override objdir  := $(strip $(foreach d,$(OBJDIR),$(patsubst %/,%,$d)))
 override libdir  := $(strip $(foreach d,$(LIBDIR),$(patsubst %/,%,$d)))
+override extdir  := $(strip $(foreach d,$(EXTDIR),$(patsubst %/,%,$d)))
 override bindir  := $(strip $(foreach d,$(BINDIR),$(patsubst %/,%,$d)))
 override sbindir := $(strip $(foreach d,$(SBINDIR),$(patsubst %/,%,$d)))
 override execdir := $(strip $(foreach d,$(EXECDIR),$(patsubst %/,%,$d)))
@@ -387,14 +389,14 @@ override datadir := $(strip $(foreach d,$(DATADIR),$(patsubst %/,%,$d)))
 
 # All directories
 alldir := $(strip\
-    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)     \
-    $(libdir) $(bindir) $(sbindir) $(execdir) $(distdir) $(testdir) \
-    $(datadir)                                                      \
+    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)    \
+    $(libdir) $(extdir) $(bindir) $(sbindir) $(execdir) $(distdir) \
+    $(testdir) $(datadir)                                          \
 )
 
 # Check if every directory variable is non-empty
 ifeq ($(and $(srcdir),$(bindir),$(depdir),$(objdir),\
-            $(incdir),$(libdir),$(distdir),$(testdir)),)
+            $(incdir),$(libdir),$(extdir),$(distdir),$(testdir)),)
 $(error There must be at least one directory of each type, or '.'.)
 endif
 
@@ -662,7 +664,7 @@ endef
 # 1) git/web_dependency: Internally defined vars for dependencies
 # 2) Make variables above hash tables
 # 3) Create variable for all dependencies
-# 4) Paths (in first libdir) to store new dependencies
+# 4) Paths (in first extdir) to store new dependencies
 #------------------------------------------------------------------[ 1 ]
 git_dependency := $(strip $(GIT_DEPENDENCY))
 web_dependency := $(strip $(WEB_DEPENDENCY))
@@ -674,7 +676,7 @@ externdep := $(call hash-table.keys,git_dependency)
 externdep += $(call hash-table.keys,web_dependency)
 externdep := $(patsubst %,$(depdir)/%dep,$(externdep))
 #------------------------------------------------------------------[ 4 ]
-externreq := $(patsubst $(depdir)/%dep,$(libdir)/%,$(externdep))
+externreq := $(patsubst $(depdir)/%dep,$(extdir)/%,$(externdep))
 
 # Header files
 # ==============
@@ -689,7 +691,7 @@ incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
 incall  := $(call filter-ignored,$(incall))
 #------------------------------------------------------------------[ 3 ]
 incsub  := $(sort $(call remove-trailing-bar,$(dir $(incall))))
-incsub  += $(patsubst %,$(libdir)/%/include,\
+incsub  += $(patsubst %,$(extdir)/%/include,\
                $(call hash-table.keys,git_dependency))
 incsub  += $(lexinc) $(yaccinc)
 #------------------------------------------------------------------[ 4 ]
@@ -1588,10 +1590,10 @@ $(foreach d,build upgrade tags docs dist dpkg install,\
 # @return Target to download git dependencies for building             #
 #======================================================================#
 define extern-dependency
-$$(libdir)/$$(strip $1): | $$(libdir)
+$$(extdir)/$$(strip $1): | $$(extdir)
 	$$(call $$(strip $2),$$(call car,$$(strip $3)),$$@)
 	
-$$(depdir)/$$(strip $1)dep: $$(libdir)/$$(strip $1) $$(externreq)
+$$(depdir)/$$(strip $1)dep: $$(extdir)/$$(strip $1) $$(externreq)
 	$$(call status,$$(MSG_MAKE_DEP))
 	$$(quiet) (cd $$< && $$(or $$(call cdr,$$(strip $3)),:)) $$(ERROR)\
               || \
@@ -2149,6 +2151,7 @@ clean: mostlyclean
 distclean: clean
 	$(call rm-if-empty,$(depdir),$(depall) $(systemdep) $(externdep))
 	$(call rm-if-empty,$(distdir))
+	$(call rm-if-empty,$(extdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
         $(filter $(firstword $(libdir))/%,$(lib))\
     )
@@ -2415,7 +2418,7 @@ endef
 $(sort $(bindir) $(sbindir) $(execdir) ):
 	$(call mkdir,$@)
 
-$(sort $(objdir) $(depdir) $(libdir) $(docdir) $(debdir) ):
+$(sort $(objdir) $(depdir) $(libdir) $(extdir) $(docdir) $(debdir) ):
 	$(call mkdir,$@)
 
 define mkdir
@@ -3224,6 +3227,7 @@ gitignore:
 	@$(foreach d,$(depdir),echo $d/; )
 	@$(foreach d,$(objdir),echo $d/; )
 	@$(foreach d,$(libdir),echo $d/; )
+	@$(foreach d,$(extdir),echo $d/; )
 	@$(foreach d,$(bindir),echo $d/; )
 	@$(foreach d,$(sbindir),echo $d/; )
 	@$(foreach d,$(execdir),echo $d/; )

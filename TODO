@@ -47,10 +47,12 @@
     [X] Warn user before deleting in 'realclean/mainteiner-clean'.
     [X] Automatically create/update global header for a namespace.
     [X] Generate libraries with no binary file defined.
-    [X] Add automatic git/hg dependency download with Config.mk.
-    [X] Support automatic compilation of git/hg with recursive make.
+    [X] Add automatic git dependency download with Config.mk.
+    [X] Support automatic compilation of git with recursive make.
     [X] Add compatibility with MACOSX shell (echo and sed).
     [X] Integrate actions of Makefile with git commits.
     [X] Commit in git when upgrading the Makefile.
+    [ ] Add deep directory search of test binary name.
+    [ ] Create target 'deploy' to send project to remote.
     [ ] Test if flex/bison still compile correctly.
     [ ] Add option to automatically create a RPM package.

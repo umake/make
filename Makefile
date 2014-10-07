@@ -1230,10 +1230,21 @@ check: $(testrun)
 
 .PHONY: nothing
 nothing:
-	$(strip $(call rfilter-out,$2,$(call rwildcard,test/gmock,*)))
 
 ########################################################################
-##                               UPGRADE                              ##
+##                       EXTERNAL REPOSITORIES                        ##
+########################################################################
+
+.PHONY: sync
+sync:
+	$(call git-pull,$(REMOTE),$(BRANCH))
+
+.PHONY: deploy
+deploy:
+	$(call git-push,$(REMOTE),$(BRANCH))
+
+########################################################################
+##                              UPGRADE                               ##
 ########################################################################
 
 upgrade_dependency := \
@@ -1260,6 +1271,8 @@ init:
         $(call git-init)$(newline)\
         $(call git-add-commit,Config.mk,"Adds Config.mk")$(newline)\
         $(call git-add-commit,.gitignore,"Adds .gitignore"))
+		$(if $(strip $(GIT_REMOTE)),\
+		    $(call git-remote-add,origin,$(GIT_REMOTE)))
 
 .PHONY: standard
 standard:
@@ -2267,6 +2280,14 @@ MSG_GIT_ADD       = "${YELLOW}[$(GIT)]${BLUE} Adding"\
                     "${RES}"
 MSG_GIT_COMMIT    = "${YELLOW}[$(GIT)]${BLUE}"\
                     "Commiting message ${DEF}\"$(strip $2)\"${RES}"
+MSG_GIT_REM_ADD   = "${YELLOW}[$(GIT)]${BLUE} Setting ${DEF}$(strip $1)"\
+                    "${BLUE}to remote ${DEF}$(strip $2)${RES}"
+MSG_GIT_PULL      = "${YELLOW}[$(GIT)]${BLUE} Receiveing in${DEF}"\
+                    "$(or $(strip $1),origin)${BLUE} from remote"\
+                    "repository ${DEF}$(or $(strip $2),master)${RES}"
+MSG_GIT_PUSH      = "${YELLOW}[$(GIT)]${BLUE} Sending from${DEF}"\
+                    "$(or $(strip $1),origin)${BLUE} to remote"\
+                    "repository ${DEF}$(or $(strip $2),master)${RES}"
 
 MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
                     "${PURPLE}from target ${DEF}$1${RES}"
@@ -2686,6 +2707,28 @@ define git-add-commit
 	$(call git-add,$1)
 	$(call git-commit,$1,$2)
 endef
+
+define git-remote-add
+	$(call phony-status,$(MSG_GIT_REM_ADD))
+	$(quiet) $(GIT) remote add $1 $2 $(ERROR)
+	$(call phony-ok,$(MSG_GIT_REM_ADD))
+endef
+
+ifneq (,$(strip $(GIT_REMOTE)))
+define git-pull
+	$(call phony-status,$(MSG_GIT_PULL))
+	$(quiet) $(GIT) pull $(or $(strip $1),origin)\
+                         $(or $(strip $2),master) $(ERROR)
+	$(call phony-ok,$(MSG_GIT_PULL))
+endef
+
+define git-push
+	$(call phony-status,$(MSG_GIT_PUSH))
+	$(quiet) $(GIT) push $(or $(strip $1),origin)\
+                         $(or $(strip $2),master) $(ERROR)
+	$(call phony-ok,$(MSG_GIT_PUSH))
+endef
+endif
 
 endif
 
@@ -3195,6 +3238,8 @@ config:
 	@echo "#             # in the beggining of any file (def: NOTICE)."
 	@echo "# DOXYFILE := # Config file for Doxygen (def: Doxyfile)"
 	@echo ""
+	@echo "# Git usage"
+	@echo "# GIT_REMOTE      := # Remote path for git repository"
 	@echo "# GIT_DEPENDENCY  := # List of git dependencies in the format"
 	@echo "                     # DEP_NAME => dep_path                  "
 	@echo ""
@@ -3265,11 +3310,12 @@ projecthelp:
 	@echo " * check:        Compile and run Unit Tests                 "
 	@echo " * compiler:     Outputs Compiler.mk to define compilers    "
 	@echo " * config:       Outputs Config.mk model for user's options "
-	@echo " * dpkg:         Create a debian package from the project   "
+	@echo " * deploy:       Deploy changes in BRANCH to REMOTE         "
 	@echo " * dist-*:       As 'dist', with many types of compression  "
 	@echo " * dist:         Create .tar.gz with binaries and libraries "
 	@echo " * docs:         Generate docs in all formats avaiable      "
 	@echo " * doxy:         Create Doxygen docs (if doxyfile defined)  "
+	@echo " * dpkg:         Create a debian package from the project   "
 	@echo " * gitignore:    Outputs .gitignore model for user          "
 	@echo " * init:         Create directories for beggining projects  "
 	@echo " * install-*:    Install docs in info, html, dvi, pdf or ps "
@@ -3279,6 +3325,7 @@ projecthelp:
 	@echo " * package-*:    As 'package', with many compressions       "
 	@echo " * package:      As 'dist', but also with sources and data  "
 	@echo " * standard:     Move files to their standard directories   "
+	@echo " * sync:         Synchronize changes from REMOTE to BRANCH  "
 	@echo " * tar:          Create .tar with binaries and libraries    "
 	@echo " * uninstall:    Uninstall anything created by any install  "
 	@echo " * upgrade:      Upgrades Makefile with remote repository   "

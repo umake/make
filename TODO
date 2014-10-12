@@ -55,6 +55,7 @@
     [X] Create target 'deploy' to send project to remote.
     [X] Create target 'sync' to receive project from remote.
     [X] Support compilation of embedded SQL.
+    [ ] Create target 'status' with information about the project.
     [ ] Add deep directory search of test binary name.
     [ ] Test if flex/bison still compile correctly.
     [ ] Add option to automatically create a RPM package.

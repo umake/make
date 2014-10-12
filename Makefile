@@ -83,7 +83,7 @@ LDF       := -lgfortran
 LDCXX     :=
 LDLEX     := -lfl
 LDYACC    :=
-LDESQL    := -L$(shell pg_config --libdir) -lecpg
+LDESQL    := -lecpg
 
 # Library flags
 ARFLAGS   := -rcv
@@ -3472,15 +3472,16 @@ projecthelp:
 
 define prompt
 @echo "${YELLOW}"$1"${RES}"\
-      $(if $(strip $(filter undefined,$(origin $(VAR)))),\
-          "${RED}Undefined${RES}",\
-          $(if $(strip $2),"$(strip $2)","${RED}Empty${RES}"))
+      $(if $(strip $2),"$(strip $2)","${RED}Empty${RES}")
 endef
 
 .PHONY: dump
 dump:
 ifdef VAR ####
-	$(call prompt,"$(VAR):       ",$($(VAR))       )
+	@echo "${YELLOW}"$(VAR)"${RES}"\
+          $(if $(strip $(filter undefined,$(origin $($(VAR))))),\
+              "${RED}Undefined${RES}",\
+              "$(or $(strip $($(VAR)),${RED}Empty${RES}))")
 else
 	@echo "${WHITE}\nCONFIGURATION           ${RES}"
 	@echo "----------------------------------------"
@@ -3502,6 +3503,7 @@ else
 	$(call prompt,"lexxext:      ",$(lexxext)      )
 	$(call prompt,"yaccext:      ",$(yaccext)      )
 	$(call prompt,"yaxxext:      ",$(yaxxext)      )
+	$(call prompt,"esqlext:      ",$(esqlext)      )
 	$(call prompt,"docext:       ",$(docext)       )
 	
 	@echo "${WHITE}\nLEXER                   ${RES}"

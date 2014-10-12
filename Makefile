@@ -2536,9 +2536,12 @@ $(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
     $(call phony-ok,$(MSG_MOVE)),\
     $(call phony-ok,$(MSG_NO_MOVE))\
 )
-$(call git-add-commit,\
-    $(foreach e,$(strip $1),$(wildcard $(firstword $2)/*$e)),\
-    "Moves $3 files to standard directory $(firstword $2)")
+$(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
+    $(call git-add-commit,\
+        $(addprefix $(firstword $2)/,\
+            $(foreach e,$(strip $1),$(wildcard *$e))),\
+        "Moves $3 files to $(firstword $2)/")\
+)
 endef
 
 ## REMOTION ############################################################

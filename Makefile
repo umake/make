@@ -113,12 +113,13 @@ DEBDIR  := debian
 OBJDIR  := build
 LIBDIR  := lib
 EXTDIR  := external
+SRPDIR  := script
 BINDIR  := bin
 SBINDIR := sbin
 EXECDIR := libexec
 DISTDIR := dist
 TESTDIR := test
-DATADIR :=
+DATADIR := data
 DESTDIR :=
 else
 $(foreach var,\
@@ -252,6 +253,16 @@ HTMLEXT := .html
 DVIEXT  := .dvi
 PDFEXT  := .pdf
 PSEXT   := .ps
+
+# Script extensions
+SRPEXT  := .ahk .applescript .bat .bash .cmd .coffee .erb .hta \
+           .itcl .js .lua .m .php .pl .pm .py .pyc .pyo .r .rb \
+           .scpt .scptd .sh .tcl .vbs
+
+# Data extensions
+DATAEXT := .asc .bak .bin .bk .cfg .conf .cnf .css .csv .dat \
+           .diff .dsk .htm .html .json .log .ltsv .raw .sql \
+           .temp .tmp .tsv .txt .xml .yaml .yml
 
 # Test suffix
 TESTSUF := Test
@@ -392,6 +403,7 @@ override debdir  := $(strip $(foreach d,$(DEBDIR),$(patsubst %/,%,$d)))
 override objdir  := $(strip $(foreach d,$(OBJDIR),$(patsubst %/,%,$d)))
 override libdir  := $(strip $(foreach d,$(LIBDIR),$(patsubst %/,%,$d)))
 override extdir  := $(strip $(foreach d,$(EXTDIR),$(patsubst %/,%,$d)))
+override srpdir  := $(strip $(foreach d,$(SRPDIR),$(patsubst %/,%,$d)))
 override bindir  := $(strip $(foreach d,$(BINDIR),$(patsubst %/,%,$d)))
 override sbindir := $(strip $(foreach d,$(SBINDIR),$(patsubst %/,%,$d)))
 override execdir := $(strip $(foreach d,$(EXECDIR),$(patsubst %/,%,$d)))
@@ -401,9 +413,9 @@ override datadir := $(strip $(foreach d,$(DATADIR),$(patsubst %/,%,$d)))
 
 # All directories
 alldir := $(strip\
-    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)    \
-    $(libdir) $(extdir) $(bindir) $(sbindir) $(execdir) $(distdir) \
-    $(testdir) $(datadir)                                          \
+    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)   \
+    $(libdir) $(extdir) $(srpdir) $(bindir) $(sbindir) $(execdir) \
+    $(distdir) $(testdir) $(datadir)                              \
 )
 
 # Check if every directory variable is non-empty
@@ -442,6 +454,9 @@ depext  := $(strip $(sort $(DEPEXT)))
 objext  := $(strip $(sort $(OBJEXT)))
 binext  := $(strip $(sort $(BINEXT)))
 
+srpext  := $(strip $(sort $(SRPEXT)))
+dataext := $(strip $(sort $(DATAEXT)))
+
 texiext := $(strip $(sort $(TEXIEXT)))
 infoext := $(strip $(sort $(INFOEXT)))
 htmlext := $(strip $(sort $(HTMLEXT)))
@@ -456,7 +471,7 @@ docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 # Check all extensions
 allext := $(incext) $(srcext) $(asmext) $(libext)
 allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext) $(esqlext)
-allext += $(depext) $(objext) $(binext)
+allext += $(depext) $(objext) $(binext) $(srpext) $(dataext)
 allext := $(strip $(allext))
 $(foreach ext,$(allext),\
     $(if $(filter .%,$(ext)),,\
@@ -1328,6 +1343,8 @@ standard: init
 	$(call mv,$(objext),$(objdir),"object")
 	$(call mv,$(libext),$(firstword $(libdir)),"library")
 	$(call mv,$(docext),$(docdir),"document")
+	$(call mv,$(srpext),$(srpdir),"script")
+	$(call mv,$(dataext),$(datadir),"data")
 	$(call mv,$(incext),$(firstword $(incdir)),"header")
 	$(call mv,$(srcext) $(asmext),$(firstword $(srcdir)),"source")
 	$(call mv,$(lexext) $(lexxext),$(firstword $(srcdir)),"lexer")

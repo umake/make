@@ -1326,7 +1326,7 @@ standard: init
 	$(call mv,$(libext),$(firstword $(libdir)),"library")
 	$(call mv,$(docext),$(docdir),"document")
 	$(call mv,$(incext),$(firstword $(incdir)),"header")
-	$(call mv,$(srcext) $(asmext),$(firstword $(srcdir)),"assembly")
+	$(call mv,$(srcext) $(asmext),$(firstword $(srcdir)),"source")
 	$(call mv,$(lexext) $(lexxext),$(firstword $(srcdir)),"lexer")
 	$(call mv,$(yaccext) $(yaxxext),$(firstword $(srcdir)),"parser")
 	$(call mv,$(esqlext),$(firstword $(srcdir)),"embedded SQL")
@@ -2540,7 +2540,7 @@ $(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
     $(call git-add-commit,\
         $(addprefix $(firstword $2)/,\
             $(foreach e,$(strip $1),$(wildcard *$e))),\
-        "Moves $3 files to $(firstword $2)/")\
+        "Moves $(subst \",,$3) files to $(firstword $2)/")\
 )
 endef
 

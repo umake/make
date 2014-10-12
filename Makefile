@@ -509,6 +509,9 @@ comma := ,
 empty :=
 space := $(empty) $(empty)
 tab   := $(empty)	$(empty)
+define quote
+"
+endef
 define newline
 
 
@@ -1316,8 +1319,8 @@ init: initdep
 	$(call make-create,config,Config.mk)
 	$(call make-create,gitignore,.gitignore)
 	$(call git-init)
-	$(call git-add-commit,Config.mk,"Adds Config.mk")
-	$(call git-add-commit,.gitignore,"Adds .gitignore")
+	$(call git-add-commit,Makefile Config.mk .gitignore,\
+           "Adds Makefile and Config.mk with .gitignore")
 	$(call git-remote-add,origin,$(GIT_REMOTE))
 
 .PHONY: standard
@@ -2540,7 +2543,7 @@ $(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
     $(call git-add-commit,\
         $(addprefix $(firstword $2)/,\
             $(foreach e,$(strip $1),$(wildcard *$e))),\
-        "Moves $(subst \",,$3) files to $(firstword $2)/")\
+        "Moves $(subst $(quote),,$3) files to $(firstword $2)/")\
 )
 endef
 

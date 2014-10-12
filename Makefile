@@ -1777,11 +1777,11 @@ $(foreach s,$(cxxparser),$(eval\
 define esql-factory
 $$(firstword $$(srcdir))/$1.$2: $3
 	$$(call status,$$(MSG_ESQL))
-	$$(ESQL) $$(esqlflags) -c $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(ESQL) $$(esqlflags) -c $$< -o $$@ $$(ERROR)
 	$$(call ok,$$(MSG_ESQL),$$@)
 endef
 $(foreach s,$(cesql),$(eval\
-    $(call esql-factory,$(call not-root,$(basename $s)),c,$s),\
+    $(call esql-factory,$(call not-root,$(basename $s)),c,$s)\
 ))
 
 #======================================================================#

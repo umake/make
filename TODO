@@ -53,7 +53,8 @@
     [X] Integrate actions of Makefile with git commits.
     [X] Commit in git when upgrading the Makefile.
     [X] Create target 'deploy' to send project to remote.
-    [X] Create target 'synt' to receive project from remote.
+    [X] Create target 'sync' to receive project from remote.
+    [X] Support compilation of embedded SQL.
     [ ] Add deep directory search of test binary name.
     [ ] Test if flex/bison still compile correctly.
     [ ] Add option to automatically create a RPM package.

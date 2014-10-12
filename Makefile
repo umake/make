@@ -63,7 +63,7 @@ WEB_DEPENDENCY  :=
 ##                              FLAGS                                 ##
 ########################################################################
 
-# Assembler flags
+# Compilation flags
 ASFLAGS   := -f elf32
 
 # C Options
@@ -83,6 +83,7 @@ LDF       := -lgfortran
 LDCXX     :=
 LDLEX     := -lfl
 LDYACC    :=
+LDESQL    := -L$(shell pg_config --libdir) -lecpg
 
 # Library flags
 ARFLAGS   := -rcv
@@ -234,6 +235,9 @@ LEXXEXT := .ll .lpp
 YACCEXT := .y
 YAXXEXT := .yy .ypp
 
+# Embedded SQL extensions
+ESQLEXT := .pgc .pc
+
 # Dependence extensions
 DEPEXT  := .d
 
@@ -294,10 +298,17 @@ FIND_FLAGS      := -type d -print 2> /dev/null
 # Parser and Lexer
 LEX             := flex
 LEX_CXX         := flexc++
+LEXLIBS         :=
 LEXFLAGS        :=
 YACC            := bison
 YACC_CXX        := bisonc++
+YACCLIBS        :=
 YACCFLAGS       :=
+
+# Embedded SQL
+ESQL            := ecpg
+ESQLLIBS        := $(shell pg_config --includedir)
+ESQLFLAGS       := 
 
 # Tags
 CTAGS           := ctags
@@ -358,8 +369,9 @@ ldlibs    := $(LDLIBS)
 ldflags   := $(LDFLAGS)
 arflags   := $(ARFLAGS)
 soflags   := $(SOFLAGS)
-lexflags  := $(LEXFLAG)
+lexflags  := $(LEXFLAGS)
 yaccflags := $(YACCFLAGS)
+esqlflags := $(ESQLFLAGS)
 
 # Installation directories
 destdir := $(strip $(foreach d,$(DESTDIR),$(patsubst %/,%,$d)))
@@ -425,6 +437,7 @@ lexext  := $(strip $(sort $(LEXEXT)))
 lexxext := $(strip $(sort $(LEXXEXT)))
 yaccext := $(strip $(sort $(YACCEXT)))
 yaxxext := $(strip $(sort $(YAXXEXT)))
+esqlext := $(strip $(sort $(ESQLEXT)))
 depext  := $(strip $(sort $(DEPEXT)))
 objext  := $(strip $(sort $(OBJEXT)))
 binext  := $(strip $(sort $(BINEXT)))
@@ -442,7 +455,7 @@ docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 
 # Check all extensions
 allext := $(incext) $(srcext) $(asmext) $(libext)
-allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext)
+allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext) $(esqlext)
 allext += $(depext) $(objext) $(binext)
 allext := $(strip $(allext))
 $(foreach ext,$(allext),\
@@ -678,27 +691,6 @@ externdep := $(patsubst %,$(depdir)/%dep,$(externdep))
 #------------------------------------------------------------------[ 4 ]
 externreq := $(patsubst $(depdir)/%dep,$(extdir)/%,$(externdep))
 
-# Header files
-# ==============
-# 1) Get all files able to be included
-# 2) Filter out ignored files from above
-# 3) Get all subdirectories of the included dirs
-# 4) Add them as paths to be searched for headers
-#------------------------------------------------------------------[ 1 ]
-incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
-                $(call rwildcard,$i,*$e)))
-#------------------------------------------------------------------[ 2 ]
-incall  := $(call filter-ignored,$(incall))
-#------------------------------------------------------------------[ 3 ]
-incsub  := $(sort $(call remove-trailing-bar,$(dir $(incall))))
-incsub  += $(patsubst %,$(extdir)/%/include,\
-               $(call hash-table.keys,git_dependency))
-incsub  += $(lexinc) $(yaccinc)
-#------------------------------------------------------------------[ 4 ]
-clibs   := $(CLIBS)   $(patsubst %,-I%,$(incsub))
-flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))
-cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
-
 # Library files
 # ===============
 # .---.-----.------.-----.--------.---------------------------------.
@@ -747,9 +739,10 @@ asmall := $(call filter-ignored,$(asmall))
 # 1) Find in a directory tree all the lex files (with dir names)
 # 2) Filter out ignored files from above
 # 3) Split C++ and C lexers (to be compiled appropriately)
-# 4) Change lex extension to format .yy.c or .yy.cc (for C/C++ lexers)
+# 4) Change lex extension to .yy.c or .yy.cc (for C/C++ lexers)
 #    and join all the C and C++ lexer source names
 # 5) Create lex scanners default directories for headers
+# 6) Add default header directories for lexer compilation
 #------------------------------------------------------------------[ 1 ]
 $(foreach root,$(srcdir),\
     $(foreach E,$(lexext) $(lexxext),\
@@ -770,15 +763,18 @@ lexall   := $(strip $(lexall))
 lexinc   := $(call not-root,$(basename $(basename $(lexall))))
 lexinc   := $(addprefix $(firstword $(incdir))/,$(lexinc))
 lexinc   := $(addsuffix -yy/,$(lexinc))
+#------------------------------------------------------------------[ 6 ]
+lexinc   += $(strip $(LEXLIBS))
 
 # Syntatic analyzers
 # ====================
 # 1) Find in a directory tree all the yacc files (with dir names)
-# 3) Filter out ignored files from above
+# 2) Filter out ignored files from above
 # 3) Split C++ and C parsers (to be compiled appropriately)
-# 4) Change yacc extension to format .tab.c or .tab.cc (for C/C++ parsers)
+# 4) Change yacc extension to .tab.c or .tab.cc (for C/C++ parsers)
 #    and join all the C and C++ parser source names
 # 5) Create yacc parsers default header files
+# 6) Add default header directories for parser compilation
 #------------------------------------------------------------------[ 1 ]
 $(foreach root,$(srcdir),\
     $(foreach E,$(yaccext) $(yaxxext),\
@@ -799,11 +795,54 @@ yaccall   := $(strip $(yaccall))
 yaccinc   := $(call not-root,$(basename $(basename $(yaccall))))
 yaccinc   := $(addprefix $(firstword $(incdir))/,$(yaccinc))
 yaccinc   := $(addsuffix -tab/,$(yaccinc))
+#------------------------------------------------------------------[ 6 ]
+yaccinc   += $(strip $(YACCLIBS))
+
+# Embedded SQL preprocessors
+# ============================
+# 1) Find in a directory tree all the esql files (with dir names)
+# 2) Filter out ignored files from above
+# 3) Change esql extension to .c
+# 4) Add default header directories for embedded SQL compilation
+#------------------------------------------------------------------[ 1 ]
+$(foreach root,$(srcdir),\
+    $(foreach E,$(esqlext),\
+        $(eval cesql += $(call rwildcard,$(root),*$E))\
+))
+#------------------------------------------------------------------[ 2 ]
+cesql     := $(call filter-ignored,$(cesql))
+#------------------------------------------------------------------[ 3 ]
+esqlall   += $(foreach E,$(esqlext),\
+                $(patsubst %$E,%.c,$(filter %$E,$(cesql))))
+esqlall   := $(strip $(esqlall))
+#------------------------------------------------------------------[ 4 ]
+esqlinc   := $(strip $(ESQLLIBS))
 
 # Automatically generated files
 # ===============================
-autoall := $(yaccall) $(lexall)
-autoinc := $(yaccinc) $(lexinc)
+autoall := $(yaccall) $(lexall) $(esqlall)
+autoinc := $(yaccinc) $(lexinc) $(esqlinc)
+
+# Header files
+# ==============
+# 1) Get all files able to be included
+# 2) Filter out ignored files from above
+# 3) Get all subdirectories of the included dirs
+# 4) Add them as paths to be searched for headers
+#------------------------------------------------------------------[ 1 ]
+incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
+                $(call rwildcard,$i,*$e)))
+#------------------------------------------------------------------[ 2 ]
+incall  := $(call filter-ignored,$(incall))
+#------------------------------------------------------------------[ 3 ]
+incsub  := $(sort $(call remove-trailing-bar,$(dir $(incall))))
+incsub  += $(patsubst %,$(extdir)/%/include,\
+               $(call hash-table.keys,git_dependency))
+incsub  += $(autoinc)
+#------------------------------------------------------------------[ 4 ]
+clibs   := $(CLIBS)   $(patsubst %,-I%,$(incsub))
+flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))
+cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
 
 # Source files
 # ==============
@@ -838,7 +877,7 @@ endif
 #------------------------------------------------------------------[ 2 ]
 srcall := $(call filter-ignored,$(srcall))
 #------------------------------------------------------------------[ 3 ]
-srcall := $(call rfilter-out,$(lexall) $(yaccall),$(srcall))
+srcall := $(call rfilter-out,$(lexall) $(yaccall) $(esqlall),$(srcall))
 #------------------------------------------------------------------[ 4 ]
 liball := $(sort \
     $(foreach r,$(autoall) $(srcall) $(asmall),\
@@ -1014,6 +1053,7 @@ $(if $(strip $(f_all)),$(eval ldflags += $(LDF)))
 $(if $(strip $(cxx_all)),$(eval ldflags += $(LDCXX)))
 $(if $(strip $(lexall)),$(eval ldflags += $(LDLEX)))
 $(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
+$(if $(strip $(esqlall)),$(eval ldflags += $(LDESQL)))
 
 # Object files
 # ==============
@@ -1219,7 +1259,8 @@ build_dependency := \
     LEX      => $(clexer),\
     LEX_CXX  => $(cxxlexer),\
     YACC     => $(cparser),\
-    YACC_CXX => $(cxxparser)
+    YACC_CXX => $(cxxparser),\
+    ESQL     => $(cesql)
 
 .PHONY: all
 all: builddep $(externdep) $(binall) $(liball)
@@ -1235,12 +1276,15 @@ nothing:
 ##                       EXTERNAL REPOSITORIES                        ##
 ########################################################################
 
+external_dependency := \
+	GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
+
 .PHONY: sync
-sync:
+sync: externaldep
 	$(call git-pull,$(REMOTE),$(BRANCH))
 
 .PHONY: deploy
-deploy:
+deploy: externaldep
 	$(call git-push,$(REMOTE),$(BRANCH))
 
 ########################################################################
@@ -1248,7 +1292,8 @@ deploy:
 ########################################################################
 
 upgrade_dependency := \
-	CURL     => $(firstword $(MAKEFILE_LIST))
+	CURL     => $(firstword $(MAKEFILE_LIST)),\
+	GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
 
 .PHONY: upgrade
 upgrade: upgradedep
@@ -1260,29 +1305,31 @@ upgrade: upgradedep
 ##                          INITIALIZATION                            ##
 ########################################################################
 
+init_dependency := \
+	GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
+
 .PHONY: init
-init:
+init: initdep
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
 	$(call mkdir,$(docdir))
 	$(call make-create,config,Config.mk)
 	$(call make-create,gitignore,.gitignore)
-	$(if $(wildcard .git/*),,\
-        $(call git-init)$(newline)\
-        $(call git-add-commit,Config.mk,"Adds Config.mk")$(newline)\
-        $(call git-add-commit,.gitignore,"Adds .gitignore"))
-		$(if $(strip $(GIT_REMOTE)),\
-		    $(call git-remote-add,origin,$(GIT_REMOTE)))
+	$(call git-init)
+	$(call git-add-commit,Config.mk,"Adds Config.mk")
+	$(call git-add-commit,.gitignore,"Adds .gitignore")
+	$(call git-remote-add,origin,$(GIT_REMOTE))
 
 .PHONY: standard
-standard:
-	$(call mv,$(objext),$(objdir))
-	$(call mv,$(libext),$(firstword libdir))
-	$(call mv,$(docext),$(docdir))
-	$(call mv,$(incext),$(firstword incdir))
-	$(call mv,$(srcext) $(asmext),$(firstword srcdir))
-	$(call mv,$(lexext) $(lexxext) $(yaccext) $(yaxxext),\
-        $(firstword srcdir))
+standard: init
+	$(call mv,$(objext),$(objdir),"object")
+	$(call mv,$(libext),$(firstword $(libdir)),"library")
+	$(call mv,$(docext),$(docdir),"document")
+	$(call mv,$(incext),$(firstword $(incdir)),"header")
+	$(call mv,$(srcext) $(asmext),$(firstword $(srcdir)),"assembly")
+	$(call mv,$(lexext) $(lexxext),$(firstword $(srcdir)),"lexer")
+	$(call mv,$(yaccext) $(yaxxext),$(firstword $(srcdir)),"parser")
+	$(call mv,$(esqlext),$(firstword $(srcdir)),"embedded SQL")
 
 ########################################################################
 ##                               TAGS                                 ##
@@ -1593,7 +1640,7 @@ $$(depdir)/$1dep: $$(call cdr,$$(MAKEFILE_LIST)) | $$(depdir)
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
-$(foreach d,build upgrade tags docs dist dpkg install,\
+$(foreach d,build external upgrade init tags docs dist dpkg install,\
     $(eval $(call system-dependency,$d,$d_dependency)))
 
 #======================================================================#
@@ -1700,6 +1747,21 @@ $(foreach s,$(cparser),$(eval\
 $(foreach s,$(cxxparser),$(eval\
     $(call parser-factory,$(call not-root,$(basename $s)),cc,$s,\
     $(YACC_CXX))\
+))
+
+#======================================================================#
+# Function: esql-factory                                               #
+# @param  $1 Basename of the esql file                                 #
+# @return Target to generate source files from embeddes SQL            #
+#======================================================================#
+define esql-factory
+$$(firstword $$(srcdir))/$1.$2: $3
+	$$(call status,$$(MSG_ESQL))
+	$$(ESQL) $$(esqlflags) -c $$< -o $$@ $$(ERROR)
+	$$(call ok,$$(MSG_ESQL),$$@)
+endef
+$(foreach s,$(cesql),$(eval\
+    $(call esql-factory,$(call not-root,$(basename $s)),c,$s),\
 ))
 
 #======================================================================#
@@ -2197,6 +2259,7 @@ realclean: distclean docclean packageclean
 	$(foreach d,$(lexinc),$(call rm-if-empty,$d)$(newline))
 	$(call rm-if-exists,$(yaccall),$(MSG_YACC_NONE))
 	$(foreach d,$(yaccinc),$(call rm-if-empty,$d)$(newline))
+	$(call rm-if-exists,$(esqlall),$(MSG_ESQL_NONE))
 	$(call rm-if-exists,ctags,$(MSG_CTAGS_NONE))
 	$(call rm-if-exists,etags,$(MSG_ETAGS_NONE))
 endif
@@ -2265,8 +2328,10 @@ MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
                     "sources, headers and configuration files?"
 MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 
-MSG_MOVE          = "${YELLOW}Populating directory $(firstword $2)${RES}"
-MSG_NO_MOVE       = "${PURPLE}Nothing to put in $(firstword $2)${RES}"
+MSG_MOVE          = "${YELLOW}Populating ${BLUE}$(firstword $2)"\
+                    "${YELLOW}with $(strip $3) files${RES}"
+MSG_NO_MOVE       = "${PURPLE}No $(strip $3) files to put in"\
+                    "$(firstword $2)${RES}"
 
 MSG_WEB_CLONE     = "${YELLOW}Downloading ${DEF}$2${RES}"
 
@@ -2353,10 +2418,10 @@ MSG_DEB_STEP4     = "${YELLOW}[STEP_4]${DEF} Building the Debian"\
 
 MSG_LEX           = "${PURPLE}Generating scanner ${BLUE}$@${RES}"
 MSG_LEX_NONE      = "${PURPLE}No auto-generated lexers${RES}"
-MSG_LEX_COMPILE   = "${DEF}Compiling scanner ${WHITE}$@${RES}"
 MSG_YACC          = "${PURPLE}Generating parser ${BLUE}$@${RES}"
 MSG_YACC_NONE     = "${PURPLE}No auto-generated parsers${RES}"
-MSG_YACC_COMPILE  = "${DEF}Compiling parser ${WHITE}$@${RES}"
+MSG_ESQL          = "${PURPLE}Generating embedded SQL ${BLUE}$@${RES}"
+MSG_ESQL_NONE     = "${PURPLE}No auto-generated embedded SQL${RES}"
 
 MSG_TEST          = "${BLUE}Testing ${WHITE}$(notdir $<)${RES}"
 MSG_TEST_COMPILE  = "${DEF}Generating test executable"\
@@ -2462,14 +2527,18 @@ $(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
         $(call mkdir,$(firstword $2))\
 ))
 $(call phony-status,$(MSG_MOVE))
-$(quiet) $(strip $(foreach e,$(strip $1),\
+$(strip $(foreach e,$(strip $1),\
     $(if $(strip $(wildcard *$e)),\
-        $(MV) $(wildcard *$e) $(firstword $2); )\
+        $(quiet) $(MV) $(wildcard *$e) $(firstword $2);\
+    )\
 ))
 $(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
     $(call phony-ok,$(MSG_MOVE)),\
     $(call phony-ok,$(MSG_NO_MOVE))\
 )
+$(call git-add-commit,\
+    $(foreach e,$(strip $1),$(wildcard $(firstword $2)/*$e)),\
+    "Moves $3 files to standard directory $(firstword $2)")
 endef
 
 ## REMOTION ############################################################
@@ -2667,7 +2736,7 @@ define web-clone
 endef
 
 ## VERSIONMENT #########################################################
-ifneq (,$(strip $(GIT)))
+ifndef NO_GIT
 
 define git-clone
 	$(call phony-status,$(MSG_GIT_CLONE))
@@ -2708,13 +2777,16 @@ define git-add-commit
 	$(call git-commit,$1,$2)
 endef
 
+ifneq (,$(strip $(GIT_REMOTE)))
 define git-remote-add
-	$(call phony-status,$(MSG_GIT_REM_ADD))
-	$(quiet) $(GIT) remote add $1 $2 $(ERROR)
-	$(call phony-ok,$(MSG_GIT_REM_ADD))
+	$(quiet) if ! $(GIT) remote | grep "^$1$$" $(NO_OUTPUT);\
+             then\
+                 $(call model-status,$(MSG_GIT_REM_ADD))\
+                 $(GIT) remote add $1 $2 $(ERROR);\
+                 $(call model-ok,$(MSG_GIT_REM_ADD))\
+             fi
 endef
 
-ifneq (,$(strip $(GIT_REMOTE)))
 define git-pull
 	$(call phony-status,$(MSG_GIT_PULL))
 	$(quiet) $(GIT) pull $(or $(strip $1),origin)\
@@ -3369,6 +3441,7 @@ projecthelp:
 	@echo " * V:            Allow printing the command line rules      "
 	@echo " * MORE:         With errors, use 'more' to read stderr     "
 	@echo " * SILENT:       Outputs no default messagens in execution  "
+	@echo " * NO_GIT:       Disable all git commands executed by make  "
 	@echo " * INC_EXT:      Include extension for files made by 'new'  "
 	@echo " * SRC_EXT:      Source extension for files made by 'new'   "
 	@echo " * NO_COLORS:    Outputs are made without any color         "
@@ -3396,7 +3469,9 @@ projecthelp:
 
 define prompt
 @echo "${YELLOW}"$1"${RES}"\
-      $(if $(strip $2),"$(strip $2)","${RED}Empty${RES}")
+      $(if $(strip $(filter undefined,$(origin $(VAR)))),\
+          "${RED}Undefined${RES}",\
+          $(if $(strip $2),"$(strip $2)","${RED}Empty${RES}"))
 endef
 
 .PHONY: dump
@@ -3431,7 +3506,9 @@ else
 	$(call prompt,"alllexer:     ",$(alllexer)     )
 	$(call prompt,"clexer:       ",$(clexer)       )
 	$(call prompt,"cxxlexer:     ",$(cxxlexer)     )
+	$(call prompt,"lexflags:     ",$(lexflags)     )
 	$(call prompt,"lexall:       ",$(lexall)       )
+	$(call prompt,"lexlibs:      ",$(lexlibs)      )
 	$(call prompt,"lexinc:       ",$(lexinc)       )
 	
 	@echo "${WHITE}\nPARSER                  ${RES}"
@@ -3439,8 +3516,17 @@ else
 	$(call prompt,"allparser:    ",$(allparser)    )
 	$(call prompt,"cparser:      ",$(cparser)      )
 	$(call prompt,"cxxparser:    ",$(cxxparser)    )
+	$(call prompt,"yaccflags:    ",$(yaccflags)    )
 	$(call prompt,"yaccall:      ",$(yaccall)      )
+	$(call prompt,"yacclibs:     ",$(yacclibs)     )
 	$(call prompt,"yaccinc:      ",$(yaccinc)      )
+	
+	@echo "${WHITE}\nEMBEDDED SQL PREPROC    ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"cesql:        ",$(cesql)        )
+	$(call prompt,"esqlflags:    ",$(esqlflags)    )
+	$(call prompt,"esqllibs:     ",$(esqllibs)     )
+	$(call prompt,"esqlall:      ",$(esqlall)      )
 	
 	@echo "${WHITE}\nSOURCE                  ${RES}"
 	@echo "----------------------------------------"

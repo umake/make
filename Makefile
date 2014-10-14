@@ -359,16 +359,29 @@ MAKE            += -f $(firstword $(MAKEFILE_LIST)) $(MAKEFLAGS)
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 ########################################################################
+##                  MAKEFILE BASIC CONFIGURATIONS                     ##
+########################################################################
+
+# Remote path
+MAKEREMOTE := \
+    https://raw.githubusercontent.com/renatocf/make/master/Makefile
+
+# Define the shell to be used
+SHELL = /bin/sh
+
+########################################################################
 ##                       USER INPUT VALIDATION                        ##
 ########################################################################
 
-# Documentation:
+# Documentation
+# ===============
 license      := $(strip $(firstword $(wildcard $(LICENSE))))
 notice       := $(strip $(firstword $(wildcard $(NOTICE))))
 contributors := $(strip $(firstword $(wildcard $(CONTRIBUTORS))))
 doxyfile     := $(strip $(firstword $(DOXYFILE)))
 
-# Flags:
+# Flags
+# =======
 # Redefine flags to avoid conflict with user's local definitions
 asflags   := $(ASFLAGS)
 cflags    := $(CFLAGS)
@@ -385,6 +398,8 @@ yaccflags := $(YACCFLAGS)
 esqlflags := $(ESQLFLAGS)
 
 # Installation directories
+# ==========================
+# Add prefix $(destdir)/ and transforms names in i_
 destdir := $(strip $(foreach d,$(DESTDIR),$(patsubst %/,%,$d)))
 
 $(foreach b,$(install_dirs),\
@@ -393,7 +408,8 @@ $(foreach b,$(install_dirs),\
         $(error "$b" must not be empty))\
 )
 
-# Directories:
+# Directories
+# =============
 # No directories must end with a '/' (slash)
 override srcdir  := $(strip $(foreach d,$(SRCDIR),$(patsubst %/,%,$d)))
 override depdir  := $(strip $(foreach d,$(DEPDIR),$(patsubst %/,%,$d)))
@@ -434,7 +450,8 @@ ifneq ($(words $(testsuf)),1)
     $(error Just one suffix allowed for test sources!)
 endif
 
-# Extensions:
+# Extensions
+# ============
 # Every extension must begin with a '.' (dot)
 hext    := $(strip $(sort $(HEXT)))
 hfext   := $(strip $(sort $(HFEXT)))
@@ -490,20 +507,13 @@ ifneq ($(words $(binext)),1)
         $(error Just one or none binary extensions allowed!))
 endif
 
-########################################################################
-##                              PATHS                                 ##
-########################################################################
-
-# Remote path
-MAKEREMOTE := \
-    https://raw.githubusercontent.com/renatocf/make/master/Makefile
-
-# Define the shell to be used
-SHELL = /bin/sh
-
 # Define extensions as the only valid ones
 .SUFFIXES:
 .SUFFIXES: $(allext)
+
+########################################################################
+##                              PATHS                                 ##
+########################################################################
 
 # Paths
 # ======
@@ -516,10 +526,9 @@ $(foreach s,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 
 ########################################################################
-##                              FILES                                 ##
+##                         USEFUL DEFINITIONS                         ##
 ########################################################################
 
-# Useful definitions
 comma := ,
 empty :=
 space := $(empty) $(empty)
@@ -532,17 +541,44 @@ define newline
 
 endef
 
+########################################################################
+##                             FUNCTIONS                              ##
+########################################################################
+
+# Logic functions
+# =================
+# 1) not: Returns empty if arg is not empty, and not empty otherwise
+# 2) eq:  Returns not empty if $1 == $2, and empty otherwise
+# 3) ne:  Returns not empty if $1 != $2, and empty otherwise
+define not
+$(strip $(if $1,,T))
+endef
+
+define eq
+$(strip $(if $(strip $(filter-out $(strip $1),$(strip $2))),,1))
+endef
+
+define ne
+$(strip $(call not,$(call eq,$1,$2)))
+endef
+
 # List manipulation functions
+# =============================
+# 1) car:    Gets first element of a list
+# 2) cdr:    Gets all but firs element of a list
+# 3) rcar:   Gets last element of a list
+# 4) rcdr:   Gets all but last element of a list
+# 5) invert: Inverts a list
 define car
 $(strip $(firstword $(strip $1)))
 endef
 
-define rcar
-$(strip $(lastword $(strip $1)))
-endef
-
 define cdr
 $(strip $(wordlist 2,$(words $(strip $1)),$(strip $1)))
+endef
+
+define rcar
+$(strip $(lastword $(strip $1)))
 endef
 
 define rcdr
@@ -550,13 +586,82 @@ $(strip $(patsubst %.word,%,\
     $(patsubst %.word.last,,$(strip $(addsuffix .word,$1)).last)))
 endef
 
-# Auxiliar data structures
-# ==========================
-# 1) hash-table.new: Create a hash table with elements accessible by
-#                    hash-table.key and a list of keys hash-table.keys
-# 2) hash-table.new_impl: Auxiliar function for hash-table.new
-# 3) procedure.new: Create a multi-line set of commands (for list
-#                   of arguments in a target)
+define invert
+$(if $(strip $1),\
+    $(call invert,$(wordlist 2,$(words $1),$1))) $(firstword $1)
+endef
+
+# Path manipulation functions
+# =============================
+# 1) root: Gets the root directory (first in the path) of a path or file
+# 2) not-root: Given a path or file, take out the root directory of it
+# 3) remove-trailing-bar: Removes the last / of a directory-only name
+define root
+$(foreach s,$1,\
+    $(if $(findstring /,$s),\
+        $(call root,$(patsubst %/,%,$(dir $s))),$(strip $s)))
+endef
+
+define not-root
+$(foreach s,$1,$(strip $(patsubst $(strip $(call root,$s))/%,%,$s)))
+endef
+
+define remove-trailing-bar
+$(foreach s,$1,$(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s)))
+endef
+
+# File identification functions
+# ===============================
+# 1) is-f:    Figures out if all files in a list are Fortran files
+# 2) has-cxx: Figures out if there is a C++ file in a list
+# 3) is-cxx:  Figures out if all files in a list are C++ files
+
+define is_c
+$(if $(strip $(foreach s,$(sort $(suffix $1)),\
+    $(if $(strip $(findstring $s,$(cext))),,$s))),,is_c)
+endef
+
+define is_f
+$(if $(strip $(foreach s,$(sort $(suffix $1)),\
+    $(if $(strip $(findstring $s,$(fext))),,$s))),,is_f)
+endef
+
+define is_cxx
+$(if $(strip $(foreach s,$(sort $(suffix $1)),\
+    $(if $(strip $(findstring $s,$(cxxext))),,$s))),,is_cxx)
+endef
+
+# Auxiliar recursive functions
+# ==============================
+# 1) rsubdir:     For listing all subdirectories of a given dir
+# 2) rwildcard:   For wildcard deep-search in the directory tree
+# 3) rfilter:     For filtering a list of text from another list
+# 3) rfilter-out: For filtering out a list of text from another list
+rsubdir     = $(strip $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS))))
+rwildcard   = $(strip $(if $(strip $(wildcard $1/*)),\
+                  $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)),\
+                  $(if $(wildcard $1*),$(filter $(subst *,%,$2),$1))))
+rfilter     = $(strip $(if $(strip $1),\
+                 $(call rfilter,$(call cdr,$1),$2)\
+                 $(filter $(call car,$1),$2)))
+rfilter-out = $(strip $(if $(strip $1),\
+                 $(call rfilter-out,\
+                     $(call cdr,$1),\
+                     $(filter-out $(call car,$1),$2)),\
+                 $(sort $2)))
+
+########################################################################
+##                           DATA STRUCTURES                          ##
+########################################################################
+
+# Hash Table
+# ============
+# 1) hash-table.new:      Creates a hash table with elements accessible 
+#                         by hash-table.key and a list of keys 
+#                         hash-table.keys
+# 2) hash-table.new_impl: Implements recursion for hash-table.new
+# 3) hash-table.keys:     Returns the list of keys of hash-table $1
+# 4) hash-table.values:   Returns the list of values of hash-table $1
 
 define hash-table.new
 $(call hash-table.new_impl,$(strip $1),$($(strip $1)))
@@ -601,82 +706,16 @@ define hash-table.values
 $(strip $(foreach k,$(call hash-table.keys,$1),$($1.$k)))
 endef
 
-# Auxiliar functions
-# ===================
-# 1) root: Gets the root directory (first in the path) of a path or file
-# 2) not-root: Given a path or file, take out the root directory of it
-# 3) invert: Invert a list of elements
-# 4) not: Returns empty if its argument was defined, or T otherwise
-# 5) remove-trailing-bar: Removes the last / of a directory-only name
-# 6) has-c: figure out if there is a C file in a list
-# 7) is-f: figure out if all files in a list are C files
-# 6) has-c: figure out if there is a Fortran file in a list
-# 7) is-f: figure out if all files in a list are Fortran files
-# 6) has-cxx: figure out if there is a C++ file in a list
-# 7) is-cxx: figure out if all files in a list are C++ files
-define root
-$(foreach s,$1,\
-    $(if $(findstring /,$s),\
-        $(call root,$(patsubst %/,%,$(dir $s))),$(strip $s)))
-endef
+########################################################################
+##                              FILES                                 ##
+########################################################################
 
-define not-root
-$(foreach s,$1,$(strip $(patsubst $(strip $(call root,$s))/%,%,$s)))
-endef
-
-define invert
-$(if $(strip $1),$(call invert,$(wordlist 2,$(words $1),$1))) $(firstword $1)
-endef
-
-define not
-$(strip $(if $1,,T))
-endef
-
-define eq
-$(strip $(if $(strip $(filter-out $(strip $1),$(strip $2))),,1))
-endef
-
-define ne
-$(strip $(call not,$(call eq,$1,$2)))
-endef
-
-define remove-trailing-bar
-$(foreach s,$1,$(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s)))
-endef
-
-define is_c
-$(if $(strip $(foreach s,$(sort $(suffix $1)),\
-    $(if $(strip $(findstring $s,$(cext))),,$s))),,is_c)
-endef
-
-define is_f
-$(if $(strip $(foreach s,$(sort $(suffix $1)),\
-    $(if $(strip $(findstring $s,$(fext))),,$s))),,is_f)
-endef
-
-define is_cxx
-$(if $(strip $(foreach s,$(sort $(suffix $1)),\
-    $(if $(strip $(findstring $s,$(cxxext))),,$s))),,is_cxx)
-endef
-
-# Auxiliar recursive functions
-# ==============================
-# 1) rsubdir:     For listing all subdirectories of a given dir
-# 2) rwildcard:   For wildcard deep-search in the directory tree
-# 3) rfilter:     For filtering a list of text from another list
-# 3) rfilter-out: For filtering out a list of text from another list
-rsubdir     = $(strip $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS))))
-rwildcard   = $(strip $(if $(strip $(wildcard $1/*)),\
-                  $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)),\
-                  $(if $(wildcard $1*),$(filter $(subst *,%,$2),$1))))
-rfilter     = $(strip $(if $(strip $1),\
-                 $(call rfilter,$(call cdr,$1),$2)\
-                 $(filter $(call car,$1),$2)))
-rfilter-out = $(strip $(if $(strip $1),\
-                 $(call rfilter-out,\
-                     $(call cdr,$1),\
-                     $(filter-out $(call car,$1),$2)),\
-                 $(sort $2)))
+# Default variable names
+# ========================
+# fooall: complete path WITH root directories
+# foosrc: complete path WITHOUT root directories
+# foopat: incomplete paths WITH root directories
+# foolib: library names WITHOUT root directories
 
 # Configuration Files
 # =====================
@@ -699,13 +738,6 @@ ignored := $(sort $(foreach f,$(ignored),\
 define filter-ignored
 $(call rfilter-out,$(ignored),$1)
 endef
-
-# Default variable names
-# ========================
-# fooall: complete path WITH root directories
-# foosrc: complete path WITHOUT root directories
-# foopat: incomplete paths WITH root directories
-# foolib: library names WITHOUT root directories
 
 # External dependency files
 # ===========================

@@ -537,8 +537,17 @@ define car
 $(strip $(firstword $(strip $1)))
 endef
 
+define rcar
+$(strip $(lastword $(strip $1)))
+endef
+
 define cdr
 $(strip $(wordlist 2,$(words $(strip $1)),$(strip $1)))
+endef
+
+define rcdr
+$(strip $(patsubst %.word,%,\
+    $(patsubst %.word.last,,$(strip $(addsuffix .word,$1)).last)))
 endef
 
 # Auxiliar data structures
@@ -621,6 +630,14 @@ endef
 
 define not
 $(strip $(if $1,,T))
+endef
+
+define eq
+$(strip $(if $(strip $(filter-out $(strip $1),$(strip $2))),,1))
+endef
+
+define ne
+$(strip $(call not,$(call eq,$1,$2)))
 endef
 
 define remove-trailing-bar
@@ -3293,7 +3310,7 @@ endif
 endif # Check if one goal is 'new' or 'delete'
 
 ########################################################################
-##                         HELP AND CONFIGS                           ##
+##                         CONFIGURATION FILES                        ##
 ########################################################################
 
 .PHONY: config
@@ -3385,6 +3402,38 @@ gitignore:
 	@$(if $(strip $(doxyfile)),echo $(docdir)/$(doxyfile).mk)
 	@$(foreach e,$(depext),echo *$e; )
 	@echo ""
+
+########################################################################
+##                         INFORMATION TARGETS                        ##
+########################################################################
+
+define statistic-count
+$(words $1) $(if $(call ne,$(words $1),0),$(strip \
+    $(foreach n,$(call rcar,$(call rcdr,$(shell wc -l $1))),$(strip \
+        $(if $(call eq,1,$n),($n line),($n lines))\
+))))
+endef
+
+.PHONY: statistics
+statistics:
+	@echo "                                                            "
+	@echo "$(PROJECT)-$(VERSION)                                       "
+	@echo "=============================                               "
+	@echo "                                                            "
+	@echo "C            : $(call statistic-count,$(c_all))             "
+	@echo "C++          : $(call statistic-count,$(cxx_all))           "
+	@echo "Fortran      : $(call statistic-count,$(f_all))             "
+	@echo "Assembly     : $(call statistic-count,$(asmall))            "
+	@echo "Headers      : $(call statistic-count,$(incall))            "
+	@echo "Lexers       : $(call statistic-count,$(alllexer))          "
+	@echo "Parsers      : $(call statistic-count,$(allparser))         "
+	@echo "Embedded SQL : $(call statistic-count,$(cesql))             "
+	@echo "Tests        : $(call statistic-count,$(testall))           "
+	@echo "-----------------------------------                         "
+	@echo "Total        :"\
+          "$(call statistic-count,$(srcall) $(asmall) $(incall)        \
+           $(alllexer) $(allparser) $(cesql) $(testall))               "
+	@echo "                                                            "
 
 .PHONY: help
 help:
@@ -3498,10 +3547,10 @@ endef
 .PHONY: dump
 dump:
 ifdef VAR ####
-	@echo "${YELLOW}"$(VAR)"${RES}"\
-          $(if $(strip $(filter undefined,$(origin $($(VAR))))),\
+	@echo "${YELLOW}$(VAR):${RES}"\
+          $(if $(strip $(filter undefined,$(origin $(VAR)))),\
               "${RED}Undefined${RES}",\
-              "$(or $(strip $($(VAR)),${RED}Empty${RES}))")
+              "$(or $(strip $($(VAR))),${RED}Empty${RES})")
 else
 	@echo "${WHITE}\nCONFIGURATION           ${RES}"
 	@echo "----------------------------------------"

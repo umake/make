@@ -319,7 +319,7 @@ YACCFLAGS       :=
 # Embedded SQL
 ESQL            := ecpg
 ESQLLIBS        := $(shell pg_config --includedir)
-ESQLFLAGS       := 
+ESQLFLAGS       :=
 
 # Tags
 CTAGS           := ctags
@@ -502,8 +502,8 @@ rfilter-out = $(strip $(if $(strip $1),\
 
 # Hash Table
 # ============
-# 1) hash-table.new:      Creates a hash table with elements accessible 
-#                         by hash-table.key and a list of keys 
+# 1) hash-table.new:      Creates a hash table with elements accessible
+#                         by hash-table.key and a list of keys
 #                         hash-table.keys
 # 2) hash-table.new_impl: Implements recursion for hash-table.new
 # 3) hash-table.keys:     Returns the list of keys of hash-table $1
@@ -1612,7 +1612,7 @@ install_dependency := \
     INSTALL_PROGRAM => $(i_bin) $(i_sbin) $(i_libexec)
 
 .PHONY: install-strip
-install-strip: installdep 
+install-strip: installdep
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
 
 .PHONY: install

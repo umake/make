@@ -63,20 +63,16 @@ WEB_DEPENDENCY  :=
 ##                              FLAGS                                 ##
 ########################################################################
 
-# Compilation flags
+# Preprocessor options
+CPPFLAGS  :=
+
+# Assembly/C/C++/Fortran options
 ASFLAGS   := -f elf32
-
-# C Options
 CFLAGS    := -Wall -ansi -pedantic -O2 -g
-
-# C++ Options
 CXXFLAGS  := $(CFLAGS) -std=c++11
-
-# Fortran Options
 FFLAGS    := -cpp
 
-# Linker flags
-LDLIBS    :=
+# Linker options
 LDFLAGS   :=
 LDC       :=
 LDF       := -lgfortran
@@ -85,21 +81,17 @@ LDLEX     := -lfl
 LDYACC    :=
 LDESQL    := -lecpg
 
-# Library flags
+# Library options
 ARFLAGS   := -rcv
 SOFLAGS   := -shared
 
-########################################################################
-##                              LIBS                                  ##
-########################################################################
-
-# Assembly/C/C++/Fortran include paths
+# Assembly/C/C++/Fortran paths for include dirs
 ASLIBS    :=
 CLIBS     :=
 CXXLIBS   :=
 FLIBS     :=
 
-# Linker lib paths
+# Linker paths for library dirs
 LDLIBS    :=
 
 ########################################################################

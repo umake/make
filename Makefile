@@ -370,162 +370,6 @@ MAKEREMOTE := \
 SHELL = /bin/sh
 
 ########################################################################
-##                       USER INPUT VALIDATION                        ##
-########################################################################
-
-# Documentation
-# ===============
-license      := $(strip $(firstword $(wildcard $(LICENSE))))
-notice       := $(strip $(firstword $(wildcard $(NOTICE))))
-contributors := $(strip $(firstword $(wildcard $(CONTRIBUTORS))))
-doxyfile     := $(strip $(firstword $(DOXYFILE)))
-
-# Flags
-# =======
-# Redefine flags to avoid conflict with user's local definitions
-asflags   := $(ASFLAGS)
-cflags    := $(CFLAGS)
-fflags    := $(FFLAGS)
-cxxflags  := $(CXXFLAGS)
-cxxlexer  := $(CXXLEXER)
-cxxparser := $(CXXPARSER)
-ldlibs    := $(LDLIBS)
-ldflags   := $(LDFLAGS)
-arflags   := $(ARFLAGS)
-soflags   := $(SOFLAGS)
-lexflags  := $(LEXFLAGS)
-yaccflags := $(YACCFLAGS)
-esqlflags := $(ESQLFLAGS)
-
-# Installation directories
-# ==========================
-# Add prefix $(destdir)/ and transforms names in i_
-destdir := $(strip $(foreach d,$(DESTDIR),$(patsubst %/,%,$d)))
-
-$(foreach b,$(install_dirs),\
-    $(if $(strip $(firstword $($b))),\
-        $(eval i_$b := $(destdir)$(strip $(patsubst %/,%,$($b)))),\
-        $(error "$b" must not be empty))\
-)
-
-# Directories
-# =============
-# No directories must end with a '/' (slash)
-override srcdir  := $(strip $(foreach d,$(SRCDIR),$(patsubst %/,%,$d)))
-override depdir  := $(strip $(foreach d,$(DEPDIR),$(patsubst %/,%,$d)))
-override incdir  := $(strip $(foreach d,$(INCDIR),$(patsubst %/,%,$d)))
-override docdir  := $(strip $(foreach d,$(DOCDIR),$(patsubst %/,%,$d)))
-override debdir  := $(strip $(foreach d,$(DEBDIR),$(patsubst %/,%,$d)))
-override objdir  := $(strip $(foreach d,$(OBJDIR),$(patsubst %/,%,$d)))
-override libdir  := $(strip $(foreach d,$(LIBDIR),$(patsubst %/,%,$d)))
-override extdir  := $(strip $(foreach d,$(EXTDIR),$(patsubst %/,%,$d)))
-override srpdir  := $(strip $(foreach d,$(SRPDIR),$(patsubst %/,%,$d)))
-override bindir  := $(strip $(foreach d,$(BINDIR),$(patsubst %/,%,$d)))
-override sbindir := $(strip $(foreach d,$(SBINDIR),$(patsubst %/,%,$d)))
-override execdir := $(strip $(foreach d,$(EXECDIR),$(patsubst %/,%,$d)))
-override distdir := $(strip $(foreach d,$(DISTDIR),$(patsubst %/,%,$d)))
-override testdir := $(strip $(foreach d,$(TESTDIR),$(patsubst %/,%,$d)))
-override datadir := $(strip $(foreach d,$(DATADIR),$(patsubst %/,%,$d)))
-
-# All directories
-alldir := $(strip\
-    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)   \
-    $(libdir) $(extdir) $(srpdir) $(bindir) $(sbindir) $(execdir) \
-    $(distdir) $(testdir) $(datadir)                              \
-)
-
-# Check if every directory variable is non-empty
-ifeq ($(and $(srcdir),$(bindir),$(depdir),$(objdir),\
-            $(incdir),$(libdir),$(extdir),$(distdir),$(testdir)),)
-$(error There must be at least one directory of each type, or '.'.)
-endif
-
-ifneq ($(words $(depdir) $(objdir) $(distdir) $(debdir)),4)
-$(error There must be one dependency, obj, dist and debian dir.)
-endif
-
-# Extensions:
-testsuf := $(strip $(sort $(TESTSUF)))
-ifneq ($(words $(testsuf)),1)
-    $(error Just one suffix allowed for test sources!)
-endif
-
-# Extensions
-# ============
-# Every extension must begin with a '.' (dot)
-hext    := $(strip $(sort $(HEXT)))
-hfext   := $(strip $(sort $(HFEXT)))
-hxxext  := $(strip $(sort $(HXXEXT)))
-cext    := $(strip $(sort $(CEXT)))
-fext    := $(strip $(sort $(FEXT)))
-cxxext  := $(strip $(sort $(CXXEXT)))
-tlext   := $(strip $(sort $(TLEXT)))
-asmext  := $(strip $(sort $(ASMEXT)))
-libext  := $(strip $(sort $(LIBEXT)))
-lexext  := $(strip $(sort $(LEXEXT)))
-lexxext := $(strip $(sort $(LEXXEXT)))
-yaccext := $(strip $(sort $(YACCEXT)))
-yaxxext := $(strip $(sort $(YAXXEXT)))
-esqlext := $(strip $(sort $(ESQLEXT)))
-depext  := $(strip $(sort $(DEPEXT)))
-objext  := $(strip $(sort $(OBJEXT)))
-binext  := $(strip $(sort $(BINEXT)))
-
-srpext  := $(strip $(sort $(SRPEXT)))
-dataext := $(strip $(sort $(DATAEXT)))
-
-texiext := $(strip $(sort $(TEXIEXT)))
-infoext := $(strip $(sort $(INFOEXT)))
-htmlext := $(strip $(sort $(HTMLEXT)))
-dviext  := $(strip $(sort $(DVIEXT)))
-pdfext  := $(strip $(sort $(PDFEXT)))
-psext   := $(strip $(sort $(PSEXT)))
-
-incext := $(hext) $(hxxext) $(tlext) $(hfext)
-srcext := $(cext) $(cxxext) $(fext)
-docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
-
-# Check all extensions
-allext := $(incext) $(srcext) $(asmext) $(libext)
-allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext) $(esqlext)
-allext += $(depext) $(objext) $(binext) $(srpext) $(dataext)
-allext := $(strip $(allext))
-$(foreach ext,$(allext),\
-    $(if $(filter .%,$(ext)),,\
-        $(error "$(ext)" is not a valid extension)))
-
-ifneq ($(words $(objext)),1)
-    $(error Just one object extension allowed!)
-endif
-
-ifneq ($(words $(depext)),1)
-    $(error Just one dependency extension allowed!)
-endif
-
-ifneq ($(words $(binext)),1)
-    $(if $(binext),\
-        $(error Just one or none binary extensions allowed!))
-endif
-
-# Define extensions as the only valid ones
-.SUFFIXES:
-.SUFFIXES: $(allext)
-
-########################################################################
-##                              PATHS                                 ##
-########################################################################
-
-# Paths
-# ======
-$(foreach e,.zip .tar .tgz .tbz2 .tar.gz .tar.bz2,\
-    $(eval vpath %.$e $(distdir)))
-
-# Binaries, libraries and source extensions
-$(foreach e,$(libext),$(eval vpath lib%$e $(libdir)))
-$(foreach s,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
-$(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
-
-########################################################################
 ##                         USEFUL DEFINITIONS                         ##
 ########################################################################
 
@@ -705,6 +549,162 @@ endef
 define hash-table.values
 $(strip $(foreach k,$(call hash-table.keys,$1),$($1.$k)))
 endef
+
+########################################################################
+##                       USER INPUT VALIDATION                        ##
+########################################################################
+
+# Documentation
+# ===============
+license      := $(strip $(firstword $(wildcard $(LICENSE))))
+notice       := $(strip $(firstword $(wildcard $(NOTICE))))
+contributors := $(strip $(firstword $(wildcard $(CONTRIBUTORS))))
+doxyfile     := $(strip $(firstword $(DOXYFILE)))
+
+# Flags
+# =======
+# Redefine flags to avoid conflict with user's local definitions
+asflags   := $(ASFLAGS)
+cflags    := $(CFLAGS)
+fflags    := $(FFLAGS)
+cxxflags  := $(CXXFLAGS)
+cxxlexer  := $(CXXLEXER)
+cxxparser := $(CXXPARSER)
+ldlibs    := $(LDLIBS)
+ldflags   := $(LDFLAGS)
+arflags   := $(ARFLAGS)
+soflags   := $(SOFLAGS)
+lexflags  := $(LEXFLAGS)
+yaccflags := $(YACCFLAGS)
+esqlflags := $(ESQLFLAGS)
+
+# Installation directories
+# ==========================
+# Add prefix $(destdir)/ and transforms names in i_
+destdir := $(strip $(foreach d,$(DESTDIR),$(patsubst %/,%,$d)))
+
+$(foreach b,$(install_dirs),\
+    $(if $(strip $(firstword $($b))),\
+        $(eval i_$b := $(destdir)$(strip $(patsubst %/,%,$($b)))),\
+        $(error "$b" must not be empty))\
+)
+
+# Directories
+# =============
+# No directories must end with a '/' (slash)
+override srcdir  := $(strip $(foreach d,$(SRCDIR),$(patsubst %/,%,$d)))
+override depdir  := $(strip $(foreach d,$(DEPDIR),$(patsubst %/,%,$d)))
+override incdir  := $(strip $(foreach d,$(INCDIR),$(patsubst %/,%,$d)))
+override docdir  := $(strip $(foreach d,$(DOCDIR),$(patsubst %/,%,$d)))
+override debdir  := $(strip $(foreach d,$(DEBDIR),$(patsubst %/,%,$d)))
+override objdir  := $(strip $(foreach d,$(OBJDIR),$(patsubst %/,%,$d)))
+override libdir  := $(strip $(foreach d,$(LIBDIR),$(patsubst %/,%,$d)))
+override extdir  := $(strip $(foreach d,$(EXTDIR),$(patsubst %/,%,$d)))
+override srpdir  := $(strip $(foreach d,$(SRPDIR),$(patsubst %/,%,$d)))
+override bindir  := $(strip $(foreach d,$(BINDIR),$(patsubst %/,%,$d)))
+override sbindir := $(strip $(foreach d,$(SBINDIR),$(patsubst %/,%,$d)))
+override execdir := $(strip $(foreach d,$(EXECDIR),$(patsubst %/,%,$d)))
+override distdir := $(strip $(foreach d,$(DISTDIR),$(patsubst %/,%,$d)))
+override testdir := $(strip $(foreach d,$(TESTDIR),$(patsubst %/,%,$d)))
+override datadir := $(strip $(foreach d,$(DATADIR),$(patsubst %/,%,$d)))
+
+# All directories
+alldir := $(strip\
+    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)   \
+    $(libdir) $(extdir) $(srpdir) $(bindir) $(sbindir) $(execdir) \
+    $(distdir) $(testdir) $(datadir)                              \
+)
+
+# Check if every directory variable is non-empty
+ifeq ($(and $(srcdir),$(bindir),$(depdir),$(objdir),\
+            $(incdir),$(libdir),$(extdir),$(distdir),$(testdir)),)
+$(error There must be at least one directory of each type, or '.'.)
+endif
+
+ifneq ($(words $(depdir) $(objdir) $(distdir) $(debdir)),4)
+$(error There must be one dependency, obj, dist and debian dir.)
+endif
+
+# Extensions:
+testsuf := $(strip $(sort $(TESTSUF)))
+ifneq ($(words $(testsuf)),1)
+    $(error Just one suffix allowed for test sources!)
+endif
+
+# Extensions
+# ============
+# Every extension must begin with a '.' (dot)
+hext    := $(strip $(sort $(HEXT)))
+hfext   := $(strip $(sort $(HFEXT)))
+hxxext  := $(strip $(sort $(HXXEXT)))
+cext    := $(strip $(sort $(CEXT)))
+fext    := $(strip $(sort $(FEXT)))
+cxxext  := $(strip $(sort $(CXXEXT)))
+tlext   := $(strip $(sort $(TLEXT)))
+asmext  := $(strip $(sort $(ASMEXT)))
+libext  := $(strip $(sort $(LIBEXT)))
+lexext  := $(strip $(sort $(LEXEXT)))
+lexxext := $(strip $(sort $(LEXXEXT)))
+yaccext := $(strip $(sort $(YACCEXT)))
+yaxxext := $(strip $(sort $(YAXXEXT)))
+esqlext := $(strip $(sort $(ESQLEXT)))
+depext  := $(strip $(sort $(DEPEXT)))
+objext  := $(strip $(sort $(OBJEXT)))
+binext  := $(strip $(sort $(BINEXT)))
+
+srpext  := $(strip $(sort $(SRPEXT)))
+dataext := $(strip $(sort $(DATAEXT)))
+
+texiext := $(strip $(sort $(TEXIEXT)))
+infoext := $(strip $(sort $(INFOEXT)))
+htmlext := $(strip $(sort $(HTMLEXT)))
+dviext  := $(strip $(sort $(DVIEXT)))
+pdfext  := $(strip $(sort $(PDFEXT)))
+psext   := $(strip $(sort $(PSEXT)))
+
+incext := $(hext) $(hxxext) $(tlext) $(hfext)
+srcext := $(cext) $(cxxext) $(fext)
+docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
+
+# Check all extensions
+allext := $(incext) $(srcext) $(asmext) $(libext)
+allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext) $(esqlext)
+allext += $(depext) $(objext) $(binext) $(srpext) $(dataext)
+allext := $(strip $(allext))
+$(foreach ext,$(allext),\
+    $(if $(filter .%,$(ext)),,\
+        $(error "$(ext)" is not a valid extension)))
+
+ifneq ($(words $(objext)),1)
+    $(error Just one object extension allowed!)
+endif
+
+ifneq ($(words $(depext)),1)
+    $(error Just one dependency extension allowed!)
+endif
+
+ifneq ($(words $(binext)),1)
+    $(if $(binext),\
+        $(error Just one or none binary extensions allowed!))
+endif
+
+# Define extensions as the only valid ones
+.SUFFIXES:
+.SUFFIXES: $(allext)
+
+########################################################################
+##                              PATHS                                 ##
+########################################################################
+
+# Paths
+# ======
+$(foreach e,.zip .tar .tgz .tbz2 .tar.gz .tar.bz2,\
+    $(eval vpath %.$e $(distdir)))
+
+# Binaries, libraries and source extensions
+$(foreach e,$(libext),$(eval vpath lib%$e $(libdir)))
+$(foreach s,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
+$(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 
 ########################################################################
 ##                              FILES                                 ##

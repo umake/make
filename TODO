@@ -56,7 +56,11 @@
     [X] Create target 'sync' to receive project from remote.
     [X] Support compilation of embedded SQL.
     [X] Send scripts and data to its directories in 'standard'.
-    [ ] Create target 'status' with information about the project.
+    [X] Create target 'status' with information about the project.
+    [ ] Look over dependency check (by program or by target?).
+    [ ] Finish automatic support to internationalization (with gettext).
+    [ ] Add flag 'TRANSLATE' to manage .po files with new/delete.
+    [ ] Use git submodules (with init/deinit) to manage dependencies.
     [ ] Add deep directory search of test binary name.
     [ ] Test if flex/bison still compile correctly.
     [ ] Add option to automatically create a RPM package.

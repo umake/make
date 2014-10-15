@@ -441,17 +441,19 @@ endef
 # 2) not-root: Given a path or file, take out the root directory of it
 # 3) remove-trailing-bar: Removes the last / of a directory-only name
 define root
-$(foreach s,$1,\
+$(strip $(foreach s,$1,\
     $(if $(findstring /,$s),\
-        $(call root,$(patsubst %/,%,$(dir $s))),$(strip $s)))
+        $(call root,$(patsubst %/,%,$(dir $s))),$(strip $s))))
 endef
 
 define not-root
-$(foreach s,$1,$(strip $(patsubst $(strip $(call root,$s))/%,%,$s)))
+$(strip $(foreach s,$1,\
+    $(patsubst $(strip $(call root,$s))/%,%,$s)))
 endef
 
 define remove-trailing-bar
-$(foreach s,$1,$(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s)))
+$(strip $(foreach s,$1,\
+    $(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s))))
 endef
 
 # File identification functions
@@ -592,21 +594,21 @@ $(foreach b,$(install_dirs),\
 # Directories
 # =============
 # No directories must end with a '/' (slash)
-override srcdir  := $(strip $(foreach d,$(SRCDIR),$(patsubst %/,%,$d)))
-override depdir  := $(strip $(foreach d,$(DEPDIR),$(patsubst %/,%,$d)))
-override incdir  := $(strip $(foreach d,$(INCDIR),$(patsubst %/,%,$d)))
-override docdir  := $(strip $(foreach d,$(DOCDIR),$(patsubst %/,%,$d)))
-override debdir  := $(strip $(foreach d,$(DEBDIR),$(patsubst %/,%,$d)))
-override objdir  := $(strip $(foreach d,$(OBJDIR),$(patsubst %/,%,$d)))
-override libdir  := $(strip $(foreach d,$(LIBDIR),$(patsubst %/,%,$d)))
-override extdir  := $(strip $(foreach d,$(EXTDIR),$(patsubst %/,%,$d)))
-override srpdir  := $(strip $(foreach d,$(SRPDIR),$(patsubst %/,%,$d)))
-override bindir  := $(strip $(foreach d,$(BINDIR),$(patsubst %/,%,$d)))
-override sbindir := $(strip $(foreach d,$(SBINDIR),$(patsubst %/,%,$d)))
-override execdir := $(strip $(foreach d,$(EXECDIR),$(patsubst %/,%,$d)))
-override distdir := $(strip $(foreach d,$(DISTDIR),$(patsubst %/,%,$d)))
-override testdir := $(strip $(foreach d,$(TESTDIR),$(patsubst %/,%,$d)))
-override datadir := $(strip $(foreach d,$(DATADIR),$(patsubst %/,%,$d)))
+override srcdir  := $(call remove-trailing-bar,$(SRCDIR))
+override depdir  := $(call remove-trailing-bar,$(DEPDIR))
+override incdir  := $(call remove-trailing-bar,$(INCDIR))
+override docdir  := $(call remove-trailing-bar,$(DOCDIR))
+override debdir  := $(call remove-trailing-bar,$(DEBDIR))
+override objdir  := $(call remove-trailing-bar,$(OBJDIR))
+override libdir  := $(call remove-trailing-bar,$(LIBDIR))
+override extdir  := $(call remove-trailing-bar,$(EXTDIR))
+override srpdir  := $(call remove-trailing-bar,$(SRPDIR))
+override bindir  := $(call remove-trailing-bar,$(BINDIR))
+override sbindir := $(call remove-trailing-bar,$(SBINDIR))
+override execdir := $(call remove-trailing-bar,$(EXECDIR))
+override distdir := $(call remove-trailing-bar,$(DISTDIR))
+override testdir := $(call remove-trailing-bar,$(TESTDIR))
+override datadir := $(call remove-trailing-bar,$(DATADIR))
 
 # All directories
 alldir := $(strip\

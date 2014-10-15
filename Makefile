@@ -93,7 +93,8 @@ SOFLAGS   := -shared
 ##                              LIBS                                  ##
 ########################################################################
 
-# C/C++/Fortran include paths
+# Assembly/C/C++/Fortran include paths
+ASLIBS    :=
 CLIBS     :=
 CXXLIBS   :=
 FLIBS     :=
@@ -105,26 +106,27 @@ LDLIBS    :=
 ##                            DIRECTORIES                             ##
 ########################################################################
 ifndef SINGLE_DIR
-SRCDIR  := src
-DEPDIR  := dep
-INCDIR  := include
-DOCDIR  := doc
-DEBDIR  := debian
-OBJDIR  := build
-LIBDIR  := lib
-EXTDIR  := external
-SRPDIR  := script
-BINDIR  := bin
-SBINDIR := sbin
-EXECDIR := libexec
-DISTDIR := dist
-TESTDIR := test
-DATADIR := data
-DESTDIR :=
+SRCDIR    := src
+DEPDIR    := dep
+INCDIR    := include
+DOCDIR    := doc
+DEBDIR    := debian
+OBJDIR    := build
+LIBDIR    := lib
+EXTDIR    := external
+SRPDIR    := script
+BINDIR    := bin
+SBINDIR   := sbin
+EXECDIR   := libexec
+DISTDIR   := dist
+TESTDIR   := test
+DATADIR   := data
+DESTDIR   :=
+LOCALEDIR := locale
 else
 $(foreach var,\
-    SRCDIR DEPDIR INCDIR OBJDIR LIBDIR EXTDIR BINDIR \
-    SBINDIR DISTDIR TESTDIR DATADIR,\
+    SRCDIR DEPDIR INCDIR OBJDIR LIBDIR EXTDIR SRPDIR BINDIR \
+    SBINDIR DISTDIR TESTDIR DATADIR LOCALEDIR,\
     $(eval $(var) := .)\
 )
 endif
@@ -264,6 +266,10 @@ DATAEXT := .asc .bak .bin .bk .cfg .conf .cnf .css .csv .dat \
            .diff .dsk .htm .html .json .log .ltsv .raw .sql \
            .temp .tmp .tsv .txt .xml .yaml .yml
 
+# I18n extensions
+POEXT   := .po .pot
+MOEXT   := .mo .gmo
+
 # Test suffix
 TESTSUF := Test
 
@@ -335,6 +341,11 @@ TEXI2HTML       := makeinfo --no-split --html
 TEXI2DVI        := texi2dvi
 TEXI2PDF        := texi2pdf
 TEXI2PS         := texi2dvi --ps
+
+# I18n
+XGETTEXT        := xgettext
+MSGINIT         := msginit
+MSGFMT          := msgfmt
 
 # Packages (Debian)
 DEBUILD         := debuild -us -uc
@@ -594,27 +605,28 @@ $(foreach b,$(install_dirs),\
 # Directories
 # =============
 # No directories must end with a '/' (slash)
-override srcdir  := $(call remove-trailing-bar,$(SRCDIR))
-override depdir  := $(call remove-trailing-bar,$(DEPDIR))
-override incdir  := $(call remove-trailing-bar,$(INCDIR))
-override docdir  := $(call remove-trailing-bar,$(DOCDIR))
-override debdir  := $(call remove-trailing-bar,$(DEBDIR))
-override objdir  := $(call remove-trailing-bar,$(OBJDIR))
-override libdir  := $(call remove-trailing-bar,$(LIBDIR))
-override extdir  := $(call remove-trailing-bar,$(EXTDIR))
-override srpdir  := $(call remove-trailing-bar,$(SRPDIR))
-override bindir  := $(call remove-trailing-bar,$(BINDIR))
-override sbindir := $(call remove-trailing-bar,$(SBINDIR))
-override execdir := $(call remove-trailing-bar,$(EXECDIR))
-override distdir := $(call remove-trailing-bar,$(DISTDIR))
-override testdir := $(call remove-trailing-bar,$(TESTDIR))
-override datadir := $(call remove-trailing-bar,$(DATADIR))
+override srcdir    := $(call remove-trailing-bar,$(SRCDIR))
+override depdir    := $(call remove-trailing-bar,$(DEPDIR))
+override incdir    := $(call remove-trailing-bar,$(INCDIR))
+override docdir    := $(call remove-trailing-bar,$(DOCDIR))
+override debdir    := $(call remove-trailing-bar,$(DEBDIR))
+override objdir    := $(call remove-trailing-bar,$(OBJDIR))
+override libdir    := $(call remove-trailing-bar,$(LIBDIR))
+override extdir    := $(call remove-trailing-bar,$(EXTDIR))
+override srpdir    := $(call remove-trailing-bar,$(SRPDIR))
+override bindir    := $(call remove-trailing-bar,$(BINDIR))
+override sbindir   := $(call remove-trailing-bar,$(SBINDIR))
+override execdir   := $(call remove-trailing-bar,$(EXECDIR))
+override distdir   := $(call remove-trailing-bar,$(DISTDIR))
+override testdir   := $(call remove-trailing-bar,$(TESTDIR))
+override datadir   := $(call remove-trailing-bar,$(DATADIR))
+override localedir := $(call remove-trailing-bar,$(LOCALEDIR))
 
 # All directories
 alldir := $(strip\
     $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)   \
     $(libdir) $(extdir) $(srpdir) $(bindir) $(sbindir) $(execdir) \
-    $(distdir) $(testdir) $(datadir)                              \
+    $(distdir) $(testdir) $(datadir) $(localedir)                 \
 )
 
 # Check if every directory variable is non-empty
@@ -657,6 +669,9 @@ binext  := $(strip $(sort $(BINEXT)))
 srpext  := $(strip $(sort $(SRPEXT)))
 dataext := $(strip $(sort $(DATAEXT)))
 
+poext   := $(strip $(sort $(POEXT)))
+moext   := $(strip $(sort $(MOEXT)))
+
 texiext := $(strip $(sort $(TEXIEXT)))
 infoext := $(strip $(sort $(INFOEXT)))
 htmlext := $(strip $(sort $(HTMLEXT)))
@@ -672,6 +687,7 @@ docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 allext := $(incext) $(srcext) $(asmext) $(libext)
 allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext) $(esqlext)
 allext += $(depext) $(objext) $(binext) $(srpext) $(dataext)
+allext += $(poext) $(moext) $(docext)
 allext := $(strip $(allext))
 $(foreach ext,$(allext),\
     $(if $(filter .%,$(ext)),,\
@@ -909,6 +925,7 @@ incsub  += $(patsubst %,$(extdir)/%/include,\
                $(call hash-table.keys,git_dependency))
 incsub  += $(autoinc)
 #------------------------------------------------------------------[ 4 ]
+aslibs  := $(ASLIBS)  $(patsubst %,-I%,$(incsub))
 clibs   := $(CLIBS)   $(patsubst %,-I%,$(incsub))
 flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))
 cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
@@ -1396,6 +1413,8 @@ standard: init
 	$(call mv,$(docext),$(docdir),"document")
 	$(call mv,$(srpext),$(srpdir),"script")
 	$(call mv,$(dataext),$(datadir),"data")
+	$(call mv,$(poext),$(localedir),"portable object")
+	$(call mv,$(moext),$(localedir),"machine object")
 	$(call mv,$(incext),$(firstword $(incdir)),"header")
 	$(call mv,$(srcext) $(asmext),$(firstword $(srcdir)),"source")
 	$(call mv,$(lexext) $(lexxext),$(firstword $(srcdir)),"lexer")
@@ -1850,7 +1869,7 @@ $$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(AS) $$(ASMFLAGS) $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(AS) $$(asflags) $$(aslibs) $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_ASM_COMPILE),$$@)
 endef

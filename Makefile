@@ -33,6 +33,7 @@ VERSION         := 1.0
 AUXFILES        :=
 MAINTEINER_NAME := Your Name
 MAINTEINER_MAIL := your_mail@mail.com
+COPYRIGHT       := $(MAINTEINER_NAME)
 SYNOPSIS        := default short synopsis
 DESCRIPTION     := default long description
 
@@ -64,35 +65,35 @@ WEB_DEPENDENCY  :=
 ########################################################################
 
 # Preprocessor options
-CPPFLAGS  :=
+CPPFLAGS   :=
 
 # Assembly/C/C++/Fortran options
-ASFLAGS   := -f elf32
-CFLAGS    := -Wall -ansi -pedantic -O2 -g
-CXXFLAGS  := $(CFLAGS) -std=c++11
-FFLAGS    := -cpp
+ASFLAGS    := -f elf32
+CFLAGS     := -Wall -ansi -pedantic -O2 -g
+CXXFLAGS   := $(CFLAGS) -std=c++11
+FFLAGS     := -cpp
 
 # Linker options
-LDFLAGS   :=
-LDC       :=
-LDF       := -lgfortran
-LDCXX     :=
-LDLEX     := -lfl
-LDYACC    :=
-LDESQL    := -lecpg
+LDFLAGS    :=
+LDC        :=
+LDF        := -lgfortran
+LDCXX      :=
+LDLEX      := -lfl
+LDYACC     :=
+LDESQL     := -lecpg
 
 # Library options
-ARFLAGS   := -rcv
-SOFLAGS   := -shared
+ARFLAGS    := -rcv
+SOFLAGS    := -shared
 
 # Assembly/C/C++/Fortran paths for include dirs
-ASLIBS    :=
-CLIBS     :=
-CXXLIBS   :=
-FLIBS     :=
+ASLIBS     :=
+CLIBS      :=
+CXXLIBS    :=
+FLIBS      :=
 
 # Linker paths for library dirs
-LDLIBS    :=
+LDLIBS     :=
 
 ########################################################################
 ##                            DIRECTORIES                             ##
@@ -259,8 +260,9 @@ DATAEXT := .asc .bak .bin .bk .cfg .conf .cnf .css .csv .dat \
            .temp .tmp .tsv .txt .xml .yaml .yml
 
 # I18n extensions
-POEXT   := .po .pot
-MOEXT   := .mo .gmo
+POTEXT  := .pot
+POEXT   := .po
+MOEXT   := .mo
 
 # Test suffix
 TESTSUF := Test
@@ -334,10 +336,14 @@ TEXI2DVI        := texi2dvi
 TEXI2PDF        := texi2pdf
 TEXI2PS         := texi2dvi --ps
 
-# I18n
+# Native Language Support
 XGETTEXT        := xgettext
-MSGINIT         := msginit
-MSGFMT          := msgfmt
+MSGINIT         := msginit --no-translator
+MSGMERGE        := msgmerge
+MSGFMT          := msgfmt -c
+ENABLE_NLS      ?= $(or $(strip $(filter translation,$(MAKECMDGOALS))),\
+                        $(sort $(patsubst %,1,$(strip $(call rwildcard,\
+                           $(localedir),$(addprefix *,$(potext)))))))
 
 # Packages (Debian)
 DEBUILD         := debuild -us -uc
@@ -569,6 +575,7 @@ doxyfile     := $(strip $(firstword $(DOXYFILE)))
 # Flags
 # =======
 # Redefine flags to avoid conflict with user's local definitions
+cppflags  := $(CPPFLAGS)
 asflags   := $(ASFLAGS)
 cflags    := $(CFLAGS)
 fflags    := $(FFLAGS)
@@ -631,6 +638,10 @@ ifneq ($(words $(depdir) $(objdir) $(distdir) $(debdir)),4)
 $(error There must be one dependency, obj, dist and debian dir.)
 endif
 
+ifneq ($(words $(localedir)),1)
+$(error There must be just one locale dir.)
+endif
+
 # Extensions:
 testsuf := $(strip $(sort $(TESTSUF)))
 ifneq ($(words $(testsuf)),1)
@@ -661,6 +672,7 @@ binext  := $(strip $(sort $(BINEXT)))
 srpext  := $(strip $(sort $(SRPEXT)))
 dataext := $(strip $(sort $(DATAEXT)))
 
+potext  := $(strip $(sort $(POTEXT)))
 poext   := $(strip $(sort $(POEXT)))
 moext   := $(strip $(sort $(MOEXT)))
 
@@ -679,7 +691,7 @@ docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 allext := $(incext) $(srcext) $(asmext) $(libext)
 allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext) $(esqlext)
 allext += $(depext) $(objext) $(binext) $(srpext) $(dataext)
-allext += $(poext) $(moext) $(docext)
+allext += $(potext) $(poext) $(moext) $(docext)
 allext := $(strip $(allext))
 $(foreach ext,$(allext),\
     $(if $(filter .%,$(ext)),,\
@@ -841,7 +853,7 @@ lexinc   := $(call not-root,$(basename $(basename $(lexall))))
 lexinc   := $(addprefix $(firstword $(incdir))/,$(lexinc))
 lexinc   := $(addsuffix -yy/,$(lexinc))
 #------------------------------------------------------------------[ 6 ]
-lexinc   += $(strip $(LEXLIBS))
+lexinc   += $(if $(strip $(lexall)),$(strip $(LEXLIBS)))
 
 # Syntatic analyzers
 # ====================
@@ -873,7 +885,7 @@ yaccinc   := $(call not-root,$(basename $(basename $(yaccall))))
 yaccinc   := $(addprefix $(firstword $(incdir))/,$(yaccinc))
 yaccinc   := $(addsuffix -tab/,$(yaccinc))
 #------------------------------------------------------------------[ 6 ]
-yaccinc   += $(strip $(YACCLIBS))
+yaccinc   += $(if $(strip $(yaccall)),$(strip $(YACCLIBS)))
 
 # Embedded SQL preprocessors
 # ============================
@@ -893,7 +905,7 @@ esqlall   += $(foreach E,$(esqlext),\
                 $(patsubst %$E,%.c,$(filter %$E,$(cesql))))
 esqlall   := $(strip $(esqlall))
 #------------------------------------------------------------------[ 4 ]
-esqlinc   := $(strip $(ESQLLIBS))
+esqlinc   := $(if $(strip $(esqlall)),$(strip $(ESQLLIBS)))
 
 # Automatically generated files
 # ===============================
@@ -1165,6 +1177,34 @@ depall    := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
 systemdep := $(addsuffix dep,build upgrade tags docs dist dpkg install)
 systemdep := $(addprefix $(depdir)/,$(systemdep))
 
+# Internationalization
+# ======================
+# 1) intlall: Get all portable object files (based on their locale)
+# 2) intlall: Filter out ignored files from above
+# 3) intlobj: Names of corresponding machine object files
+ifneq (,$(strip $(ENABLE_NLS)))
+#------------------------------------------------------------------[ 1 ]
+ifneq ($(srcdir),.)
+intlall := $(sort\
+    $(foreach E,$(poext),\
+        $(call rwildcard,$(localedir),*$E)\
+))
+else
+$(warning Locale directory is '.'. Deep search for translations disabled.)
+intlall := $(sort\
+    $(foreach E,$(poext),\
+        $(wildcard *$E)\
+))
+endif
+#------------------------------------------------------------------[ 2 ]
+intlall := $(strip $(call filter-ignored,$(intlall)))
+#------------------------------------------------------------------[ 3 ]
+intlobj := \
+$(foreach p,$(intlall),\
+    $(dir $p)LC_MESSAGES/$(notdir $(basename $p))$(firstword $(moext)))
+intlobj := $(strip $(intlobj))
+endif
+
 # Binaries
 # ==========
 # 1) Define all binary names (with extensions if avaiable)
@@ -1198,6 +1238,8 @@ $(if $(strip $(bin) $(sbin) $(libexec)),\
 #------------------------------------------------------------------[ 2 ]
 $(foreach sep,/ .,$(foreach b,$(call not-root,$(binall)),$(or\
     $(eval $b_src  += $(filter $b$(sep)%,$(src))),\
+    $(eval $b_all  += $(sort $(call rfilter,\
+                          $(addprefix %,$($b_src)),$(srcall))))\
     $(eval $b_obj  += $(filter $(objdir)/$b$(sep)%,$(objall))),\
     $(eval $b_aobj += $(filter $(objdir)/$b$(sep)%,$(autoobj))),\
     $(eval $b_lib  += $(foreach d,$(libdir),\
@@ -1212,6 +1254,7 @@ define common-factory
 $(call rfilter-out,$(foreach b,$(call not-root,$(binall)),$($b_$1)),$2)
 endef
 comsrc  := $(call common-factory,src,$(src))
+comall  := $(call common-factory,all,$(srcall))
 comobj  := $(call common-factory,obj,$(objall))
 comlib  := $(call common-factory,lib,$(lib))
 comlink := $(call common-factory,link,$(libname))
@@ -1220,6 +1263,7 @@ comaall := $(call common-factory,aall,$(autoall))
 #------------------------------------------------------------------[ 4 ]
 $(foreach b,$(notdir $(binall)),$(or\
     $(eval $b_src    := $(comsrc)  $($b_src)  ),\
+    $(eval $b_all    := $(comall)  $($b_all)  ),\
     $(eval $b_obj    := $(comobj)  $($b_obj)  ),\
     $(eval $b_lib    := $(comlib)  $($b_lib)  ),\
     $(eval $b_aobj   := $(comaobj) $($b_aobj) ),\
@@ -1235,6 +1279,21 @@ i_lib     := $(addprefix $(i_libdir)/,$(call not-root,$(lib)))
 i_bin     := $(addprefix $(i_bindir)/,$(call not-root,$(bin)))
 i_sbin    := $(addprefix $(i_sbindir)/,$(call not-root,$(sbin)))
 i_libexec := $(addprefix $(i_libexecdir)/,$(call not-root,$(libexec)))
+
+# Internationalization templates
+# ================================
+# 1) intltl:   Template files for executables
+# 2) cppflags: Add definitions for internationalization
+ifneq (,$(strip $(ENABLE_NLS)))
+#------------------------------------------------------------------[ 1 ]
+intltl    := \
+$(foreach b,$(binall),\
+    $(localedir)/$(call not-root,$b)$(firstword $(potext)))
+intltl    := $(strip $(intltl))
+#------------------------------------------------------------------[ 2 ]
+cppflags  += -D ENABLE_NLS -D PACKAGE=\"$(PROJECT)\" \
+             -D LOCALEDIR=\"$(i_localedir)\"
+endif
 
 # Automated tests
 # =================
@@ -1355,7 +1414,7 @@ nothing:
 ########################################################################
 
 external_dependency := \
-	GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
+    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
 
 .PHONY: sync
 sync: externaldep
@@ -1370,8 +1429,8 @@ deploy: externaldep
 ########################################################################
 
 upgrade_dependency := \
-	CURL     => $(firstword $(MAKEFILE_LIST)),\
-	GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
+    CURL     => $(firstword $(MAKEFILE_LIST)),\
+    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
 
 .PHONY: upgrade
 upgrade: upgradedep
@@ -1384,7 +1443,7 @@ upgrade: upgradedep
 ########################################################################
 
 init_dependency := \
-	GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
+    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
 
 .PHONY: init
 init: initdep
@@ -1400,18 +1459,20 @@ init: initdep
 
 .PHONY: standard
 standard: init
-	$(call mv,$(objext),$(objdir),"object")
-	$(call mv,$(libext),$(firstword $(libdir)),"library")
-	$(call mv,$(docext),$(docdir),"document")
-	$(call mv,$(srpext),$(srpdir),"script")
-	$(call mv,$(dataext),$(datadir),"data")
-	$(call mv,$(poext),$(localedir),"portable object")
-	$(call mv,$(moext),$(localedir),"machine object")
-	$(call mv,$(incext),$(firstword $(incdir)),"header")
-	$(call mv,$(srcext) $(asmext),$(firstword $(srcdir)),"source")
-	$(call mv,$(lexext) $(lexxext),$(firstword $(srcdir)),"lexer")
-	$(call mv,$(yaccext) $(yaxxext),$(firstword $(srcdir)),"parser")
-	$(call mv,$(esqlext),$(firstword $(srcdir)),"embedded SQL")
+	$(call mv,$(objext), $(objdir),   "object")
+	$(call mv,$(libext), $(libdir),   "library")
+	$(call mv,$(docext), $(docdir),   "document")
+	$(call mv,$(srpext), $(srpdir),   "script")
+	$(call mv,$(dataext),$(datadir),  "data")
+	$(call mv,$(potext), $(localedir),"portable object template")
+	$(call mv,$(poext),  $(localedir),"portable object")
+	$(call mv,$(moext),  $(localedir),"machine object")
+	$(call mv,$(incext), $(incdir),   "header")
+	$(call mv,$(asmext), $(srcdir),   "assembly")
+	$(call mv,$(srcext), $(srcdir),   "source")
+	$(call mv,$(esqlext),$(srcdir),   "embedded SQL")
+	$(call mv,$(lexext)  $(lexxext),$(srcdir),"lexer")
+	$(call mv,$(yaccext) $(yaxxext),$(srcdir),"parser")
 
 ########################################################################
 ##                               TAGS                                 ##
@@ -1433,6 +1494,19 @@ etags: $(incall) $(srcall)
 	$(call phony-status,$(MSG_ETAGS))
 	$(quiet) $(ETAGS) $(ETAGSFLAGS) $^ -o $@ $(ERROR)
 	$(call phony-ok,$(MSG_ETAGS))
+
+########################################################################
+##                        INTERNATIONALIZATION                        ##
+########################################################################
+
+translation_dependency := \
+    XGETTEXT => $(intltl),\
+    MSGINIT  => $(intlall),\
+    MSGMERGE => $(intlall),\
+    MSGFMT   => $(intlobj)
+
+.PHONY: translation
+translation: translationdep $(intltl) $(intlobj)
 
 ########################################################################
 ##                          DOCUMENTATION                             ##
@@ -1496,23 +1570,20 @@ endif # ifneq($(strip $(doxyfile)),) ####
 ########################################################################
 
 dist_dependency := \
-    TAR   => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
-             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir),\
-    ZIP   => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
-             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir),\
-    GZIP  => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
-             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir),\
-    BZIP2 => Makefile $(make_configs) $(srcdir) $(incdir) $(datadir)\
-             $(docdir) $(if $(strip $(lib)),$(libdir)) $(bindir)
+    ZIP   => $(call rfilter,%-zip,$(MAKECMDGOALS)),\
+    TAR   => $(call rfilter,package dist tar,$(MAKECMDGOALS))\
+             $(call rfilter,dist-tar% package-tar%,$(MAKECMDGOALS)),\
+    GZIP  => $(call rfilter,dist-%gz package-tar%gz, $(MAKECMDGOALS)),\
+    BZIP2 => $(call rfilter,dist-%bz2 package-tar%bz2, $(MAKECMDGOALS))
 
 .PHONY: package
-package: distdep package-tar.gz
+package: package-tar.gz
 
 .PHONY: dist
-dist: distdep dist-tar.gz
+dist: dist-tar.gz
 
 .PHONY: tar
-tar: distdep dist-tar
+tar: dist-tar
 
 ########################################################################
 ##                          DEBIAN PACKAGE                            ##
@@ -1722,7 +1793,8 @@ $$(depdir)/$1dep: $$(call cdr,$$(MAKEFILE_LIST)) | $$(depdir)
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
-$(foreach d,build external upgrade init tags docs dist dpkg install,\
+$(foreach d,build external upgrade init tags \
+            translation docs dist dpkg install,\
     $(eval $(call system-dependency,$d,$d_dependency)))
 
 #======================================================================#
@@ -1752,9 +1824,9 @@ $$(depdir)/$$(strip $1)dep: $$(extdir)/$$(strip $1) $$(externreq)
 	$$(call ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
-	$(call extern-dependency,$d,git-clone,$(git_dependency.$d))))
+    $(call extern-dependency,$d,git-clone,$(git_dependency.$d))))
 $(foreach d,$(call hash-table.keys,web_dependency),$(eval\
-	$(call extern-dependency,$d,web-clone,$(web_dependency.$d))))
+    $(call extern-dependency,$d,web-clone,$(web_dependency.$d))))
 
 #======================================================================#
 # Function: scanner-factory                                            #
@@ -1861,7 +1933,8 @@ $$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(AS) $$(asflags) $$(aslibs) $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(AS) $$(cppflags) $$(asflags) $$(aslibs) \
+                     $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_ASM_COMPILE),$$@)
 endef
@@ -1884,7 +1957,8 @@ $$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CC) $$(cflags) $$(clibs) -c $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(CC) $$(cppflags) $$(cflags) $$(clibs) \
+                     -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_COMPILE),$$@)
 endef
@@ -1908,7 +1982,8 @@ $$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CXX) $$(cxxlibs) $$(cxxflags) -c $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
+                      -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_COMPILE),$$@)
 endef
@@ -1932,7 +2007,8 @@ $$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) $$(fflags) $$(flibs) -c $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(FC) $$(cppflags) $$(fflags) $$(flibs) \
+                     -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_F_COMPILE),$$@)
 endef
@@ -1960,7 +2036,8 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CC) -fPIC $$(clibs) $$(cflags) -c $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(CC) -fPIC $$(cppflags) $$(clibs) $$(cflags) \
+                     -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_LIBCOMP),$$@)
 endef
@@ -1981,8 +2058,8 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CXX) -fPIC $$(cxxlibs) $$(cxxflags) -c $$< -o $$@ \
-              $$(ERROR)
+	$$(quiet) $$(CXX) -fPIC $$(cppflags) $$(cxxlibs) $$(cxxflags) \
+                      -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
 endef
@@ -2003,8 +2080,8 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) -fPIC $$(flibs) $$(fflags) -c $$< -o $$@ \
-              $$(ERROR)
+	$$(quiet) $$(FC) -fPIC $$(cppflags) $$(flibs) $$(fflags) \
+                     -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_F_LIBCOMP),$$@)
 endef
@@ -2108,6 +2185,57 @@ $(foreach b,$(binall),$(eval\
         $(if $($(strip $(call not-root,$b))_is_cxx),$(CXX),$(CXX)\
     ))),\
 )))
+
+#======================================================================#
+# Function: intl-template-factory                                      #
+# @param  $1 Locale root directory                                     #
+# @param  $1 Binary name witout root dir                               #
+# @return Target to generate template translations for translators     #
+#======================================================================#
+ifneq (,$(strip $(ENABLE_NLS)))
+define intl-template-factory
+$1/$2$$(firstword $$(potext)): $$($2_all) | $1
+	$$(call status,$$(MSG_INTL_TEMPLATE))
+	$$(quiet) $$(call mksubdir,$1,$$@)
+	$$(quiet) $$(XGETTEXT)\
+              --copyright-holder=$(subst $(space),\$(space),$(COPYRIGHT))\
+              --msgid-bugs-address=$(MAINTEINER_MAIL)\
+              --package-name=$(subst $(space),\$(space),$(PROJECT))\
+              --package-version=$(VERSION)\
+              -d $2 -k_ -kN_ -s $$^ -o $$@
+	$$(call ok,$$(MSG_INTL_TEMPLATE),$$@)
+endef
+$(foreach b,$(binall),$(eval\
+    $(call intl-template-factory,$(strip\
+        $(localedir)),$(call not-root,$(basename $b)))))
+endif
+
+#======================================================================#
+# Function: intl-translate-factory                                     #
+# @param  $1 Locale root directory                                     #
+# @param  $1 Binary name witout root dir                               #
+# @return Target to generate machine objects to be used by binaries    #
+#======================================================================#
+ifneq (,$(strip $(ENABLE_NLS)))
+define intl-translate-factory
+$1/%/$2$$(firstword $$(poext)): $1/$2$$(firstword $$(potext))
+	$$(call phony-status,$$(MSG_INTL_PORTABLE))
+	$$(quiet) $$(call mksubdir,$1,$$@)
+	$$(quiet) $$(if $$(strip $$(wildcard $$@)),\
+                  $$(MSGMERGE) $$@ $$< -o $$@ $$(ERROR),\
+                  $$(MSGINIT)  -l $$* -i $$< -o $$@ $$(ERROR))
+	$$(call phony-ok,$$(MSG_INTL_PORTABLE),$$@)
+
+$1/%/LC_MESSAGES/$2$$(firstword $$(moext)): $1/%/$2$$(firstword $$(poext))
+	$$(call status,$$(MSG_INTL_MACHINE))
+	$$(quiet) $$(call mksubdir,$1,$$@)
+	$$(quiet) $$(MSGFMT) $$< -o $$@ $$(ERROR)
+	$$(call ok,$$(MSG_INTL_MACHINE),$$@)
+endef
+$(foreach t,$(intltl),$(eval\
+    $(call intl-translate-factory,$(strip \
+        $(localedir)),$(call not-root,$(basename $t)))))
+endif
 
 #======================================================================#
 # Function: texinfo-factory                                            #
@@ -2223,7 +2351,7 @@ define packsyst-factory
         $$(strip $$(foreach f,$$(dirs),$$(or \
             $$(strip $$(call rwildcard,$$f,*)),\
             $$(strip $$(wildcard $$f*))) )))
-%.$1: $$(binall)
+%.$1: distdep $$(binall)
 	$$(call mkdir,$$(dir $$@))
 	$$(quiet) $$(MKDIR) $$(packdir)
 	$$(quiet) $$(CP) $$(clndirs) $$(packdir)
@@ -2313,6 +2441,15 @@ distclean: clean
         $(filter $(firstword $(libdir))/%,$(lib))\
     )
 
+ifneq (,$(strip $(ENABLE_NLS)))
+.PHONY: translationclean
+translationclean:
+	$(call rm-if-exists,$(intltl),$(MSG_INTLTL_NONE))
+	$(call rm-if-exists,$(intlall),$(MSG_INTLALL_NONE))
+	$(call rm-if-exists,$(intlobj),$(MSG_INTLOBJ_NONE))
+	$(call rm-if-empty,$(localedir))
+endif
+
 .PHONY: docclean
 docclean:
 	$(call rm-if-empty,$(docdir)/doxygen)
@@ -2336,7 +2473,8 @@ realclean:
 	@echo $(MSG_WARNCLEAN_END)
 	@echo $(MSG_WARNCLEAN_ALT)
 else
-realclean: distclean docclean packageclean
+realclean: distclean docclean packageclean \
+           $(if $(ENABLE_NLS),translationclean)
 	$(call rm-if-exists,$(lexall),$(MSG_LEX_NONE))
 	$(foreach d,$(lexinc),$(call rm-if-empty,$d)$(newline))
 	$(call rm-if-exists,$(yaccall),$(MSG_YACC_NONE))
@@ -2474,6 +2612,15 @@ MSG_CTAGS_NONE    = "${PURPLE}No auto-generated tags for Vi${RES}"
 MSG_ETAGS         = "${BLUE}Creating tags for ${YELLOW}Emacs${RES}"
 MSG_ETAGS_NONE    = "${PURPLE}No auto-generated tags for Emacs${RES}"
 
+MSG_INTL_TEMPLATE = "${DEF}Generating template ${GREEN}$@${RES}"
+MSG_INTL_PORTABLE = "${DEF}Generating file for ${BLUE}$*${DEF}"\
+                    "translation from ${GREEN}$<${RES}"
+MSG_INTL_MACHINE  = "${DEF}Generating machine translation for"\
+                    "${GREEN}$(notdir $(basename $@))${RES}"
+MSG_INTLTL_NONE   = "${PURPLE}No translation templates${RES}"
+MSG_INTLALL_NONE  = "${PURPLE}No translation portable objects${RES}"
+MSG_INTLOBJ_NONE  = "${PURPLE}No translation machine objects${RES}"
+
 MSG_TEXI_FILE     = "${DEF}Generating $1 file ${WHITE}$@${RES}"
 MSG_TEXI_DOCS     = "${BLUE}Generating docs in ${WHITE}$@${RES}"
 
@@ -2559,27 +2706,18 @@ endef
 # @param $3 Dependency file name
 
 define c-depend
-$(CC) -MM                     \
-    -MF $(depdir)/$3$(depext) \
-    -MP -MT $2                \
-    $(clibs) $(cflags)        \
-    $1
+$(CC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 \
+      $(cppflags) $(clibs) $(cflags) $1
 endef
 
 define cpp-depend
-$(CXX) -MM                    \
-    -MF $(depdir)/$3$(depext) \
-    -MP -MT $2                \
-    $(cxxlibs) $(cxxflags)    \
-    $1
+$(CXX) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 \
+       $(cppflags) $(cxxlibs) $(cxxflags) $1
 endef
 
 define fortran-depend
-$(FC) -MM                     \
-    -MF $(depdir)/$3$(depext) \
-    -MP -MT $2                \
-    $(flibs) $(fflags)        \
-    $1
+$(FC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 \
+      $(cppflags) $(flibs) $(fflags) $1
 endef
 
 ## DIRECTORIES #########################################################
@@ -2587,6 +2725,9 @@ $(sort $(bindir) $(sbindir) $(execdir) ):
 	$(call mkdir,$@)
 
 $(sort $(objdir) $(depdir) $(libdir) $(extdir) $(docdir) $(debdir) ):
+	$(call mkdir,$@)
+
+$(sort $(srpdir) $(datadir) $(localedir) ):
 	$(call mkdir,$@)
 
 define mkdir
@@ -2699,7 +2840,7 @@ endef
 #======================================================================#
 define rm-if-exists
 $(if $(wildcard $1),\
-    $(call rm,$1),$(if $(strip $2),$(call phony-ok,$2)))
+    $(call rm,$1),$(if $(strip $2),$(call phony-ok,$(strip $2))))
 endef
 
 ## STATUS ##############################################################
@@ -3000,11 +3141,12 @@ override CXX_MAIN      := $(strip $(basename $(notdir $(CXX_MAIN))))
 override TEMPLATE      := $(strip $(basename $(notdir $(TEMPLATE))))
 override C_MODULE      := $(strip $(basename $(notdir $(C_MODULE))))
 override CXX_MODULE    := $(strip $(basename $(notdir $(CXX_MODULE))))
+override TRANSLATION   := $(strip $(basename $(notdir $(TRANSLATION))))
 
 # Check if there is at least one artifact to be created/deleted
 $(if $(or $(NAMESPACE),$(NMS_HEADER),$(LIBRARY),$(LIB_HEADER),\
      $(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),$(C_MAIN),$(CXX_MAIN),\
-     $(TEMPLATE),$(C_MODULE),$(CXX_MODULE)),,\
+     $(TEMPLATE),$(C_MODULE),$(CXX_MODULE),$(TRANSLATION)),,\
      $(error No filetype defined. Type 'make projecthelp' for info))
 
 .PHONY: new
@@ -3257,6 +3399,12 @@ ifdef CXX_MODULE
 	
 	$(call mkdir,$(srcbase)/$(CXX_MODULE))
 endif
+ifneq (,$(strip $(ENABLE_NLS)))
+ifdef TRANSLATION
+new: $(foreach t,$(intltl),$(foreach e,$(firstword $(poext)),\
+        $(localedir)/$(TRANSLATION)$d/$(call not-root,$(basename $t))$e))
+endif
+endif
 
 .PHONY: update
 update:
@@ -3350,7 +3498,20 @@ ifdef CXX_MODULE
 	$(call delete-file,$(incbase)/$(CXX_MODULE),$(INC_EXT) $(hxxext))
 	$(call rm-if-empty,$(srcbase)/$(CXX_MODULE))
 endif
+ifneq (,$(strip $(ENABLE_NLS)))
+ifdef TRANSLATION
+delete: r := $(localedir)
+delete: d := $(TRANSLATION)
+delete:
+	$(foreach t,$(intltl),$(call delete-file,\
+        $r/$d/$(call not-root,$(basename $b)),$(poext)))
+	$(foreach t,$(intltl),$(call delete-file,\
+        $r/$d/LC_MESSAGES/$(call not-root,$b),$(moext)))
+	$(call rm-if-empty,$r/$d/LC_MESSAGES)
+	$(call rm-if-empty,$r/$d)
 endif
+endif
+endif # Check if D was defined
 
 endif # Check if one goal is 'new' or 'delete'
 
@@ -3384,6 +3545,7 @@ config:
 	@echo "# SHRLIB   := # dir, all source files will make the library."
 	@echo ""
 	@echo "# Flags"
+	@echo "# CPPFLAGS := # Precompiler Flags"
 	@echo "# ASFLAGS  := # Assembly Flags"
 	@echo "# CFLAGS   := # C Flags"
 	@echo "# CXXFLAGS := # C++ Flags"
@@ -3403,6 +3565,7 @@ config:
 	@echo "# Package info"
 	@echo "# MAINTEINER_NAME := # Your name"
 	@echo "# MAINTEINER_MAIL := # your_name@mail.com"
+	@echo "# COPYRIGHT       := # Copyright Holder"
 	@echo "# SYNOPSIS        := # One-line description of the program"
 	@echo "# DESCRIPTION     := # Longer description of the program"
 	@echo ""
@@ -3562,6 +3725,7 @@ projecthelp:
 	@echo " * INC_EXT:      Include extension for files made by 'new'  "
 	@echo " * SRC_EXT:      Source extension for files made by 'new'   "
 	@echo " * NO_COLORS:    Outputs are made without any color         "
+	@echo " * ENABLE_NLS:   Allows internationalization                "
 	@echo "                                                            "
 	@echo "Management flags                                            "
 	@echo "-----------------                                           "

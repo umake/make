@@ -59,9 +59,9 @@
     [X] Create target 'status' with information about the project.
     [X] Finish automatic support to internationalization (with gettext).
     [X] Add flag 'TRANSLATE' to manage .po files with new/delete.
+    [X] Refactors texts and variables from Config.mk.
     [ ] Automatically create header 'gettext.h' for i18n defines.
     [ ] Test internationalization feature in non-trivial cases.
-    [ ] Add and commit Makefile when initializing new project.
     [ ] Look over dependency check (by program or by target?).
     [ ] Use git submodules (with init/deinit) to manage dependencies.
     [ ] Add deep directory search of test binary name.

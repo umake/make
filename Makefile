@@ -2198,11 +2198,11 @@ $1/$2$$(firstword $$(potext)): $$($2_all) | $1
 	$$(call status,$$(MSG_INTL_TEMPLATE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(XGETTEXT)\
-              --copyright-holder=$(subst $(space),\$(space),$(COPYRIGHT))\
-              --msgid-bugs-address=$(MAINTEINER_MAIL)\
-              --package-name=$(subst $(space),\$(space),$(PROJECT))\
-              --package-version=$(VERSION)\
-              -d $2 -k_ -kN_ -s $$^ -o $$@
+              --copyright-holder=$$(call shstring,$$(COPYRIGHT))\
+              --msgid-bugs-address=$$(call shstring,$$(MAINTEINER_MAIL))\
+              --package-name=$$(call shstring,$$(PROJECT))\
+              --package-version=$$(VERSION)\
+        -d $2 -k_ -kN_ -s $$^ -o $$@
 	$$(call ok,$$(MSG_INTL_TEMPLATE),$$@)
 endef
 $(foreach b,$(binall),$(eval\
@@ -2721,7 +2721,7 @@ $(FC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 \
 endef
 
 ## DIRECTORIES #########################################################
-$(sort $(bindir) $(sbindir) $(execdir) ):
+$(sort $(srcdir) $(incdir) $(bindir) $(sbindir) $(execdir) ):
 	$(call mkdir,$@)
 
 $(sort $(objdir) $(depdir) $(libdir) $(extdir) $(docdir) $(debdir) ):
@@ -2925,6 +2925,12 @@ define lc
 $(shell echo $1 | tr "A-Z" "a-z")
 endef
 
+# Function: shstring
+# Transforms a text valid inside make in a valid for shell
+define shstring
+$(strip $(subst $(space),\$(space),$(strip $1)))
+endef
+
 # Function: select
 # Define which ostream should be used
 define select
@@ -3118,8 +3124,8 @@ endef
 # ================
 # Auxiliar variables to the default place to create/remove
 # files created by this makefile (usually the first inc/src dirs)
-override incbase   := $(strip $(firstword $(incdir)))$(if $(IN),/$(IN))
-override srcbase   := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
+override incbase := $(strip $(firstword $(incdir)))$(if $(IN),/$(IN))
+override srcbase := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
 
 # Check if namespace exists
 $(if $(or $(call rsubdir,$(incbase)),$(call rsubdir,$(srcbase))),,\
@@ -3150,7 +3156,7 @@ $(if $(or $(NAMESPACE),$(NMS_HEADER),$(LIBRARY),$(LIB_HEADER),\
      $(error No filetype defined. Type 'make projecthelp' for info))
 
 .PHONY: new
-new:
+new: | $(call root,$(incbase)) $(call root,$(srcbase))
 ifdef NAMESPACE
 	$(call mkdir,$(incbase)/$(subst ::,/,$(NAMESPACE)))
 	$(call mkdir,$(srcbase)/$(subst ::,/,$(NAMESPACE)))

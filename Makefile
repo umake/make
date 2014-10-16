@@ -3558,7 +3558,7 @@ config:
 	@echo "# GIT_DEPENDENCY  := # List of git dependencies in the format"
 	@echo "                     # DEP_NAME => dep_path                  "
 	@echo "# WEB_DEPENDENCY  := # Same as above, but for URL downloads  "
-	@echo "                     # with 'curl -O' (default) or 'wget -o' "
+	@echo "                     # with 'curl -o' (default) or 'wget -O' "
 	@echo ""
 	@echo "# Flags"
 	@echo "# ======="

@@ -3606,6 +3606,7 @@ gitignore:
 	@echo ""
 	@echo "# Objects, Libraries and Binaries"
 	@echo "#=================================="
+	@$(foreach e,$(moext),echo *$e; )
 	@$(foreach e,$(objext),echo *$e; )
 	@$(foreach e,$(libext),echo *$e; )
 	@$(foreach e,$(binext),echo *$e; )

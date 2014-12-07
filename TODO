@@ -59,7 +59,8 @@
     [X] Create target 'status' with information about the project.
     [X] Finish automatic support to internationalization (with gettext).
     [X] Add flag 'TRANSLATE' to manage .po files with new/delete.
-    [X] Refactors texts and variables from Config.mk.
+    [X] Refactor texts and variables from Config.mk.
+    [X] Support clone of remote dir + symbolic link to keep Makefile.
     [ ] Automatically create header 'gettext.h' for i18n defines.
     [ ] Test internationalization feature in non-trivial cases.
     [ ] Look over dependency check (by program or by target?).

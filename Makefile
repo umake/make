@@ -3671,8 +3671,8 @@ help:
 .PHONY: projecthelp
 projecthelp:
 	@echo "                                                            "
-	@echo "$(PROJECT)-$(VERSION)                                       "
-	@echo "=============================                               "
+	@echo "Makefile All-in-One                                         "
+	@echo "=====================                                       "
 	@echo "                                                            "
 	@echo "Default targets:                                            "
 	@echo "-----------------                                           "

@@ -375,6 +375,10 @@ MAKE            += -f $(firstword $(MAKEFILE_LIST)) $(MAKEFLAGS)
 MAKEREMOTE := \
     https://raw.githubusercontent.com/renatocf/make/master/Makefile
 
+# Git remote path
+MAKEGITREMOTE := \
+    git@github.com:renatocf/make.git
+
 # Define the shell to be used
 SHELL = /bin/sh
 
@@ -1451,15 +1455,23 @@ init_dependency := \
 
 .PHONY: init
 init: initdep
+	$(call git-init)
+	$(call git-remote-add,origin,$(GIT_REMOTE))
+	
+	$(if $(wildcard make/*),\
+        $(call git-submodule-add,$(MAKEGITREMOTE),make))
+	
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
 	$(call mkdir,$(docdir))
+	
 	$(call make-create,config,Config.mk)
 	$(call make-create,gitignore,.gitignore)
-	$(call git-init)
-	$(call git-add-commit,Makefile Config.mk .gitignore,\
-           "Adds Makefile and Config.mk with .gitignore")
-	$(call git-remote-add,origin,$(GIT_REMOTE))
+	
+	$(call git-add-commit,Makefile Config.mk,\
+           "Adds Makefile and Config.mk")
+	$(call git-add-commit,.git*,\
+           "Adds git configuration files")
 
 .PHONY: standard
 standard: init
@@ -2517,6 +2529,7 @@ uninitialize:
 	$(call rm-if-exists,config_os.mk)
 	$(call rm-if-exists,.config_os.mk)
 	$(call rm-if-exists,.gitignore)
+	$(call rm-if-exists,.gitmodules)
 	$(call rm-if-empty,.git)
 endif
 
@@ -2577,6 +2590,8 @@ MSG_GIT_PULL      = "${YELLOW}[$(GIT)]${BLUE} Receiveing in${DEF}"\
 MSG_GIT_PUSH      = "${YELLOW}[$(GIT)]${BLUE} Sending from${DEF}"\
                     "$(or $(strip $1),origin)${BLUE} to remote"\
                     "repository ${DEF}$(or $(strip $2),master)${RES}"
+MSG_GIT_SUB_ADD   = "${YELLOW}[$(GIT)]${BLUE} Adding submodule"\
+                    "${DEF}$(strip $1)${RES}"
 
 MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
                     "${PURPLE}from target ${DEF}$1${RES}"
@@ -3009,8 +3024,20 @@ define git-commit
 endef
 
 define git-add-commit
-	$(call git-add,$1)
-	$(call git-commit,$1,$2)
+	$(quiet) if ! $(GIT) ls-files $1 --error-unmatch 2>/dev/null 1>&2\
+             || ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
+             then\
+                 $(call model-status,$(MSG_GIT_COMMIT))\
+                 $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
+                 $(GIT) commit -m $(strip $2) $(NO_OUTPUT) $(NO_ERROR);\
+                 $(call model-ok,$(MSG_GIT_COMMIT))\
+             fi
+endef
+
+define git-submodule-add
+	$(call phony-status,$(MSG_GIT_SUB_ADD))
+	$(quiet) $(GIT) submodule add $(strip $1) $(strip $2) $(ERROR)
+	$(call phony-ok,$(MSG_GIT_SUB_ADD))
 endef
 
 ifneq (,$(strip $(GIT_REMOTE)))

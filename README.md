@@ -37,7 +37,7 @@ In order to make your very first compilation, just create a .c, .cpp
 variable `BIN` whith its name in Config.mk. Then  *voilà*: it will
 compile everything perfectly (at least as perfect as your program...)
 
-#### Git submodule ####
+##### Git submodule #####
 
 If you want to keep a copy of this project as a submodule, you may
 add it within your working directory:
@@ -47,6 +47,13 @@ add it within your working directory:
 And then create a symbolic link:
 
     ln -s make/Makefile Makefile
+
+##### Single-directory projects #####
+
+Do you have old single-directory code that started to get out of
+control? We also have a solution! `make standard` checks and separates 
+your files in our default directory structure. Improve your organization
+with almost no work!
 
 ## Getting the lastest version ##
 

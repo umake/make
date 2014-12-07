@@ -42,11 +42,11 @@ compile everything perfectly (at least as perfect as your program...)
 If you want to keep a copy of this project as a submodule, you may
 add it within your working directory:
 
-    git submodule add git@github.com:renatocf/make.git make
+    git clone git@github.com:renatocf/make.git
 
 And then create a symbolic link:
 
-    ln -s make/Makefile Makefile
+    ln -s make/Makefile .
 
 #### Single-directory projects ####
 

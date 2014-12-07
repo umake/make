@@ -1,15 +1,16 @@
 Makefile All-in-One
 =====================
 
-A single Makefile to compile all your projects: in C, C++ and Fortran.
+A single Makefile to compile all your projects: in C, C++, Assembly
+and Fortran.
 
 Tired of installing tools to compile your project? (Automake, CMake
 and Ant). Want to go back to old times, when all you needed was typing 
 `make`? Here is the solution! A single generalized Makefile which aims 
 to compile and mix almost everything related to C, C++, Assembly and 
 Fortran projects - with support to many executables, static and shared 
-libraries, lexer and parser generators, dependency management and much 
-more! Everything just 4 letters far from you.
+libraries, lexer and parser generators, dependency management, file
+creation and much more! Everything just 4 letters far from you.
 
 ## Want to start? ##
 

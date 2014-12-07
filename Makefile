@@ -163,7 +163,7 @@ runstatedir    := $(localstatedir)/run
 
 ### HEADER FILES
 # * includedir:    Includable (header) files for use by GCC
-# * ondincludedir: Includable (header) files for GCC and othe compilers
+# * oldincludedir: Includable (header) files for GCC and othe compilers
 install_dirs   += includedir oldincludedir
 includedir     := $(prefix)/include
 oldincludedir  := /usr/include
@@ -1133,7 +1133,11 @@ lib     := $(arlib) $(shrlib) $(systemlib)
 libname := $(arname) $(shrname) $(systemname)
 libsub   = $(if $(strip $(lib)),\
                $(foreach d,$(libdir),$(call rsubdir,$d)))
-ldlibs   = $(LDLIBS) $(sort $(patsubst %/,%,$(addprefix -L,$(libsub))))
+ldlibs   = $(LDLIBS) $(sort $(addprefix -L$(space),$(libsub)))
+ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath=%, \
+               $(subst -L$(space),-L,$(LDLIBS))       \
+               $(addprefix -L,$(libsub))              \
+           ))
 
 # Type-specific libraries
 # =========================
@@ -3185,7 +3189,7 @@ ifdef NMS_HEADER
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(NMSH)/$(NMSH_NAME)$(INC_EXT),$(notice))
 	$(call select,$(NMSH)/$(NMSH_NAME)$(INC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'#ifndef NMS_$(indef)$(call sfmt,$(NMSH_NAME))_DEFINED' )
 	$(call cat,'#define NMS_$(indef)$(call sfmt,$(NMSH_NAME))_DEFINED' )
 	$(call cat,''                                                      )
@@ -3220,7 +3224,7 @@ ifdef LIB_HEADER
 	$(call invalid-ext,$(INC_EXT),$(tlext))
 	$(call touch,$(LIBH)/$(LIBH_NAME)$(INC_EXT),$(notice))
 	$(call select,$(LIBH)/$(LIBH_NAME)$(INC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'#ifndef LIB_$(indef)$(call sfmt,$(LIBH_NAME))_DEFINED' )
 	$(call cat,'#define LIB_$(indef)$(call sfmt,$(LIBH_NAME))_DEFINED' )
 	$(call cat,''                                                      )
@@ -3235,7 +3239,7 @@ ifdef CLASS
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(incbase)/$(CLASS)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CLASS)$(INC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'#ifndef HPP_$(indef)$(call sfmt,$(CLASS))_DEFINED'     )
 	$(call cat,'#define HPP_$(indef)$(call sfmt,$(CLASS))_DEFINED'     )
 	$(call cat,''                                                      )
@@ -3251,7 +3255,7 @@ ifdef CLASS
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	$(call touch,$(srcbase)/$(CLASS)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(CLASS)$(SRC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'// Libraries'                                          )
 	$(call cat,'#include "$(CLASS)$(INC_EXT)"'                         )
 	$(call cat,$(if $(IN),'using namespace $(subst /,::,$(IN));')      )
@@ -3280,7 +3284,7 @@ ifdef C_FILE
 	$(call invalid-ext,$(INC_EXT),$(hext))
 	$(call touch,$(incbase)/$(C_FILE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(C_FILE)$(INC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'#ifndef H_$(indef)$(call sfmt,$(C_FILE))_DEFINED'      )
 	$(call cat,'#define H_$(indef)$(call sfmt,$(C_FILE))_DEFINED'      )
 	$(call cat,''                                                      )
@@ -3289,7 +3293,7 @@ ifdef C_FILE
 	$(call invalid-ext,$(SRC_EXT),$(cext))
 	$(call touch,$(srcbase)/$(C_FILE)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(C_FILE)$(SRC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'/* Libraries */'                                       )
 	$(call cat,'#include "$(C_FILE)$(INC_EXT)"'                        )
 	$(call cat,''                                                      )
@@ -3303,7 +3307,7 @@ ifdef CXX_FILE
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(incbase)/$(CXX_FILE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CXX_FILE)$(INC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'#ifndef HPP_$(indef)$(call sfmt,$(CXX_FILE))_DEFINED'  )
 	$(call cat,'#define HPP_$(indef)$(call sfmt,$(CXX_FILE))_DEFINED'  )
 	$(call cat,''                                                      )
@@ -3316,7 +3320,7 @@ ifdef CXX_FILE
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	$(call touch,$(srcbase)/$(CXX_FILE)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(CXX_FILE)$(SRC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'// Libraries'                                          )
 	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"'                      )
 	$(call cat,$(if $(IN),'using namespace $(subst /,::,$(IN));')      )
@@ -3330,7 +3334,7 @@ ifdef C_MAIN
 	$(call invalid-ext,$(SRC_EXT),$(cext))
 	$(call touch,$(srcbase)/$(C_MAIN)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(C_MAIN)$(SRC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'int main(int argc, char **argv)'                       )
 	$(call cat,'{'                                                     )
 	$(call cat,'    return 0;'                                         )
@@ -3344,7 +3348,7 @@ ifdef CXX_MAIN
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	$(call touch,$(srcbase)/$(CXX_MAIN)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(CXX_MAIN)$(SRC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'// Default libraries'                                  )
 	$(call cat,'using namespace std;'                                  )
 	$(call cat,''                                                      )
@@ -3361,7 +3365,7 @@ ifdef TEMPLATE
 	$(call invalid-ext,$(INC_EXT),$(tlext))
 	$(call touch,$(incbase)/$(TEMPLATE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(TEMPLATE)$(INC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'#ifndef TCC_$(indef)$(call sfmt,$(TEMPLATE))_DEFINED'  )
 	$(call cat,'#define TCC_$(indef)$(call sfmt,$(TEMPLATE))_DEFINED'  )
 	$(call cat,''                                                      )
@@ -3379,7 +3383,7 @@ ifdef C_MODULE
 	$(call invalid-ext,$(INC_EXT),$(hext))
 	$(call touch,$(incbase)/$(C_MODULE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(C_MODULE)$(INC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'#ifndef H_$(indef)$(call sfmt,$(C_MODULE))_DEFINED'    )
 	$(call cat,'#define H_$(indef)$(call sfmt,$(C_MODULE))_DEFINED'    )
 	$(call cat,''                                                      )
@@ -3393,7 +3397,7 @@ ifdef CXX_MODULE
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(incbase)/$(CXX_MODULE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CXX_MODULE)$(INC_EXT))
-	$(call cat,''                                                      )
+	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'#ifndef HPP_$(indef)$(call sfmt,$(CXX_MODULE))_DEFINED')
 	$(call cat,'#define HPP_$(indef)$(call sfmt,$(CXX_MODULE))_DEFINED')
 	$(call cat,''                                                      )

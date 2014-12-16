@@ -1411,7 +1411,7 @@ build_dependency := \
 all: builddep $(externdep) $(binall) $(liball)
 
 .PHONY: check
-check: $(testrun)
+check: $(externdep) $(testrun)
 	$(if $(strip $^),$(call phony-ok,$(MSG_TEST_SUCCESS)))
 
 .PHONY: nothing
@@ -1457,17 +1457,17 @@ init_dependency := \
 init: initdep
 	$(call git-init)
 	$(call git-remote-add,origin,$(GIT_REMOTE))
-	
+
 	$(if $(wildcard make/*),\
         $(call git-submodule-add,$(MAKEGITREMOTE),make))
-	
+
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
 	$(call mkdir,$(docdir))
-	
+
 	$(call make-create,config,Config.mk)
 	$(call make-create,gitignore,.gitignore)
-	
+
 	$(call git-add-commit,Makefile Config.mk,\
            "Adds Makefile and Config.mk")
 	$(call git-add-commit,.git*,\
@@ -1552,7 +1552,7 @@ $(docdir)/$(doxyfile).mk: | $(docdir) $(docdir)/doxygen
 $(docdir)/$(doxyfile).mk: $(doxyfile) $(srcall) $(incall)
 	$(call status,$(MSG_DOXY_MAKE))
 	$(quiet) $(CP) $< $@
-	
+
 	@echo "                                                      " >> $@
 	@echo "######################################################" >> $@
 	@echo "##                 MAKEFILE CONFIGS                 ##" >> $@
@@ -1568,7 +1568,7 @@ $(docdir)/$(doxyfile).mk: $(doxyfile) $(srcall) $(incall)
 	@echo "FILE_PATTERNS    = $(addprefix *,$(srcext) $(incext)) " >> $@
 	@echo "                                                      " >> $@
 	@echo "OUTPUT_DIRECTORY = $(firstword $(docdir)/doxygen)     " >> $@
-	
+
 	$(call ok,$(MSG_DOXY_MAKE),$@)
 
 $(doxyfile):
@@ -1611,13 +1611,13 @@ dpkg_dependency := \
 
 .PHONY: dpkg
 dpkg: dpkgdep package-tar.gz $(deball)
-	
+
 	@# Step 1: Rename the upstream tarball
 	$(call phony-status,$(MSG_DEB_STEP1))
 	$(quiet) $(MV) $(distdir)/$(PROJECT)-$(VERSION)_src.tar.gz \
 	         $(distdir)/$(DEB_PROJECT)_$(VERSION).orig.tar.gz $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP1))
-	
+
 	@# Step 2: Unpack the upstream tarball
 	$(call phony-status,$(MSG_DEB_STEP2))
 	$(quiet) cd $(distdir) \
@@ -1626,13 +1626,13 @@ dpkg: dpkgdep package-tar.gz $(deball)
 	$(quiet) $(MV) $(distdir)/$(PROJECT)-$(VERSION)_src \
 	         $(distdir)/$(DEB_PROJECT)-$(VERSION) $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP2))
-	
+
 	@# Step 3: Add the Debian packaging files
 	$(call phony-status,$(MSG_DEB_STEP3))
 	$(quiet) $(CP) $(debdir) \
              $(distdir)/$(DEB_PROJECT)-$(VERSION) $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP3))
-	
+
 	@# Step 4: Install the package
 	$(call phony-status,$(MSG_DEB_STEP4))
 	$(quiet) cd $(distdir)/$(DEB_PROJECT)-$(VERSION) \
@@ -1822,7 +1822,7 @@ $(foreach d,build external upgrade init tags \
 define extern-dependency
 $$(extdir)/$$(strip $1): | $$(extdir)
 	$$(call $$(strip $2),$$(call car,$$(strip $3)),$$@)
-	
+
 $$(depdir)/$$(strip $1)dep: $$(extdir)/$$(strip $1) $$(externreq)
 	$$(call status,$$(MSG_MAKE_DEP))
 	$$(quiet) (cd $$< && $$(or $$(call cdr,$$(strip $3)),:)) $$(ERROR)\
@@ -1834,7 +1834,7 @@ $$(depdir)/$$(strip $1)dep: $$(extdir)/$$(strip $1) $$(externreq)
               else \
                   echo "$${MSG_MAKE_NONE}"; \
               fi $$(ERROR)
-	
+
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) touch $$@
 	$$(call ok,$$(MSG_MAKE_DEP))
@@ -1859,13 +1859,13 @@ $$(firstword $$(srcdir))/$1.yy.$2: \
 
 $$(firstword $$(srcdir))/$1.yy.$2: $3
 	$$(call status,$$(MSG_LEX))
-	
+
 	$$(quiet) $$(MV) $$< $$(firstword $$(incdir))/$1-yy/
 	$$(quiet) cd $$(firstword $$(incdir))/$1-yy/ \
               && $4 $$(lexflags) $$(notdir $$<) $$(ERROR)
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/$$(notdir $$<) $$<
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/*.$2 $$@ $$(ERROR)
-	
+
 	$$(call ok,$$(MSG_LEX),$$@)
 
 ifeq ($$(wildcard $$(firstword $$(incdir))/$1-yy),)
@@ -1902,7 +1902,7 @@ $$(firstword $$(srcdir))/$1.tab.$2: $3 $$(lexall)
               && $4 $$(yaccflags) $$(notdir $$<) $$(ERROR)
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/$$(notdir $$<) $$<
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/*.$2 $$@ $$(ERROR)
-	
+
 	$$(call ok,$$(MSG_YACC),$$@)
 
 ifeq ($$(wildcard $$(firstword $$(incdir))/$1-tab),)
@@ -1945,13 +1945,13 @@ $(foreach s,$(cesql),$(eval\
 define compile-asm
 $$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_ASM_COMPILE))
-	
+
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(AS) $$(cppflags) $$(asflags) $$(aslibs) \
                      $$< -o $$@ $$(ERROR)
-	
+
 	$$(call ok,$$(MSG_ASM_COMPILE),$$@)
 endef
 $(foreach root,$(srcdir),\
@@ -1969,13 +1969,13 @@ $(foreach root,$(srcdir),\
 define compile-c
 $$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_C_COMPILE))
-	
+
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) $$(cppflags) $$(cflags) $$(clibs) \
                      -c $$< -o $$@ $$(ERROR)
-	
+
 	$$(call ok,$$(MSG_C_COMPILE),$$@)
 endef
 $(foreach root,$(srcdir),$(foreach E,$(cext),\
@@ -1994,13 +1994,13 @@ $(foreach E,$(cext),\
 define compile-cpp
 $$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_CXX_COMPILE))
-	
+
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
                       -c $$< -o $$@ $$(ERROR)
-	
+
 	$$(call ok,$$(MSG_CXX_COMPILE),$$@)
 endef
 $(foreach root,$(srcdir),$(foreach E,$(cxxext),\
@@ -2019,13 +2019,13 @@ $(foreach E,$(cxxext),\
 define compile-fortran
 $$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
 	$$(call status,$$(MSG_F_COMPILE))
-	
+
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$3$$*)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(FC) $$(cppflags) $$(fflags) $$(flibs) \
                      -c $$< -o $$@ $$(ERROR)
-	
+
 	$$(call ok,$$(MSG_F_COMPILE),$$@)
 endef
 $(foreach root,$(srcdir),$(foreach E,$(fext),\
@@ -2048,13 +2048,13 @@ endif
 define compile-sharedlib-linux-c
 $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_C_LIBCOMP))
-	
+
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) -fPIC $$(cppflags) $$(clibs) $$(cflags) \
                      -c $$< -o $$@ $$(ERROR)
-	
+
 	$$(call ok,$$(MSG_C_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(cext),$(filter %$E,$(shrall))),\
@@ -2070,13 +2070,13 @@ $(foreach s,$(foreach E,$(cext),$(filter %$E,$(shrall))),\
 define compile-sharedlib-linux-cpp
 $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_CXX_LIBCOMP))
-	
+
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) -fPIC $$(cppflags) $$(cxxlibs) $$(cxxflags) \
                       -c $$< -o $$@ $$(ERROR)
-	
+
 	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
@@ -2092,13 +2092,13 @@ $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
 define compile-sharedlib-linux-fortran
 $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_F_LIBCOMP))
-	
+
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(FC) -fPIC $$(cppflags) $$(flibs) $$(fflags) \
                      -c $$< -o $$@ $$(ERROR)
-	
+
 	$$(call ok,$$(MSG_F_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
@@ -2371,11 +2371,11 @@ define packsyst-factory
 	$$(call mkdir,$$(dir $$@))
 	$$(quiet) $$(MKDIR) $$(packdir)
 	$$(quiet) $$(CP) $$(clndirs) $$(packdir)
-	
+
 	$$(call vstatus,$$(MSG_MAKE$2))
 	$$(quiet) $3 $$@ $$(packdep)
 	$$(call ok,$$(MSG_MAKE$2),$$@)
-	
+
 	$$(quiet) $$(RMDIR) $$(packdir)
 endef
 $(eval $(call packsyst-factory,tar,TAR,$(TAR)))
@@ -2877,7 +2877,7 @@ ifneq ($(strip $(quiet)),)
     define phony-vstatus
     	@echo $1 "... ";
     endef
-    
+
     define status
     	@$(RM) $@ && $(call model-status,$1)
     endef
@@ -3194,17 +3194,17 @@ ifdef NAMESPACE
 endif
 ifdef NMS_HEADER
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
-	
+
 	@# NMSH: Namespace directory
 	$(eval NMSH       := $(subst ::,/,$(NMS_HEADER)))
 	$(eval NMSH       := $(if $(strip $(IN)),$(IN)/)$(NMSH))
 	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
                                 $(sort $(dir $(incall))))))
 	$(eval NMSH       := $(call remove-trailing-bar,$(NMSH)))
-	
+
 	@# NMSH_NAME: File name for the Namespace header
 	$(eval NMSH_NAME  := $(notdir $(basename $(NMSH))))
-	
+
 	@# NMSH_FILES: Files to be put in the Namespace Header
 	$(eval NMSH_FILES := $(filter $(NMSH)/%,$(incall)))
 	$(eval NMSH_FILES := $(call not-root,\
@@ -3212,7 +3212,7 @@ ifdef NMS_HEADER
             $(foreach f,$(NMSH_FILES),\
                 $(firstword $(filter %$f,$(incall)))\
     ))))
-	
+
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(NMSH)/$(NMSH_NAME)$(INC_EXT),$(notice))
 	$(call select,$(NMSH)/$(NMSH_NAME)$(INC_EXT))
@@ -3229,17 +3229,17 @@ ifdef LIBRARY
 endif
 ifdef LIB_HEADER
 	$(if $(INC_EXT),,$(eval override INC_EXT := .tcc))
-	
+
 	@# LIBH: Library directory
 	$(eval LIBH       := $(subst ::,/,$(LIB_HEADER)))
 	$(eval LIBH       := $(if $(strip $(IN)),$(IN)/)$(LIBH))
 	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
                                 $(sort $(dir $(incall))))))
 	$(eval LIBH       := $(call remove-trailing-bar,$(LIBH)))
-	
+
 	@# LIBH_NAME: File name for the Library header
 	$(eval LIBH_NAME  := $(notdir $(basename $(LIBH))))
-	
+
 	@# LIBH_FILES: Files to be put in the Library header
 	$(eval LIBH_FILES := $(filter $(LIBH)/%,$(incall)))
 	$(eval LIBH_FILES := $(call not-root,\
@@ -3247,7 +3247,7 @@ ifdef LIB_HEADER
             $(foreach f,$(LIBH_FILES),\
                 $(firstword $(filter %$f,$(incall)))\
     ))))
-	
+
 	$(call invalid-ext,$(INC_EXT),$(tlext))
 	$(call touch,$(LIBH)/$(LIBH_NAME)$(INC_EXT),$(notice))
 	$(call select,$(LIBH)/$(LIBH_NAME)$(INC_EXT))
@@ -3262,7 +3262,7 @@ endif
 ifdef CLASS
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
-	
+
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(incbase)/$(CLASS)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CLASS)$(INC_EXT))
@@ -3278,7 +3278,7 @@ ifdef CLASS
 	$(call end-namespace                                               )
 	$(call cat,''                                                      )
 	$(call cat,'#endif'                                                )
-	
+
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	$(call touch,$(srcbase)/$(CLASS)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(CLASS)$(SRC_EXT))
@@ -3287,12 +3287,12 @@ ifdef CLASS
 	$(call cat,'#include "$(CLASS)$(INC_EXT)"'                         )
 	$(call cat,$(if $(IN),'using namespace $(subst /,::,$(IN));')      )
 	$(call cat,''                                                      )
-	
+
 	$(call select,stdout)
 endif
 ifdef F_FILE
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
-	
+
 	$(call invalid-ext,$(SRC_EXT),$(fext))
 	$(call touch,$(srcbase)/$(F_FILE)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(F_FILE)$(SRC_EXT))
@@ -3301,13 +3301,13 @@ ifdef F_FILE
 	$(call cat,'      program $(call lc,$(F_FILE))'                    )
 	$(call cat,'          stop'                                        )
 	$(call cat,'      end'                                             )
-	
+
 	$(call select,stdout)
 endif
 ifdef C_FILE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
-	
+
 	$(call invalid-ext,$(INC_EXT),$(hext))
 	$(call touch,$(incbase)/$(C_FILE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(C_FILE)$(INC_EXT))
@@ -3316,7 +3316,7 @@ ifdef C_FILE
 	$(call cat,'#define H_$(indef)$(call sfmt,$(C_FILE))_DEFINED'      )
 	$(call cat,''                                                      )
 	$(call cat,'#endif'                                                )
-	
+
 	$(call invalid-ext,$(SRC_EXT),$(cext))
 	$(call touch,$(srcbase)/$(C_FILE)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(C_FILE)$(SRC_EXT))
@@ -3324,13 +3324,13 @@ ifdef C_FILE
 	$(call cat,'/* Libraries */'                                       )
 	$(call cat,'#include "$(C_FILE)$(INC_EXT)"'                        )
 	$(call cat,''                                                      )
-	
+
 	$(call select,stdout)
 endif
 ifdef CXX_FILE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
-	
+
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(incbase)/$(CXX_FILE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CXX_FILE)$(INC_EXT))
@@ -3343,7 +3343,7 @@ ifdef CXX_FILE
 	$(call end-namespace                                               )
 	$(call cat,''                                                      )
 	$(call cat,'#endif'                                                )
-	
+
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	$(call touch,$(srcbase)/$(CXX_FILE)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(CXX_FILE)$(SRC_EXT))
@@ -3352,12 +3352,12 @@ ifdef CXX_FILE
 	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"'                      )
 	$(call cat,$(if $(IN),'using namespace $(subst /,::,$(IN));')      )
 	$(call cat,''                                                      )
-	
+
 	$(call select,stdout)
 endif
 ifdef C_MAIN
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
-	
+
 	$(call invalid-ext,$(SRC_EXT),$(cext))
 	$(call touch,$(srcbase)/$(C_MAIN)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(C_MAIN)$(SRC_EXT))
@@ -3366,12 +3366,12 @@ ifdef C_MAIN
 	$(call cat,'{'                                                     )
 	$(call cat,'    return 0;'                                         )
 	$(call cat,'}'                                                     )
-	
+
 	$(call select,stdout)
 endif
 ifdef CXX_MAIN
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
-	
+
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	$(call touch,$(srcbase)/$(CXX_MAIN)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(CXX_MAIN)$(SRC_EXT))
@@ -3383,12 +3383,12 @@ ifdef CXX_MAIN
 	$(call cat,'{'                                                     )
 	$(call cat,'    return 0;'                                         )
 	$(call cat,'}'                                                     )
-	
+
 	$(call select,stdout)
 endif
 ifdef TEMPLATE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .tcc))
-	
+
 	$(call invalid-ext,$(INC_EXT),$(tlext))
 	$(call touch,$(incbase)/$(TEMPLATE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(TEMPLATE)$(INC_EXT))
@@ -3401,12 +3401,12 @@ ifdef TEMPLATE
 	$(call end-namespace                                               )
 	$(call cat,''                                                      )
 	$(call cat,'#endif'                                                )
-	
+
 	$(call select,stdout)
 endif
 ifdef C_MODULE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
-	
+
 	$(call invalid-ext,$(INC_EXT),$(hext))
 	$(call touch,$(incbase)/$(C_MODULE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(C_MODULE)$(INC_EXT))
@@ -3415,12 +3415,12 @@ ifdef C_MODULE
 	$(call cat,'#define H_$(indef)$(call sfmt,$(C_MODULE))_DEFINED'    )
 	$(call cat,''                                                      )
 	$(call cat,'#endif'                                                )
-	
+
 	$(call mkdir,$(srcbase)/$(C_MODULE))
 endif
 ifdef CXX_MODULE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
-	
+
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(incbase)/$(CXX_MODULE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(CXX_MODULE)$(INC_EXT))
@@ -3433,7 +3433,7 @@ ifdef CXX_MODULE
 	$(call end-namespace                                               )
 	$(call cat,''                                                      )
 	$(call cat,'#endif'                                                )
-	
+
 	$(call mkdir,$(srcbase)/$(CXX_MODULE))
 endif
 ifneq (,$(strip $(ENABLE_NLS)))
@@ -3481,10 +3481,10 @@ ifdef NMS_HEADER
 	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
                                 $(sort $(dir $(incall))))))
 	$(eval NMSH       := $(call remove-trailing-bar,$(NMSH)))
-	
+
 	@# NMSH_NAME: Namespace include files
 	$(eval NMSH_NAME  := $(notdir $(basename $(NMSH))))
-	
+
 	$(call delete-file,$(NMSH)/$(NMSH_NAME),$(INC_EXT) $(hxxext))
 endif
 ifdef LIBRARY
@@ -3497,10 +3497,10 @@ ifdef LIB_HEADER
 	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
                                 $(sort $(dir $(incall))))))
 	$(eval LIBH       := $(call remove-trailing-bar,$(LIBH)))
-	
+
 	@# LIBH_NAME: Namespace include files
 	$(eval LIBH_NAME  := $(notdir $(basename $(LIBH))))
-	
+
 	$(call delete-file,$(LIBH)/$(LIBH_NAME),$(INC_EXT) $(tlext))
 endif
 ifdef CLASS
@@ -3583,7 +3583,7 @@ config:
 	@echo "# ARLIB           := # Static/Shared libraries' names. If"
 	@echo "# SHRLIB          := # one is a dir, all srcs within will"
 	@echo "                     # make the lib"
-	@echo ""                 
+	@echo ""
 	@echo "# Dependencies"
 	@echo "# =============="
 	@echo "# GIT_DEPENDENCY  := # List of git dependencies in the format"
@@ -3816,11 +3816,11 @@ else
 	$(call prompt,"notice:       ",$(notice)       )
 	$(call prompt,"contributors: ",$(contributors) )
 	$(call prompt,"doxyfile:     ",$(doxyfile)     )
-	
+
 	@echo "${WHITE}\nIGNORED FILES           ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"ignored:      ",$(ignored)      )
-	
+
 	@echo "${WHITE}\nACCEPTED EXTENSIONS     ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"srcext:       ",$(srcext)       )
@@ -3832,7 +3832,7 @@ else
 	$(call prompt,"yaxxext:      ",$(yaxxext)      )
 	$(call prompt,"esqlext:      ",$(esqlext)      )
 	$(call prompt,"docext:       ",$(docext)       )
-	
+
 	@echo "${WHITE}\nLEXER                   ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"alllexer:     ",$(alllexer)     )
@@ -3842,7 +3842,7 @@ else
 	$(call prompt,"lexall:       ",$(lexall)       )
 	$(call prompt,"lexlibs:      ",$(lexlibs)      )
 	$(call prompt,"lexinc:       ",$(lexinc)       )
-	
+
 	@echo "${WHITE}\nPARSER                  ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"allparser:    ",$(allparser)    )
@@ -3852,14 +3852,14 @@ else
 	$(call prompt,"yaccall:      ",$(yaccall)      )
 	$(call prompt,"yacclibs:     ",$(yacclibs)     )
 	$(call prompt,"yaccinc:      ",$(yaccinc)      )
-	
+
 	@echo "${WHITE}\nEMBEDDED SQL PREPROC    ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"cesql:        ",$(cesql)        )
 	$(call prompt,"esqlflags:    ",$(esqlflags)    )
 	$(call prompt,"esqllibs:     ",$(esqllibs)     )
 	$(call prompt,"esqlall:      ",$(esqlall)      )
-	
+
 	@echo "${WHITE}\nSOURCE                  ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"srcall:       ",$(srcall)       )
@@ -3874,13 +3874,13 @@ else
 	$(call prompt,"c_all:        ",$(c_all)        )
 	$(call prompt,"f_all:        ",$(f_all)        )
 	$(call prompt,"cxx_all:      ",$(cxx_all)      )
-	
+
 	@echo "${WHITE}\nHEADERS                 ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"incall:       ",$(incall)       )
 	$(call prompt,"incsub:       ",$(incsub)       )
 	$(call prompt,"autoinc:      ",$(autoinc)      )
-	
+
 	@echo "${WHITE}\nLIBRARY                 ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"lib_in:       ",$(lib_in)       )
@@ -3889,7 +3889,7 @@ else
 	$(call prompt,"libsrc:       ",$(libsrc)       )
 	$(call prompt,"libname:      ",$(libname)      )
 	$(call prompt,"lib:          ",$(lib)          )
-	
+
 	@echo "${WHITE}\nSTATIC LIBRARY          ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"ar_in:        ",$(ar_in)        )
@@ -3897,7 +3897,7 @@ else
 	$(call prompt,"arpatsrc:     ",$(arpatsrc)     )
 	$(call prompt,"arname:       ",$(arname)       )
 	$(call prompt,"arlib:        ",$(arlib)        )
-	
+
 	@echo "${WHITE}\nDYNAMIC LIBRARY         ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"shr_in:       ",$(shr_in)       )
@@ -3906,12 +3906,12 @@ else
 	$(call prompt,"shrall:       ",$(shrall)       )
 	$(call prompt,"shrname:      ",$(shrname)      )
 	$(call prompt,"shrlib:       ",$(shrlib)       )
-	
+
 	@echo "${WHITE}\nOTHER SYSTEM LIBRARY    ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"systemlib:    ",$(systemlib)    )
 	$(call prompt,"systemname:   ",$(systemname)   )
-	
+
 	@echo "${WHITE}\nTEST                    ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"testall:      ",$(testall)      )
@@ -3920,7 +3920,7 @@ else
 	$(call prompt,"testdep:      ",$(testdep)      )
 	$(call prompt,"testbin:      ",$(testbin)      )
 	$(call prompt,"testrun:      ",$(testrun)      )
-	
+
 	@echo "${WHITE}\nOBJECT                  ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"obj:          ",$(obj)          )
@@ -3928,19 +3928,19 @@ else
 	$(call prompt,"shrobj:       ",$(shrobj)       )
 	$(call prompt,"autoobj:      ",$(autoobj)      )
 	$(call prompt,"objall:       ",$(objall)       )
-	
+
 	@echo "${WHITE}\nDEPENDENCY              ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"depall:       ",$(depall)       )
 	$(call prompt,"systemdep:    ",$(systemdep)    )
 	$(call prompt,"externdep:    ",$(externdep)    )
-	
+
 	@echo "${WHITE}\nBINARY                  ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"bin:          ",$(bin)          )
 	$(call prompt,"sbin:         ",$(sbin)         )
 	$(call prompt,"libexec:      ",$(libexec)      )
-	
+
 	@echo "${WHITE}\nINSTALLATION            ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"destdir:      ",$(destdir)      )
@@ -3950,7 +3950,7 @@ else
 	$(call prompt,"i_sbindir:    ",$(i_sbindir)    )
 	$(call prompt,"i_libexecdir: ",$(i_libexecdir) )
 	$(call prompt,"i_docdir:     ",$(i_docdir)     )
-	
+
 	@echo "${WHITE}\nDOCUMENTATION           ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"texiall:      ",$(texiall)      )
@@ -3960,7 +3960,7 @@ else
 	$(call prompt,"texidvi:      ",$(texidvi)      )
 	$(call prompt,"texipdf:      ",$(texipdf)      )
 	$(call prompt,"texips:       ",$(texips)       )
-	
+
 	@echo "${WHITE}\nFLAGS                   ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"cflags:       ",$(cflags)       )

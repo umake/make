@@ -318,7 +318,8 @@ YACCFLAGS       :=
 
 # Embedded SQL
 ESQL            := ecpg
-ESQLLIBS        := $(shell pg_config --includedir)
+ESQLLIBS        := $(if $(strip $(shell which pg_config)),\
+                       $(shell pg_config --includedir))
 ESQLFLAGS       :=
 
 # Tags

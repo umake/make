@@ -1104,10 +1104,10 @@ shrlib  := $(foreach s,$(shrpatsrc),\
             )
 shrlib  := $(patsubst %,$(firstword $(libdir))/%.so,$(basename $(shrlib)))
 #------------------------------------------------------------------[ 8 ]
-$(if $(strip $(shrpatsrc)),\
-    $(foreach d,$(sort $(dir $(shrlib))),\
-        $(eval ldflags := -Wl,-rpath=$d $(ldflags))\
-))
+# $(if $(strip $(shrpatsrc)),\
+#     $(foreach d,$(sort $(dir $(shrlib))),\
+#         $(eval ldflags := -Wl,-rpath,$d $(ldflags))\
+# ))
 
 # System libraries
 # ==================
@@ -1139,9 +1139,9 @@ libname := $(arname) $(shrname) $(systemname)
 libsub   = $(if $(strip $(lib)),\
                $(foreach d,$(libdir),$(call rsubdir,$d)))
 ldlibs   = $(LDLIBS) $(sort $(addprefix -L$(space),$(libsub)))
-ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath=%, \
-               $(subst -L$(space),-L,$(LDLIBS))       \
-               $(addprefix -L,$(libsub))              \
+ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath$(comma)%, \
+               $(subst -L$(space),-L,$(LDLIBS))              \
+               $(addprefix -L,$(libsub))                     \
            ))
 
 # Type-specific libraries
@@ -1242,7 +1242,7 @@ $(eval $(call binary-name,libexec,$(LIBEXEC),$(execdir)))
 
 $(if $(strip $(bin) $(sbin) $(libexec)),\
     $(eval binall := $(bin) $(sbin) $(libexec)),\
-    $(if $(strip $(srcall)),$(eval binall := $(bindir)/a.out))\
+    $(if $(strip $(srccln)),$(eval binall := $(bindir)/a.out))\
 )
 #------------------------------------------------------------------[ 2 ]
 $(foreach sep,/ .,$(foreach b,$(call not-root,$(binall)),$(or\
@@ -1409,7 +1409,7 @@ build_dependency := \
     ESQL     => $(cesql)
 
 .PHONY: all
-all: builddep $(externdep) $(binall) $(liball)
+all: builddep $(externdep) $(binall) $(lib)
 
 .PHONY: check
 check: $(externdep) $(testrun)

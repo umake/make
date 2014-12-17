@@ -2423,7 +2423,7 @@ $(eval $(call compression-shortcut,tbz2,tar.bz2,TBZ2))
 #======================================================================#
 define dist-factory
 .PHONY: package-$1
-package-$1: dirs := Makefile $$(make_configs)
+package-$1: dirs := Makefile $$(make_configs) $$(wildcard .git*)
 package-$1: dirs += $$(srcdir) $$(incdir) $$(datadir) $$(docdir)
 package-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir)
 package-$1: distdep $$(distdir)/$$(PROJECT)-$$(VERSION)_src.$1

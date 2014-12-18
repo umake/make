@@ -1,15 +1,25 @@
 function test() {
-  echo -n .
+  # echo -n .
   setup
-  i=0
+  assert_type=ls
+  assert_value=ls
+  cmd=ls
+  last_cmd=ls
   for arg
   do
-    if [ $i -gt 2 ]
-    then
-      eval $arg &> /dev/null
-    fi
-    i=$((i+1))
+    eval $cmd &> /dev/null
+    cmd=$assert_type
+    assert_type=$assert_value
+    assert_value=$arg
   done
-  eval $1 "'"$2"'" "'"$3"'"
+  eval $assert_type "'"$cmd"'" "'"$assert_value"'"
   teardown
+}
+
+function should_be() {
+  eval assert "'"$1"'" "'"$2"'"
+}
+
+function should_raise() {
+  eval assert_raises "'"$1"'" "'"$2"'"
 }

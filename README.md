@@ -1,8 +1,8 @@
 Makefile All-in-One
 =====================
 
-[![Build Status](https://travis-ci.org/renatocf/make.svg)]
-(https://travis-ci.org/renatocf/make)
+[![Build Status](https://travis-ci.org/renatocf/make.svg?branch=master)]
+                (https://travis-ci.org/renatocf/make)
 
 A single Makefile to compile all your projects: in C, C++, Assembly
 and Fortran.

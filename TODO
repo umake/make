@@ -80,7 +80,7 @@
 
 [Tests:C]
     [X] Test single-file C compilation.
-    [ ] Test multiple-file C compilation.
+    [X] Test multiple-file C compilation.
     [ ] Test C static library generation.
     [ ] Test C shared library generation.
     [ ] Test scanner generation (Flex).
@@ -90,7 +90,7 @@
 
 [Tests:C++]
     [X] Test single-file C++ compilation.
-    [ ] Test multiple-file C++ compilation.
+    [X] Test multiple-file C++ compilation.
     [ ] Test C++ static library generation.
     [ ] Test C++ shared library generation.
     [ ] Test C++ unit test download (gmock/gtest).

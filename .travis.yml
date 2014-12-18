@@ -1,4 +1,5 @@
 language: cpp
+install: bc
 compiler:
   - gcc
   - clang

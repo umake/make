@@ -14,7 +14,9 @@ function teardown {
   rm -rf test/tmp
 }
 
-. test/test_initialization.sh
+# Targets
+. test/targets/test_init.sh
+. test/targets/test_standard.sh
 
 # C Tests
 . test/c/test_single-file.sh

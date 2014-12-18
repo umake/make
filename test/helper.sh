@@ -9,7 +9,7 @@ function test() {
   last_cmd=ls
   for arg
   do
-    eval $cmd &> /dev/null
+    eval $cmd
     cmd=$assert_type
     assert_type=$assert_value
     assert_value=$arg

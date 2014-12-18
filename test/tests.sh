@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 . test/assert.sh
 . test/helper.sh
 
@@ -16,23 +14,8 @@ function teardown {
   rm -rf test/tmp
 }
 
-test \
-  "make init" \
-  should_raise 0
-
-test \
-  "make init" \
-  "cp ../resources/hello.cpp src/hello.cpp" \
-  "make" \
-  should_raise 0
-
-
-test \
-  "make init" \
-  "cp ../resources/hello.cpp src/hello.cpp" \
-  "make" \
-  "./bin/a.out" \
-  should_be "Hello, World!"
+. test/test_initialization.sh
+. test/test_build.sh
 
 echo
 assert_end make

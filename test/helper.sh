@@ -1,5 +1,7 @@
+#!/bin/bash
+
 function test() {
-  # echo -n .
+  echo -n .
   setup
   assert_type=ls
   assert_value=ls

@@ -16,12 +16,23 @@ function teardown {
   rm -rf test/tmp
 }
 
-test assert_raises "make init" 0
-test assert_raises "make" 0
-test assert "./bin/a.out" "Hello, World!" \
+test \
+  "make init" \
+  should_raise 0
+
+test \
   "make init" \
   "cp ../resources/hello.cpp src/hello.cpp" \
-  "make"
+  "make" \
+  should_raise 0
+
+
+test \
+  "make init" \
+  "cp ../resources/hello.cpp src/hello.cpp" \
+  "make" \
+  "./bin/a.out" \
+  should_be "Hello, World!"
 
 echo
 assert_end make

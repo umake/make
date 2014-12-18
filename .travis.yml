@@ -1,5 +1,7 @@
 language: cpp
-install: bc
+before_install:
+ - sudo apt-get update -qq
+ - sudo apt-get install -qq bc
 compiler:
   - gcc
   - clang

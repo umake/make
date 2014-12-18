@@ -1,14 +1,45 @@
 language: cpp
+
+os:
+  - osx
+  - linux
+
+compiler:
+  - clang
+  - gcc
+
 before_install:
-  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  # g++-4.8.1 and clang++-3.4
+  # - if [ "$TRAVIS_OS_NAME" = "linux" ]; 
+  #   then
+  #     if [ "$CXX" == "g++" ];     then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi;
+  #     if [ "$CXX" == "clang++" ]; then sudo add-apt-repository -y ppa:h-rayflood/llvm; fi;
+  #   fi
+
   - sudo apt-get update -qq
+
 install:
   - sudo apt-get install -qq bc
-  - sudo apt-get install -qq gcc-4.8 g++-4.8
-  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90
-compiler:
-  - gcc
+  
+  - # Since default gcc is 4.6 and on osx is just a front-end for LLVM
+    if [[ "$CXX" = "g++" ]]; then
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90;
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90;
+    fi
+
+  # g++4.8.1
+  # - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CXX" = "g++" ];
+  #   then
+  #     sudo apt-get install -qq g++-4.8;
+  #     sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90;
+  #   fi
+
+  # clang 3.4
+  # - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ "$CXX" == "clang++" ]; 
+  #   then 
+  #     sudo apt-get install --allow-unauthenticated -qq clang-3.4;
+  #     sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-3.4 90;
+  #   fi
+
 script:
   - ./test/tests.sh
-os:
-  - linux

@@ -982,8 +982,11 @@ liball := $(sort \
 )))
 # Give error if there is no match with the lib name
 $(foreach l,$(lib_in),\
-    $(if $(findstring $l,$(liball)),,\
-        $(error Library file/directory "$l" not found)))
+    $(if $(or $(findstring $l,$(liball)),$(call rfilter,\
+                init standard nothing config gitignore,\
+                $(MAKECMDGOALS))),,\
+        $(error Library file/directory "$l" not found)\
+))
 #------------------------------------------------------------------[ 5 ]
 # Search-for-complete-path steps:
 # * Cases #6 (path witout root) and #7 (all path);

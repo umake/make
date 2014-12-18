@@ -22,9 +22,11 @@ function teardown {
 
 # C Tests
 . test/c/test_single-file.sh
+. test/c/test_multiple-file.sh
 
 # C++ Tests
 . test/c++/test_single-file.sh
+. test/c++/test_multiple-file.sh
 
 echo
 assert_end make

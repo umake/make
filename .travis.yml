@@ -3,7 +3,7 @@ compiler:
   - gcc
   - clang
 script:
-  - ./test/test
+  - ./test/tests.sh
 os:
   - linux
   - osx

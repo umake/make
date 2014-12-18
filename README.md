@@ -66,7 +66,7 @@ Makefile will be automatically downloaded. If it is a submodule,
 
 ## Portability and Issues ##
 
-These Makefile is currently being tested under projects developed mainly
+This Makefile is currently being tested under projects developed mainly
 in C++ within Ubuntu Linux and MAC OS X. Tests have already been done
 to purely C and C/C++ projects. Any misfunction or bug may be reported 
 sending an email to me. In order to contribute, make a pull request.

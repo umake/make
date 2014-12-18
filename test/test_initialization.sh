@@ -6,8 +6,8 @@ test \
 
 test \
   "make init" \
-  "ls" \
-  should_output "Config.mk\nMakefile\ndep\ndoc\ninclude\nsrc"
+  "ls | sort -f" \
+  should_output "Config.mk\ndep\ndoc\ninclude\nMakefile\nsrc"
 
 test \
   "cp ../resources/hello.cpp hello.cpp" \
@@ -17,11 +17,11 @@ test \
 test \
   "cp ../resources/hello.cpp hello.cpp" \
   "make standard" \
-  "ls" \
-  should_output "Config.mk\nMakefile\ndep\ndoc\ninclude\nsrc"
+  "ls | sort -f" \
+  should_output "Config.mk\ndep\ndoc\ninclude\nMakefile\nsrc"
 
 test \
   "cp ../resources/hello.cpp hello.cpp" \
   "make standard" \
-  "ls src" \
+  "ls src | sort -f" \
   should_output "hello.cpp"

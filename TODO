@@ -66,5 +66,42 @@
     [ ] Look over dependency check (by program or by target?).
     [ ] Use git submodules (with init/deinit) to manage dependencies.
     [ ] Add deep directory search of test binary name.
-    [ ] Test if flex/bison still compile correctly.
     [ ] Add option to automatically create a RPM package.
+
+[Tests]
+    [X] Support continuous integration with Travis CI.
+    [X] Test initialization with 'init'.
+    [ ] Test initialization with 'standard'.
+    [ ] Test .tar.gz package generation with 'dist'.
+    [ ] Test .tar.gz package generation with 'package'.
+    [ ] Test debian package generation with 'dpkg'.
+    [ ] Test program installation with 'install'.
+    [ ] Test program uninstallation with 'uninstall'.
+
+[Tests:C]
+    [ ] Test single-file C compilation.
+    [ ] Test multiple-file C compilation.
+    [ ] Test C static library generation.
+    [ ] Test C shared library generation.
+    [ ] Test scanner generation (Flex).
+    [ ] Test parser generation (Bison).
+    [ ] Test internationalization (gettext).
+    [ ] Test embedded SQL generation (PostgreSQL).
+
+[Tests:C++]
+    [X] Test single-file C++ compilation.
+    [ ] Test multiple-file C++ compilation.
+    [ ] Test C++ static library generation.
+    [ ] Test C++ shared library generation.
+    [ ] Test C++ unit test download (gmock/gtest).
+    [ ] Test C++ unit test run (gmock/gtest).
+    [ ] Test scanner generation (Flexc++).
+    [ ] Test parser generation (Bisonc++).
+    [ ] Test internationalization (gettext).
+
+[Tests:Fortran]
+    [ ] Test single-file Fortran compilation.
+    [ ] Test multiple-file Fortran compilation.
+
+[Tests:Assembly]
+    [ ] Test single-file Assembly compilation.

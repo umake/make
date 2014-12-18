@@ -71,7 +71,7 @@
 [Tests]
     [X] Support continuous integration with Travis CI.
     [X] Test initialization with 'init'.
-    [ ] Test initialization with 'standard'.
+    [X] Test initialization with 'standard'.
     [ ] Test .tar.gz package generation with 'dist'.
     [ ] Test .tar.gz package generation with 'package'.
     [ ] Test debian package generation with 'dpkg'.

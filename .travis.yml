@@ -1,0 +1,10 @@
+language: cpp
+compiler:
+  - gcc
+  - clang
+script:
+  - ./test/run_test
+os:
+  - linux
+  - osx
+osx_image: xcode61

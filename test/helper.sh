@@ -18,7 +18,7 @@ function test() {
   teardown
 }
 
-function should_be() {
+function should_output() {
   eval assert "'"$1"'" "'"$2"'"
 }
 

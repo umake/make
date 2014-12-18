@@ -79,7 +79,7 @@
     [ ] Test program uninstallation with 'uninstall'.
 
 [Tests:C]
-    [ ] Test single-file C compilation.
+    [X] Test single-file C compilation.
     [ ] Test multiple-file C compilation.
     [ ] Test C static library generation.
     [ ] Test C shared library generation.

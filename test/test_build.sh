@@ -12,4 +12,4 @@ test \
   "cp ../resources/hello.cpp src/hello.cpp" \
   "make" \
   "./bin/a.out" \
-  should_be "Hello, World!"
+  should_output "Hello, World!"

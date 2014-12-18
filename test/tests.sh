@@ -15,7 +15,12 @@ function teardown {
 }
 
 . test/test_initialization.sh
-. test/test_build.sh
+
+# C Tests
+. test/c/test_single-file.sh
+
+# C++ Tests
+. test/c++/test_single-file.sh
 
 echo
 assert_end make

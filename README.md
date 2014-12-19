@@ -15,7 +15,7 @@ Fortran projects - with support to many executables, static and shared
 libraries, lexer and parser generators, dependency management, file
 creation and much more! Everything just 4 letters far from you.
 
-## Want to start? ##
+## Starting ##
 
 Good tools are simple. That's why make still has so many success. And
 that's what this Makefile primarily wants.
@@ -40,7 +40,7 @@ In order to make your very first compilation, just create a .c, .cpp
 variable `BIN` whith its name in Config.mk. Then  *voilà*: it will
 compile everything perfectly (at least as perfect as your program...)
 
-#### Git submodule ####
+##### Git submodule #####
 
 If you want to keep a copy of this project as a submodule, you may
 add it within your working directory:
@@ -51,7 +51,7 @@ And then create a symbolic link:
 
     ln -s make/Makefile .
 
-#### Single-directory projects ####
+##### Single-directory projects #####
 
 Do you have old single-directory code that started to get out of
 control? We also have a solution! `make standard` checks and separates 

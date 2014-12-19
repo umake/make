@@ -1,12 +1,12 @@
 #!/bin/bash
 
-test "make"\
+test "make with a single file"\
   "make init" \
   "cp ../resources/hello.c src/hello.c" \
   "make" \
   should_raise 0
 
-test "if \"make\" builds the project" \
+test "if \"make\" builds the project with a single file" \
   "make init" \
   "cp ../resources/hello.c src/hello.c" \
   "make" \

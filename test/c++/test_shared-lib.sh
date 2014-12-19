@@ -1,6 +1,6 @@
 #!/bin/bash
 
-test "if \"make\" builds the library" \
+test "if \"make\" builds the shared library" \
   "make init" \
   "cp ../resources/shared_lib.cpp.mk Config.mk" \
   "cp ../resources/simple_calc.dat ." \

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Tests
-test "make" \
+test "make with multiple files" \
   "make init" \
   "cp ../resources/simple_calc.dat ." \
   "cp ../resources/simple_calc.c ." \
@@ -11,7 +11,7 @@ test "make" \
   "make" \
   should_raise 0
 
-test "if \"make\" builds the project" \
+test "if \"make\" builds the project with multiple files" \
   "make init" \
   "cp ../resources/simple_calc.dat ." \
   "cp ../resources/simple_calc.c ." \

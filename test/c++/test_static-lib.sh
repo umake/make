@@ -1,6 +1,6 @@
 #!/bin/bash
 
-test "if \"make\" builds the library" \
+test "if \"make\" builds the static library" \
   "make init" \
   "cp ../resources/static_lib.cpp.mk Config.mk" \
   "cp ../resources/simple_calc.dat ." \

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-test "make" \
+test "make with multiple files" \
   "make init" \
   "cp ../resources/simple_calc.dat ." \
   "cp ../resources/simple_calc.cpp ." \

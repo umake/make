@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Tests if 'make' builds the library
-test \
+test "if \"make\" builds the library" \
   "make init" \
   "cp ../resources/shared_lib.c.mk Config.mk" \
   "cp ../resources/simple_calc.dat ." \

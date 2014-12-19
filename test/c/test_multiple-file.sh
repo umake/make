@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Tests 'make'
-test \
+# Tests
+test "make" \
   "make init" \
   "cp ../resources/simple_calc.dat ." \
   "cp ../resources/simple_calc.c ." \
@@ -11,8 +11,7 @@ test \
   "make" \
   should_raise 0
 
-# Tests if 'make' builds the project
-test \
+test "if \"make\" builds the project" \
   "make init" \
   "cp ../resources/simple_calc.dat ." \
   "cp ../resources/simple_calc.c ." \

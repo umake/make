@@ -81,8 +81,8 @@
 [Tests:C]
     [X] Test single-file C compilation.
     [X] Test multiple-file C compilation.
-    [ ] Test C static library generation.
-    [ ] Test C shared library generation.
+    [X] Test C static library generation.
+    [X] Test C shared library generation.
     [ ] Test scanner generation (Flex).
     [ ] Test parser generation (Bison).
     [ ] Test internationalization (gettext).
@@ -91,8 +91,8 @@
 [Tests:C++]
     [X] Test single-file C++ compilation.
     [X] Test multiple-file C++ compilation.
-    [ ] Test C++ static library generation.
-    [ ] Test C++ shared library generation.
+    [X] Test C++ static library generation.
+    [X] Test C++ shared library generation.
     [ ] Test C++ unit test download (gmock/gtest).
     [ ] Test C++ unit test run (gmock/gtest).
     [ ] Test scanner generation (Flexc++).

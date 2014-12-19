@@ -1351,10 +1351,12 @@ $(foreach t,$(call not-root,$(testbin)),$(or\
 ))
 #------------------------------------------------------------------[ 10 ]
 $(foreach s,$(comtestsrc),\
-    $(if $(strip $(filter-out %$(testsuf),$(basename $s))),\
+    $(if $(and $(filter-out %$(testsuf),$(basename $s)),$(strip \
+               $(call rfilter,check,$(MAKECMDGOALS)))),\
         $(error "Test $(testdir)/$s does not have suffix $(testsuf)")))
 $(foreach s,$(comtestsrc),\
-    $(if $(strip $(filter $(subst $(testsuf).,.,$s),$(src))),,\
+    $(if $(or $(filter $(subst $(testsuf).,.,$s),$(src)),$(strip \
+              $(call not,$(call rfilter,check,$(MAKECMDGOALS))))),,\
         $(error "Test $(testdir)/$s has no corresponding source file")))
 #------------------------------------------------------------------[ 11 ]
 testrun := $(addprefix run_,$(subst /,_,$(testbin)))

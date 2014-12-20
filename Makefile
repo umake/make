@@ -1822,11 +1822,10 @@ $(foreach d,build external upgrade init tags \
 define system-dependency
 $$(depdir)/$1_dep: d=$1
 $$(depdir)/$1_dep: | $$(depdir)
-	$$(quiet) $$(if $$(strip $($1)),,\
-                  $$(call phony-error,$$(MSG_DEP_UNDEFINED)))
+	$$(if $$(strip $($1)),,$$(call phony-error,$$(MSG_DEP_UNDEFINED)))
 	$$(call phony-status,$$(MSG_DEP))
 	$$(quiet) which $($1) $$(NO_OUTPUT) $$(NO_ERROR) \
-              || $$(call phony-error,$$(MSG_DEP_NOT_FOUND))
+              || $$(call model-error,$$(MSG_DEP_NOT_FOUND))
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP))
 endef
@@ -2185,7 +2184,7 @@ $1/$2: $$($2_obj) | $1
 .PHONY: $3
 $3: $1/$2
 	$$(call phony-vstatus,$$(MSG_TEST))
-	@./$$< || $$(call test-error,$$(MSG_TEST_FAILURE))
+	@./$$< || $$(call model-test-error,$$(MSG_TEST_FAILURE))
 	$$(call ok,$$(MSG_TEST))
 endef
 $(foreach t,$(testbin),$(eval\
@@ -2888,58 +2887,9 @@ $(if $(wildcard $1),\
     $(call rm,$1),$(if $(strip $2),$(call phony-ok,$(strip $2))))
 endef
 
-## STATUS ##############################################################
+## ERROR ###############################################################
 ifndef SILENT
 
-ifneq ($(strip $(quiet)),)
-    define model-status
-    printf "%b " $1; printf "... ";
-    endef
-
-    define phony-status
-    	@$(call model-status,$1)
-    endef
-
-    define phony-vstatus
-    	@echo $1 "... ";
-    endef
-
-    define status
-    	@$(RM) $@ && $(call model-status,$1)
-    endef
-
-    define vstatus
-    	@$(RM) $@ && echo $1 "... ";
-    endef
-endif
-
-define model-ok
-echo "\r${GREEN}[OK]${RES}" $1 "     ";
-endef
-
-define model-error
-echo "${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}";
-endef
-
-define phony-ok
-@if [ $$? ];\
-    then $(call model-ok,$1)\
-    else $(call model-error,$1)\
-         exit 42;\
-fi;
-endef
-
-define ok
-@if [ -f $2 ];\
-    then $(call model-ok,$1)\
-    else $(call model-error,$1)\
-         exit 42;\
-fi
-endef
-
-endif
-
-## ERROR ###############################################################
 ifndef MORE
 define ERROR
 2>&1 | sed '1 s/^/stderr:\n/' | sed 's/^/> /'
@@ -2952,14 +2902,62 @@ define ERROR
 endef
 endif
 
-define phony-error
-(echo "\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}"; exit 42)
+define model-error
+(echo "\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}" && exit 42)
 endef
 
-define test-error
+define phony-error
+@$(call model-error,$1)
+endef
+
+define model-test-error
 (echo "\r${RED}[FAILURE]${RES}" $1"."\
       "${RED}Aborting status: $$?${RES}" && exit 42)
 endef
+
+## STATUS ##############################################################
+ifneq ($(strip $(quiet)),)
+    define model-status
+    printf "%b " $1; printf "... "
+    endef
+
+    define phony-status
+    	@$(call model-status,$1)
+    endef
+
+    define phony-vstatus
+    	@echo $1 "... "
+    endef
+
+    define status
+    	@$(RM) $@ && $(call model-status,$1)
+    endef
+
+    define vstatus
+    	@$(RM) $@ && echo $1 "... "
+    endef
+endif
+
+## ACKNOWLEDGMENT ######################################################
+define model-ok
+echo "\r${GREEN}[OK]${RES}" $1 "     "
+endef
+
+define phony-ok
+@if [ $$? ];\
+    then $(call model-ok,$1);\
+    else $(call model-error,$1);\
+fi;
+endef
+
+define ok
+@if [ -f $2 ];\
+    then $(call model-ok,$1);\
+    else $(call model-error,$1);\
+fi
+endef
+
+endif
 
 ## TEXT ################################################################
 define uc
@@ -3024,9 +3022,9 @@ endef
 define git-init
 	$(quiet) if ! [ -d .git ];\
              then\
-                 $(call model-status,$(MSG_GIT_INIT))\
+                 $(call model-status,$(MSG_GIT_INIT));\
                  $(GIT) init $(NO_OUTPUT) $(NO_ERROR);\
-                 $(call model-ok,$(MSG_GIT_INIT))\
+                 $(call model-ok,$(MSG_GIT_INIT));\
              fi
 endef
 
@@ -3034,18 +3032,18 @@ define git-add
 	$(quiet) if ! $(GIT) ls-files $1 --error-unmatch 2>/dev/null 1>&2\
              || ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
              then\
-                 $(call model-status,$(MSG_GIT_ADD))\
+                 $(call model-status,$(MSG_GIT_ADD));\
                  $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
-                 $(call model-ok,$(MSG_GIT_ADD))\
+                 $(call model-ok,$(MSG_GIT_ADD));\
              fi
 endef
 
 define git-commit
 	$(quiet) if ! $(GIT) diff --cached --exit-code $1 $(NO_OUTPUT);\
              then\
-                 $(call model-status,$(MSG_GIT_COMMIT))\
+                 $(call model-status,$(MSG_GIT_COMMIT));\
                  $(GIT) commit -m $(strip $2) $(NO_OUTPUT) $(NO_ERROR);\
-                 $(call model-ok,$(MSG_GIT_COMMIT))\
+                 $(call model-ok,$(MSG_GIT_COMMIT));\
              fi
 endef
 
@@ -3053,10 +3051,10 @@ define git-add-commit
 	$(quiet) if ! $(GIT) ls-files $1 --error-unmatch 2>/dev/null 1>&2\
              || ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
              then\
-                 $(call model-status,$(MSG_GIT_COMMIT))\
+                 $(call model-status,$(MSG_GIT_COMMIT));\
                  $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
                  $(GIT) commit -m $(strip $2) $(NO_OUTPUT) $(NO_ERROR);\
-                 $(call model-ok,$(MSG_GIT_COMMIT))\
+                 $(call model-ok,$(MSG_GIT_COMMIT));\
              fi
 endef
 
@@ -3070,9 +3068,9 @@ ifneq (,$(strip $(GIT_REMOTE)))
 define git-remote-add
 	$(quiet) if ! $(GIT) remote | grep "^$1$$" $(NO_OUTPUT);\
              then\
-                 $(call model-status,$(MSG_GIT_REM_ADD))\
+                 $(call model-status,$(MSG_GIT_REM_ADD));\
                  $(GIT) remote add $1 $2 $(ERROR);\
-                 $(call model-ok,$(MSG_GIT_REM_ADD))\
+                 $(call model-ok,$(MSG_GIT_REM_ADD));\
              fi
 endef
 
@@ -3143,7 +3141,7 @@ endef
 # $2 List of extensions to validate as correct $1, if it is not empty
 define invalid-ext
 $(if $(strip $1),$(if $(findstring $(strip $1),$2),,\
-    $(quiet) $(call phony-error,$(MSG_NEW_EXT))\
+    $(call phony-error,$(MSG_NEW_EXT))\
 ))
 endef
 

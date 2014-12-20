@@ -7,8 +7,8 @@ function setup {
   mkdir test/tmp
   cp Makefile test/tmp/Makefile
   cd test/tmp
-  echo "CC  := ${CC}"  >> .compiler.mk
-  echo "CXX := ${CXX}" >> .compiler.mk
+  # echo "CC  := ${CC}"  >> .compiler.mk
+  # echo "CXX := ${CXX}" >> .compiler.mk
 }
 
 function teardown {

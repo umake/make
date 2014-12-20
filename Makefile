@@ -1803,9 +1803,9 @@ $$(call hash-table.new,$2)
 .PHONY: $1dep
 $1dep: $$(if $$(strip $$(call hash-table.values,$2)),$$(depdir)/$1dep)
 
-$$(depdir)/$1dep: \
-    $$(foreach k,$$(call hash-table.keys,$2),\
-       $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k_dep)) | $$(depdir)
+$$(depdir)/$1dep: $$(foreach k,$$(call hash-table.keys,$2),\
+                      $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k_dep)) \
+                  | $$(depdir)
 	
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
@@ -1822,9 +1822,11 @@ $(foreach d,build external upgrade init tags \
 define system-dependency
 $$(depdir)/$1_dep: d=$1
 $$(depdir)/$1_dep: | $$(depdir)
+	$$(quiet) $$(if $$(strip $($1)),,\
+                  $$(call phony-error,$$(MSG_DEP_UNDEFINED)))
 	$$(call phony-status,$$(MSG_DEP))
 	$$(quiet) which $($1) $$(NO_OUTPUT) $$(NO_ERROR) \
-              || $$(call phony-error,$$(MSG_DEP_FAILURE))
+              || $$(call phony-error,$$(MSG_DEP_NOT_FOUND))
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP))
 endef
@@ -2624,7 +2626,8 @@ MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 MSG_DEP           = "${DEF}Searching for $d dependency"\
                     "${GREEN}$($d)${RES}"
 MSG_DEP_ALL       = "${YELLOW}All dependencies avaiable${RES}"
-MSG_DEP_FAILURE   = "${DEF}Dependency ${GREEN}$($d)${DEF}"\
+MSG_DEP_UNDEFINED = "${DEF}Undefined variable ${GREEN}$d${DEF}"
+MSG_DEP_NOT_FOUND = "${DEF}Dependency ${GREEN}$($d)${DEF}"\
                     "not found${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"

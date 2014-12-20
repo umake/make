@@ -62,7 +62,7 @@
     [X] Refactor texts and variables from Config.mk.
     [X] Support clone of remote dir + symbolic link to keep Makefile.
     [X] Look over dependency check (by program or by target?).
-    [ ] Check if program variables are defined when needed.
+    [X] Check if program variables are defined when needed.
     [ ] Automatically create header 'gettext.h' for i18n defines.
     [ ] Test internationalization feature in non-trivial cases.
     [ ] Use git submodules (with init/deinit) to manage dependencies.

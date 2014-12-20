@@ -1791,33 +1791,50 @@ uninstall-info:
 ########################################################################
 
 #======================================================================#
-# Function: system-dependency                                          #
+# Function: target-dependency                                          #
 # @param  $1 Dependency name (for targets)                             #
 # @param  $3 Dependency nick (hash key)                                #
 # @return Target to check a set of dependencies defined in $2          #
 #======================================================================#
-define system-dependency
+define target-dependency
 # Creates hash from hash-key
 $$(call hash-table.new,$2)
 
 .PHONY: $1dep
-$1dep: $$(if $$(call hash-table.values,$2),$$(depdir)/$1dep)
+$1dep: $$(if $$(strip $$(call hash-table.values,$2)),$$(depdir)/$1dep)
 
-$$(depdir)/$1dep: $$(call cdr,$$(MAKEFILE_LIST)) | $$(depdir)
-	$$(quiet) $$(foreach d,$$(call hash-table.keys,$2),\
-       $$(if $$(strip $$($2.$$d)),\
-         $$(call phony-status,$$(MSG_DEP))$$(newline)\
-         $$(quiet) which $$(firstword $$($$d)) \
-                   $$(NO_OUTPUT) $$(NO_ERROR)\
-                || $$(call phony-error,$$(MSG_DEP_FAILURE))$$(newline)\
-         $$(call phony-ok,$$(MSG_DEP))$$(newline)\
-    ))
+$$(depdir)/$1dep: \
+    $$(foreach k,$$(call hash-table.keys,$2),\
+       $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k_dep)) | $$(depdir)
+	
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
 $(foreach d,build external upgrade init tags \
-            translation docs dist dpkg install,\
-    $(eval $(call system-dependency,$d,$d_dependency)))
+            translation docs doxy dist dpkg install,\
+    $(eval $(call target-dependency,$d,$d_dependency)))
+
+#======================================================================#
+# Function: system-dependency                                          #
+# @param  $1 Program name                                              #
+# @return Target to check if program exists                            #
+#======================================================================#
+define system-dependency
+$$(depdir)/$1_dep: d=$1
+$$(depdir)/$1_dep: | $$(depdir)
+	$$(call phony-status,$$(MSG_DEP))
+	$$(quiet) which $($1) $$(NO_OUTPUT) $$(NO_ERROR) \
+              || $$(call phony-error,$$(MSG_DEP_FAILURE))
+	$$(quiet) touch $$@
+	$$(call phony-ok,$$(MSG_DEP))
+endef
+$(foreach p,\
+    AR AS CC FC CXX RANLIB INSTALL INSTALL_DATA INSTALL_PROGRAM CP MV \
+    RM TAR ZIP GZIP BZIP2 MKDIR RMDIR FIND LEX LEX_CXX YACC YACC_CXX  \
+    ESQL CTAGS ETAGS DOXYGEN MAKEINFO INSTALL_INFO TEXI2HTML TEXI2DVI \
+    TEXI2PDF TEXI2PS XGETTEXT MSGINIT MSGMERGE MSGFMT DEBUILD DCH     \
+    CURL GIT,\
+    $(eval $(call system-dependency,$p)))
 
 #======================================================================#
 # Function: extern-dependency                                          #
@@ -2605,7 +2622,7 @@ MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$<${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 
 MSG_DEP           = "${DEF}Searching for $d dependency"\
-                    "${GREEN}$($(d))${RES}"
+                    "${GREEN}$($d)${RES}"
 MSG_DEP_ALL       = "${YELLOW}All dependencies avaiable${RES}"
 MSG_DEP_FAILURE   = "${DEF}Dependency ${GREEN}$($d)${DEF}"\
                     "not found${RES}"

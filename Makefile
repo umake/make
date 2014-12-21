@@ -478,17 +478,17 @@ endef
 
 define is_c
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
-    $(if $(strip $(findstring $s,$(cext))),,$s))),,is_c)
+    $(if $(strip $(findstring $s,$(cext))),$s))),is_c)
 endef
 
 define is_f
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
-    $(if $(strip $(findstring $s,$(fext))),,$s))),,is_f)
+    $(if $(strip $(findstring $s,$(fext))),$s))),is_f)
 endef
 
 define is_cxx
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
-    $(if $(strip $(findstring $s,$(cxxext))),,$s))),,is_cxx)
+    $(if $(strip $(findstring $s,$(cxxext))),$s))),is_cxx)
 endef
 
 # Auxiliar recursive functions
@@ -1281,6 +1281,7 @@ $(foreach b,$(notdir $(binall)),$(or\
     $(eval $b_aobj   := $(comaobj) $($b_aobj) ),\
     $(eval $b_aall   := $(comasrc) $($b_aall) ),\
     $(eval $b_link   := $(sort $(addprefix -l,$($b_link) $(comlink)))),\
+    $(eval $b_is_c   := $(strip $(call is_c,$($b_src)))),\
     $(eval $b_is_f   := $(strip $(call is_f,$($b_src)))),\
     $(eval $b_is_cxx := $(strip $(call is_cxx,$($b_src)))),\
 ))
@@ -2205,6 +2206,11 @@ endif
 define binary-factory
 $1/$2: $$($2_lib) $$($2_aobj) $$($2_obj) | $1
 	$$(call status,$$(MSG_$$(strip $3)_LINKAGE))
+	
+	@# Check if executable has files
+	$$(if $$(strip $$($2_all)),,\
+        $$(call phony-error,$$(MSG_$$(strip $3)_NO_FILE)))
+	
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $4 $$($2_aobj) $$($2_obj) -o $$@ \
               $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
@@ -2216,14 +2222,16 @@ $$($2_aobj): $$($2_aall) | $$(objdir)
 endef
 $(foreach b,$(binall),$(eval\
     $(call binary-factory,$(call root,$b),$(call not-root,$b),\
-        $(if $($(strip $(call not-root,$b))_is_c),C,\
-        $(if $($(strip $(call not-root,$b))_is_f),F,\
-        $(if $($(strip $(call not-root,$b))_is_cxx),CXX,CXX\
-    ))),\
-        $(if $($(strip $(call not-root,$b))_is_c),$(CC),\
-        $(if $($(strip $(call not-root,$b))_is_f),$(FC),\
-        $(if $($(strip $(call not-root,$b))_is_cxx),$(CXX),$(CXX)\
-    ))),\
+    $(strip \
+        $(if $($(call not-root,$b)_is_c),C,\
+        $(if $($(call not-root,$b)_is_f),F,\
+        $(if $($(call not-root,$b)_is_cxx),CXX,CXX\
+    )))),\
+    $(strip \
+        $(if $($(call not-root,$b)_is_c),$(CC),\
+        $(if $($(call not-root,$b)_is_f),$(FC),\
+        $(if $($(call not-root,$b)_is_cxx),$(CXX),$(CXX)\
+    )))),\
 )))
 
 #======================================================================#
@@ -2715,6 +2723,7 @@ MSG_STATLIB       = "${RED}Generating static library $@${RES}"
 MSG_C_COMPILE     = "${DEF}Generating C artifact ${WHITE}$@${RES}"
 MSG_C_LINKAGE     = "${YELLOW}Generating C executable ${GREEN}$@${RES}"
 MSG_C_SHRDLIB     = "${RED}Generating C shared library $@${RES}"
+MSG_C_NO_FILE     = "${DEF}No files for C executable ${GREEN}$@${RES}"
 MSG_C_LIBCOMP     = "${DEF}Generating C library artifact"\
                     "${YELLOW}$@${RES}"
 
@@ -2722,12 +2731,15 @@ MSG_F_COMPILE     = "${DEF}Generating Fortran artifact ${WHITE}$@${RES}"
 MSG_F_LINKAGE     = "${YELLOW}Generating Fortran executable"\
                     "${GREEN}$@${RES}"
 MSG_F_SHRDLIB     = "${RED}Generating Fortran shared library $@${RES}"
+MSG_F_NO_FILE     = "${DEF}No files for Fortran executable"\
+                    "${GREEN}$@${RES}"
 MSG_F_LIBCOMP     = "${DEF}Generating Fortran library artifact"\
                     "${YELLOW}$@${RES}"
 
 MSG_CXX_COMPILE   = "${DEF}Generating C++ artifact ${WHITE}$@${RES}"
 MSG_CXX_LINKAGE   = "${YELLOW}Generating C++ executable ${GREEN}$@${RES}"
 MSG_CXX_SHRDLIB   = "${RED}Generating C++ shared library $@${RES}"
+MSG_CXX_NO_FILE   = "${DEF}No files for C++ executable ${GREEN}$@${RES}"
 MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
                     "${YELLOW}$@${RES}"
 

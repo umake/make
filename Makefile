@@ -1790,6 +1790,12 @@ uninstall-info:
 ##                              RULES                                 ##
 ########################################################################
 
+# Include dependencies for each src extension, unless cleaning files
+ifneq ($(patsubst %clean,clean,$(MAKECMDGOALS)),clean)
+-include $(depall)
+-include $(systemdep)
+endif
+
 #======================================================================#
 # Function: target-dependency                                          #
 # @param  $1 Dependency name (for targets)                             #
@@ -1800,8 +1806,15 @@ define target-dependency
 # Creates hash from hash-key
 $$(call hash-table.new,$2)
 
+# Verifies if programs of $1dep are the same. If they changed, deletes 
+# old program dependency file and checks if the new is avaiable.
 .PHONY: $1dep
-$1dep: $$(if $$(strip $$(call hash-table.values,$2)),$$(depdir)/$1.dep)
+$1dep: \
+    $$(foreach k,$$(call hash-table.keys,$2),$$(if \
+        $$(and $$(strip $$(OLD_$$k)),$$(call ne,$$(OLD_$$k),$$($$k))),\
+            $$(shell $$(RM) $$(depdir)/$$k.dep)\
+    )) \
+    $$(if $$(strip $$(call hash-table.values,$2)),$$(depdir)/$1.dep)
 
 $$(depdir)/$1.dep: $$(foreach k,$$(call hash-table.keys,$2),\
                        $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k.dep)) \
@@ -2057,11 +2070,6 @@ $(foreach root,$(srcdir),$(foreach E,$(fext),\
     $(eval $(call compile-fortran,$E,$(root)/))))
 $(foreach E,$(fext),\
     $(eval $(call compile-fortran,$E,$(testdir)/,$(testdir)/)))
-
-# Include dependencies for each src extension, unless cleaning files
-ifneq ($(patsubst %clean,clean,$(MAKECMDGOALS)),clean)
--include $(depall)
-endif
 
 #======================================================================#
 # Function: compile-sharedlib-linux-c                                  #

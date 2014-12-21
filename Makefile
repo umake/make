@@ -1816,9 +1816,9 @@ $1dep: \
     )) \
     $$(if $$(strip $$(call hash-table.values,$2)),$$(depdir)/$1.dep)
 
-$$(depdir)/$1.dep: $$(foreach k,$$(call hash-table.keys,$2),\
-                       $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k.dep)) \
-                   | $$(depdir)
+$$(depdir)/$1.dep: \
+    $$(foreach k,$$(call hash-table.keys,$2),\
+        $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k.dep)) | $$(depdir)
 	
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))

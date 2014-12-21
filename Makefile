@@ -1186,8 +1186,7 @@ autoobj := $(addprefix $(objdir)/,$(autoobj))
 depall    := $(testall) $(call not-root,$(srcall) $(autoall))
 depall    := $(strip $(basename $(depall)))
 depall    := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
-systemdep := $(addsuffix dep,build upgrade tags docs dist dpkg install)
-systemdep := $(addprefix $(depdir)/,$(systemdep))
+systemdep := $(wildcard $(depdir)/*.dep)
 
 # Internationalization
 # ======================
@@ -1802,11 +1801,11 @@ define target-dependency
 $$(call hash-table.new,$2)
 
 .PHONY: $1dep
-$1dep: $$(if $$(strip $$(call hash-table.values,$2)),$$(depdir)/$1dep)
+$1dep: $$(if $$(strip $$(call hash-table.values,$2)),$$(depdir)/$1.dep)
 
-$$(depdir)/$1dep: $$(foreach k,$$(call hash-table.keys,$2),\
-                      $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k_dep)) \
-                  | $$(depdir)
+$$(depdir)/$1.dep: $$(foreach k,$$(call hash-table.keys,$2),\
+                       $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k.dep)) \
+                   | $$(depdir)
 	
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
@@ -1821,13 +1820,14 @@ $(foreach d,build external upgrade init tags \
 # @return Target to check if program exists                            #
 #======================================================================#
 define system-dependency
-$$(depdir)/$1_dep: d=$1
-$$(depdir)/$1_dep: | $$(depdir)
-	$$(if $$(strip $($1)),,$$(call phony-error,$$(MSG_DEP_UNDEFINED)))
+$$(depdir)/$1.dep: d=$1
+$$(depdir)/$1.dep: | $$(depdir)
+	$$(if $$(strip $$($1)),,$$(call phony-error,$$(MSG_DEP_UNDEFINED)))
 	$$(call phony-status,$$(MSG_DEP))
-	$$(quiet) which $($1) $$(NO_OUTPUT) $$(NO_ERROR) \
+	$$(quiet) which $$($1) $$(NO_OUTPUT) $$(NO_ERROR) \
               || $$(call model-error,$$(MSG_DEP_NOT_FOUND))
-	$$(quiet) touch $$@
+	$$(call select,$$@)
+	$$(call cat,'OLD_$1 := $$($1)')
 	$$(call phony-ok,$$(MSG_DEP))
 endef
 $(foreach p,\

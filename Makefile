@@ -1840,7 +1840,7 @@ $$(depdir)/$1.dep: | $$(depdir)
 	$$(quiet) which $$($1) $$(NO_OUTPUT) $$(NO_ERROR) \
               || $$(call model-error,$$(MSG_DEP_NOT_FOUND))
 	$$(call select,$$@)
-	$$(call cat,'OLD_$1 := $$($1)')
+	$$(call cat,'override OLD_$1 := $$($1)')
 	$$(call phony-ok,$$(MSG_DEP))
 endef
 $(foreach p,\

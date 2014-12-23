@@ -1466,7 +1466,7 @@ init_dependency := \
 .PHONY: init
 init: initdep
 	$(call git-init)
-	$(call git-remote-add,origin,$(GIT_REMOTE))
+	$(call git-remote-add,origin,$(GIT_REMOTE_PATH))
 	
 	$(if $(wildcard make/*),\
         $(call git-submodule-add,$(MAKEGITREMOTE),make))
@@ -2588,8 +2588,9 @@ quiet := $(Q_$V)
 
 O_0 := 1> /dev/null
 E_0 := 2> /dev/null
-NO_OUTPUT := $(O_$V)
-NO_ERROR  := $(E_$V)
+NO_OUTPUT    := $(O_$V)
+NO_ERROR     := $(E_$V)
+NO_OPERATION := :
 
 # ANSII Escape Colors
 ifndef NO_COLORS
@@ -2913,27 +2914,29 @@ $(if $(wildcard $1),\
     $(call rm,$1),$(if $(strip $2),$(call phony-ok,$(strip $2))))
 endef
 
-## ERROR ###############################################################
+## ERROR SHELL #########################################################
 ifndef SILENT
-
 ifndef MORE
+
 define ERROR
 2>&1 | sed '1 s/^/stderr:\n/' | sed 's/^/> /'
 endef
-#| sed ''/"> error"/s//`printf "${ERR}"`/'' # Adds gray color when
-#                                           # connected to above
-else
+#| sed ''/"> error"/s//`printf "${ERR}"`/'' # Gray color with above
+
+else # ifndef MORE
+
 define ERROR
 2>&1 | more
 endef
-endif
+
+endif # ifndef MORE
+endif # ifndef SILENT
+
+## ERROR MAKEFILE ######################################################
+ifndef SILENT
 
 define model-error
 (echo "\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}" && exit 42)
-endef
-
-define phony-error
-@$(call model-error,$1)
 endef
 
 define model-test-error
@@ -2941,18 +2944,52 @@ define model-test-error
       "${RED}Aborting status: $$?${RES}" && exit 42)
 endef
 
-## STATUS ##############################################################
-ifneq ($(strip $(quiet)),)
-    define model-status
-    printf "%b " $1; printf "... "
-    endef
+else # ifndef SILENT
 
+define model-error
+$(NO_OPERATION)
+endef
+
+define model-test-error
+$(NO_OPERATION)
+endef
+
+endif
+
+define phony-error
+@$(call model-error,$1)
+endef
+
+## STATUS ##############################################################
+ifneq ($(or $(strip $(SILENT)),$(strip $(quiet))),)
+
+define model-status
+printf "%b " $1; printf "... "
+endef
+
+define model-vstatus
+echo $1 "... "
+endef
+
+else # if empty $(SILENT) or empty $(equal)
+
+define model-status
+$(NO_OPERATION)
+endef
+
+define model-vstatus
+$(NO_OPERATION)
+endef
+
+endif # if empty $(SILENT) or empty $(equal)
+
+ifneq ($(strip $(quiet)),)
     define phony-status
     	@$(call model-status,$1)
     endef
 
     define phony-vstatus
-    	@echo $1 "... "
+    	@$(call model-vstatus,$1)
     endef
 
     define status
@@ -2960,14 +2997,24 @@ ifneq ($(strip $(quiet)),)
     endef
 
     define vstatus
-    	@$(RM) $@ && echo $1 "... "
+    	@$(RM) $@ && $(call model-vstatus,$1)
     endef
 endif
 
 ## ACKNOWLEDGMENT ######################################################
+ifndef SILENT
+
 define model-ok
 echo "\r${GREEN}[OK]${RES}" $1 "     "
 endef
+
+else # ifndef SILENT
+
+define model-ok
+$(NO_OPERATION)
+endef
+
+endif # ifndef SILENT
 
 define phony-ok
 @if [ $$? ];\
@@ -2982,8 +3029,6 @@ define ok
     else $(call model-error,$1);\
 fi
 endef
-
-endif
 
 ## TEXT ################################################################
 define uc
@@ -3039,47 +3084,71 @@ endef
 ## VERSIONMENT #########################################################
 ifndef NO_GIT
 
+GIT_ADD              := $(GIT) add -f
+GIT_CLONE            := $(GIT) clone -q
+GIT_COMMIT           := $(GIT) commit -q -m
+GIT_DIFF             := $(GIT) diff --quiet
+GIT_INIT             := $(GIT) init -q  
+GIT_LS_FILES         := $(GIT) ls-files --error-unmatch 2>/dev/null 1>&2
+GIT_PULL             := $(GIT) pull -q  
+GIT_PUSH             := $(GIT) push -q  
+GIT_REMOTE           := $(GIT) remote
+GIT_REMOTE_ADD       := $(GIT_REMOTE) add
+GIT_SUBMODULE        := $(GIT) submodule -q
+GIT_SUBMODULE_ADD    := $(GIT_SUBMODULE) add -f
+GIT_SUBMODULE_INIT   := $(GIT_SUBMODULE) init
+GIT_SUBMODULE_DEINIT := $(GIT_SUBMODULE) deinit
+
+define git-cmd-factory
+model-git-$1 = \
+    $(GIT_$2) $$1 $$(ERROR) || $$(call model-error,"Error on $1")
+phony-git-$1 = \
+    $$(quiet) $$(call model-git-$1,$$1)
+endef
+$(foreach c,\
+    ADD CLONE COMMIT DIFF INIT LS_FILES PULL PUSH REMOTE REMOTE_ADD \
+    SUBMODULE SUBMODULE_ADD SUBMODULE_INIT SUBMODULE_DEINIT,\
+    $(eval $(call git-cmd-factory,$(subst _,-,$(call lc,$c)),$c)))
+
 define git-clone
 	$(call phony-status,$(MSG_GIT_CLONE))
-	$(quiet) $(GIT) clone $1 $2 $(NO_OUTPUT) $(ERROR)
+	$(call phony-git-clone,$1 $2)
 	$(call phony-ok,$(MSG_GIT_CLONE))
 endef
 
 define git-init
-	$(quiet) if ! [ -d .git ];\
+	$(quiet) if ! [ -d .git ]; \
              then\
-                 $(call model-status,$(MSG_GIT_INIT));\
-                 $(GIT) init -q $(ERROR);\
-                 $(call model-ok,$(MSG_GIT_INIT));\
+                 $(call model-status,$(MSG_GIT_INIT)); \
+                 $(call model-git-init); \
+                 $(call model-ok,$(MSG_GIT_INIT)); \
              fi
 endef
 
 define git-add
-	$(quiet) if ! $(GIT) ls-files $1 --error-unmatch 2>/dev/null 1>&2\
-             || ! $(GIT) diff --quiet $1;\
-             then\
-                 $(call model-status,$(MSG_GIT_ADD));\
-                 $(GIT) add $1 $(ERROR);\
-                 $(call model-ok,$(MSG_GIT_ADD));\
+	$(quiet) if ! $(GIT_LS_FILES) $1 || ! $(GIT_DIFF) $1; \
+             then \
+                 $(call model-status,$(MSG_GIT_ADD)); \
+                 $(call model-git-add,$1); \
+                 $(call model-ok,$(MSG_GIT_ADD)); \
              fi
 endef
 
 define git-commit
-	$(quiet) if ! $(GIT) diff --quiet --cached $1 $(NO_OUTPUT);\
-             then\
-                 $(call model-status,$(MSG_GIT_COMMIT));\
-                 $(GIT) commit -q -m $(strip $2) $(ERROR);\
-                 $(call model-ok,$(MSG_GIT_COMMIT));\
+	$(quiet) if ! $(GIT_DIFF) --cached $1; \
+             then \
+                 $(call model-status,$(MSG_GIT_COMMIT)); \
+                 $(call model-git-commit,$(strip $2)); \
+                 $(call model-ok,$(MSG_GIT_COMMIT)); \
              fi
 endef
 
 define git-add-commit
-	$(quiet) if ! $(GIT) ls-files $1 --error-unmatch 2>/dev/null 1>&2\
-             || ! $(GIT) diff --quiet $1 $(NO_OUTPUT);\
-             then\
+	$(quiet) if ! $(GIT_LS_FILES) $1 || ! $(GIT_DIFF) $1; \
+             then \
                  $(call model-status,$(MSG_GIT_COMMIT));\
-                 $(GIT) add $1 $(ERROR);\
-                 $(GIT) commit -q -m $(strip $2) $(ERROR);\
+                 $(call model-git-add,$1);\
+                 $(call model-git-commit,$(strip $2));\
                  $(call model-ok,$(MSG_GIT_COMMIT));\
              fi
 endef
@@ -3088,20 +3157,17 @@ define git-submodule-add
 	$(call phony-status,$(MSG_GIT_SUB_ADD))
 	$(quiet) if [ -f $(call remove-trailing-bar,$(dir $2))/.git ]; then \
                  cd $(dir $2); \
-                 $(GIT) submodule add -f $1 $(notdir $2) $(ERROR); \
-                 $(GIT) submodule init -q -- $(notdir $2) $(ERROR); \
-                 $(GIT) commit -q -m "Adds submodule $(notdir $2)" \
-                        $(NO_OUTPUT) $(NO_ERROR); \
+                 $(call model-git-submodule-add,$1 $(notdir $2)); \
+                 $(call model-git-submodule-init,$(notdir $2)); \
+                 $(call model-git-commit,"Adds submodule $(notdir $2)"); \
                  cd $(MAKEDIRECTORY); \
-                 $(GIT) add -f $(dir $2); \
-                 $(GIT) commit -q -m "Adds sub-submodule $2" \
-                        $(NO_OUTPUT) $(NO_ERROR); \
+                 $(call model-git-add,$(dir $2)); \
+                 $(call model-git-commit,"Adds sub-submodule $2"); \
              else \
-                 $(GIT) submodule add  -q -f $1 $2 $(ERROR); \
-                 $(GIT) submodule init -q -- $2 $(ERROR); \
-                 $(GIT) commit -q -m "Adds submodule $2" \
-                        $(NO_OUTPUT) $(NO_ERROR); \
-             fi 
+                 $(call model-git-submodule-add,$1 $2); \
+                 $(call model-git-submodule-init,$2); \
+                 $(call model-git-commit,"Adds submodule $2"); \
+             fi
 	$(call phony-ok,$(MSG_GIT_SUB_ADD))
 endef
 
@@ -3109,41 +3175,43 @@ define git-submodule-rm
 	$(call phony-status,$(MSG_GIT_SUB_RM))
 	$(quiet) if [ -f $(call remove-trailing-bar,$(dir $1))/.git ]; then \
                  cd $(dir $2); \
-	             $(GIT) submodule -q deinit -- $(notdir $1) $(ERROR); \
-	             $(GIT) rm -q --cached $(notdir $1) $(ERROR); \
+	             $(call model-git-submodule-deinit,$(notdir $1)); \
+	             $(call model-git-rm,--cached $(notdir $1));      \
              else \
-	             $(GIT) submodule -q deinit -- $1 $(ERROR); \
-	             $(GIT) rm -q --cached $1 $(ERROR); \
+	             $(call model-git-submodule-deinit,$1); \
+	             $(call model-git-rm,--cached $1);      \
              fi 
 	$(call phony-ok,$(MSG_GIT_SUB_RM))
 endef
 
-ifneq (,$(strip $(GIT_REMOTE)))
+ifneq (,$(strip $(GIT_REMOTE_PATH)))
+
 define git-remote-add
-	$(quiet) if ! $(GIT) remote | grep "^$1$$" $(NO_OUTPUT);\
+	$(quiet) if ! $(GIT_REMOTE) | grep "^$1$$" $(NO_OUTPUT);\
              then\
-                 $(call model-status,$(MSG_GIT_REM_ADD));\
-                 $(GIT) remote add $1 $2 $(ERROR);\
-                 $(call model-ok,$(MSG_GIT_REM_ADD));\
+                 $(call model-status,$(MSG_GIT_REM_ADD)); \
+                 $(call model-git-remote-add,$1 $2);      \
+                 $(call model-ok,$(MSG_GIT_REM_ADD));     \
              fi
 endef
 
 define git-pull
 	$(call phony-status,$(MSG_GIT_PULL))
-	$(quiet) $(GIT) pull -q $(or $(strip $1),origin)\
-                            $(or $(strip $2),master) $(ERROR)
+	$(call phony-git-pull,$(or $(strip $1),origin) \
+                          $(or $(strip $2),master))
 	$(call phony-ok,$(MSG_GIT_PULL))
 endef
 
 define git-push
 	$(call phony-status,$(MSG_GIT_PUSH))
-	$(quiet) $(GIT) push -q $(or $(strip $1),origin)\
-                            $(or $(strip $2),master) $(ERROR)
+	$(call phony-git-push,$(or $(strip $1),origin) \
+                          $(or $(strip $2),master))
 	$(call phony-ok,$(MSG_GIT_PUSH))
 endef
-endif
 
-endif
+endif # not empty GIT_REMOTE_PATH
+
+endif # ifndef NO_GIT
 
 ########################################################################
 ##                           MANAGEMENT                               ##
@@ -3645,7 +3713,7 @@ config:
 	@echo "# ==============="
 	@echo "# PROJECT         := # Project name (def: Default)"
 	@echo "# VERSION         := # Version (def: 1.0)"
-	@echo "# GIT_REMOTE      := # Remote path for git repository"
+	@echo "# GIT_REMOTE_PATH := # Remote path for git repository"
 	@echo "# MAINTEINER_NAME := # Your name"
 	@echo "# MAINTEINER_MAIL := # your_name@mail.com"
 	@echo "# COPYRIGHT       := # Copyright Holder"

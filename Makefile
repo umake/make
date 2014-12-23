@@ -453,6 +453,58 @@ $(if $(strip $1),\
     $(call invert,$(wordlist 2,$(words $1),$1))) $(firstword $1)
 endef
 
+# Arithmetic functions
+# ======================
+# 1) gt: Returns not empty if $1 is greater than $2
+# 2) lt: Returns not empty if $1 is less than $2
+# 3) ge: Returns not empty if $1 is greater or equal than $2
+# 4) le: Returns not empty if $1 is less or equal than $2
+
+define cmp-factory
+lt_$(word 1,$(subst -, ,$1))_$(word 2,$(subst -, ,$1)) := 1
+gt_$(word 2,$(subst -, ,$1))_$(word 1,$(subst -, ,$1)) := 1
+endef
+$(foreach p,\
+    0-1 0-2 0-3 0-4 0-5 0-6 0-7 0-8 0-9 1-2 1-3 1-4 1-5 1-6 1-7 1-8   \
+    1-9 2-3 2-4 2-5 2-6 2-7 2-8 2-9 3-4 3-5 3-6 3-7 3-8 3-9 4-5 4-6   \
+    4-7 4-8 4-9 5-6 5-7 5-8 5-9 6-7 6-8 6-9 7-8 7-9 8-9,              \
+    $(eval $(call cmp-factory,$p)))
+
+define expand
+$(subst 0,0 ,$(subst 1,1 ,$(subst 2,2 ,$(subst 3,3 ,$(subst 4,4 ,\
+    $(subst 5,5 ,$(subst 6,6 ,$(subst 7,7 ,$(subst 8,8 ,$(subst 9,9 ,$1)\
+)))))))))
+endef
+
+define gt_impl
+$(if $(strip $1),$(if $(strip $2),\
+    $(if $(gt_$(call car,$1)_$(call car,$2)),1,\
+        $(call gt_impl,$(call cdr,$1),$(call cdr,$2))),1))
+endef
+
+define gt
+$(if $(call eq,$(words $(call expand,$1)),$(words $(call expand,$2))),\
+    $(call gt_impl,\
+        $(call invert,$(call expand,$1)),  \
+        $(call invert,$(call expand,$2))), \
+	$(call gt_impl,\
+        $(call invert,$(call expand,$(words $1))), \
+        $(call invert,$(call expand,$(words $2)))) \
+)
+endef
+
+define lt
+$(if $(call eq,$(call gt,$1,$2),1),,1)
+endef
+
+define ge
+$(or $(call eq,$1,$2),$(call gt,$1,$2))
+endef
+
+define le
+$(or $(call eq,$1,$2),$(call lt,$1,$2))
+endef
+
 # Path manipulation functions
 # =============================
 # 1) root: Gets the root directory (first in the path) of a path or file

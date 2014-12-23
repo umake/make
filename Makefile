@@ -2496,10 +2496,12 @@ clean: mostlyclean
 distclean: clean
 	$(call rm-if-empty,$(depdir),$(depall) $(systemdep) $(externdep))
 	$(call rm-if-empty,$(distdir))
-	$(call rm-if-empty,$(extdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
-        $(filter $(firstword $(libdir))/%,$(lib))\
-    )
+        $(filter $(firstword $(libdir))/%,$(lib)))
+	$(foreach d,$(call invert,$(call hash-table.keys,git_dependency)),\
+        $(if $(wildcard $(extdir)/$d),\
+            $(call git-submodule-rm,$(extdir)/$d)$(newline)))
+	$(call rm-if-empty,$(extdir))
 
 ifneq (,$(strip $(ENABLE_NLS)))
 .PHONY: translationclean
@@ -2638,7 +2640,7 @@ MSG_GIT_PUSH      = "${YELLOW}[$(GIT)]${BLUE} Sending from${DEF}"\
 MSG_GIT_SUB_ADD   = "${YELLOW}[$(GIT)]${BLUE} Adding git dependency"\
                     "${DEF}$(strip $2)${RES}"
 MSG_GIT_SUB_RM    = "${YELLOW}[$(GIT)]${BLUE} Removing git dependency"\
-                    "${DEF}$(strip $2)${RES}"
+                    "${DEF}$(strip $1)${RES}"
 
 MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
                     "${PURPLE}from target ${DEF}$1${RES}"
@@ -3084,6 +3086,8 @@ endef
 ## VERSIONMENT #########################################################
 ifndef NO_GIT
 
+git_version          := $(subst git version,,$(shell git --version))
+
 GIT_ADD              := $(GIT) add -f
 GIT_CLONE            := $(GIT) clone -q
 GIT_COMMIT           := $(GIT) commit -q -m
@@ -3094,10 +3098,16 @@ GIT_PULL             := $(GIT) pull -q
 GIT_PUSH             := $(GIT) push -q  
 GIT_REMOTE           := $(GIT) remote
 GIT_REMOTE_ADD       := $(GIT_REMOTE) add
+GIT_RM               := $(GIT) rm -q
 GIT_SUBMODULE        := $(GIT) submodule -q
 GIT_SUBMODULE_ADD    := $(GIT_SUBMODULE) add -f
 GIT_SUBMODULE_INIT   := $(GIT_SUBMODULE) init
+
+ifneq ($(findstring 1.8.3,$(git_version)),)
 GIT_SUBMODULE_DEINIT := $(GIT_SUBMODULE) deinit
+else
+GIT_SUBMODULE_DEINIT := $(NO_OPERATION)
+endif
 
 define git-cmd-factory
 model-git-$1 = \
@@ -3107,7 +3117,7 @@ phony-git-$1 = \
 endef
 $(foreach c,\
     ADD CLONE COMMIT DIFF INIT LS_FILES PULL PUSH REMOTE REMOTE_ADD \
-    SUBMODULE SUBMODULE_ADD SUBMODULE_INIT SUBMODULE_DEINIT,\
+    RM SUBMODULE SUBMODULE_ADD SUBMODULE_INIT SUBMODULE_DEINIT, \
     $(eval $(call git-cmd-factory,$(subst _,-,$(call lc,$c)),$c)))
 
 define git-clone
@@ -3155,31 +3165,40 @@ endef
 
 define git-submodule-add
 	$(call phony-status,$(MSG_GIT_SUB_ADD))
-	$(quiet) if [ -f $(call remove-trailing-bar,$(dir $2))/.git ]; then \
-                 cd $(dir $2); \
-                 $(call model-git-submodule-add,$1 $(notdir $2)); \
-                 $(call model-git-submodule-init,$(notdir $2)); \
-                 $(call model-git-commit,"Adds submodule $(notdir $2)"); \
-                 cd $(MAKEDIRECTORY); \
-                 $(call model-git-add,$(dir $2)); \
+	$(quiet) if [ -f $(call remove-trailing-bar,$(dir $2))/.git ]; \
+             then                                                  \
+                 cd $(dir $2);                                     \
+                 $(call model-git-submodule-add,$1 $(notdir $2));  \
+                 $(call model-git-submodule-init,$(notdir $2));    \
+                 $(call model-git-commit,"Adds $(notdir $2)");     \
+                 cd $(MAKEDIRECTORY);                              \
+                 $(call model-git-add,$(dir $2));                  \
                  $(call model-git-commit,"Adds sub-submodule $2"); \
-             else \
-                 $(call model-git-submodule-add,$1 $2); \
-                 $(call model-git-submodule-init,$2); \
-                 $(call model-git-commit,"Adds submodule $2"); \
+             else                                                  \
+                 $(call model-git-submodule-add,$1 $2);            \
+                 $(call model-git-submodule-init,$2);              \
+                 $(call model-git-commit,"Adds submodule $2");     \
              fi
 	$(call phony-ok,$(MSG_GIT_SUB_ADD))
 endef
 
 define git-submodule-rm
 	$(call phony-status,$(MSG_GIT_SUB_RM))
-	$(quiet) if [ -f $(call remove-trailing-bar,$(dir $1))/.git ]; then \
-                 cd $(dir $2); \
-	             $(call model-git-submodule-deinit,$(notdir $1)); \
-	             $(call model-git-rm,--cached $(notdir $1));      \
-             else \
-	             $(call model-git-submodule-deinit,$1); \
-	             $(call model-git-rm,--cached $1);      \
+	$(quiet) if [ -f $(call remove-trailing-bar,$(dir $1))/.git ];    \
+             then                                                     \
+                 cd $(dir $1);                                        \
+	             $(call model-git-submodule-deinit,$(notdir $1));     \
+	             $(call model-git-rm,--cached $(notdir $1));          \
+                 $(call model-git-commit,"Removes $(notdir $1)");     \
+                 cd $(MAKEDIRECTORY);                                 \
+                 $(call model-git-add,$(dir $1));                     \
+                 $(call model-git-commit,"Removes sub-submodule $1"); \
+                 $(RM) -r .git/modules/$(notdir $1) $(ERROR);         \
+             else                                                     \
+	             $(call model-git-submodule-deinit,$1);               \
+	             $(call model-git-rm,--cached $1);                    \
+                 $(call model-git-commit,"Removes submodule $1");     \
+                 $(RM) -r .git/modules/$1 $(ERROR);                   \
              fi 
 	$(call phony-ok,$(MSG_GIT_SUB_RM))
 endef

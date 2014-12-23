@@ -64,12 +64,13 @@
     [X] Look over dependency check (by program or by target?).
     [X] Check if program variables are defined when needed.
     [X] Recheck program variables when they are changed.
+    [X] Use git submodules (with init/deinit) to manage dependencies.
+    [ ] Create functions for basic and version arithmetic/comparison.
     [ ] Support compilation and run of coverage test (with gcov).
-    [ ] Support run of profiling tools (gprof).
+    [ ] Support run of profiling tools (with gprof).
     [ ] Support compilation of CORBA with C++.
     [ ] Automatically create header 'gettext.h' for i18n defines.
     [ ] Test internationalization feature in non-trivial cases.
-    [ ] Use git submodules (with init/deinit) to manage dependencies.
     [ ] Add deep directory search of test binary name.
     [ ] Add option to automatically create a RPM package.
 

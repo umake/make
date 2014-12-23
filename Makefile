@@ -380,6 +380,10 @@ MAKEREMOTE := \
 MAKEGITREMOTE := \
     git@github.com:renatocf/make.git
 
+# Make current directory
+MAKEDIRECTORY := \
+    $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+
 # Define the shell to be used
 SHELL = /bin/sh
 
@@ -1878,7 +1882,7 @@ $$(depdir)/$$(strip $1)dep: $$(extdir)/$$(strip $1) $$(externreq)
 	$$(call ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
-    $(call extern-dependency,$d,git-clone,$(git_dependency.$d))))
+    $(call extern-dependency,$d,git-submodule-add,$(git_dependency.$d))))
 $(foreach d,$(call hash-table.keys,web_dependency),$(eval\
     $(call extern-dependency,$d,web-clone,$(web_dependency.$d))))
 
@@ -2630,8 +2634,10 @@ MSG_GIT_PULL      = "${YELLOW}[$(GIT)]${BLUE} Receiveing in${DEF}"\
 MSG_GIT_PUSH      = "${YELLOW}[$(GIT)]${BLUE} Sending from${DEF}"\
                     "$(or $(strip $1),origin)${BLUE} to remote"\
                     "repository ${DEF}$(or $(strip $2),master)${RES}"
-MSG_GIT_SUB_ADD   = "${YELLOW}[$(GIT)]${BLUE} Adding submodule"\
-                    "${DEF}$(strip $1)${RES}"
+MSG_GIT_SUB_ADD   = "${YELLOW}[$(GIT)]${BLUE} Adding git dependency"\
+                    "${DEF}$(strip $2)${RES}"
+MSG_GIT_SUB_RM    = "${YELLOW}[$(GIT)]${BLUE} Removing git dependency"\
+                    "${DEF}$(strip $2)${RES}"
 
 MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
                     "${PURPLE}from target ${DEF}$1${RES}"
@@ -3043,45 +3049,73 @@ define git-init
 	$(quiet) if ! [ -d .git ];\
              then\
                  $(call model-status,$(MSG_GIT_INIT));\
-                 $(GIT) init $(NO_OUTPUT) $(NO_ERROR);\
+                 $(GIT) init -q $(ERROR);\
                  $(call model-ok,$(MSG_GIT_INIT));\
              fi
 endef
 
 define git-add
 	$(quiet) if ! $(GIT) ls-files $1 --error-unmatch 2>/dev/null 1>&2\
-             || ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
+             || ! $(GIT) diff --quiet $1;\
              then\
                  $(call model-status,$(MSG_GIT_ADD));\
-                 $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
+                 $(GIT) add $1 $(ERROR);\
                  $(call model-ok,$(MSG_GIT_ADD));\
              fi
 endef
 
 define git-commit
-	$(quiet) if ! $(GIT) diff --cached --exit-code $1 $(NO_OUTPUT);\
+	$(quiet) if ! $(GIT) diff --quiet --cached $1 $(NO_OUTPUT);\
              then\
                  $(call model-status,$(MSG_GIT_COMMIT));\
-                 $(GIT) commit -m $(strip $2) $(NO_OUTPUT) $(NO_ERROR);\
+                 $(GIT) commit -q -m $(strip $2) $(ERROR);\
                  $(call model-ok,$(MSG_GIT_COMMIT));\
              fi
 endef
 
 define git-add-commit
 	$(quiet) if ! $(GIT) ls-files $1 --error-unmatch 2>/dev/null 1>&2\
-             || ! $(GIT) diff --exit-code $1 $(NO_OUTPUT);\
+             || ! $(GIT) diff --quiet $1 $(NO_OUTPUT);\
              then\
                  $(call model-status,$(MSG_GIT_COMMIT));\
-                 $(GIT) add $1 $(NO_OUTPUT) $(NO_ERROR);\
-                 $(GIT) commit -m $(strip $2) $(NO_OUTPUT) $(NO_ERROR);\
+                 $(GIT) add $1 $(ERROR);\
+                 $(GIT) commit -q -m $(strip $2) $(ERROR);\
                  $(call model-ok,$(MSG_GIT_COMMIT));\
              fi
 endef
 
 define git-submodule-add
 	$(call phony-status,$(MSG_GIT_SUB_ADD))
-	$(quiet) $(GIT) submodule add $(strip $1) $(strip $2) $(ERROR)
+	$(quiet) if [ -f $(call remove-trailing-bar,$(dir $2))/.git ]; then \
+                 cd $(dir $2); \
+                 $(GIT) submodule add -f $1 $(notdir $2) $(ERROR); \
+                 $(GIT) submodule init -q -- $(notdir $2) $(ERROR); \
+                 $(GIT) commit -q -m "Adds submodule $(notdir $2)" \
+                        $(NO_OUTPUT) $(NO_ERROR); \
+                 cd $(MAKEDIRECTORY); \
+                 $(GIT) add -f $(dir $2); \
+                 $(GIT) commit -q -m "Adds sub-submodule $2" \
+                        $(NO_OUTPUT) $(NO_ERROR); \
+             else \
+                 $(GIT) submodule add  -q -f $1 $2 $(ERROR); \
+                 $(GIT) submodule init -q -- $2 $(ERROR); \
+                 $(GIT) commit -q -m "Adds submodule $2" \
+                        $(NO_OUTPUT) $(NO_ERROR); \
+             fi 
 	$(call phony-ok,$(MSG_GIT_SUB_ADD))
+endef
+
+define git-submodule-rm
+	$(call phony-status,$(MSG_GIT_SUB_RM))
+	$(quiet) if [ -f $(call remove-trailing-bar,$(dir $1))/.git ]; then \
+                 cd $(dir $2); \
+	             $(GIT) submodule -q deinit -- $(notdir $1) $(ERROR); \
+	             $(GIT) rm -q --cached $(notdir $1) $(ERROR); \
+             else \
+	             $(GIT) submodule -q deinit -- $1 $(ERROR); \
+	             $(GIT) rm -q --cached $1 $(ERROR); \
+             fi 
+	$(call phony-ok,$(MSG_GIT_SUB_RM))
 endef
 
 ifneq (,$(strip $(GIT_REMOTE)))
@@ -3096,15 +3130,15 @@ endef
 
 define git-pull
 	$(call phony-status,$(MSG_GIT_PULL))
-	$(quiet) $(GIT) pull $(or $(strip $1),origin)\
-                         $(or $(strip $2),master) $(ERROR)
+	$(quiet) $(GIT) pull -q $(or $(strip $1),origin)\
+                            $(or $(strip $2),master) $(ERROR)
 	$(call phony-ok,$(MSG_GIT_PULL))
 endef
 
 define git-push
 	$(call phony-status,$(MSG_GIT_PUSH))
-	$(quiet) $(GIT) push $(or $(strip $1),origin)\
-                         $(or $(strip $2),master) $(ERROR)
+	$(quiet) $(GIT) push -q $(or $(strip $1),origin)\
+                            $(or $(strip $2),master) $(ERROR)
 	$(call phony-ok,$(MSG_GIT_PUSH))
 endef
 endif

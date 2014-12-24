@@ -65,7 +65,9 @@
     [X] Check if program variables are defined when needed.
     [X] Recheck program variables when they are changed.
     [X] Use git submodules (with init/deinit) to manage dependencies.
-    [ ] Create functions for basic and version arithmetic/comparison.
+    [X] Create functions for numeric/lexical/version comparison.
+    [ ] Add option to check system program/library version.
+    [ ] Verify if variable VERSION follows semantic versionment rules.
     [ ] Support compilation and run of coverage test (with gcov).
     [ ] Support run of profiling tools (with gprof).
     [ ] Support compilation of CORBA with C++.

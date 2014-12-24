@@ -382,7 +382,7 @@ MAKEGITREMOTE := \
 
 # Make current directory
 MAKEDIRECTORY := \
-    $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+    $(patsubst %/,%,$(dir $(abspath $(firstword $(MAKEFILE_LIST)))))
 
 # Define the shell to be used
 SHELL = /bin/sh

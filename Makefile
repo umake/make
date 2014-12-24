@@ -561,11 +561,11 @@ endef
 # 6) version-le: Returns not empty if $1 is less or equal than $2
 
 define version-eq
-$(call eq,$1,$2)
+$(call eq,$(firstword $(subst +, ,$1)),$(firstword $(subst +, ,$2)))
 endef
 
 define version-ne
-$(call ne,$1,$2)
+$(call ne,$(firstword $(subst +, ,$1)),$(firstword $(subst +, ,$2)))
 endef
 
 define version-gt_impl
@@ -582,13 +582,15 @@ $(strip $(if $(strip $1),$(if $(strip $2),\
 endef
 
 define version-gt
-$(strip $(if $(strip \
-    $(call version-gt_impl,\
-        $(subst ., ,$(firstword $(subst -, ,$(patsubst +%,,$1)))),\
-        $(subst ., ,$(firstword $(subst -, ,$(patsubst +%,,$2)))))),\
+$(strip $(if \
+    $(strip $(call version-gt_impl,\
+        $(subst ., ,$(call car,$(subst -, ,$(word 1,$(subst +, ,$1))))),\
+        $(subst ., ,$(call car,$(subst -, ,$(word 1,$(subst +, ,$2)))))\
+	)),\
 	1,$(strip $(call version-gt_impl,\
-        $(subst ., ,$(lastword $(subst -, ,$(patsubst +%,,$1)))),\
-        $(subst ., ,$(lastword $(subst -, ,$(patsubst +%,,$2))))))\
+        $(subst ., ,$(call cdr,$(subst -, ,$(word 1,$(subst +, ,$1))))),\
+        $(subst ., ,$(call cdr,$(subst -, ,$(word 1,$(subst +, ,$2)))))\
+	))\
 ))
 endef
 

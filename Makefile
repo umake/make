@@ -413,7 +413,7 @@ endef
 # 2) eq:  Returns not empty if $1 == $2, and empty otherwise
 # 3) ne:  Returns not empty if $1 != $2, and empty otherwise
 define not
-$(strip $(if $1,,T))
+$(strip $(if $1,,1))
 endef
 
 define eq
@@ -453,12 +453,18 @@ $(if $(strip $1),\
     $(call invert,$(wordlist 2,$(words $1),$1))) $(firstword $1)
 endef
 
-# Arithmetic functions
-# ======================
+# Numeric comparison functions
+# ==============================
 # 1) gt: Returns not empty if $1 is greater than $2
 # 2) lt: Returns not empty if $1 is less than $2
 # 3) ge: Returns not empty if $1 is greater or equal than $2
 # 4) le: Returns not empty if $1 is less or equal than $2
+
+define is_numeric
+$(if $(strip $(subst 0,,$(subst 1,,$(subst 2,,$(subst 3,,$(subst 4,,\
+         $(subst 5,,$(subst 6,,$(subst 7,,$(subst 8,,$(subst 9,,$1)\
+)))))))))),,1)
+endef
 
 define cmp-factory
 lt_$(word 1,$(subst -, ,$1))_$(word 2,$(subst -, ,$1)) := 1
@@ -483,26 +489,119 @@ $(if $(strip $1),$(if $(strip $2),\
 endef
 
 define gt
-$(if $(call eq,$(words $(call expand,$1)),$(words $(call expand,$2))),\
+$(strip $(if \
+    $(call eq,$(words $(call expand,$1)),$(words $(call expand,$2))),\
     $(call gt_impl,\
         $(call invert,$(call expand,$1)),  \
         $(call invert,$(call expand,$2))), \
 	$(call gt_impl,\
         $(call invert,$(call expand,$(words $1))), \
         $(call invert,$(call expand,$(words $2)))) \
-)
-endef
-
-define lt
-$(if $(call eq,$(call gt,$1,$2),1),,1)
+))
 endef
 
 define ge
 $(or $(call eq,$1,$2),$(call gt,$1,$2))
 endef
 
+define lt
+$(if $(call eq,$(call ge,$1,$2),1),,1)
+endef
+
 define le
 $(or $(call eq,$1,$2),$(call lt,$1,$2))
+endef
+
+# Lexical comparison functions
+# ==============================
+# 1) lexical-eq: Returns not empty if $1 is equal to $2
+# 2) lexical-ne: Returns not empty if $1 is not equal to $2
+# 3) lexical-gt: Returns not empty if $1 is greater than $2
+# 4) lexical-lt: Returns not empty if $1 is less than $2
+# 5) lexical-ge: Returns not empty if $1 is greater or equal than $2
+# 6) lexical-le: Returns not empty if $1 is less or equal than $2
+
+define lexical-eq
+$(call eq,$1,$2)
+endef
+
+define lexical-ne
+$(call ne,$1,$2)
+endef
+
+define lexical-gt
+$(strip $(if $(strip $1),$(if $(strip $2),\
+    $(if $(call lexical-ne,\
+             $(firstword $(sort $(call car,$1) $(call car,$2))),\
+             $(call car,$1)),\
+        1,$(call lexical-gt,$(call cdr,$1),$(call cdr,$2))\
+    ),1\
+)))
+endef
+
+define lexical-ge
+$(or $(call lexical-eq,$1,$2),$(call lexical-gt,$1,$2))
+endef
+
+define lexical-lt
+$(if $(call lexical-eq,$(call lexical-ge,$1,$2),1),,1)
+endef
+
+define lexical-le
+$(or $(call lexical-eq,$1,$2),$(call lexical-lt,$1,$2))
+endef
+
+# Version comparison functions
+# ==============================
+# 1) version-eq: Returns not empty if $1 is equal to $2
+# 2) version-ne: Returns not empty if $1 is not equal to $2
+# 3) version-gt: Returns not empty if $1 is greater than $2
+# 4) version-lt: Returns not empty if $1 is less than $2
+# 5) version-ge: Returns not empty if $1 is greater or equal than $2
+# 6) version-le: Returns not empty if $1 is less or equal than $2
+
+define version-eq
+$(call eq,$1,$2)
+endef
+
+define version-ne
+$(call ne,$1,$2)
+endef
+
+define version-gt_impl
+$(strip $(if $(strip $1),$(if $(strip $2),\
+    $(if $(and $(call is_numeric,$1),$(call is_numeric,$2)),\
+        $(if $(call gt,$(call car,$1),$(call car,$2)),1,\
+            $(if $(call eq,$(call car,$1),$(call car,$2)),\
+                $(call version-gt_impl,$(call cdr,$1),$(call cdr,$2)))),\
+        $(if $(call lexical-gt,$(call car,$1),$(call car,$2)),1,\
+            $(if $(call lexical-eq,$(call car,$1),$(call car,$2)),\
+                $(call version-gt_impl,$(call cdr,$1),$(call cdr,$2))))\
+    ),1\
+)))
+endef
+
+define version-gt
+$(strip $(if $(strip \
+    $(call version-gt_impl,\
+        $(subst ., ,$(firstword $(subst -, ,$(patsubst +%,,$1)))),\
+        $(subst ., ,$(firstword $(subst -, ,$(patsubst +%,,$2)))))),\
+	1,$(strip $(call version-gt_impl,\
+        $(subst ., ,$(lastword $(subst -, ,$(patsubst +%,,$1)))),\
+        $(subst ., ,$(lastword $(subst -, ,$(patsubst +%,,$2))))))\
+))
+endef
+
+define version-ge
+$(or $(call version-eq,$1,$2),$(call version-gt,$1,$2))
+endef
+
+define version-lt
+$(if $(call version-eq,$(call version-ge,$1,$2),1),,1)
+endef
+
+define version-le
+$(or $(call version-eq,$1,$2),$(call version-lt,$1,$2))
 endef
 
 # Path manipulation functions

@@ -3254,7 +3254,7 @@ GIT_SUBMODULE        := $(GIT) submodule -q
 GIT_SUBMODULE_ADD    := $(GIT_SUBMODULE) add -f
 GIT_SUBMODULE_INIT   := $(GIT_SUBMODULE) init
 
-ifneq ($(findstring 1.8.3,$(git_version)),)
+ifneq ($(call version-gt,$(git-version),1.8.3),)
 GIT_SUBMODULE_DEINIT := $(GIT_SUBMODULE) deinit
 else
 GIT_SUBMODULE_DEINIT := $(NO_OPERATION)

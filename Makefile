@@ -112,6 +112,7 @@ BINDIR    := bin
 SBINDIR   := sbin
 EXECDIR   := libexec
 DISTDIR   := dist
+CONFDIR   := conf
 TESTDIR   := test
 DATADIR   := data
 DESTDIR   :=
@@ -119,7 +120,7 @@ LOCALEDIR := locale
 else
 $(foreach var,\
     SRCDIR DEPDIR INCDIR OBJDIR LIBDIR EXTDIR SRPDIR BINDIR \
-    SBINDIR DISTDIR TESTDIR DATADIR LOCALEDIR,\
+    SBINDIR DISTDIR CONFDIR TESTDIR DATADIR LOCALEDIR,\
     $(eval $(var) := .)\
 )
 endif
@@ -797,6 +798,7 @@ override bindir    := $(call remove-trailing-bar,$(BINDIR))
 override sbindir   := $(call remove-trailing-bar,$(SBINDIR))
 override execdir   := $(call remove-trailing-bar,$(EXECDIR))
 override distdir   := $(call remove-trailing-bar,$(DISTDIR))
+override confdir   := $(call remove-trailing-bar,$(CONFDIR))
 override testdir   := $(call remove-trailing-bar,$(TESTDIR))
 override datadir   := $(call remove-trailing-bar,$(DATADIR))
 override localedir := $(call remove-trailing-bar,$(LOCALEDIR))
@@ -805,7 +807,7 @@ override localedir := $(call remove-trailing-bar,$(LOCALEDIR))
 alldir := $(strip\
     $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)   \
     $(libdir) $(extdir) $(srpdir) $(bindir) $(sbindir) $(execdir) \
-    $(distdir) $(testdir) $(datadir) $(localedir)                 \
+    $(distdir) $(confdir) $(testdir) $(datadir) $(localedir)      \
 )
 
 # Check if every directory variable is non-empty
@@ -922,6 +924,7 @@ $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 # Configuration Files
 # =====================
 make_configs := $(AUXFILES) $(license) $(notice) $(contributors)
+make_configs += $(filter $(confdir)/%,$(MAKEFILE_LIST))
 make_configs += Config.mk config.mk Config_os.mk config_os.mk
 make_configs := $(sort $(foreach f,$(make_configs),$(wildcard $f)))
 
@@ -3958,6 +3961,11 @@ config:
 	@echo "# NOTICE          := # Notice of the License, to be put in "
 	@echo "#                    # the top of any file (def: NOTICE)."
 	@echo "# DOXYFILE        := # Dxygen config file (def: Doxyfile)"
+	@echo ""
+	@echo "# Makeball list"
+	@echo "# ==============="
+	@echo "# 'include conf/makeball.mk' for pre-configured options"
+	@echo "# to use the library 'makeball'"
 	@echo ""
 
 .PHONY: compiler

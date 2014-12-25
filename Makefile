@@ -407,6 +407,19 @@ endef
 ##                             FUNCTIONS                              ##
 ########################################################################
 
+# Basic variable functions
+# ==========================
+# 1) is_empty:  Returns not empty if a variable is empty
+# 2) not_empty: Returns not empty if a variable is not empty
+
+define is_empty
+$(strip $(if $(strip $1),,1))
+endef
+
+define not_empty
+$(strip $(if $(strip $1),1))
+endef
+
 # Logic functions
 # =================
 # 1) not: Returns empty if arg is not empty, and not empty otherwise
@@ -693,8 +706,13 @@ $(if $(strip $2),$(or\
   $(eval $1.$(firstword $2) := 0),\
   $(strip $(foreach w,$(wordlist 3,$(words $2),$2),\
     $(if $(strip $(filter 0,$(firstword $($1.$(firstword $2))))),\
-      $(if $(strip $(filter =>,$w)),\
-        $(error "Hash entry must end with ',' (key: $(firstword $2))"),\
+      $(if $(call eq,=>,$w),\
+        $(eval $1.$(firstword $2) := \
+          $(call rcdr,$($1.$(firstword $2))))\
+        $(eval $1.$(firstword $2) := \
+          $(words $(call cdr,$($1.$(firstword $2))))\
+          $(call cdr,$($1.$(firstword $2)))\
+        ),\
         $(eval $1.$(firstword $2) += $w)\
         $(if $(strip $(filter %$(comma),$w)),\
           $(eval $1.$(firstword $2) := \
@@ -938,9 +956,9 @@ $(call hash-table.new,web_dependency)
 #------------------------------------------------------------------[ 3 ]
 externdep := $(call hash-table.keys,git_dependency)
 externdep += $(call hash-table.keys,web_dependency)
-externdep := $(patsubst %,$(depdir)/%dep,$(externdep))
+externdep := $(patsubst %,$(depdir)/%.dy,$(externdep))
 #------------------------------------------------------------------[ 4 ]
-externreq := $(patsubst $(depdir)/%dep,$(extdir)/%,$(externdep))
+externreq := $(patsubst $(depdir)/%.dy,$(extdir)/%,$(externdep))
 
 # Library files
 # ===============
@@ -1951,6 +1969,7 @@ uninstall-info:
 ifneq ($(patsubst %clean,clean,$(MAKECMDGOALS)),clean)
 -include $(depall)
 -include $(systemdep)
+-include $(externdep)
 endif
 
 #======================================================================#
@@ -2018,20 +2037,26 @@ define extern-dependency
 $$(extdir)/$$(strip $1): | $$(extdir)
 	$$(call $$(strip $2),$$(call car,$$(strip $3)),$$@)
 
-$$(depdir)/$$(strip $1)dep: $$(extdir)/$$(strip $1) $$(externreq)
+$$(depdir)/$$(strip $1).dy: $$(extdir)/$$(strip $1) $$(externreq)
 	$$(call status,$$(MSG_MAKE_DEP))
-	$$(quiet) (cd $$< && $$(or $$(call cdr,$$(strip $3)),:)) $$(ERROR)\
-              || \
-              if [ -f $$</[Mm]akefile ]; then \
-                  cd $$< && $$(MAKE) -f [Mm]akefile; \
-              elif [ -f $$</make/[Mm]akefile ]; then \
-                  cd $$</make && $$(MAKE) -f [Mm]akefile; \
-              else \
-                  echo "$${MSG_MAKE_NONE}"; \
-              fi $$(ERROR)
-
+	$$(quiet) $$(if $$(call cdr,$$(strip $3)),$$(strip \
+                  (cd $$< && $$(call cdr,$$(strip $3))) $$(ERROR) \
+                  || $$(call model-error,$$(MSG_MAKE_FAIL)) \
+              ),$$(strip \
+                  if [ -f $$</[Mm]akefile ]; then \
+                      cd $$< && $$(MAKE) -f [Mm]akefile $$(ERROR) \
+                      || $$(call model-error,$$(MSG_MAKE_FAIL)); \
+                  elif [ -f $$</make/[Mm]akefile ]; then \
+                      cd $$</make && $$(MAKE) -f [Mm]akefile $$(ERROR) \
+                      || $$(call model-error,$$(MSG_MAKE_FAIL)); \
+                  else \
+                      echo "$${MSG_MAKE_NONE}"; \
+                  fi \
+              ))
+	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) touch $$@
+	$$(call select,$$@)
+	$$(call cat,'override old_externdep += $$@')
 	$$(call ok,$$(MSG_MAKE_DEP))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
@@ -2770,7 +2795,7 @@ MSG_MOVE          = "${YELLOW}Populating ${BLUE}$(firstword $2)"\
 MSG_NO_MOVE       = "${PURPLE}No $(strip $3) files to put in"\
                     "$(firstword $2)${RES}"
 
-MSG_WEB_CLONE     = "${YELLOW}Downloading ${DEF}$2${RES}"
+MSG_WEB_CLONE     = "${YELLOW}Downloading web dependency ${DEF}$2${RES}"
 
 MSG_GIT_INIT      = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Initializing empty repository${RES}"
@@ -2799,12 +2824,13 @@ MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
                     "${PURPLE}from target ${DEF}$1${RES}"
 MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$<${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
+MSG_MAKE_FAIL     = "${ERR}Failed compiling ${DEF}$@${RES}"
 
 MSG_DEP           = "${DEF}Searching for $d dependency"\
                     "${GREEN}$($d)${RES}"
 MSG_DEP_ALL       = "${YELLOW}All dependencies avaiable${RES}"
-MSG_DEP_UNDEFINED = "${DEF}Undefined variable ${GREEN}$d${DEF}"
-MSG_DEP_NOT_FOUND = "${DEF}Dependency ${GREEN}$($d)${DEF}"\
+MSG_DEP_UNDEFINED = "${ERR}Undefined variable ${GREEN}$d${DEF}"
+MSG_DEP_NOT_FOUND = "${ERR}Dependency ${GREEN}$($d)${DEF}"\
                     "not found${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
@@ -3229,13 +3255,6 @@ $(if $(wildcard $1*),,\
     $(call phony-ok,$(MSG_TOUCH)))
 endef
 
-## WEB DEPENDENCIES ####################################################
-define web-clone
-	$(call phony-status,$(MSG_WEB_CLONE))
-	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
-	$(call phony-ok,$(MSG_WEB_CLONE))
-endef
-
 ## VERSIONMENT #########################################################
 ifndef NO_GIT
 
@@ -3384,6 +3403,15 @@ endef
 endif # not empty GIT_REMOTE_PATH
 
 endif # ifndef NO_GIT
+
+## WEB DEPENDENCIES ####################################################
+define web-clone
+	$(call phony-status,$(MSG_WEB_CLONE))
+	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
+    $(quiet) $(call model-git-add,$2)
+    $(quiet) $(call model-git-commit,"Adds web dependency $2")
+	$(call phony-ok,$(MSG_WEB_CLONE))
+endef
 
 ########################################################################
 ##                           MANAGEMENT                               ##

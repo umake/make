@@ -12,44 +12,46 @@
 #                    header/library configurations of the dependency.  #
 #                    To contribute with your own Makeball, modify this #
 #                    sample and submit it by a pull request.           #
+#                    IMPORTANT: set all variables with +=, to allow    #
+#                    multiple Makeballs being used together.           #
 #                    For further info about the AIO Makefile, access:  #
 #                    https://github.com/renatocf/make                  #
 ########################################################################
 
 # Dependencies
 # ==============
-# GIT_DEPENDENCY  := # List of git dependencies in the format
+# GIT_DEPENDENCY  += # List of git dependencies in the format
 #                    # DEP_NAME => dep_path                  
-# WEB_DEPENDENCY  := # Same as above, but for URL downloads  
+# WEB_DEPENDENCY  += # Same as above, but for URL downloads  
 #                    # with 'curl -o' (default) or 'wget -O' 
 
 # Paths
 # =======
-# ASLIBS          := # Assembly paths
-# CLIBS           := # C paths
-# CXXLIBS         := # C++ paths
-# LDLIBS          := # Linker paths
+# ASLIBS          += # Assembly paths
+# CLIBS           += # C paths
+# CXXLIBS         += # C++ paths
+# LDLIBS          += # Linker paths
 
 # Compiler flags
 # ================
-# CPPFLAGS        := # Precompiler Flags
-# ASFLAGS         := # Assembly Flags
-# CFLAGS          := # C Flags
-# FFLAGS          := # Fortran flags
-# CXXFLAGS        := # C++ Flags
+# CPPFLAGS        += # Precompiler Flags
+# ASFLAGS         += # Assembly Flags
+# CFLAGS          += # C Flags
+# FFLAGS          += # Fortran flags
+# CXXFLAGS        += # C++ Flags
 
 # Linker flags
 # ==============
-# LDFLAGS         := # Linker flags
-# LDC             := # C linker flags
-# LDF             := # Fortran linker flags
-# LDCXX           := # C++ linker flags
-# LDLEX           := # Lexer linker flags
-# LDYACC          := # Parser linker flags
-# LDESQL          := # Embedded SQL linker flags
+# LDFLAGS         += # Linker flags
+# LDC             += # C linker flags
+# LDF             += # Fortran linker flags
+# LDCXX           += # C++ linker flags
+# LDLEX           += # Lexer linker flags
+# LDYACC          += # Parser linker flags
+# LDESQL          += # Embedded SQL linker flags
 
 # Library flags
 # ===============
-# ARFLAGS         := # Static library flags
-# SOFLAGS         := # Shared library flags
+# ARFLAGS         += # Static library flags
+# SOFLAGS         += # Shared library flags
 

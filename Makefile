@@ -237,6 +237,8 @@ ESQLEXT := .pgc .pc
 
 # Dependence extensions
 DEPEXT  := .d
+EXTEXT  := .dy
+SYSEXT  := .dep
 
 # Binary extensions
 OBJEXT  := .o
@@ -848,6 +850,8 @@ yaccext := $(strip $(sort $(YACCEXT)))
 yaxxext := $(strip $(sort $(YAXXEXT)))
 esqlext := $(strip $(sort $(ESQLEXT)))
 depext  := $(strip $(sort $(DEPEXT)))
+extext  := $(strip $(sort $(EXTEXT)))
+sysext  := $(strip $(sort $(SYSEXT)))
 objext  := $(strip $(sort $(OBJEXT)))
 binext  := $(strip $(sort $(BINEXT)))
 
@@ -872,8 +876,8 @@ docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 # Check all extensions
 allext := $(incext) $(srcext) $(asmext) $(libext)
 allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext) $(esqlext)
-allext += $(depext) $(objext) $(binext) $(srpext) $(dataext)
-allext += $(potext) $(poext) $(moext) $(docext)
+allext += $(depext) $(extext) $(sysext) $(objext) $(binext) $(srpext)
+allext += $(dataext) $(potext) $(poext) $(moext) $(docext)
 allext := $(strip $(allext))
 $(foreach ext,$(allext),\
     $(if $(filter .%,$(ext)),,\
@@ -887,6 +891,14 @@ ifneq ($(words $(depext)),1)
     $(error Just one dependency extension allowed!)
 endif
 
+ifneq ($(words $(extext)),1)
+    $(error Just one external dependency extension allowed!)
+endif
+
+ifneq ($(words $(sysext)),1)
+    $(error Just one system dependency extension allowed!)
+endif
+
 ifneq ($(words $(binext)),1)
     $(if $(binext),\
         $(error Just one or none binary extensions allowed!))
@@ -895,6 +907,14 @@ endif
 # Define extensions as the only valid ones
 .SUFFIXES:
 .SUFFIXES: $(allext)
+
+# Get all existent programs
+programs := \
+    AR AS CC FC CXX RANLIB INSTALL INSTALL_DATA INSTALL_PROGRAM CP MV \
+    RM TAR ZIP GZIP BZIP2 MKDIR RMDIR FIND LEX LEX_CXX YACC YACC_CXX  \
+    ESQL CTAGS ETAGS DOXYGEN MAKEINFO INSTALL_INFO TEXI2HTML TEXI2DVI \
+    TEXI2PDF TEXI2PS XGETTEXT MSGINIT MSGMERGE MSGFMT DEBUILD DCH     \
+    CURL GIT
 
 ########################################################################
 ##                              PATHS                                 ##
@@ -959,9 +979,10 @@ $(call hash-table.new,web_dependency)
 #------------------------------------------------------------------[ 3 ]
 externdep := $(call hash-table.keys,git_dependency)
 externdep += $(call hash-table.keys,web_dependency)
-externdep := $(patsubst %,$(depdir)/%.dy,$(externdep))
+externdep := $(patsubst %,$(depdir)/%$(extext),$(externdep))
+externdep := $(call invert,$(externdep))
 #------------------------------------------------------------------[ 4 ]
-externreq := $(patsubst $(depdir)/%.dy,$(extdir)/%,$(externdep))
+externreq := $(patsubst $(depdir)/%$(extext),$(extdir)/%,$(externdep))
 
 # Library files
 # ===============
@@ -1364,7 +1385,7 @@ autoobj := $(addprefix $(objdir)/,$(autoobj))
 depall    := $(testall) $(call not-root,$(srcall) $(autoall))
 depall    := $(strip $(basename $(depall)))
 depall    := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
-systemdep := $(wildcard $(depdir)/*.dep)
+systemdep := $(addprefix $(depdir)/,$(addsuffix $(sysext),$(programs)))
 
 # Internationalization
 # ======================
@@ -1970,9 +1991,9 @@ uninstall-info:
 
 # Include dependencies for each src extension, unless cleaning files
 ifneq ($(patsubst %clean,clean,$(MAKECMDGOALS)),clean)
--include $(depall)
--include $(systemdep)
--include $(externdep)
+-include $(wildcard $(depall))
+-include $(wildcard $(systemdep))
+-include $(wildcard $(externdep))
 endif
 
 #======================================================================#
@@ -1991,13 +2012,13 @@ $$(call hash-table.new,$2)
 $1dep: \
     $$(foreach k,$$(call hash-table.keys,$2),$$(if \
         $$(and $$(strip $$(OLD_$$k)),$$(call ne,$$(OLD_$$k),$$($$k))),\
-            $$(shell $$(RM) $$(depdir)/$$k.dep)\
+            $$(shell $$(RM) $$(depdir)/$$k$$(sysext))\
     )) \
-    $$(if $$(strip $$(call hash-table.values,$2)),$$(depdir)/$1.dep)
+    $$(if $$(strip $$(call hash-table.values,$2)),$$(depdir)/$1$$(sysext))
 
-$$(depdir)/$1.dep: \
+$$(depdir)/$1$$(sysext): \
     $$(foreach k,$$(call hash-table.keys,$2),\
-        $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k.dep)) | $$(depdir)
+        $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k$$(sysext))) | $$(depdir)
 	
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
@@ -2012,8 +2033,8 @@ $(foreach d,build external upgrade init tags \
 # @return Target to check if program exists                            #
 #======================================================================#
 define system-dependency
-$$(depdir)/$1.dep: d=$1
-$$(depdir)/$1.dep: | $$(depdir)
+$$(depdir)/$1$$(sysext): d=$1
+$$(depdir)/$1$$(sysext): | $$(depdir)
 	$$(if $$(strip $$($1)),,$$(call phony-error,$$(MSG_DEP_UNDEFINED)))
 	$$(call phony-status,$$(MSG_DEP))
 	$$(quiet) which $$($1) $$(NO_OUTPUT) $$(NO_ERROR) \
@@ -2022,13 +2043,7 @@ $$(depdir)/$1.dep: | $$(depdir)
 	$$(call cat,'override OLD_$1 := $$($1)')
 	$$(call phony-ok,$$(MSG_DEP))
 endef
-$(foreach p,\
-    AR AS CC FC CXX RANLIB INSTALL INSTALL_DATA INSTALL_PROGRAM CP MV \
-    RM TAR ZIP GZIP BZIP2 MKDIR RMDIR FIND LEX LEX_CXX YACC YACC_CXX  \
-    ESQL CTAGS ETAGS DOXYGEN MAKEINFO INSTALL_INFO TEXI2HTML TEXI2DVI \
-    TEXI2PDF TEXI2PS XGETTEXT MSGINIT MSGMERGE MSGFMT DEBUILD DCH     \
-    CURL GIT,\
-    $(eval $(call system-dependency,$p)))
+$(foreach p,$(programs),$(eval $(call system-dependency,$p)))
 
 #======================================================================#
 # Function: extern-dependency                                          #
@@ -2040,7 +2055,7 @@ define extern-dependency
 $$(extdir)/$$(strip $1): | $$(extdir)
 	$$(call $$(strip $2),$$(call car,$$(strip $3)),$$@)
 
-$$(depdir)/$$(strip $1).dy: $$(extdir)/$$(strip $1) $$(externreq)
+$$(depdir)/$$(strip $1)$$(extext): $$(extdir)/$$(strip $1) $$(externreq)
 	$$(call status,$$(MSG_MAKE_DEP))
 	$$(quiet) $$(if $$(call cdr,$$(strip $3)),$$(strip \
                   (cd $$< && $$(call cdr,$$(strip $3))) $$(ERROR) \

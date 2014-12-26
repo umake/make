@@ -6,12 +6,12 @@
 # -------------------------------------------------------------------- #
 # MAINTEINER_NAME := Your Name                                         #
 # MAINTEINER_MAIL := your_mail@mail.com                                #
-# DESCRIPTION     := `makeball.mk` is a model for creating Make Balls  #
+# DESCRIPTION     := `makeball.mk` is a model for creating Makeballs   #
 #                    - config files similar to `Config.mk` which may   #
 #                    be included on it to simplify downloading and     #
 #                    header/library configurations of the dependency.  #
-#                    To contribute with your own Make Ball, modify,    #
-#                    this sample and submit it by a pull request.      #
+#                    To contribute with your own Makeball, modify this #
+#                    sample and submit it by a pull request.           #
 #                    For further info about the AIO Makefile, access:  #
 #                    https://github.com/renatocf/make                  #
 ########################################################################

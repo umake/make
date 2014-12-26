@@ -66,7 +66,7 @@
     [X] Recheck program variables when they are changed.
     [X] Use git submodules (with init/deinit) to manage dependencies.
     [X] Create functions for numeric/lexical/version comparison.
-    [X] Create 'Make Balls' to reuse dependency configurations.
+    [X] Create 'Makeballs' to reuse dependency configurations.
     [ ] Add option to check system program/library version.
     [ ] Verify if variable VERSION follows semantic versionment rules.
     [ ] Support compilation and run of coverage test (with gcov).

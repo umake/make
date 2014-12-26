@@ -21,8 +21,8 @@
 # Dependencies
 # ==============
 GIT_DEPENDENCY  += \
-	soci      => git://github.com/SOCI/soci.git\
-                 cd build && cmake -G "Unix Makefiles" ../src && make\
+    soci      => git://github.com/SOCI/soci.git\
+                 cd build && cmake -G "Unix Makefiles" ../src && make
 
 # Paths
 # =======

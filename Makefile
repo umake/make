@@ -970,6 +970,7 @@ endef
 # 2) Make variables above hash tables
 # 3) Create variable for all dependencies
 # 4) Paths (in first extdir) to store new dependencies
+# 5) Invert paths to compile in the right order
 #------------------------------------------------------------------[ 1 ]
 git_dependency := $(strip $(GIT_DEPENDENCY))
 web_dependency := $(strip $(WEB_DEPENDENCY))
@@ -980,9 +981,10 @@ $(call hash-table.new,web_dependency)
 externdep := $(call hash-table.keys,git_dependency)
 externdep += $(call hash-table.keys,web_dependency)
 externdep := $(patsubst %,$(depdir)/%$(extext),$(externdep))
-externdep := $(call invert,$(externdep))
 #------------------------------------------------------------------[ 4 ]
 externreq := $(patsubst $(depdir)/%$(extext),$(extdir)/%,$(externdep))
+#------------------------------------------------------------------[ 5 ]
+externdep := $(call invert,$(externdep))
 
 # Library files
 # ===============
@@ -2068,7 +2070,7 @@ $$(depdir)/$$(strip $1)$$(extext): $$(extdir)/$$(strip $1) $$(externreq)
                       cd $$</make && $$(MAKE) -f [Mm]akefile $$(ERROR) \
                       || $$(call model-error,$$(MSG_MAKE_FAIL)); \
                   else \
-                      echo "$${MSG_MAKE_NONE}"; \
+                      echo "$$(MSG_MAKE_NONE)" $$(ERROR); \
                   fi \
               ))
 	

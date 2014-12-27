@@ -27,7 +27,7 @@
 
 # Project setting
 PROJECT         := Default
-VERSION         := 1.0
+VERSION         := 1.0.0
 
 # Package info
 AUXFILES        :=
@@ -866,6 +866,10 @@ endef
 ########################################################################
 ##                       USER INPUT VALIDATION                        ##
 ########################################################################
+
+# Version
+# =========
+$(call version-check,$(VERSION))
 
 # Documentation
 # ===============

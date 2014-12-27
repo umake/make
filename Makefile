@@ -4055,7 +4055,7 @@ config:
 	@echo "# Project info"
 	@echo "# ==============="
 	@echo "# PROJECT         := # Project name (def: Default)"
-	@echo "# VERSION         := # Version (def: 1.0)"
+	@echo "# VERSION         := # Version (def: 1.0.0)"
 	@echo "# GIT_REMOTE_PATH := # Remote path for git repository"
 	@echo "# MAINTEINER_NAME := # Your name"
 	@echo "# MAINTEINER_MAIL := # your_name@mail.com"

@@ -507,7 +507,7 @@ $(strip $(if \
     $(call gt_impl,\
         $(call invert,$(call expand,$1)),  \
         $(call invert,$(call expand,$2))), \
-	$(call gt_impl,\
+    $(call gt_impl,\
         $(call invert,$(call expand,$(words $1))), \
         $(call invert,$(call expand,$(words $2)))) \
 ))
@@ -654,11 +654,11 @@ $(strip $(if \
     $(strip $(call version-gt_impl,\
         $(subst ., ,$(call car,$(subst -, ,$(word 1,$(subst +, ,$1))))),\
         $(subst ., ,$(call car,$(subst -, ,$(word 1,$(subst +, ,$2)))))\
-	)),\
-	1,$(strip $(call version-gt_impl,\
+    )),\
+    1,$(strip $(call version-gt_impl,\
         $(subst ., ,$(call cdr,$(subst -, ,$(word 1,$(subst +, ,$1))))),\
         $(subst ., ,$(call cdr,$(subst -, ,$(word 1,$(subst +, ,$2)))))\
-	))\
+    ))\
 ))
 endef
 

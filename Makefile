@@ -471,16 +471,13 @@ endef
 
 # Numeric comparison functions
 # ==============================
-# 1) gt: Returns not empty if $1 is greater than $2
-# 2) lt: Returns not empty if $1 is less than $2
-# 3) ge: Returns not empty if $1 is greater or equal than $2
-# 4) le: Returns not empty if $1 is less or equal than $2
-
-define is_numeric
-$(if $(strip $(subst 0,,$(subst 1,,$(subst 2,,$(subst 3,,$(subst 4,,\
-         $(subst 5,,$(subst 6,,$(subst 7,,$(subst 8,,$(subst 9,,$1)\
-)))))))))),,1)
-endef
+# 1) gt:         Returns not empty if $1 is greater than $2
+# 2) lt:         Returns not empty if $1 is less than $2
+# 3) ge:         Returns not empty if $1 is greater or equal than $2
+# 4) le:         Returns not empty if $1 is less or equal than $2
+# 5) is-numeric: Returns not empty if $1 matches [0-9]*
+# 5) is-integer: Returns not empty if $1 matches [+-]?[0-9]*
+# 5) is-decimal: Returns not empty if $1 matches [+-]?[1-9]?[0-9]*
 
 define cmp-factory
 lt_$(word 1,$(subst -, ,$1))_$(word 2,$(subst -, ,$1)) := 1
@@ -526,6 +523,34 @@ endef
 
 define le
 $(or $(call eq,$1,$2),$(call lt,$1,$2))
+endef
+
+define rm-number
+$(strip $(subst 0,,$(subst 1,,$(subst 2,,$(subst 3,,$(subst 4,,\
+        $(subst 5,,$(subst 6,,$(subst 7,,$(subst 8,,$(subst 9,,\
+        $(strip $1))))))))))))
+endef
+
+define is-numeric
+$(if $(call rm-number,$1),,1)
+endef
+
+define is-negative_impl
+$(if $(filter -%,$1))
+endef
+
+define is-positive_impl
+$(call not,$(call is-negative,$1))
+endef
+
+define is-integer
+$(if $(and $(call is-numeric,$1),$(strip \
+           $(or $(call is-positive_impl,$1),$(call is-negative_impl,$1)))\
+),1)
+endef
+
+define is-decimal
+$(if $(and $(call not,$(filter 0%,$1)),$(call is-integer,$1)),1)
 endef
 
 # Lexical comparison functions
@@ -586,7 +611,7 @@ endef
 
 define version-gt_impl
 $(strip $(if $(strip $1),$(if $(strip $2),\
-    $(if $(and $(call is_numeric,$1),$(call is_numeric,$2)),\
+    $(if $(and $(call is-numeric,$1),$(call is-numeric,$2)),\
         $(if $(call gt,$(call car,$1),$(call car,$2)),1,\
             $(if $(call eq,$(call car,$1),$(call car,$2)),\
                 $(call version-gt_impl,$(call cdr,$1),$(call cdr,$2)))),\

@@ -674,6 +674,73 @@ define version-le
 $(or $(call version-eq,$1,$2),$(call version-lt,$1,$2))
 endef
 
+# Semantic versioning
+# =====================
+# 1) version-data:        Returns version without metadata
+# 2) version-release:     Returns release numbers (X.Y.Z)
+# 3) version-major:       Returns major version (X)
+# 4) version-minor:       Returns minor version (Y)
+# 5) version-patch:       Returns patch version (Z)
+# 6) version-pre-release: Returns pre-release strings
+# 7) version-metadata:    Returns metadata
+# 8) version-check:       Verifies if $1 follows semantic versioning
+
+define version-data
+$(strip $(firstword $(subst +, ,$(strip $1))))
+endef
+
+define version-release
+$(strip $(firstword $(subst -, ,$(call version-data,$1))))
+endef
+
+define version-major
+$(strip $(word 1,$(subst ., ,$(call version-release,$(strip $1)))))
+endef
+
+define version-minor
+$(strip $(word 2,$(subst ., ,$(call version-release,$(strip $1)))))
+endef
+
+define version-patch
+$(strip $(word 3,$(subst ., ,$(call version-release,$(strip $1)))))
+endef
+
+define version-pre-release
+$(strip $(patsubst -%,%,$(patsubst $(call version-release,$1)%,%,\
+    $(call version-data,$1))))
+endef
+
+define version-metadata
+$(strip $(patsubst +%,%,$(patsubst $(call version-data,$1)%,%,\
+    $(strip $1))))
+endef
+
+define version-check
+$(if $(call is_empty,$(strip $1)),\
+    $(error "Version MUST NOT be empty"))\
+$(if $(call ne,1,$(words $(strip $1))),\
+    $(error "Version MUST NOT have spaces"))\
+$(if $(call lt,2,$(words $(subst +, ,$1))),\
+    $(error "Version MUST have just one + separating version/metadata"))\
+$(if $(call ne,3,$(words $(subst ., ,$(call version-release,$1)))),\
+    $(error "Version MUST be on the form X.Y.Z"))\
+$(if $(call is-numeric,$(call version-major,$1)),,\
+    $(error "Major version (X.y.z) MUST be a non-negative number"))\
+$(if $(call is-numeric,$(call version-minor,$1)),,\
+    $(error "Minor version (x.Y.z) MUST be a non-negative number"))\
+$(if $(call is-numeric,$(call version-patch,$1)),,\
+    $(error "Patch version (x.y.Z) MUST be a non-negative number"))\
+$(if $(call eq,-,$(subst $(call version-release,$1),,$1)),\
+    $(error "Version MUST NOT have an empty pre-release after -"))\
+$(foreach p,$(subst ., ,$(call version-pre-release,$1)),\
+    $(if $(call is-alphanumeric,$(subst -,,$p)),,\
+        $(error "Pre-release '$p' MUST be ASCII alphanumeric and -")))\
+$(if $(call eq,+,$(subst $(call version-data,$1),,$1)),\
+    $(error "Version MUST NOT have an empty metadata after +"))\
+$(if $(call is-alphanumeric,$(subst -,,$(call version-metadata,$1))),,\
+    $(error "Metadata MUST be ASCII alphanumeric and hyphen"))
+endef
+
 # Path manipulation functions
 # =============================
 # 1) root: Gets the root directory (first in the path) of a path or file

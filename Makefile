@@ -433,7 +433,7 @@ $(strip $(if $1,,1))
 endef
 
 define eq
-$(strip $(if $(strip $(filter-out $(strip $1),$(strip $2))),,1))
+$(strip $(if $(strip $(filter $(strip $1),$(strip $2))),1))
 endef
 
 define ne

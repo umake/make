@@ -592,6 +592,33 @@ define lexical-le
 $(or $(call lexical-eq,$1,$2),$(call lexical-lt,$1,$2))
 endef
 
+define rm-lower
+$(strip $(subst a,,$(subst b,,$(subst c,,$(subst d,,$(subst e,,\
+        $(subst f,,$(subst g,,$(subst h,,$(subst i,,$(subst j,,\
+        $(subst k,,$(subst l,,$(subst m,,$(subst n,,$(subst o,,\
+        $(subst p,,$(subst q,,$(subst r,,$(subst s,,$(subst t,,\
+        $(subst u,,$(subst v,,$(subst w,,$(subst x,,$(subst y,,\
+        $(subst z,,$(strip $1))))))))))))))))))))))))))))
+endef
+
+define rm-upper
+$(strip $(subst A,,$(subst B,,$(subst C,,$(subst D,,$(subst E,,\
+        $(subst F,,$(subst G,,$(subst H,,$(subst I,,$(subst J,,\
+        $(subst K,,$(subst L,,$(subst M,,$(subst N,,$(subst O,,\
+        $(subst P,,$(subst Q,,$(subst R,,$(subst S,,$(subst T,,\
+        $(subst U,,$(subst V,,$(subst W,,$(subst X,,$(subst Y,,\
+        $(subst Z,,$(strip $1))))))))))))))))))))))))))))
+endef
+
+define is-alpha
+$(if $(call is_empty,$(call rm-upper,$(call rm-lower,$1))),1)
+endef
+
+define is-alphanumeric
+$(if $(call is_empty,$(strip \
+    $(call rm-number,$(call rm-upper,$(call rm-lower,$1))))),1)
+endef
+
 # Version comparison functions
 # ==============================
 # 1) version-eq: Returns not empty if $1 is equal to $2

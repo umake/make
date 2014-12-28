@@ -4221,7 +4221,7 @@ help:
 .PHONY: projecthelp
 projecthelp:
 	@echo "                                                            "
-	@echo "Makefile All-in-One                                         "
+	@echo "All-in-One Makefile                                         "
 	@echo "=====================                                       "
 	@echo "                                                            "
 	@echo "Default targets:                                            "
@@ -4245,12 +4245,14 @@ projecthelp:
 	@echo " * package-*:        As 'package', with many compressions   "
 	@echo " * package:          As 'dist', but also with src and data  "
 	@echo " * standard:         Moves files to standard directories    "
+	@echo " * statistics:       Outputs file countage and LOC          "
 	@echo " * sync:             Synchronizes from REMOTE to BRANCH     "
 	@echo " * tar:              Creates .tar with bins and libs        "
 	@echo " * translation:      Creates files for internationalization "
 	@echo " * uninstall-*:      Uninstalls info/html/dvi/pdf/ps docs   "
 	@echo " * uninstall:        Uninstalls anything created by installs"
 	@echo " * upgrade:          Upgrades Makefile from remote repo     "
+	@echo " * version:          Outputs .version.mk to store VERSION   "
 	@echo "                                                            "
 	@echo "Management targets:                                         "
 	@echo "--------------------                                        "

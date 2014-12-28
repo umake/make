@@ -126,6 +126,7 @@ $(foreach var,\
 endif
 
 # Include configuration file if exists
+-include .version.mk
 -include .config.mk config.mk Config.mk
 
 ## INSTALLATION ########################################################
@@ -1796,7 +1797,10 @@ init: initdep
 	$(call mkdir,$(docdir))
 	
 	$(call make-create,config,Config.mk)
+	$(call make-create,version,.version.mk)
 	$(call make-create,gitignore,.gitignore)
+	
+	$(call git-tag,"v$(strip $(VERSION))")
 	
 	$(call git-add-commit,Makefile Config.mk,\
            "Adds Makefile and Config.mk")
@@ -2895,6 +2899,7 @@ uninitialize:
 	$(call rm-if-exists,Config_os.mk)
 	$(call rm-if-exists,config_os.mk)
 	$(call rm-if-exists,.config_os.mk)
+	$(call rm-if-exists,.version.mk)
 	$(call rm-if-exists,.gitignore)
 	$(call rm-if-exists,.gitmodules)
 	$(call rm-if-empty,.git)
@@ -2942,6 +2947,8 @@ MSG_WEB_CLONE     = "${YELLOW}Downloading web dependency ${DEF}$2${RES}"
 
 MSG_GIT_INIT      = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Initializing empty repository${RES}"
+MSG_GIT_TAG       = "${YELLOW}[$(GIT)]"\
+                    "${BLUE}Creating new tag ${DEF}$(strip $1)${RES}"
 MSG_GIT_CLONE     = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Cloning repository ${DEF}$2${RES}"
 MSG_GIT_ADD       = "${YELLOW}[$(GIT)]${BLUE} Adding"\
@@ -3417,6 +3424,7 @@ GIT_RM               := $(GIT) rm -q
 GIT_SUBMODULE        := $(GIT) submodule -q
 GIT_SUBMODULE_ADD    := $(GIT_SUBMODULE) add -f
 GIT_SUBMODULE_INIT   := $(GIT_SUBMODULE) init
+GIT_TAG              := $(GIT) tag
 
 ifneq ($(call version-gt,$(git-version),1.8.3),)
 GIT_SUBMODULE_DEINIT := $(GIT_SUBMODULE) deinit
@@ -3432,7 +3440,7 @@ phony-git-$1 = \
 endef
 $(foreach c,\
     ADD CLONE COMMIT DIFF INIT LS_FILES PULL PUSH REMOTE REMOTE_ADD \
-    RM SUBMODULE SUBMODULE_ADD SUBMODULE_INIT SUBMODULE_DEINIT, \
+    RM SUBMODULE SUBMODULE_ADD SUBMODULE_INIT SUBMODULE_DEINIT TAG, \
     $(eval $(call git-cmd-factory,$(subst _,-,$(call lc,$c)),$c)))
 
 define git-clone
@@ -3443,10 +3451,19 @@ endef
 
 define git-init
 	$(quiet) if ! [ -d .git ]; \
-             then\
+             then \
                  $(call model-status,$(MSG_GIT_INIT)); \
                  $(call model-git-init); \
                  $(call model-ok,$(MSG_GIT_INIT)); \
+             fi
+endef
+
+define git-tag
+	$(quiet) if ! $(GIT_TAG) | grep -q $1; \
+             then \
+                 $(call model-status,$(MSG_GIT_TAG)); \
+                 $(call model-git-tag,$1); \
+                 $(call model-ok,$(MSG_GIT_TAG)); \
              fi
 endef
 
@@ -4107,6 +4124,10 @@ config:
 	@echo "# 'include conf/makeball.mk' for pre-configured options"
 	@echo "# to use the library 'makeball'"
 	@echo ""
+
+.PHONY: version
+version:
+	@echo "override VERSION := $(VERSION)"
 
 .PHONY: compiler
 compiler:

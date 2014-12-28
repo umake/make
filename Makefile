@@ -1790,7 +1790,9 @@ init: initdep
 	$(call git-remote-add,origin,$(GIT_REMOTE_PATH))
 	
 	$(if $(wildcard make/*),\
-        $(call git-submodule-add,$(MAKEGITREMOTE),make))
+        $(if $(wildcard $(depdir)/make.mk),,\
+            $(call touch,$(depdir)/make.mk)$(newline)\
+            $(call git-submodule-add,$(MAKEGITREMOTE),make)))
 	
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
@@ -1804,7 +1806,7 @@ init: initdep
 	
 	$(call git-add-commit,Makefile Config.mk,\
            "Adds Makefile and Config.mk")
-	$(call git-add-commit,.git*,\
+	$(call git-add-commit,.git[a-z]*,\
            "Adds git configuration files")
 
 .PHONY: standard

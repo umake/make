@@ -4214,7 +4214,7 @@ statistics:
 .PHONY: help
 help:
 	@echo "                                                            "
-	@echo "Makefile for C/C++ by Renato Cordeiro Ferreira.             "
+	@echo "AIO Makefile for C/C++/Fortran by Renato Cordeiro Ferreira. "
 	@echo "Type 'make projecthelp' for additional info.                "
 	@echo "                                                            "
 

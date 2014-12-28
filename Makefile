@@ -1814,6 +1814,8 @@ init: initdep
            "Adds Makefile and Config.mk")
 	$(call git-add-commit,.git[a-z]*,\
            "Adds git configuration files")
+	$(call git-add-commit,.version.mk,\
+           "Adds versioning control file .version.mk")
 
 .PHONY: standard
 standard: init

@@ -69,6 +69,7 @@
     [X] Create 'Makeballs' to reuse dependency configurations.
     [X] Verify if variable VERSION follows semantic versionment rules.
     [X] Allow Makefile to be executable (add #!/usr/bin/make).
+    [ ] Check for system dependency existence iff targets need rebuild. 
     [ ] Add option to check system program/library version.
     [ ] Support compilation and run of coverage test (with gcov).
     [ ] Support run of profiling tools (with gprof).

@@ -2631,6 +2631,36 @@ $(foreach b,$(binall),$(eval \
 )))
 
 #======================================================================#
+# Function: coverage-factory                                           #
+# @param  $1 Binary root directory                                     #
+# @param  $1 Binary name witout root dir                               #
+# @param  $3 Comments to be used (C's, Fortran's or C++'s)             #
+# @param  $4 Compiler to be used (C's, Fortran's or C++'s)             #
+# @return Target to generate binaries and dependencies of its object   #
+#         files (to create objdir and automatic source)                #
+#======================================================================#
+define coverage-factory
+$1/$2/%$3: $1/$$(objdir)/$$*$$(firstword $$(objext))
+$1/$2/%$3: $$(wildcard $1/$$(objdir)/$$*.*) | $1
+	
+	$$(call phony-status,$$(MSG_COV))
+	
+	$$(call mksubdir,$1,$$@/)
+	$$(quiet) $$(COV) $$(COVFLAFS) -o $1/$$(objdir) $2/$$*$3 \
+              1> $$(basename $$@/$$*).out $$(ERROR)
+	$$(quiet) $$(foreach e,$$(covext),$$(strip \
+	              for f in *$$e; do \
+                      [ ! -f "$$$$f" ] && break; \
+                      $$(MV) $$$$f $$@ $$(ERROR); \
+                  done;\
+              ))
+	
+	$$(call phony-ok,$$(MSG_COV))
+endef
+$(foreach r,$(srcdir),$(foreach s,$(srcext),$(foreach c,$(covext),\
+	$(eval $(call coverage-factory,$(covdir),$r,$s,$c)))))
+
+#======================================================================#
 # Function: intl-template-factory                                      #
 # @param  $1 Locale root directory                                     #
 # @param  $1 Binary name witout root dir                               #

@@ -1905,6 +1905,24 @@ etags: $(incall) $(srcall)
 	$(call phony-ok,$(MSG_ETAGS))
 
 ########################################################################
+##                              ANALYSIS                              ##
+########################################################################
+
+coverage_dependency := \
+    COV => $(patsubst %,$(covdir)/%/,$(srcall))
+
+ifndef COVERAGE
+$(addprefix $(covdir)/,$(binall)):
+	$(call phony-vstatus,$(MSG_COV_COMPILE))
+	$(quiet) $(MAKE) COVERAGE=1 $@
+	$(call phony-ok,$(MSG_COV_COMPILE))
+endif
+
+.PHONY: coverage
+coverage: coveragedep $(addprefix $(covdir)/,$(binall)) \
+                      $(patsubst %,$(covdir)/%,$(srcall))
+
+########################################################################
 ##                        INTERNATIONALIZATION                        ##
 ########################################################################
 
@@ -2211,7 +2229,7 @@ $$(depdir)/$1$$(sysext): \
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_DEP_ALL))
 endef
-$(foreach d,build external upgrade init tags \
+$(foreach d,build external upgrade init tags coverage \
             translation docs doxy dist dpkg install,\
     $(eval $(call target-dependency,$d,$d_dependency)))
 
@@ -3144,6 +3162,11 @@ MSG_TEST_COMPILE  = "${DEF}Generating test executable"\
                     "${GREEN}$(notdir $(strip $@))${RES}"
 MSG_TEST_FAILURE  = "${CYAN}Test '$(notdir $<)' did not passed${RES}"
 MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
+
+MSG_COV           = "${BLUE}Generating coverage analysis for"\
+                    "${DEF}$(call not-root,$@)${RES}"
+MSG_COV_COMPILE   = "${DEF}Building ${GREEN}$@${DEF} to generate"\
+                    "coverage files ${RES}"
 
 MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
 MSG_MAKEZIP       = "${RED}Generating zip file ${BLUE}$@${RES}"

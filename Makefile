@@ -3161,7 +3161,7 @@ MSG_TEST_COMPILE  = "${DEF}Generating test executable"\
 MSG_TEST_FAILURE  = "${CYAN}Test '$(notdir $<)' did not passed${RES}"
 MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
 
-MSG_COV           = "${BLUE}Generating coverage analysis for"\
+MSG_COV           = "${PURPLE}Generating coverage analysis for"\
                     "${DEF}$(call not-root,$@)${RES}"
 MSG_COV_COMPILE   = "${DEF}Building ${GREEN}$@${DEF} to generate"\
                     "coverage files ${RES}"

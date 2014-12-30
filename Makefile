@@ -1741,6 +1741,13 @@ $(foreach s,$(comtestsrc),\
 #------------------------------------------------------------------[ 11 ]
 testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 
+# Coverage analysis
+# ===================
+# 1) Recompiled binaries for coverage test
+# 2) Directories (with source file names) for coverage analysis files
+covbin := $(addprefix $(covdir)/,$(binall))
+covall := $(addprefix $(covdir)/,$(srcall))
+
 # Texinfo files
 # ===============
 # 1) texiall: All TexInfo files with complete path
@@ -1912,15 +1919,14 @@ coverage_dependency := \
     COV => $(patsubst %,$(covdir)/%/,$(srcall))
 
 ifndef COVERAGE
-$(addprefix $(covdir)/,$(binall)):
+$(covbin):
 	$(call phony-vstatus,$(MSG_COV_COMPILE))
 	$(quiet) $(MAKE) COVERAGE=1 $@
 	$(call phony-ok,$(MSG_COV_COMPILE))
 endif
 
 .PHONY: coverage
-coverage: coveragedep $(addprefix $(covdir)/,$(binall)) \
-                      $(patsubst %,$(covdir)/%,$(srcall))
+coverage: coveragedep $(covbin) $(covall)
 
 ########################################################################
 ##                        INTERNATIONALIZATION                        ##
@@ -4547,6 +4553,11 @@ else
 	$(call prompt,"testdep:      ",$(testdep)      )
 	$(call prompt,"testbin:      ",$(testbin)      )
 	$(call prompt,"testrun:      ",$(testrun)      )
+	
+	@echo "${WHITE}\nCOVERAGE                ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"covbin:       ",$(covbin)       )
+	$(call prompt,"covall:       ",$(covall)       )
 	
 	@echo "${WHITE}\nOBJECT                  ${RES}"
 	@echo "----------------------------------------"

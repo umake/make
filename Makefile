@@ -248,6 +248,9 @@ DEPEXT  := .d
 EXTEXT  := .dy
 SYSEXT  := .dep
 
+# Coverage extensions
+COVEXT  := .gcov
+
 # Binary extensions
 OBJEXT  := .o
 BINEXT  :=
@@ -984,6 +987,7 @@ esqlext := $(strip $(sort $(ESQLEXT)))
 depext  := $(strip $(sort $(DEPEXT)))
 extext  := $(strip $(sort $(EXTEXT)))
 sysext  := $(strip $(sort $(SYSEXT)))
+covext  := $(strip $(sort $(COVEXT)))
 objext  := $(strip $(sort $(OBJEXT)))
 binext  := $(strip $(sort $(BINEXT)))
 
@@ -1008,8 +1012,8 @@ docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 # Check all extensions
 allext := $(incext) $(srcext) $(asmext) $(libext)
 allext += $(lexext) $(lexxext) $(yaccext) $(yaxxext) $(esqlext)
-allext += $(depext) $(extext) $(sysext) $(objext) $(binext) $(srpext)
-allext += $(dataext) $(potext) $(poext) $(moext) $(docext)
+allext += $(depext) $(extext) $(sysext) $(covext) $(objext) $(binext)
+allext += $(srpext) $(dataext) $(potext) $(poext) $(moext) $(docext)
 allext := $(strip $(allext))
 $(foreach ext,$(allext),\
     $(if $(filter .%,$(ext)),,\

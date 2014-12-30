@@ -2313,102 +2313,102 @@ $(foreach s,$(cesql),$(eval\
 
 #======================================================================#
 # Function: compile-asm                                                #
-# @param  $1 Assembly extension                                        #
+# @param  $1 Directory for object files                                #
 # @param  $2 Root source directory                                     #
-# @param  $3 Source tree specific path in objdir to put objects        #
+# @param  $3 Assembly extension                                        #
 # @return Target to compile all Assembly files with the given          #
 #         extension, looking in the right root directory               #
 #======================================================================#
 define compile-asm
-$$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
+$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)
 	$$(call status,$$(MSG_ASM_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call c-depend,$$<,$$@,$3$$*)
+	$$(quiet) $$(call c-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(AS) $$(cppflags) $$(asflags) $$(aslibs) \
                      $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_ASM_COMPILE),$$@)
 endef
-$(foreach root,$(srcdir),\
-    $(foreach E,$(asmext),\
-        $(eval $(call compile-asm,$E,$(root)/))))
+$(foreach r,$(srcdir),\
+    $(foreach e,$(asmext),\
+        $(eval $(call compile-asm,$(objdir),$r,$e))))
 
 #======================================================================#
 # Function: compile-c                                                  #
-# @param  $1 C extension                                               #
+# @param  $1 Directory for object files                                #
 # @param  $2 Root source directory                                     #
-# @param  $3 Source tree specific path in objdir to put objects        #
+# @param  $3 C extension                                               #
 # @return Target to compile all C files with the given extension,      #
 #         looking in the right root directory                          #
 #======================================================================#
 define compile-c
-$$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
+$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)
 	$$(call status,$$(MSG_C_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call c-depend,$$<,$$@,$3$$*)
+	$$(quiet) $$(call c-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) $$(cppflags) $$(cflags) $$(clibs) \
                      -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_COMPILE),$$@)
 endef
-$(foreach root,$(srcdir),$(foreach E,$(cext),\
-    $(eval $(call compile-c,$E,$(root)/))))
-$(foreach E,$(cext),\
-    $(eval $(call compile-c,$E,$(testdir)/,$(testdir)/)))
+$(foreach r,$(srcdir),$(foreach e,$(cext),\
+    $(eval $(call compile-c,$(objdir),$r,$e))))
+$(foreach e,$(cext),\
+    $(eval $(call compile-c,$(objdir)/$(testdir),$(testdir),$e)))
 
 #======================================================================#
 # Function: compile-cpp                                                #
-# @param  $1 C++ extension                                             #
+# @param  $1 Directory for object files                                #
 # @param  $2 Root source directory                                     #
-# @param  $3 Source tree specific path in objdir to put objects        #
+# @param  $3 C++ extension                                             #
 # @return Target to compile all C++ files with the given extension     #
 #         looking in the right root directory                          #
 #======================================================================#
 define compile-cpp
-$$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
+$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)
 	$$(call status,$$(MSG_CXX_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call cpp-depend,$$<,$$@,$3$$*)
+	$$(quiet) $$(call cpp-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
                       -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_COMPILE),$$@)
 endef
-$(foreach root,$(srcdir),$(foreach E,$(cxxext),\
-    $(eval $(call compile-cpp,$E,$(root)/))))
-$(foreach E,$(cxxext),\
-    $(eval $(call compile-cpp,$E,$(testdir)/,$(testdir)/)))
+$(foreach r,$(srcdir),$(foreach e,$(cxxext),\
+    $(eval $(call compile-cpp,$(objdir),$r,$e))))
+$(foreach e,$(cxxext),\
+    $(eval $(call compile-cpp,$(objdir)/$(testdir),$(testdir),$e)))
 
 #======================================================================#
 # Function: compile-fortran                                            #
-# @param  $1 Fortran extension                                         #
+# @param  $1 Directory for object files                                #
 # @param  $2 Root source directory                                     #
-# @param  $3 Source tree specific path in objdir to put objects        #
+# @param  $3 Fortran extension                                         #
 # @return Target to compile all Fortran files with the given           #
 #         extension, looking in the right root directory               #
 #======================================================================#
 define compile-fortran
-$$(objdir)/$3%$$(firstword $$(objext)): $2%$1 | $$(depdir)
+$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)
 	$$(call status,$$(MSG_F_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call fortran-depend,$$<,$$@,$3$$*)
+	$$(quiet) $$(call fortran-depend,$$<,$$@,$$(call not-root,$3/$$*))
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(FC) $$(cppflags) $$(fflags) $$(flibs) \
                      -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_F_COMPILE),$$@)
 endef
-$(foreach root,$(srcdir),$(foreach E,$(fext),\
-    $(eval $(call compile-fortran,$E,$(root)/))))
-$(foreach E,$(fext),\
-    $(eval $(call compile-fortran,$E,$(testdir)/,$(testdir)/)))
+$(foreach r,$(srcdir),$(foreach e,$(fext),\
+    $(eval $(call compile-fortran,$(objdir),$r,$e))))
+$(foreach e,$(fext),\
+    $(eval $(call compile-fortran,$(objdir)/$(testdir),$(testdir),$e)))
 
 #======================================================================#
 # Function: compile-sharedlib-linux-c                                  #

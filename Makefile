@@ -1077,6 +1077,25 @@ programs := \
     DEBUILD CURL GIT
 
 ########################################################################
+##                     COMPILATION POST PROCESSMENT                   ##
+########################################################################
+
+# Coverage
+# ==========
+# Changes needed to deal with coverage compilation.
+# 1) Preprocess flags to add coverage compiler options and remove
+#    automatic optimizations (flags -On, n > 0)
+# 2) Adds prefix $(COVDIR) as prefix for some directories
+ifdef COVERAGE
+#------------------------------------------------------------------[ 1 ]
+$(foreach p,cpp as c f cxx ld,\
+    $(eval override $pflags := $($pcov) $(patsubst -O%,,$($pflags))))
+#------------------------------------------------------------------[ 2 ]
+$(foreach p,obj bin,\
+	$(eval override $pdir := $(addprefix $(covdir)/,$($pdir))))
+endif
+
+########################################################################
 ##                              PATHS                                 ##
 ########################################################################
 

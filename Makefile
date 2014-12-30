@@ -1091,7 +1091,7 @@ ifdef COVERAGE
 $(foreach p,cpp as c f cxx ld,\
     $(eval override $pflags := $($pcov) $(patsubst -O%,,$($pflags))))
 #------------------------------------------------------------------[ 2 ]
-$(foreach p,obj bin,\
+$(foreach p,obj bin lib,\
 	$(eval override $pdir := $(addprefix $(covdir)/,$($pdir))))
 endif
 

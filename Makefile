@@ -2964,6 +2964,16 @@ packageclean:
 	$(call rm-if-empty,$(distdir)/$(DEB_PROJECT)-$(VERSION))
 	$(call rm-if-empty,$(debdir),$(deball))
 
+.PHONY: coverageclean
+coverageclean:
+	$(call rm-if-empty,$(addprefix $(covdir)/,$(objdir)))
+	$(call rm-if-empty,$(addprefix $(covdir)/,$(bindir)))
+	$(call rm-if-empty,$(addprefix $(covdir)/,$(sbindir)))
+	$(call rm-if-empty,$(addprefix $(covdir)/,$(execdir)))
+	$(call rm-if-empty,$(addprefix $(covdir)/,$(firstword $(libdir))))
+	$(call rm-if-empty,$(addprefix $(covdir)/,$(srcdir)))
+	$(call rm-if-empty,$(covdir))
+
 .PHONY: realclean
 ifndef D
 realclean:
@@ -2971,7 +2981,7 @@ realclean:
 	@echo $(MSG_WARNCLEAN_END)
 	@echo $(MSG_WARNCLEAN_ALT)
 else
-realclean: distclean docclean packageclean \
+realclean: distclean docclean packageclean coverageclean \
            $(if $(ENABLE_NLS),translationclean)
 	$(call rm-if-exists,$(lexall),$(MSG_LEX_NONE))
 	$(foreach d,$(lexinc),$(call rm-if-empty,$d)$(newline))

@@ -111,6 +111,7 @@ INCDIR    := include
 DOCDIR    := doc
 DEBDIR    := debian
 OBJDIR    := build
+COVDIR    := cov
 LIBDIR    := lib
 EXTDIR    := external
 SRPDIR    := script
@@ -125,8 +126,8 @@ DESTDIR   :=
 LOCALEDIR := locale
 else
 $(foreach var,\
-    SRCDIR DEPDIR INCDIR OBJDIR LIBDIR EXTDIR SRPDIR BINDIR \
-    SBINDIR DISTDIR CONFDIR TESTDIR DATADIR LOCALEDIR,\
+    SRCDIR DEPDIR INCDIR OBJDIR COVDIR LIBDIR EXTDIR SRPDIR \
+    BINDIR SBINDIR DISTDIR CONFDIR TESTDIR DATADIR LOCALEDIR,\
     $(eval $(var) := .)\
 )
 endif
@@ -923,6 +924,7 @@ override incdir    := $(call remove-trailing-bar,$(INCDIR))
 override docdir    := $(call remove-trailing-bar,$(DOCDIR))
 override debdir    := $(call remove-trailing-bar,$(DEBDIR))
 override objdir    := $(call remove-trailing-bar,$(OBJDIR))
+override covdir    := $(call remove-trailing-bar,$(COVDIR))
 override libdir    := $(call remove-trailing-bar,$(LIBDIR))
 override extdir    := $(call remove-trailing-bar,$(EXTDIR))
 override srpdir    := $(call remove-trailing-bar,$(SRPDIR))
@@ -3136,10 +3138,10 @@ endef
 $(sort $(srcdir) $(incdir) $(bindir) $(sbindir) $(execdir) ):
 	$(call mkdir,$@)
 
-$(sort $(objdir) $(depdir) $(libdir) $(extdir) $(docdir) $(debdir) ):
+$(sort $(objdir) $(covdir) $(depdir) $(libdir) $(extdir) ):
 	$(call mkdir,$@)
 
-$(sort $(srpdir) $(datadir) $(localedir) ):
+$(sort $(docdir) $(debdir) $(srpdir) $(datadir) $(localedir) ):
 	$(call mkdir,$@)
 
 define mkdir

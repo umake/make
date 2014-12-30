@@ -79,6 +79,13 @@ CFLAGS     := -Wall -ansi -pedantic -O2 -g
 CXXFLAGS   := $(CFLAGS) -std=c++11
 FFLAGS     := -cpp
 
+# Coverage options
+CPPCOV     :=
+CCOV       := --coverage
+FCOV       :=
+CXXCOV     := --coverage
+LDCOV      := --coverage
+
 # Linker options
 LDFLAGS    :=
 LDC        :=
@@ -910,6 +917,19 @@ soflags   := $(SOFLAGS)
 lexflags  := $(LEXFLAGS)
 yaccflags := $(YACCFLAGS)
 esqlflags := $(ESQLFLAGS)
+
+ldc       := $(LDC)
+ldf       := $(LDF)
+ldcxx     := $(LDCXX)
+ldlex     := $(LDLEX)
+ldyacc    := $(LDYACC)
+ldesql    := $(LDESQL)
+
+ccov      := $(CCOV)
+fcov      := $(FCOV)
+cxxcov    := $(CXXCOV)
+ldcov     := $(LDCOV)
+cppcov    := $(CPPCOV)
 
 # Installation directories
 # ==========================

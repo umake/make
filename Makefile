@@ -330,6 +330,10 @@ YACC_CXX        := bisonc++
 YACCLIBS        :=
 YACCFLAGS       :=
 
+# Coverage
+COV             := gcov
+COVFLAGS        := -abc
+
 # Embedded SQL
 ESQL            := ecpg
 ESQLLIBS        := $(if $(strip $(shell which pg_config)),\
@@ -1048,9 +1052,9 @@ endif
 programs := \
     AR AS CC FC CXX RANLIB INSTALL INSTALL_DATA INSTALL_PROGRAM CP MV \
     RM TAR ZIP GZIP BZIP2 MKDIR RMDIR FIND LEX LEX_CXX YACC YACC_CXX  \
-    ESQL CTAGS ETAGS DOXYGEN MAKEINFO INSTALL_INFO TEXI2HTML TEXI2DVI \
-    TEXI2PDF TEXI2PS XGETTEXT MSGINIT MSGMERGE MSGFMT DEBUILD DCH     \
-    CURL GIT
+    COV ESQL CTAGS ETAGS DOXYGEN MAKEINFO INSTALL_INFO TEXI2HTML      \
+    TEXI2DVI TEXI2PDF TEXI2PS XGETTEXT MSGINIT MSGMERGE MSGFMT DCH    \
+    DEBUILD CURL GIT
 
 ########################################################################
 ##                              PATHS                                 ##

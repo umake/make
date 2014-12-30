@@ -2658,9 +2658,7 @@ $(foreach b,$(binall),$(eval \
 #         files (to create objdir and automatic source)                #
 #======================================================================#
 define coverage-factory
-$1/$2/%$3: $1/$$(objdir)/$$*$$(firstword $$(objext))
-$1/$2/%$3: $$(wildcard $1/$$(objdir)/$$*.*) | $1
-	
+$1/$2/%$3: $1/$$(objdir)/%$$(firstword $$(objext)) $1/$$(objdir)/%.* | $1
 	$$(call phony-status,$$(MSG_COV))
 	
 	$$(call mksubdir,$1,$$@/)

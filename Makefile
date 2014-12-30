@@ -1627,7 +1627,7 @@ $(if $(strip $(bin) $(sbin) $(libexec)),\
     $(if $(strip $(srccln)),$(eval binall := $(bindir)/a.out))\
 )
 #------------------------------------------------------------------[ 2 ]
-$(foreach sep,/ .,$(foreach b,$(call not-root,$(binall)),$(or\
+$(foreach sep,/ .,$(foreach b,$(notdir $(binall)),$(or\
     $(eval $b_src  += $(filter $b$(sep)%,$(src))),\
     $(eval $b_all  += $(sort $(call rfilter,\
                           $(addprefix %,$($b_src)),$(srcall))))\
@@ -1642,7 +1642,7 @@ $(foreach sep,/ .,$(foreach b,$(call not-root,$(binall)),$(or\
 )))
 #------------------------------------------------------------------[ 3 ]
 define common-factory
-$(call rfilter-out,$(foreach b,$(call not-root,$(binall)),$($b_$1)),$2)
+$(call rfilter-out,$(foreach b,$(notdir $(binall)),$($b_$1)),$2)
 endef
 comsrc  := $(call common-factory,src,$(src))
 comall  := $(call common-factory,all,$(srcall))
@@ -2616,17 +2616,17 @@ $$($2_obj): | $$(objdir)
 
 $$($2_aobj): $$($2_aall) | $$(objdir)
 endef
-$(foreach b,$(binall),$(eval\
-    $(call binary-factory,$(call root,$b),$(call not-root,$b),\
+$(foreach b,$(binall),$(eval \
+    $(call binary-factory,$(bindir),$(notdir $b),\
     $(strip \
-        $(if $($(call not-root,$b)_is_c),C,\
-        $(if $($(call not-root,$b)_is_f),F,\
-        $(if $($(call not-root,$b)_is_cxx),CXX,CXX\
+        $(if $($(notdir $b)_is_c),C,\
+        $(if $($(notdir $b)_is_f),F,\
+        $(if $($(notdir $b)_is_cxx),CXX,CXX\
     )))),\
     $(strip \
-        $(if $($(call not-root,$b)_is_c),$(CC),\
-        $(if $($(call not-root,$b)_is_f),$(FC),\
-        $(if $($(call not-root,$b)_is_cxx),$(CXX),$(CXX)\
+        $(if $($(notdir $b)_is_c),$(CC),\
+        $(if $($(notdir $b)_is_f),$(FC),\
+        $(if $($(notdir $b)_is_cxx),$(CXX),$(CXX)\
     )))),\
 )))
 

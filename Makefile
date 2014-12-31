@@ -1912,7 +1912,7 @@ etags: $(incall) $(srcall)
 	$(call phony-ok,$(MSG_ETAGS))
 
 ########################################################################
-##                              ANALYSIS                              ##
+##                              COVERAGE                              ##
 ########################################################################
 
 coverage_dependency := \
@@ -1927,6 +1927,38 @@ endif
 
 .PHONY: coverage
 coverage: coveragedep $(covbin) $(covall)
+
+########################################################################
+##                             STATISTICS                             ##
+########################################################################
+
+define statistic-count
+$(words $1) $(if $(call ne,$(words $1),0),$(strip \
+    $(foreach n,$(call rcar,$(call rcdr,$(shell wc -l $1))),$(strip \
+        $(if $(call eq,1,$n),($n line),($n lines))\
+))))
+endef
+
+.PHONY: statistics
+statistics:
+	@echo "                                                            "
+	@echo "$(PROJECT)-$(VERSION)                                       "
+	@echo "=============================                               "
+	@echo "                                                            "
+	@echo "C            : $(call statistic-count,$(c_all))             "
+	@echo "C++          : $(call statistic-count,$(cxx_all))           "
+	@echo "Fortran      : $(call statistic-count,$(f_all))             "
+	@echo "Assembly     : $(call statistic-count,$(asmall))            "
+	@echo "Headers      : $(call statistic-count,$(incall))            "
+	@echo "Lexers       : $(call statistic-count,$(alllexer))          "
+	@echo "Parsers      : $(call statistic-count,$(allparser))         "
+	@echo "Embedded SQL : $(call statistic-count,$(cesql))             "
+	@echo "Tests        : $(call statistic-count,$(testall))           "
+	@echo "-----------------------------------                         "
+	@echo "Total        :"\
+          "$(call statistic-count,$(srcall) $(asmall) $(incall)        \
+           $(alllexer) $(allparser) $(cesql) $(testall))               "
+	@echo "                                                            "
 
 ########################################################################
 ##                        INTERNATIONALIZATION                        ##
@@ -4296,38 +4328,6 @@ gitignore:
 	@$(if $(strip $(doxyfile)),echo $(docdir)/$(doxyfile).mk)
 	@$(foreach e,$(depext),echo *$e; )
 	@echo ""
-
-########################################################################
-##                         INFORMATION TARGETS                        ##
-########################################################################
-
-define statistic-count
-$(words $1) $(if $(call ne,$(words $1),0),$(strip \
-    $(foreach n,$(call rcar,$(call rcdr,$(shell wc -l $1))),$(strip \
-        $(if $(call eq,1,$n),($n line),($n lines))\
-))))
-endef
-
-.PHONY: statistics
-statistics:
-	@echo "                                                            "
-	@echo "$(PROJECT)-$(VERSION)                                       "
-	@echo "=============================                               "
-	@echo "                                                            "
-	@echo "C            : $(call statistic-count,$(c_all))             "
-	@echo "C++          : $(call statistic-count,$(cxx_all))           "
-	@echo "Fortran      : $(call statistic-count,$(f_all))             "
-	@echo "Assembly     : $(call statistic-count,$(asmall))            "
-	@echo "Headers      : $(call statistic-count,$(incall))            "
-	@echo "Lexers       : $(call statistic-count,$(alllexer))          "
-	@echo "Parsers      : $(call statistic-count,$(allparser))         "
-	@echo "Embedded SQL : $(call statistic-count,$(cesql))             "
-	@echo "Tests        : $(call statistic-count,$(testall))           "
-	@echo "-----------------------------------                         "
-	@echo "Total        :"\
-          "$(call statistic-count,$(srcall) $(asmall) $(incall)        \
-           $(alllexer) $(allparser) $(cesql) $(testall))               "
-	@echo "                                                            "
 
 .PHONY: help
 help:

@@ -3706,15 +3706,17 @@ endef
 
 define git-pull
 	$(call phony-status,$(MSG_GIT_PULL))
-	$(call phony-git-pull,$(or $(strip $1),origin) \
-                          $(or $(strip $2),master))
+	$(quiet) $(if $(strip $3),cd $3 && )\
+             $(call model-git-pull,$(or $(strip $1),origin) \
+                                   $(or $(strip $2),master))
 	$(call phony-ok,$(MSG_GIT_PULL))
 endef
 
 define git-push
 	$(call phony-status,$(MSG_GIT_PUSH))
-	$(call phony-git-push,$(or $(strip $1),origin) \
-                          $(or $(strip $2),master))
+	$(quiet) $(if $(strip $3),cd $3 && )\
+             $(call model-git-push,$(or $(strip $1),origin) \
+                                   $(or $(strip $2),master))
 	$(call phony-ok,$(MSG_GIT_PUSH))
 endef
 

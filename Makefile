@@ -1835,9 +1835,13 @@ upgrade_dependency := \
 
 .PHONY: upgrade
 upgrade: upgradedep
+ifneq ($(wildcard make/*),)
+	$(call git-pull,origin,master,make)
+else
 	$(call web-clone,$(MAKEREMOTE),$(firstword $(MAKEFILE_LIST)))
 	$(call git-add-commit,$(firstword $(MAKEFILE_LIST)),\
                           "Upgrades $(firstword $(MAKEFILE_LIST))")
+endif
 
 ########################################################################
 ##                          INITIALIZATION                            ##

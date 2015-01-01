@@ -2285,7 +2285,7 @@ $$(depdir)/$1$$(sysext): d=$1
 $$(depdir)/$1$$(sysext): | $$(depdir)
 	$$(if $$(strip $$($1)),,$$(call phony-error,$$(MSG_DEP_UNDEFINED)))
 	$$(call phony-status,$$(MSG_DEP))
-	$$(quiet) which $$($1) $$(NO_OUTPUT) $$(NO_ERROR) \
+	$$(quiet) which $$(firstword $$($1)) $$(NO_OUTPUT) $$(NO_ERROR) \
               || $$(call model-error,$$(MSG_DEP_NOT_FOUND))
 	$$(call select,$$@)
 	$$(call cat,'override OLD_$1 := $$($1)')

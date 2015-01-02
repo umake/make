@@ -1837,6 +1837,7 @@ upgrade_dependency := \
 upgrade: upgradedep
 ifneq ($(wildcard make/*),)
 	$(call git-pull,origin,master,make)
+	$(call git-add-commit,make,"Upgrades submodule make")
 else
 	$(call web-clone,$(MAKEREMOTE),$(firstword $(MAKEFILE_LIST)))
 	$(call git-add-commit,$(firstword $(MAKEFILE_LIST)),\

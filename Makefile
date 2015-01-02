@@ -1837,9 +1837,9 @@ upgrade_dependency := \
 
 .PHONY: upgrade
 upgrade: upgradedep
-ifneq ($(wildcard make/*),)
-	$(call git-pull,origin,master,make)
-	$(call git-add-commit,make,"Upgrades submodule make")
+ifneq ($(wildcard $(makedir)/*),)
+	$(call git-pull,origin,master,$(makedir))
+	$(call git-add-commit,$(makedir),"Upgrades submodule $(makedir)")
 else
 	$(call web-clone,$(MAKEREMOTE),$(firstword $(MAKEFILE_LIST)))
 	$(call git-add-commit,$(firstword $(MAKEFILE_LIST)),\
@@ -1858,10 +1858,10 @@ init: initdep
 	$(call git-init)
 	$(call git-remote-add,origin,$(GIT_REMOTE_PATH))
 	
-	$(if $(wildcard make/*),\
+	$(if $(wildcard $(makedir)/*),\
         $(if $(wildcard $(depdir)/make.mk),,\
             $(call touch,$(depdir)/make.mk)$(newline)\
-            $(call git-submodule-add,$(MAKEGITREMOTE),make)))
+            $(call git-submodule-add,$(MAKEGITREMOTE),$(makedir))))
 	
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
@@ -2315,8 +2315,9 @@ $$(depdir)/$$(strip $1)$$(extext): $$(extdir)/$$(strip $1) $$(externreq)
                   if [ -f $$</[Mm]akefile ]; then \
                       cd $$< && $$(MAKE) -f [Mm]akefile $$(ERROR) \
                       || $$(call model-error,$$(MSG_MAKE_FAIL)); \
-                  elif [ -f $$</make/[Mm]akefile ]; then \
-                      cd $$</make && $$(MAKE) -f [Mm]akefile $$(ERROR) \
+                  elif [ -f $$</$$(makedir)/[Mm]akefile ]; then \
+                      cd $$</$$(makedir) \
+                      && $$(MAKE) -f [Mm]akefile $$(ERROR) \
                       || $$(call model-error,$$(MSG_MAKE_FAIL)); \
                   else \
                       echo "$$(MSG_MAKE_NONE)" $$(ERROR); \

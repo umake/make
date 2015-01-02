@@ -129,12 +129,13 @@ DISTDIR   := dist
 CONFDIR   := conf
 TESTDIR   := test
 DATADIR   := data
+MAKEDIR   := make
 DESTDIR   :=
 LOCALEDIR := locale
 else
 $(foreach var,\
     SRCDIR DEPDIR INCDIR OBJDIR COVDIR LIBDIR EXTDIR SRPDIR \
-    BINDIR SBINDIR DISTDIR CONFDIR TESTDIR DATADIR LOCALEDIR,\
+    BINDIR SBINDIR DISTDIR CONFDIR TESTDIR DATADIR MAKEDIR LOCALEDIR,\
     $(eval $(var) := .)\
 )
 endif
@@ -962,13 +963,14 @@ override distdir   := $(call remove-trailing-bar,$(DISTDIR))
 override confdir   := $(call remove-trailing-bar,$(CONFDIR))
 override testdir   := $(call remove-trailing-bar,$(TESTDIR))
 override datadir   := $(call remove-trailing-bar,$(DATADIR))
+override makedir   := $(call remove-trailing-bar,$(MAKEDIR))
 override localedir := $(call remove-trailing-bar,$(LOCALEDIR))
 
 # All directories
 alldir := $(strip\
-    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)   \
-    $(libdir) $(extdir) $(srpdir) $(bindir) $(sbindir) $(execdir) \
-    $(distdir) $(confdir) $(testdir) $(datadir) $(localedir)      \
+    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)         \
+    $(libdir) $(extdir) $(srpdir) $(bindir) $(sbindir) $(execdir)       \
+    $(distdir) $(confdir) $(testdir) $(datadir) $(makedir) $(localedir) \
 )
 
 # Check if every directory variable is non-empty

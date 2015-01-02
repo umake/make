@@ -70,6 +70,7 @@
     [X] Verify if variable VERSION follows semantic versionment rules.
     [X] Allow Makefile to be executable (add #!/usr/bin/make).
     [X] Support compilation and run of coverage test (with gcov).
+    [X] Use git to upgrade Makefile when it is added as a submodule.
     [ ] Check for system dependency existence iff targets need rebuild. 
     [ ] Add option to check system program/library version.
     [ ] Support run of profiling tools (with gprof).

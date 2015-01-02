@@ -3698,7 +3698,8 @@ define git-submodule-rm
 	$(call phony-ok,$(MSG_GIT_SUB_RM))
 endef
 
-ifneq (,$(strip $(GIT_REMOTE_PATH)))
+ifneq (,$(or $(strip $(GIT_REMOTE_PATH)),$(strip \
+             $(findstring upgrade,$(MAKECMDGOALS)))))
 
 define git-remote-add
 	$(quiet) if ! $(GIT_REMOTE) | grep "^$1$$" $(NO_OUTPUT);\

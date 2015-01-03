@@ -973,19 +973,15 @@ alldir := $(strip\
     $(distdir) $(confdir) $(testdir) $(datadir) $(makedir) $(localedir) \
 )
 
-# Check if every directory variable is non-empty
-ifeq ($(and $(srcdir),$(bindir),$(depdir),$(objdir),\
-            $(incdir),$(libdir),$(extdir),$(distdir),$(testdir)),)
-$(error There must be at least one directory of each type, or '.'.)
-endif
+# Check if directory is non-empty
+$(foreach p,src inc doc deb lib srp bin sbin exec conf data,\
+    $(if $(call ge,$(words $($pdir)),1),,\
+        $(error There must be at least one dir in '$pdir'.)))
 
-ifneq ($(words $(depdir) $(objdir) $(distdir) $(debdir)),4)
-$(error There must be one dependency, obj, dist and debian dir.)
-endif
-
-ifneq ($(words $(localedir)),1)
-$(error There must be just one locale dir.)
-endif
+# Check if directory has only one directory
+$(foreach p,dep obj ext dist test make locale,\
+    $(if $(call eq,$(words $($pdir)),1),,\
+        $(error There must be only one dir in '$pdir'.)))
 
 # Extensions:
 testsuf := $(strip $(sort $(TESTSUF)))

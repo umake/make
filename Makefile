@@ -2306,17 +2306,18 @@ define extern-dependency
 $$(extdir)/$$(strip $1): | $$(extdir)
 	$$(call $$(strip $2),$$(call car,$$(strip $3)),$$@)
 
-$$(depdir)/$$(strip $1)$$(extext): $$(extdir)/$$(strip $1) $$(externreq)
+$$(depdir)/$$(strip $1)$$(extext): d=$$(extdir)/$$(strip $1) 
+$$(depdir)/$$(strip $1)$$(extext): $$(externreq)
 	$$(call status,$$(MSG_MAKE_DEP))
 	$$(quiet) $$(if $$(call cdr,$$(strip $3)),$$(strip \
-                  (cd $$< && $$(call cdr,$$(strip $3))) $$(ERROR) \
+                  (cd $$d && $$(call cdr,$$(strip $3))) $$(ERROR) \
                   || $$(call model-error,$$(MSG_MAKE_FAIL)) \
               ),$$(strip \
-                  if [ -f $$</[Mm]akefile ]; then \
-                      cd $$< && $$(MAKE) -f [Mm]akefile $$(ERROR) \
+                  if [ -f $$d/[Mm]akefile ]; then \
+                      cd $$d && $$(MAKE) -f [Mm]akefile $$(ERROR) \
                       || $$(call model-error,$$(MSG_MAKE_FAIL)); \
-                  elif [ -f $$</$$(makedir)/[Mm]akefile ]; then \
-                      cd $$</$$(makedir) \
+                  elif [ -f $$d/$$(makedir)/[Mm]akefile ]; then \
+                      cd $$d/$$(makedir) \
                       && $$(MAKE) -f [Mm]akefile $$(ERROR) \
                       || $$(call model-error,$$(MSG_MAKE_FAIL)); \
                   else \
@@ -3133,7 +3134,7 @@ MSG_GIT_SUB_RM    = "${YELLOW}[$(GIT)]${BLUE} Removing git dependency"\
 
 MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
                     "${PURPLE}from target ${DEF}$1${RES}"
-MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$<${RES}"
+MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$d${RES}"
 MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
 MSG_MAKE_FAIL     = "${ERR}Failed compiling ${DEF}$@${RES}"
 

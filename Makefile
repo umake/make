@@ -768,7 +768,7 @@ endef
 # =============================
 # 1) root: Gets the root directory (first in the path) of a path or file
 # 2) not-root: Given a path or file, take out the root directory of it
-# 3) remove-trailing-bar: Removes the last / of a directory-only name
+# 3) rm-trailing-bar: Removes the last / of a directory-only name
 define root
 $(strip $(foreach s,$1,\
     $(if $(findstring /,$s),\
@@ -780,7 +780,7 @@ $(strip $(foreach s,$1,\
     $(patsubst $(strip $(call root,$s))/%,%,$s)))
 endef
 
-define remove-trailing-bar
+define rm-trailing-bar
 $(strip $(foreach s,$1,\
     $(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s))))
 endef
@@ -946,25 +946,25 @@ $(foreach b,$(install_dirs),\
 # Directories
 # =============
 # No directories must end with a '/' (slash)
-override srcdir    := $(call remove-trailing-bar,$(SRCDIR))
-override depdir    := $(call remove-trailing-bar,$(DEPDIR))
-override incdir    := $(call remove-trailing-bar,$(INCDIR))
-override docdir    := $(call remove-trailing-bar,$(DOCDIR))
-override debdir    := $(call remove-trailing-bar,$(DEBDIR))
-override objdir    := $(call remove-trailing-bar,$(OBJDIR))
-override covdir    := $(call remove-trailing-bar,$(COVDIR))
-override libdir    := $(call remove-trailing-bar,$(LIBDIR))
-override extdir    := $(call remove-trailing-bar,$(EXTDIR))
-override srpdir    := $(call remove-trailing-bar,$(SRPDIR))
-override bindir    := $(call remove-trailing-bar,$(BINDIR))
-override sbindir   := $(call remove-trailing-bar,$(SBINDIR))
-override execdir   := $(call remove-trailing-bar,$(EXECDIR))
-override distdir   := $(call remove-trailing-bar,$(DISTDIR))
-override confdir   := $(call remove-trailing-bar,$(CONFDIR))
-override testdir   := $(call remove-trailing-bar,$(TESTDIR))
-override datadir   := $(call remove-trailing-bar,$(DATADIR))
-override makedir   := $(call remove-trailing-bar,$(MAKEDIR))
-override localedir := $(call remove-trailing-bar,$(LOCALEDIR))
+override srcdir    := $(call rm-trailing-bar,$(SRCDIR))
+override depdir    := $(call rm-trailing-bar,$(DEPDIR))
+override incdir    := $(call rm-trailing-bar,$(INCDIR))
+override docdir    := $(call rm-trailing-bar,$(DOCDIR))
+override debdir    := $(call rm-trailing-bar,$(DEBDIR))
+override objdir    := $(call rm-trailing-bar,$(OBJDIR))
+override covdir    := $(call rm-trailing-bar,$(COVDIR))
+override libdir    := $(call rm-trailing-bar,$(LIBDIR))
+override extdir    := $(call rm-trailing-bar,$(EXTDIR))
+override srpdir    := $(call rm-trailing-bar,$(SRPDIR))
+override bindir    := $(call rm-trailing-bar,$(BINDIR))
+override sbindir   := $(call rm-trailing-bar,$(SBINDIR))
+override execdir   := $(call rm-trailing-bar,$(EXECDIR))
+override distdir   := $(call rm-trailing-bar,$(DISTDIR))
+override confdir   := $(call rm-trailing-bar,$(CONFDIR))
+override testdir   := $(call rm-trailing-bar,$(TESTDIR))
+override datadir   := $(call rm-trailing-bar,$(DATADIR))
+override makedir   := $(call rm-trailing-bar,$(MAKEDIR))
+override localedir := $(call rm-trailing-bar,$(LOCALEDIR))
 
 # All directories
 alldir := $(strip\
@@ -1187,8 +1187,8 @@ externdep := $(call invert,$(externdep))
 # 2) lib_in      : Store libraries as being shared and static libs.
 #                  If there is only a suffix, throw an error.
 #------------------------------------------------------------------[ 1 ]
-ar_in     := $(call remove-trailing-bar,$(ARLIB))
-shr_in    := $(call remove-trailing-bar,$(SHRLIB))
+ar_in     := $(call rm-trailing-bar,$(ARLIB))
+shr_in    := $(call rm-trailing-bar,$(SHRLIB))
 #------------------------------------------------------------------[ 2 ]
 lib_in    := $(ar_in) $(shr_in)
 lib_in    := \
@@ -1311,7 +1311,7 @@ incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
 #------------------------------------------------------------------[ 2 ]
 incall  := $(call filter-ignored,$(incall))
 #------------------------------------------------------------------[ 3 ]
-incsub  := $(sort $(call remove-trailing-bar,$(dir $(incall))))
+incsub  := $(sort $(call rm-trailing-bar,$(dir $(incall))))
 incsub  += $(patsubst %,$(extdir)/%/include,\
                $(call hash-table.keys,git_dependency))
 incsub  += $(autoinc)
@@ -1613,7 +1613,7 @@ endif
 #    4.7) binary-name_is_cxx, to test if the binary may be C's or C++'s
 #------------------------------------------------------------------[ 1 ]
 define binary-name
-$1 := $$(call remove-trailing-bar,$2)
+$1 := $$(call rm-trailing-bar,$2)
 $1 := $$(foreach b,$$($1),$$(or $$(strip $$(wildcard $$b/*)),\
           $$(strip $$(foreach d,$$(srcdir),$$(wildcard $$d/$$b/*))),$$b))
 $1 := $$(addprefix $$(strip $3)/,$$(basename $$(call not-root,$$($1))))
@@ -1707,7 +1707,7 @@ testsrc := $(call not-root,$(testall))
 testobj := $(addsuffix $(firstword $(objext)),$(basename $(testsrc)))
 testobj := $(addprefix $(objdir)/$(testdir)/,$(testobj))
 #------------------------------------------------------------------[ 6 ]
-testbin := $(call remove-trailing-bar,$(TESTBIN))
+testbin := $(call rm-trailing-bar,$(TESTBIN))
 testbin := $(foreach b,$(testbin),$(or $(strip \
                $(foreach d,$(testdir),$(wildcard $d/$b/*))),$b))
 testbin := $(call not-root,$(basename $(testbin)))
@@ -3663,7 +3663,7 @@ endef
 
 define git-submodule-add
 	$(call phony-status,$(MSG_GIT_SUB_ADD))
-	$(quiet) if [ -f $(call remove-trailing-bar,$(dir $2))/.git ]; \
+	$(quiet) if [ -f $(call rm-trailing-bar,$(dir $2))/.git ];     \
              then                                                  \
                  cd $(dir $2);                                     \
                  $(call model-git-submodule-add,$1 $(notdir $2));  \
@@ -3682,7 +3682,7 @@ endef
 
 define git-submodule-rm
 	$(call phony-status,$(MSG_GIT_SUB_RM))
-	$(quiet) if [ -f $(call remove-trailing-bar,$(dir $1))/.git ];    \
+	$(quiet) if [ -f $(call rm-trailing-bar,$(dir $1))/.git ];        \
              then                                                     \
                  cd $(dir $1);                                        \
 	             $(call model-git-submodule-deinit,$(notdir $1));     \
@@ -3758,7 +3758,7 @@ ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,new delete update)))
 # 5) Define identation accordingly to namespace depth
 ifdef IN
 #------------------------------------------------------------------[ 1 ]
-override IN := $(strip $(call remove-trailing-bar,$(IN)))
+override IN := $(strip $(call rm-trailing-bar,$(IN)))
 #------------------------------------------------------------------[ 2 ]
 override IN := $(subst ::,/,$(IN))
 #------------------------------------------------------------------[ 3 ]
@@ -3875,7 +3875,7 @@ ifdef NMS_HEADER
 	$(eval NMSH       := $(if $(strip $(IN)),$(IN)/)$(NMSH))
 	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
                                 $(sort $(dir $(incall))))))
-	$(eval NMSH       := $(call remove-trailing-bar,$(NMSH)))
+	$(eval NMSH       := $(call rm-trailing-bar,$(NMSH)))
 	
 	@# NMSH_NAME: File name for the Namespace header
 	$(eval NMSH_NAME  := $(notdir $(basename $(NMSH))))
@@ -3910,7 +3910,7 @@ ifdef LIB_HEADER
 	$(eval LIBH       := $(if $(strip $(IN)),$(IN)/)$(LIBH))
 	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
                                 $(sort $(dir $(incall))))))
-	$(eval LIBH       := $(call remove-trailing-bar,$(LIBH)))
+	$(eval LIBH       := $(call rm-trailing-bar,$(LIBH)))
 	
 	@# LIBH_NAME: File name for the Library header
 	$(eval LIBH_NAME  := $(notdir $(basename $(LIBH))))
@@ -4155,7 +4155,7 @@ ifdef NMS_HEADER
 	$(eval NMSH       := $(if $(strip $(IN)),$(IN)/)$(NMSH))
 	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
                                 $(sort $(dir $(incall))))))
-	$(eval NMSH       := $(call remove-trailing-bar,$(NMSH)))
+	$(eval NMSH       := $(call rm-trailing-bar,$(NMSH)))
 	
 	@# NMSH_NAME: Namespace include files
 	$(eval NMSH_NAME  := $(notdir $(basename $(NMSH))))
@@ -4171,7 +4171,7 @@ ifdef LIB_HEADER
 	$(eval LIBH       := $(if $(strip $(IN)),$(IN)/)$(LIBH))
 	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
                                 $(sort $(dir $(incall))))))
-	$(eval LIBH       := $(call remove-trailing-bar,$(LIBH)))
+	$(eval LIBH       := $(call rm-trailing-bar,$(LIBH)))
 	
 	@# LIBH_NAME: Namespace include files
 	$(eval LIBH_NAME  := $(notdir $(basename $(LIBH))))

@@ -326,15 +326,15 @@ BZIP2           := bzip2
 MKDIR           := mkdir -p
 RMDIR           := rm -rf
 FIND            := find
-FIND_FLAGS      := -type d -print 2> /dev/null
+FINDFLAGS       := -type d -print 2> /dev/null
 
 # Parser and Lexer
 LEX             := flex
-LEX_CXX         := flexc++
+LEXCXX          := flexc++
 LEXLIBS         :=
 LEXFLAGS        :=
 YACC            := bison
-YACC_CXX        := bisonc++
+YACCCXX         := bisonc++
 YACCLIBS        :=
 YACCFLAGS       :=
 
@@ -812,7 +812,7 @@ endef
 # 2) rwildcard:   For wildcard deep-search in the directory tree
 # 3) rfilter:     For filtering a list of text from another list
 # 3) rfilter-out: For filtering out a list of text from another list
-rsubdir     = $(strip $(foreach d,$1,$(shell $(FIND) $d $(FIND_FLAGS))))
+rsubdir     = $(strip $(foreach d,$1,$(shell $(FIND) $d $(FINDFLAGS))))
 rwildcard   = $(strip $(if $(strip $(wildcard $1/*)),\
                   $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)),\
                   $(if $(wildcard $1*),$(filter $(subst *,%,$2),$1))))
@@ -1069,7 +1069,7 @@ endif
 # Get all existent programs
 programs := \
     AR AS CC FC CXX RANLIB INSTALL INSTALL_DATA INSTALL_PROGRAM CP MV \
-    RM TAR ZIP GZIP BZIP2 MKDIR RMDIR FIND LEX LEX_CXX YACC YACC_CXX  \
+    RM TAR ZIP GZIP BZIP2 MKDIR RMDIR FIND LEX LEXCXX YACC YACCCXX    \
     COV ESQL CTAGS ETAGS DOXYGEN MAKEINFO INSTALL_INFO TEXI2HTML      \
     TEXI2DVI TEXI2PDF TEXI2PS XGETTEXT MSGINIT MSGMERGE MSGFMT DCH    \
     DEBUILD CURL GIT
@@ -1793,9 +1793,9 @@ build_dependency := \
     CXX      => $(cxx_all),\
     RANLIB   => $(arlib),\
     LEX      => $(clexer),\
-    LEX_CXX  => $(cxxlexer),\
+    LEXCXX   => $(cxxlexer),\
     YACC     => $(cparser),\
-    YACC_CXX => $(cxxparser),\
+    YACCCXX  => $(cxxparser),\
     ESQL     => $(cesql)
 
 .PHONY: all
@@ -2366,7 +2366,7 @@ $(foreach s,$(clexer),$(eval\
 ))
 $(foreach s,$(cxxlexer),$(eval\
     $(call scanner-factory,$(call not-root,$(basename $s)),cc,$s,\
-    $(LEX_CXX))\
+    $(LEXCXX))\
 ))
 
 #======================================================================#
@@ -2403,7 +2403,7 @@ $(foreach s,$(cparser),$(eval\
 ))
 $(foreach s,$(cxxparser),$(eval\
     $(call parser-factory,$(call not-root,$(basename $s)),cc,$s,\
-    $(YACC_CXX))\
+    $(YACCCXX))\
 ))
 
 #======================================================================#

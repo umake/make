@@ -3441,6 +3441,10 @@ define model-test-error
       "${RED}Aborting status: $$?${RES}" && exit 42)
 endef
 
+define phony-error
+@$(call model-error,$1)
+endef
+
 else # ifndef SILENT
 
 define model-error
@@ -3451,14 +3455,10 @@ define model-test-error
 $(NO_OPERATION)
 endef
 
-endif
-
-define phony-error
-@$(call model-error,$1)
-endef
+endif # ifndef SILENT
 
 ## STATUS ##############################################################
-ifneq ($(or $(strip $(SILENT)),$(strip $(quiet))),)
+ifneq ($(and $(call is_empty,$(SILENT)),$(call not_empty,$(quiet))),)
 
 define model-status
 printf "%b " $1; printf "... "
@@ -3468,7 +3468,23 @@ define model-vstatus
 echo $1 "... "
 endef
 
-else # if empty $(SILENT) or empty $(equal)
+define phony-status
+	@$(call model-status,$1)
+endef
+
+define phony-vstatus
+	@$(call model-vstatus,$1)
+endef
+
+define status
+	@$(RM) $@ && $(call model-status,$1)
+endef
+
+define vstatus
+	@$(RM) $@ && $(call model-vstatus,$1)
+endef
+
+else # if empty $(SILENT) and not empty $(quiet)
 
 define model-status
 $(NO_OPERATION)
@@ -3478,25 +3494,7 @@ define model-vstatus
 $(NO_OPERATION)
 endef
 
-endif # if empty $(SILENT) or empty $(equal)
-
-ifneq ($(strip $(quiet)),)
-    define phony-status
-    	@$(call model-status,$1)
-    endef
-
-    define phony-vstatus
-    	@$(call model-vstatus,$1)
-    endef
-
-    define status
-    	@$(RM) $@ && $(call model-status,$1)
-    endef
-
-    define vstatus
-    	@$(RM) $@ && $(call model-vstatus,$1)
-    endef
-endif
+endif # if empty $(SILENT) and not empty $(quiet)
 
 ## ACKNOWLEDGMENT ######################################################
 ifndef SILENT
@@ -3504,14 +3502,6 @@ ifndef SILENT
 define model-ok
 echo "\r${GREEN}[OK]${RES}" $1 "     "
 endef
-
-else # ifndef SILENT
-
-define model-ok
-$(NO_OPERATION)
-endef
-
-endif # ifndef SILENT
 
 define phony-ok
 @if [ $$? ];\
@@ -3526,6 +3516,14 @@ define ok
     else $(call model-error,$1);\
 fi
 endef
+
+else # ifndef SILENT
+
+define model-ok
+$(NO_OPERATION)
+endef
+
+endif # ifndef SILENT
 
 ## TEXT ################################################################
 define uc

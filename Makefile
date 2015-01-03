@@ -3618,8 +3618,8 @@ define git-init
 	$(quiet) if ! [ -d .git ]; \
 	         then \
 	             $(call model-status,$(MSG_GIT_INIT)); \
-	             $(call model-git-init); \
-	             $(call model-ok,$(MSG_GIT_INIT)); \
+	             $(call model-git-init);               \
+	             $(call model-ok,$(MSG_GIT_INIT));     \
 	         fi
 endef
 
@@ -3627,8 +3627,8 @@ define git-tag
 	$(quiet) if ! $(GIT_TAG) | grep -q $1; \
 	         then \
 	             $(call model-status,$(MSG_GIT_TAG)); \
-	             $(call model-git-tag,$1); \
-	             $(call model-ok,$(MSG_GIT_TAG)); \
+	             $(call model-git-tag,$1);            \
+	             $(call model-ok,$(MSG_GIT_TAG));     \
 	         fi
 endef
 
@@ -3636,8 +3636,8 @@ define git-add
 	$(quiet) if ! $(GIT_LS_FILES) $1 || ! $(GIT_DIFF) $1; \
 	         then \
 	             $(call model-status,$(MSG_GIT_ADD)); \
-	             $(call model-git-add,$1); \
-	             $(call model-ok,$(MSG_GIT_ADD)); \
+	             $(call model-git-add,$1);            \
+	             $(call model-ok,$(MSG_GIT_ADD));     \
 	         fi
 endef
 
@@ -3645,25 +3645,25 @@ define git-commit
 	$(quiet) if ! $(GIT_DIFF) --cached $1; \
              then \
                  $(call model-status,$(MSG_GIT_COMMIT)); \
-                 $(call model-git-commit,$(strip $2)); \
-                 $(call model-ok,$(MSG_GIT_COMMIT)); \
+                 $(call model-git-commit,$(strip $2));   \
+                 $(call model-ok,$(MSG_GIT_COMMIT));     \
              fi
 endef
 
 define git-add-commit
 	$(quiet) if ! $(GIT_LS_FILES) $1 || ! $(GIT_DIFF) $1; \
 	         then \
-	             $(call model-status,$(MSG_GIT_COMMIT));\
-	             $(call model-git-add,$1);\
-	             $(call model-git-commit,$(strip $2));\
-	             $(call model-ok,$(MSG_GIT_COMMIT));\
+	             $(call model-status,$(MSG_GIT_COMMIT)); \
+	             $(call model-git-add,$1);               \
+	             $(call model-git-commit,$(strip $2));   \
+	             $(call model-ok,$(MSG_GIT_COMMIT));     \
 	         fi
 endef
 
 define git-submodule-add
 	$(call phony-status,$(MSG_GIT_SUB_ADD))
-	$(quiet) if [ -f $(call rm-trailing-bar,$(dir $2))/.git ];     \
-	         then                                                  \
+	$(quiet) if [ -f $(call rm-trailing-bar,$(dir $2))/.git ]; \
+	         then \
 	             cd $(dir $2);                                     \
 	             $(call model-git-submodule-add,$1 $(notdir $2));  \
 	             $(call model-git-submodule-init,$(notdir $2));    \
@@ -3671,7 +3671,7 @@ define git-submodule-add
 	             cd $(MAKECURRENTDIR);                             \
 	             $(call model-git-add,$(dir $2));                  \
 	             $(call model-git-commit,"Adds sub-submodule $2"); \
-	         else                                                  \
+	         else \
 	             $(call model-git-submodule-add,$1 $2);            \
 	             $(call model-git-submodule-init,$2);              \
 	             $(call model-git-commit,"Adds submodule $2");     \
@@ -3681,8 +3681,8 @@ endef
 
 define git-submodule-rm
 	$(call phony-status,$(MSG_GIT_SUB_RM))
-	$(quiet) if [ -f $(call rm-trailing-bar,$(dir $1))/.git ];        \
-	         then                                                     \
+	$(quiet) if [ -f $(call rm-trailing-bar,$(dir $1))/.git ]; \
+	         then \
 	             cd $(dir $1);                                        \
 	             $(call model-git-submodule-deinit,$(notdir $1));     \
 	             $(call model-git-rm,--cached $(notdir $1));          \
@@ -3691,7 +3691,7 @@ define git-submodule-rm
 	             $(call model-git-add,$(dir $1));                     \
 	             $(call model-git-commit,"Removes sub-submodule $1"); \
 	             $(RM) -r .git/modules/$(notdir $1) $(ERROR);         \
-	         else                                                     \
+	         else \
 	             $(call model-git-submodule-deinit,$1);               \
 	             $(call model-git-rm,--cached $1);                    \
 	             $(call model-git-commit,"Removes submodule $1");     \
@@ -3704,8 +3704,8 @@ ifneq (,$(or $(strip $(GIT_REMOTE_PATH)),$(strip \
              $(findstring upgrade,$(MAKECMDGOALS)))))
 
 define git-remote-add
-	$(quiet) if ! $(GIT_REMOTE) | grep "^$1$$" $(NO_OUTPUT);\
-	         then\
+	$(quiet) if ! $(GIT_REMOTE) | grep "^$1$$" $(NO_OUTPUT); \
+	         then \
 	             $(call model-status,$(MSG_GIT_REM_ADD)); \
 	             $(call model-git-remote-add,$1 $2);      \
 	             $(call model-ok,$(MSG_GIT_REM_ADD));     \
@@ -3714,7 +3714,7 @@ endef
 
 define git-pull
 	$(call phony-status,$(MSG_GIT_PULL))
-	$(quiet) $(if $(strip $3),cd $3 && )\
+	$(quiet) $(if $(strip $3),cd $3 && ) \
 	         $(call model-git-pull,$(or $(strip $1),origin) \
 	                               $(or $(strip $2),master))
 	$(call phony-ok,$(MSG_GIT_PULL))
@@ -3722,7 +3722,7 @@ endef
 
 define git-push
 	$(call phony-status,$(MSG_GIT_PUSH))
-	$(quiet) $(if $(strip $3),cd $3 && )\
+	$(quiet) $(if $(strip $3),cd $3 && ) \
 	         $(call model-git-push,$(or $(strip $1),origin) \
 	                               $(or $(strip $2),master))
 	$(call phony-ok,$(MSG_GIT_PUSH))

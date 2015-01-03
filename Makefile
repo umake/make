@@ -399,7 +399,7 @@ MAKE            += -f $(firstword $(MAKEFILE_LIST)) $(MAKEFLAGS)
 ########################################################################
 
 # Remote path
-MAKEREMOTE := \
+MAKERAWREMOTE := \
     https://raw.githubusercontent.com/renatocf/make/master/Makefile
 
 # Git remote path
@@ -407,7 +407,7 @@ MAKEGITREMOTE := \
     git@github.com:renatocf/make.git
 
 # Make current directory
-MAKEDIRECTORY := \
+MAKECURRENTDIR := \
     $(patsubst %/,%,$(dir $(abspath $(firstword $(MAKEFILE_LIST)))))
 
 # Define the shell to be used
@@ -1841,7 +1841,7 @@ ifneq ($(wildcard $(makedir)/*),)
 	$(call git-pull,origin,master,$(makedir))
 	$(call git-add-commit,$(makedir),"Upgrades submodule $(makedir)")
 else
-	$(call web-clone,$(MAKEREMOTE),$(firstword $(MAKEFILE_LIST)))
+	$(call web-clone,$(MAKERAWREMOTE),$(firstword $(MAKEFILE_LIST)))
 	$(call git-add-commit,$(firstword $(MAKEFILE_LIST)),\
                           "Upgrades $(firstword $(MAKEFILE_LIST))")
 endif
@@ -3668,7 +3668,7 @@ define git-submodule-add
                  $(call model-git-submodule-add,$1 $(notdir $2));  \
                  $(call model-git-submodule-init,$(notdir $2));    \
                  $(call model-git-commit,"Adds $(notdir $2)");     \
-                 cd $(MAKEDIRECTORY);                              \
+                 cd $(MAKECURRENTDIR);                             \
                  $(call model-git-add,$(dir $2));                  \
                  $(call model-git-commit,"Adds sub-submodule $2"); \
              else                                                  \
@@ -3687,7 +3687,7 @@ define git-submodule-rm
 	             $(call model-git-submodule-deinit,$(notdir $1));     \
 	             $(call model-git-rm,--cached $(notdir $1));          \
                  $(call model-git-commit,"Removes $(notdir $1)");     \
-                 cd $(MAKEDIRECTORY);                                 \
+                 cd $(MAKECURRENTDIR);                                \
                  $(call model-git-add,$(dir $1));                     \
                  $(call model-git-commit,"Removes sub-submodule $1"); \
                  $(RM) -r .git/modules/$(notdir $1) $(ERROR);         \

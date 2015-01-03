@@ -1094,7 +1094,7 @@ $(foreach p,cpp as c f cxx ld,\
     $(eval override $pflags := $($pcov) $(patsubst -O%,,$($pflags))))
 #------------------------------------------------------------------[ 2 ]
 $(foreach p,obj bin lib,\
-	$(eval override $pdir := $(addprefix $(covdir)/,$($pdir))))
+    $(eval override $pdir := $(addprefix $(covdir)/,$($pdir))))
 endif
 
 ########################################################################
@@ -1859,9 +1859,9 @@ init: initdep
 	$(call git-remote-add,origin,$(GIT_REMOTE_PATH))
 	
 	$(if $(wildcard $(makedir)/*),\
-        $(if $(wildcard $(depdir)/make.mk),,\
-            $(call touch,$(depdir)/make.mk)$(newline)\
-            $(call git-submodule-add,$(MAKEGITREMOTE),$(makedir))))
+	    $(if $(wildcard $(depdir)/make.mk),,\
+	        $(call touch,$(depdir)/make.mk)$(newline)\
+	        $(call git-submodule-add,$(MAKEGITREMOTE),$(makedir))))
 	
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
@@ -1874,11 +1874,11 @@ init: initdep
 	$(call git-tag,"v$(strip $(VERSION))")
 	
 	$(call git-add-commit,Makefile Config.mk,\
-           "Adds Makefile and Config.mk")
+	       "Adds Makefile and Config.mk")
 	$(call git-add-commit,.git[a-z]*,\
-           "Adds git configuration files")
+	       "Adds git configuration files")
 	$(call git-add-commit,.version.mk,\
-           "Adds versioning control file .version.mk")
+	       "Adds versioning control file .version.mk")
 
 .PHONY: standard
 standard: init
@@ -2086,7 +2086,7 @@ dpkg: dpkgdep package-tar.gz $(deball)
 	@# Step 3: Add the Debian packaging files
 	$(call phony-status,$(MSG_DEB_STEP3))
 	$(quiet) $(CP) $(debdir) \
-             $(distdir)/$(DEB_PROJECT)-$(VERSION) $(ERROR)
+	         $(distdir)/$(DEB_PROJECT)-$(VERSION) $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP3))
 	
 	@# Step 4: Install the package
@@ -2233,8 +2233,8 @@ uninstall-docs: uninstall-pdf uninstall-ps
 .PHONY: uninstall-info
 uninstall-info:
 	$(if $(strip $(texiinfo)),$(call rm-if-empty,$(i_infodir),\
-        $(addprefix $(i_infodir)/,$(notdir $(texiinfo)))\
-    ))
+	    $(addprefix $(i_infodir)/,$(notdir $(texiinfo)))\
+	))
 
 ########################################################################
 ##                              RULES                                 ##
@@ -2289,7 +2289,7 @@ $$(depdir)/$1$$(sysext): | $$(depdir)
 	$$(if $$(strip $$($1)),,$$(call phony-error,$$(MSG_DEP_UNDEFINED)))
 	$$(call phony-status,$$(MSG_DEP))
 	$$(quiet) which $$(firstword $$($1)) $$(NO_OUTPUT) $$(NO_ERROR) \
-              || $$(call model-error,$$(MSG_DEP_NOT_FOUND))
+	          || $$(call model-error,$$(MSG_DEP_NOT_FOUND))
 	$$(call select,$$@)
 	$$(call cat,'override OLD_$1 := $$($1)')
 	$$(call phony-ok,$$(MSG_DEP))
@@ -2310,20 +2310,20 @@ $$(depdir)/$$(strip $1)$$(extext): d=$$(extdir)/$$(strip $1)
 $$(depdir)/$$(strip $1)$$(extext): $$(externreq)
 	$$(call status,$$(MSG_MAKE_DEP))
 	$$(quiet) $$(if $$(call cdr,$$(strip $3)),$$(strip \
-                  (cd $$d && $$(call cdr,$$(strip $3))) $$(ERROR) \
-                  || $$(call model-error,$$(MSG_MAKE_FAIL)) \
-              ),$$(strip \
-                  if [ -f $$d/[Mm]akefile ]; then \
-                      cd $$d && $$(MAKE) -f [Mm]akefile $$(ERROR) \
-                      || $$(call model-error,$$(MSG_MAKE_FAIL)); \
-                  elif [ -f $$d/$$(makedir)/[Mm]akefile ]; then \
-                      cd $$d/$$(makedir) \
-                      && $$(MAKE) -f [Mm]akefile $$(ERROR) \
-                      || $$(call model-error,$$(MSG_MAKE_FAIL)); \
-                  else \
-                      echo "$$(MSG_MAKE_NONE)" $$(ERROR); \
-                  fi \
-              ))
+	              (cd $$d && $$(call cdr,$$(strip $3))) $$(ERROR) \
+	              || $$(call model-error,$$(MSG_MAKE_FAIL)) \
+	          ),$$(strip \
+	              if [ -f $$d/[Mm]akefile ]; then \
+	                  cd $$d && $$(MAKE) -f [Mm]akefile $$(ERROR) \
+	                  || $$(call model-error,$$(MSG_MAKE_FAIL)); \
+	              elif [ -f $$d/$$(makedir)/[Mm]akefile ]; then \
+	                  cd $$d/$$(makedir) \
+	                  && $$(MAKE) -f [Mm]akefile $$(ERROR) \
+	                  || $$(call model-error,$$(MSG_MAKE_FAIL)); \
+	              else \
+	                  echo "$$(MSG_MAKE_NONE)" $$(ERROR); \
+	              fi \
+	          ))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(call select,$$@)
@@ -2353,7 +2353,7 @@ $$(firstword $$(srcdir))/$1.yy.$2: $3
 	
 	$$(quiet) $$(MV) $$< $$(firstword $$(incdir))/$1-yy/
 	$$(quiet) cd $$(firstword $$(incdir))/$1-yy/ \
-              && $4 $$(lexflags) $$(notdir $$<) $$(ERROR)
+	          && $4 $$(lexflags) $$(notdir $$<) $$(ERROR)
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/$$(notdir $$<) $$<
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/*.$2 $$@ $$(ERROR)
 	
@@ -2390,7 +2390,7 @@ $$(firstword $$(srcdir))/$1.tab.$2: $3 $$(lexall)
 	
 	$$(quiet) $$(MV) $$< $$(firstword $$(incdir))/$1-tab/
 	$$(quiet) cd $$(firstword $$(incdir))/$1-tab/ \
-              && $4 $$(yaccflags) $$(notdir $$<) $$(ERROR)
+	          && $4 $$(yaccflags) $$(notdir $$<) $$(ERROR)
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/$$(notdir $$<) $$<
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/*.$2 $$@ $$(ERROR)
 	
@@ -2441,7 +2441,7 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)
 	$$(quiet) $$(call c-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(AS) $$(cppflags) $$(asflags) $$(aslibs) \
-                     $$< -o $$@ $$(ERROR)
+	                 $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_ASM_COMPILE),$$@)
 endef
@@ -2465,7 +2465,7 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)
 	$$(quiet) $$(call c-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) $$(cppflags) $$(cflags) $$(clibs) \
-                     -c $$< -o $$@ $$(ERROR)
+	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_COMPILE),$$@)
 endef
@@ -2490,7 +2490,7 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
-                      -c $$< -o $$@ $$(ERROR)
+	                  -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_COMPILE),$$@)
 endef
@@ -2515,7 +2515,7 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$$(call not-root,$3/$$*))
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(FC) $$(cppflags) $$(fflags) $$(flibs) \
-                     -c $$< -o $$@ $$(ERROR)
+	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_F_COMPILE),$$@)
 endef
@@ -2539,7 +2539,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(quiet) $$(call c-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) -fPIC $$(cppflags) $$(clibs) $$(cflags) \
-                     -c $$< -o $$@ $$(ERROR)
+	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_LIBCOMP),$$@)
 endef
@@ -2561,7 +2561,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) -fPIC $$(cppflags) $$(cxxlibs) $$(cxxflags) \
-                      -c $$< -o $$@ $$(ERROR)
+	                  -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
 endef
@@ -2583,7 +2583,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(FC) -fPIC $$(cppflags) $$(flibs) $$(fflags) \
-                     -c $$< -o $$@ $$(ERROR)
+	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_F_LIBCOMP),$$@)
 endef
@@ -2670,11 +2670,11 @@ $1/$2: $$($2_lib) $$($2_aobj) $$($2_obj) | $1
 	
 	@# Check if executable has files
 	$$(if $$(strip $$($2_all)),,\
-        $$(call phony-error,$$(MSG_$$(strip $3)_NO_FILE)))
+	    $$(call phony-error,$$(MSG_$$(strip $3)_NO_FILE)))
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $4 $$($2_aobj) $$($2_obj) -o $$@ \
-              $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
+	          $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
 	$$(call ok,$$(MSG_$$(strip $3)_LINKAGE),$$@)
 
 $$($2_obj): | $$(objdir)
@@ -2710,18 +2710,18 @@ $1/$2/%$3: $1/$$(objdir)/%$$(firstword $$(objext)) $1/$$(objdir)/%.* | $1
 	
 	$$(call mksubdir,$1,$$@/)
 	$$(quiet) $$(COV) $$(COVFLAFS) -o $1/$$(objdir) $2/$$*$3 \
-              1> $$(basename $$@/$$*).out $$(ERROR)
+	          1> $$(basename $$@/$$*).out $$(ERROR)
 	$$(quiet) $$(foreach e,$$(covext),$$(strip \
 	              for f in *$$e; do \
-                      [ ! -f "$$$$f" ] && break; \
-                      $$(MV) $$$$f $$@ $$(ERROR); \
-                  done;\
-              ))
+	                  [ ! -f "$$$$f" ] && break; \
+	                  $$(MV) $$$$f $$@ $$(ERROR); \
+	              done;\
+	          ))
 	
 	$$(call phony-ok,$$(MSG_COV))
 endef
 $(foreach r,$(srcdir),$(foreach s,$(srcext),$(foreach c,$(covext),\
-	$(eval $(call coverage-factory,$(covdir),$r,$s,$c)))))
+    $(eval $(call coverage-factory,$(covdir),$r,$s,$c)))))
 
 #======================================================================#
 # Function: intl-template-factory                                      #
@@ -2735,11 +2735,11 @@ $1/$2$$(firstword $$(potext)): $$($2_all) | $1
 	$$(call status,$$(MSG_INTL_TEMPLATE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(XGETTEXT)\
-              --copyright-holder=$$(call shstring,$$(COPYRIGHT))\
-              --msgid-bugs-address=$$(call shstring,$$(MAINTEINER_MAIL))\
-              --package-name=$$(call shstring,$$(PROJECT))\
-              --package-version=$$(VERSION)\
-        -d $2 -k_ -kN_ -s $$^ -o $$@
+	          --copyright-holder=$$(call shstring,$$(COPYRIGHT))\
+	          --msgid-bugs-address=$$(call shstring,$$(MAINTEINER_MAIL))\
+	          --package-name=$$(call shstring,$$(PROJECT))\
+	          --package-version=$$(VERSION)\
+	          -d $2 -k_ -kN_ -s $$^ -o $$@
 	$$(call ok,$$(MSG_INTL_TEMPLATE),$$@)
 endef
 $(foreach b,$(binall),$(eval\
@@ -2759,8 +2759,8 @@ $1/%/$2$$(firstword $$(poext)): $1/$2$$(firstword $$(potext))
 	$$(call phony-status,$$(MSG_INTL_PORTABLE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(if $$(strip $$(wildcard $$@)),\
-                  $$(MSGMERGE) $$@ $$< -o $$@ $$(ERROR),\
-                  $$(MSGINIT)  -l $$* -i $$< -o $$@ $$(ERROR))
+	              $$(MSGMERGE) $$@ $$< -o $$@ $$(ERROR),\
+	              $$(MSGINIT)  -l $$* -i $$< -o $$@ $$(ERROR))
 	$$(call phony-ok,$$(MSG_INTL_PORTABLE),$$@)
 
 $1/%/LC_MESSAGES/$2$$(firstword $$(moext)): $1/%/$2$$(firstword $$(poext))
@@ -2816,16 +2816,16 @@ define install-texinfo-factory
 install-$1:
 	$$(if $$(strip $$(texi$1)),$$(call mkdir,$$(i_$1dir)))
 	$$(if $$(strip $$(texi$1)),$$(foreach f,$$(texi$1),\
-        $$(call phony-status,$$(MSG_INSTALL_DOC));\
-        $$(INSTALL_DATA) $$f $$(i_$1dir)/$$(notdir $$f);\
-        $$(call phony-ok,$$(MSG_INSTALL_DOC));\
-    ))
+	    $$(call phony-status,$$(MSG_INSTALL_DOC));\
+	    $$(INSTALL_DATA) $$f $$(i_$1dir)/$$(notdir $$f);\
+	    $$(call phony-ok,$$(MSG_INSTALL_DOC));\
+	))
 
 .PHONY: uninstall-$1
 uninstall-$1:
 	$$(if $$(strip $$(texi$1)),$$(call rm-if-empty,$$(i_$1dir),\
-        $$(addprefix $$(i_$1dir)/,$$(notdir $$(texi$1)))\
-    ))
+	    $$(addprefix $$(i_$1dir)/,$$(notdir $$(texi$1)))\
+	))
 endef
 $(foreach type,html dvi pdf ps,\
     $(eval $(call install-texinfo-factory,$(type))))
@@ -2974,10 +2974,10 @@ distclean: clean
 	$(call rm-if-empty,$(depdir),$(depall) $(systemdep) $(externdep))
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
-        $(filter $(firstword $(libdir))/%,$(lib)))
+	    $(filter $(firstword $(libdir))/%,$(lib)))
 	$(foreach d,$(call invert,$(call hash-table.keys,git_dependency)),\
-        $(if $(wildcard $(extdir)/$d),\
-            $(call git-submodule-rm,$(extdir)/$d)$(newline)))
+	    $(if $(wildcard $(extdir)/$d),\
+	        $(call git-submodule-rm,$(extdir)/$d)$(newline)))
 	$(call rm-if-empty,$(extdir))
 
 ifneq (,$(strip $(ENABLE_NLS)))
@@ -3264,7 +3264,7 @@ MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
 define make-create
 $(if $(wildcard $2),,\
 	$(call phony-status,$(MSG_MAKE_CREATE))$(newline)\
-    $(quiet) $(MAKE) $1 $(if $(filter -k,$(MAKE)),,> $2)$(newline)\
+	$(quiet) $(MAKE) $1 $(if $(filter -k,$(MAKE)),,> $2)$(newline)\
 	$(call phony-ok,$(MSG_MAKE_CREATE)))$(newline)
 endef
 
@@ -3383,23 +3383,23 @@ endef
 define rm-if-empty
 	$(if $(strip $2),$(call srm,$2))
 	$(foreach d,$(strip $1),\
-        $(if $(strip $(call rwildcard,$d,*)),\
-            $(if $(strip $2),
-                $(if $(strip $(MAINTEINER_CLEAN)),\
-                    $(call rmdir,$d),\
-                    $(if $(strip
-                      $(call rfilter-out,$(call rsubdir,$d)),\
-                      $(call rfilter-out,$2,$(call rwildcard,$d,*))),\
-                        $(call phony-ok,$(MSG_RM_NOT_EMPTY)),\
-                        $(call rmdir,$d)\
-                )),\
-                $(call rmdir,$d)\
-            ),\
-            $(if $(wildcard $d),\
-                $(call rmdir,$d),\
-                $(call phony-ok,$(MSG_RM_EMPTY))\
-            )\
-    ))
+	    $(if $(strip $(call rwildcard,$d,*)),\
+	        $(if $(strip $2),
+	            $(if $(strip $(MAINTEINER_CLEAN)),\
+	                $(call rmdir,$d),\
+	                $(if $(strip
+	                  $(call rfilter-out,$(call rsubdir,$d)),\
+	                  $(call rfilter-out,$2,$(call rwildcard,$d,*))),\
+	                    $(call phony-ok,$(MSG_RM_NOT_EMPTY)),\
+	                    $(call rmdir,$d)\
+	            )),\
+	            $(call rmdir,$d)\
+	        ),\
+	        $(if $(wildcard $d),\
+	            $(call rmdir,$d),\
+	            $(call phony-ok,$(MSG_RM_EMPTY))\
+	        )\
+	))
 endef
 
 #======================================================================#
@@ -3616,29 +3616,29 @@ endef
 
 define git-init
 	$(quiet) if ! [ -d .git ]; \
-             then \
-                 $(call model-status,$(MSG_GIT_INIT)); \
-                 $(call model-git-init); \
-                 $(call model-ok,$(MSG_GIT_INIT)); \
-             fi
+	         then \
+	             $(call model-status,$(MSG_GIT_INIT)); \
+	             $(call model-git-init); \
+	             $(call model-ok,$(MSG_GIT_INIT)); \
+	         fi
 endef
 
 define git-tag
 	$(quiet) if ! $(GIT_TAG) | grep -q $1; \
-             then \
-                 $(call model-status,$(MSG_GIT_TAG)); \
-                 $(call model-git-tag,$1); \
-                 $(call model-ok,$(MSG_GIT_TAG)); \
-             fi
+	         then \
+	             $(call model-status,$(MSG_GIT_TAG)); \
+	             $(call model-git-tag,$1); \
+	             $(call model-ok,$(MSG_GIT_TAG)); \
+	         fi
 endef
 
 define git-add
 	$(quiet) if ! $(GIT_LS_FILES) $1 || ! $(GIT_DIFF) $1; \
-             then \
-                 $(call model-status,$(MSG_GIT_ADD)); \
-                 $(call model-git-add,$1); \
-                 $(call model-ok,$(MSG_GIT_ADD)); \
-             fi
+	         then \
+	             $(call model-status,$(MSG_GIT_ADD)); \
+	             $(call model-git-add,$1); \
+	             $(call model-ok,$(MSG_GIT_ADD)); \
+	         fi
 endef
 
 define git-commit
@@ -3652,51 +3652,51 @@ endef
 
 define git-add-commit
 	$(quiet) if ! $(GIT_LS_FILES) $1 || ! $(GIT_DIFF) $1; \
-             then \
-                 $(call model-status,$(MSG_GIT_COMMIT));\
-                 $(call model-git-add,$1);\
-                 $(call model-git-commit,$(strip $2));\
-                 $(call model-ok,$(MSG_GIT_COMMIT));\
-             fi
+	         then \
+	             $(call model-status,$(MSG_GIT_COMMIT));\
+	             $(call model-git-add,$1);\
+	             $(call model-git-commit,$(strip $2));\
+	             $(call model-ok,$(MSG_GIT_COMMIT));\
+	         fi
 endef
 
 define git-submodule-add
 	$(call phony-status,$(MSG_GIT_SUB_ADD))
 	$(quiet) if [ -f $(call rm-trailing-bar,$(dir $2))/.git ];     \
-             then                                                  \
-                 cd $(dir $2);                                     \
-                 $(call model-git-submodule-add,$1 $(notdir $2));  \
-                 $(call model-git-submodule-init,$(notdir $2));    \
-                 $(call model-git-commit,"Adds $(notdir $2)");     \
-                 cd $(MAKECURRENTDIR);                             \
-                 $(call model-git-add,$(dir $2));                  \
-                 $(call model-git-commit,"Adds sub-submodule $2"); \
-             else                                                  \
-                 $(call model-git-submodule-add,$1 $2);            \
-                 $(call model-git-submodule-init,$2);              \
-                 $(call model-git-commit,"Adds submodule $2");     \
-             fi
+	         then                                                  \
+	             cd $(dir $2);                                     \
+	             $(call model-git-submodule-add,$1 $(notdir $2));  \
+	             $(call model-git-submodule-init,$(notdir $2));    \
+	             $(call model-git-commit,"Adds $(notdir $2)");     \
+	             cd $(MAKECURRENTDIR);                             \
+	             $(call model-git-add,$(dir $2));                  \
+	             $(call model-git-commit,"Adds sub-submodule $2"); \
+	         else                                                  \
+	             $(call model-git-submodule-add,$1 $2);            \
+	             $(call model-git-submodule-init,$2);              \
+	             $(call model-git-commit,"Adds submodule $2");     \
+	         fi
 	$(call phony-ok,$(MSG_GIT_SUB_ADD))
 endef
 
 define git-submodule-rm
 	$(call phony-status,$(MSG_GIT_SUB_RM))
 	$(quiet) if [ -f $(call rm-trailing-bar,$(dir $1))/.git ];        \
-             then                                                     \
-                 cd $(dir $1);                                        \
+	         then                                                     \
+	             cd $(dir $1);                                        \
 	             $(call model-git-submodule-deinit,$(notdir $1));     \
 	             $(call model-git-rm,--cached $(notdir $1));          \
-                 $(call model-git-commit,"Removes $(notdir $1)");     \
-                 cd $(MAKECURRENTDIR);                                \
-                 $(call model-git-add,$(dir $1));                     \
-                 $(call model-git-commit,"Removes sub-submodule $1"); \
-                 $(RM) -r .git/modules/$(notdir $1) $(ERROR);         \
-             else                                                     \
+	             $(call model-git-commit,"Removes $(notdir $1)");     \
+	             cd $(MAKECURRENTDIR);                                \
+	             $(call model-git-add,$(dir $1));                     \
+	             $(call model-git-commit,"Removes sub-submodule $1"); \
+	             $(RM) -r .git/modules/$(notdir $1) $(ERROR);         \
+	         else                                                     \
 	             $(call model-git-submodule-deinit,$1);               \
 	             $(call model-git-rm,--cached $1);                    \
-                 $(call model-git-commit,"Removes submodule $1");     \
-                 $(RM) -r .git/modules/$1 $(ERROR);                   \
-             fi 
+	             $(call model-git-commit,"Removes submodule $1");     \
+	             $(RM) -r .git/modules/$1 $(ERROR);                   \
+	         fi 
 	$(call phony-ok,$(MSG_GIT_SUB_RM))
 endef
 
@@ -3705,26 +3705,26 @@ ifneq (,$(or $(strip $(GIT_REMOTE_PATH)),$(strip \
 
 define git-remote-add
 	$(quiet) if ! $(GIT_REMOTE) | grep "^$1$$" $(NO_OUTPUT);\
-             then\
-                 $(call model-status,$(MSG_GIT_REM_ADD)); \
-                 $(call model-git-remote-add,$1 $2);      \
-                 $(call model-ok,$(MSG_GIT_REM_ADD));     \
-             fi
+	         then\
+	             $(call model-status,$(MSG_GIT_REM_ADD)); \
+	             $(call model-git-remote-add,$1 $2);      \
+	             $(call model-ok,$(MSG_GIT_REM_ADD));     \
+	         fi
 endef
 
 define git-pull
 	$(call phony-status,$(MSG_GIT_PULL))
 	$(quiet) $(if $(strip $3),cd $3 && )\
-             $(call model-git-pull,$(or $(strip $1),origin) \
-                                   $(or $(strip $2),master))
+	         $(call model-git-pull,$(or $(strip $1),origin) \
+	                               $(or $(strip $2),master))
 	$(call phony-ok,$(MSG_GIT_PULL))
 endef
 
 define git-push
 	$(call phony-status,$(MSG_GIT_PUSH))
 	$(quiet) $(if $(strip $3),cd $3 && )\
-             $(call model-git-push,$(or $(strip $1),origin) \
-                                   $(or $(strip $2),master))
+	         $(call model-git-push,$(or $(strip $1),origin) \
+	                               $(or $(strip $2),master))
 	$(call phony-ok,$(MSG_GIT_PUSH))
 endef
 
@@ -3736,8 +3736,8 @@ endif # ifndef NO_GIT
 define web-clone
 	$(call phony-status,$(MSG_WEB_CLONE))
 	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
-    $(quiet) $(call model-git-add,$2)
-    $(quiet) $(call model-git-commit,"Adds web dependency $2")
+	$(quiet) $(call model-git-add,$2)
+	$(quiet) $(call model-git-commit,"Adds web dependency $2")
 	$(call phony-ok,$(MSG_WEB_CLONE))
 endef
 
@@ -3873,7 +3873,7 @@ ifdef NMS_HEADER
 	$(eval NMSH       := $(subst ::,/,$(NMS_HEADER)))
 	$(eval NMSH       := $(if $(strip $(IN)),$(IN)/)$(NMSH))
 	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
-                                $(sort $(dir $(incall))))))
+	                         $(sort $(dir $(incall))))))
 	$(eval NMSH       := $(call rm-trailing-bar,$(NMSH)))
 	
 	@# NMSH_NAME: File name for the Namespace header
@@ -3882,10 +3882,10 @@ ifdef NMS_HEADER
 	@# NMSH_FILES: Files to be put in the Namespace Header
 	$(eval NMSH_FILES := $(filter $(NMSH)/%,$(incall)))
 	$(eval NMSH_FILES := $(call not-root,\
-        $(filter-out $(NMSH)/$(NMSH_NAME).%,\
-            $(foreach f,$(NMSH_FILES),\
-                $(firstword $(filter %$f,$(incall)))\
-    ))))
+	    $(filter-out $(NMSH)/$(NMSH_NAME).%,\
+	        $(foreach f,$(NMSH_FILES),\
+	            $(firstword $(filter %$f,$(incall)))\
+	))))
 	
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(NMSH)/$(NMSH_NAME)$(INC_EXT),$(notice))
@@ -3908,7 +3908,7 @@ ifdef LIB_HEADER
 	$(eval LIBH       := $(subst ::,/,$(LIB_HEADER)))
 	$(eval LIBH       := $(if $(strip $(IN)),$(IN)/)$(LIBH))
 	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
-                                $(sort $(dir $(incall))))))
+	                         $(sort $(dir $(incall))))))
 	$(eval LIBH       := $(call rm-trailing-bar,$(LIBH)))
 	
 	@# LIBH_NAME: File name for the Library header
@@ -3917,10 +3917,10 @@ ifdef LIB_HEADER
 	@# LIBH_FILES: Files to be put in the Library header
 	$(eval LIBH_FILES := $(filter $(LIBH)/%,$(incall)))
 	$(eval LIBH_FILES := $(call not-root,\
-        $(filter-out $(LIBH)/$(LIBH_NAME).%,\
-            $(foreach f,$(LIBH_FILES),\
-                $(firstword $(filter %$f,$(incall)))\
-    ))))
+	    $(filter-out $(LIBH)/$(LIBH_NAME).%,\
+	        $(foreach f,$(LIBH_FILES),\
+	            $(firstword $(filter %$f,$(incall)))\
+	))))
 	
 	$(call invalid-ext,$(INC_EXT),$(tlext))
 	$(call touch,$(LIBH)/$(LIBH_NAME)$(INC_EXT),$(notice))
@@ -4153,7 +4153,7 @@ ifdef NMS_HEADER
 	$(eval NMSH       := $(subst ::,/,$(NMS_HEADER)))
 	$(eval NMSH       := $(if $(strip $(IN)),$(IN)/)$(NMSH))
 	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
-                                $(sort $(dir $(incall))))))
+	                         $(sort $(dir $(incall))))))
 	$(eval NMSH       := $(call rm-trailing-bar,$(NMSH)))
 	
 	@# NMSH_NAME: Namespace include files
@@ -4169,7 +4169,7 @@ ifdef LIB_HEADER
 	$(eval LIBH       := $(subst ::,/,$(LIB_HEADER)))
 	$(eval LIBH       := $(if $(strip $(IN)),$(IN)/)$(LIBH))
 	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
-                                $(sort $(dir $(incall))))))
+	                         $(sort $(dir $(incall))))))
 	$(eval LIBH       := $(call rm-trailing-bar,$(LIBH)))
 	
 	@# LIBH_NAME: Namespace include files
@@ -4215,9 +4215,9 @@ delete: r := $(localedir)
 delete: d := $(TRANSLATION)
 delete:
 	$(foreach t,$(intltl),$(call delete-file,\
-        $r/$d/$(call not-root,$(basename $b)),$(poext)))
+	    $r/$d/$(call not-root,$(basename $b)),$(poext)))
 	$(foreach t,$(intltl),$(call delete-file,\
-        $r/$d/LC_MESSAGES/$(call not-root,$b),$(moext)))
+	    $r/$d/LC_MESSAGES/$(call not-root,$b),$(moext)))
 	$(call rm-if-empty,$r/$d/LC_MESSAGES)
 	$(call rm-if-empty,$r/$d)
 endif
@@ -4461,9 +4461,9 @@ endef
 dump:
 ifdef VAR ####
 	@echo "${YELLOW}$(VAR):${RES}"\
-          $(if $(strip $(filter undefined,$(origin $(VAR)))),\
-              "${RED}Undefined${RES}",\
-              "$(or $(strip $($(VAR))),${RED}Empty${RES})")
+	      $(if $(strip $(filter undefined,$(origin $(VAR)))),\
+	          "${RED}Undefined${RES}",\
+	          "$(or $(strip $($(VAR))),${RED}Empty${RES})")
 else
 	@echo "${WHITE}\nCONFIGURATION           ${RES}"
 	@echo "----------------------------------------"

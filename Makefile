@@ -435,14 +435,14 @@ endef
 
 # Basic variable functions
 # ==========================
-# 1) is_empty:  Returns not empty if a variable is empty
-# 2) not_empty: Returns not empty if a variable is not empty
+# 1) is-empty:  Returns not empty if a variable is empty
+# 2) not-empty: Returns not empty if a variable is not empty
 
-define is_empty
+define is-empty
 $(strip $(if $(strip $1),,1))
 endef
 
-define not_empty
+define not-empty
 $(strip $(if $(strip $1),1))
 endef
 
@@ -634,11 +634,11 @@ $(strip $(subst A,,$(subst B,,$(subst C,,$(subst D,,$(subst E,,\
 endef
 
 define is-alpha
-$(if $(call is_empty,$(call rm-upper,$(call rm-lower,$1))),1)
+$(if $(call is-empty,$(call rm-upper,$(call rm-lower,$1))),1)
 endef
 
 define is-alphanumeric
-$(if $(call is_empty,$(strip \
+$(if $(call is-empty,$(strip \
     $(call rm-number,$(call rm-upper,$(call rm-lower,$1))))),1)
 endef
 
@@ -739,7 +739,7 @@ $(strip $(patsubst +%,%,$(patsubst $(call version-data,$1)%,%,\
 endef
 
 define version-check
-$(if $(call is_empty,$(strip $1)),\
+$(if $(call is-empty,$(strip $1)),\
     $(error "Version MUST NOT be empty"))\
 $(if $(call ne,1,$(words $(strip $1))),\
     $(error "Version MUST NOT have spaces"))\
@@ -3458,7 +3458,7 @@ endef
 endif # ifndef SILENT
 
 ## STATUS ##############################################################
-ifneq ($(and $(call is_empty,$(SILENT)),$(call not_empty,$(quiet))),)
+ifneq ($(and $(call is-empty,$(SILENT)),$(call not-empty,$(quiet))),)
 
 define model-status
 printf "%b " $1; printf "... "

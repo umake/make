@@ -89,7 +89,7 @@ And include them as above.
 
 To get the latest version, just type `make upgrade` and the newest 
 Makefile will be automatically downloaded. If it is a submodule,
-`cd make && git pull origin master` will solve it.
+the same procedure will do it.
 
 ## Portability and Issues ##
 

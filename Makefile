@@ -568,8 +568,8 @@ endef
 
 define is-integer
 $(if $(and $(call is-numeric,$1),$(strip \
-           $(or $(call is-positive_impl,$1),$(call is-negative_impl,$1)))\
-),1)
+           $(or $(call is-positive_impl,$1),$(call is-negative_impl,$1))\
+)),1)
 endef
 
 define is-decimal

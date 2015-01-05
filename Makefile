@@ -75,8 +75,8 @@ CPPFLAGS   :=
 
 # Assembly/C/C++/Fortran options
 ASFLAGS    := -f elf32
-CFLAGS     := -Wall -ansi -pedantic -O2 -g
-CXXFLAGS   := $(CFLAGS) -std=c++11
+CFLAGS     :=
+CXXFLAGS   := -std=c++11
 FFLAGS     := -cpp
 
 # Coverage options

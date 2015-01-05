@@ -81,6 +81,11 @@
     [ ] Add deep directory search of test binary name.
     [ ] Add option to automatically create a RPM package.
 
+[Makeballs]
+    [X] Create Makeball for Google Mock and Google Test.
+    [X] Create Makeball for SOCI database access library.
+    [X] Create Makeball for OpenMP multiprocess programming.
+
 [Tests]
     [X] Support continuous integration with Travis CI.
     [X] Test initialization with 'init'.

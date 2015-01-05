@@ -2166,7 +2166,8 @@ install-strip: installdep
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
 
 .PHONY: install
-install: installdep $(i_lib) $(i_bin) $(i_sbin) $(i_libexec) install-docs
+install: installdep $(i_lib) $(i_bin) $(i_sbin) $(i_libexec) \
+         install-docs
 
 .PHONY: install-docs
 install-docs: installdep install-info install-html install-dvi

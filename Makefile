@@ -428,6 +428,8 @@ define newline
 
 
 endef
+lparentheses := (
+rparentheses := )
 
 ########################################################################
 ##                             FUNCTIONS                              ##

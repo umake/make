@@ -1163,6 +1163,12 @@ externreq := $(patsubst $(depdir)/%$(extext),$(extdir)/%,$(externdep))
 #------------------------------------------------------------------[ 5 ]
 externdep := $(call invert,$(externdep))
 
+# Program dependency files
+# ==========================
+# 1) Add dependency suffix and directory
+#------------------------------------------------------------------[ 1 ]
+progdep := $(addprefix $(depdir)/,$(addsuffix $(sysext),$(programs)))
+
 # Library files
 # ===============
 # .---.-----.------.-----.--------.---------------------------------.
@@ -1556,15 +1562,12 @@ autoobj := $(addprefix $(objdir)/,$(autoobj))
 
 # Source dependency files
 # =========================
-# 1) Dependencies will be generated for sources, auto sources and tests
-# 2) Get the not-root basenames of all source directories
-# 3) Create dependency names and directories
-# 4) Files that indicate the correctness of some dependencies
-# 3) Add dependency directory
-depall    := $(testall) $(call not-root,$(srcall) $(autoall))
-depall    := $(strip $(basename $(depall)))
-depall    := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
-systemdep := $(addprefix $(depdir)/,$(addsuffix $(sysext),$(programs)))
+# 1) Get tests and not-root source/auto-source for dependencies
+# 2) Create dependency names
+# 3) Add dependency suffix and directory
+depall  := $(testall) $(call not-root,$(srcall) $(autoall))
+depall  := $(strip $(basename $(depall)))
+depall  := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
 
 # Internationalization
 # ======================
@@ -2240,7 +2243,7 @@ uninstall-info:
 # Include dependencies for each src extension, unless cleaning files
 ifneq ($(patsubst %clean,clean,$(MAKECMDGOALS)),clean)
 -include $(wildcard $(depall))
--include $(wildcard $(systemdep))
+-include $(wildcard $(progdep))
 -include $(wildcard $(externdep))
 endif
 
@@ -2968,7 +2971,7 @@ clean: mostlyclean
 
 .PHONY: distclean
 distclean: clean
-	$(call rm-if-empty,$(depdir),$(depall) $(systemdep) $(externdep))
+	$(call rm-if-empty,$(depdir),$(depall) $(progdep) $(externdep))
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
 	    $(filter $(firstword $(libdir))/%,$(lib)))
@@ -4589,7 +4592,7 @@ else
 	@echo "${WHITE}\nDEPENDENCY              ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"depall:       ",$(depall)       )
-	$(call prompt,"systemdep:    ",$(systemdep)    )
+	$(call prompt,"progdep:      ",$(progdep)      )
 	$(call prompt,"externdep:    ",$(externdep)    )
 	
 	@echo "${WHITE}\nBINARY                  ${RES}"

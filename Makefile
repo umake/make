@@ -921,6 +921,7 @@ lexflags  := $(LEXFLAGS)
 yaccflags := $(YACCFLAGS)
 esqlflags := $(ESQLFLAGS)
 
+ldasm     := $(LDASM)
 ldc       := $(LDC)
 ldf       := $(LDF)
 ldcxx     := $(LDCXX)
@@ -1413,6 +1414,17 @@ c_all   := $(call rfilter,$(addprefix %,$(cext)),$(srcall))
 f_all   := $(call rfilter,$(addprefix %,$(fext)),$(srcall))
 cxx_all := $(call rfilter,$(addprefix %,$(cxxext)),$(srcall))
 
+# Type-specific library flags
+# =============================
+# 1) Add asm, c, f, cxx, lex, yacc and esql only flags in linker flags
+$(if $(strip $(asmall)), $(eval ldflags += $(ldasm)  ))
+$(if $(strip $(c_all)),  $(eval ldflags += $(ldc)    ))
+$(if $(strip $(f_all)),  $(eval ldflags += $(ldf)    ))
+$(if $(strip $(cxx_all)),$(eval ldflags += $(ldcxx)  ))
+$(if $(strip $(lexall)), $(eval ldflags += $(ldlex)  ))
+$(if $(strip $(yaccall)),$(eval ldflags += $(ldyacc) ))
+$(if $(strip $(esqlall)),$(eval ldflags += $(ldesql) ))
+
 # Static libraries
 # ==================
 # 1) Get complete static library paths from all libraries
@@ -1532,16 +1544,6 @@ ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath$(comma)%, \
                $(subst -L$(space),-L,$(LDLIBS))              \
                $(addprefix -L,$(libsub))                     \
            ))
-
-# Type-specific libraries
-# =========================
-# 1) Add c, f, cxx, lex and yacc only libraries in linker flags
-$(if $(strip $(c_all)),$(eval ldflags += $(LDC)))
-$(if $(strip $(f_all)),$(eval ldflags += $(LDF)))
-$(if $(strip $(cxx_all)),$(eval ldflags += $(LDCXX)))
-$(if $(strip $(lexall)),$(eval ldflags += $(LDLEX)))
-$(if $(strip $(yaccall)),$(eval ldflags += $(LDYACC)))
-$(if $(strip $(esqlall)),$(eval ldflags += $(LDESQL)))
 
 # Object files
 # ==============

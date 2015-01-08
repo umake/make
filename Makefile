@@ -1509,8 +1509,8 @@ shrlib     := $(patsubst %,$(firstword $(libdir))/%.so,\
 
 # System libraries
 # ==================
-# 1) syslib     : System libraries used by the user
-# 2) syslibname : System library names, deduced from above
+# 1) System libraries used by the user
+# 2) System library names, deduced from above
 #------------------------------------------------------------------[ 1 ]
 syslib     := \
 $(foreach l,$(filter -l%,$(ldflags)),\
@@ -1522,11 +1522,19 @@ $(foreach l,$(filter -l%,$(ldflags)),\
             $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))))
 #------------------------------------------------------------------[ 2 ]
 syslibname := $(patsubst lib%,%,$(notdir $(basename $(syslib))))
+#------------------------------------------------------------------[ 3 ]
+syslibdep  := $(addprefix $(depdir)/,\
+                  $(addsuffix $(sysext),$(syslibname)))
+#------------------------------------------------------------------[ 4 ]
+$(foreach l,$(old_syslib),$(if $(findstring $l,$(syslib)),,\
+    $(shell $(RM) \
+        $(depdir)/$(patsubst lib%,%,$(notdir $(basename $l)))$(sysext)\
+)))
 
 # Local libraries
 # =================
-# 1) loclib     : Local libraries used by the user
-# 2) loclibname : Local library names, deduced from above
+# 1) Local libraries used by the user
+# 2) Local library names, deduced from above
 #------------------------------------------------------------------[ 1 ]
 loclib     := \
 $(foreach l,$(filter -l%,$(ldflags)),\
@@ -1538,7 +1546,7 @@ loclibname := $(patsubst lib%,%,$(notdir $(basename $(loclib))))
 
 # Dependency libraries
 # ==================
-# 1) deplibname : Dependency library names, deduced from above
+# 1) Dependency library names, deduced from above
 #------------------------------------------------------------------[ 1 ]
 deplibname := \
 $(call rfilter-out,$(libname) $(syslibname) $(loclibname),\

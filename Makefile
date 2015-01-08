@@ -1513,9 +1513,10 @@ shrlib  := $(patsubst %,$(firstword $(libdir))/%.so,$(basename $(shrlib)))
 #------------------------------------------------------------------[ 1 ]
 syslib     := \
 $(foreach l,$(filter -l%,$(ldflags)),\
-    $(foreach d,/lib /usr/lib \
+    $(foreach d,/lib /usr/lib /usr/local/lib \
                 $(filter /lib%,$(patsubst -L%,%,$(ldlibs)))\
                 $(filter /usr/lib%,$(patsubst -L%,%,$(ldlibs))),\
+                $(filter /usr/local/lib%,$(patsubst -L%,%,$(ldlibs))),\
         $(lastword $(foreach e,$(libext),\
             $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))))
 #------------------------------------------------------------------[ 2 ]

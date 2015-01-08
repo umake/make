@@ -2320,7 +2320,7 @@ $$(depdir)/$1$$(sysext): \
         $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k$$(sysext))) | $$(depdir)
 	
 	$$(quiet) touch $$@
-	$$(call phony-ok,$$(MSG_DEP_ALL))
+	$$(call phony-ok,$$(MSG_PRG_ALL))
 endef
 $(foreach d,build external upgrade init tags coverage \
             translation docs doxy dist dpkg install,\
@@ -2334,13 +2334,15 @@ $(foreach d,build external upgrade init tags coverage \
 define program-dependency
 $$(depdir)/$1$$(sysext): d=$1
 $$(depdir)/$1$$(sysext): | $$(depdir)
-	$$(if $$(strip $$($1)),,$$(call phony-error,$$(MSG_DEP_UNDEFINED)))
-	$$(call phony-status,$$(MSG_DEP))
+	$$(if $$(strip $$($1)),,$$(call phony-error,$$(MSG_PRG_UNDEFINED)))
+	$$(call phony-status,$$(MSG_PRG_SEARCH))
+	
 	$$(quiet) which $$(firstword $$($1)) $$(NO_OUTPUT) $$(NO_ERROR) \
-	          || $$(call model-error,$$(MSG_DEP_NOT_FOUND))
+	          || $$(call model-error,$$(MSG_PRG_NOT_FOUND))
 	$$(call select,$$@)
 	$$(call cat,'override OLD_$1 := $$($1)')
-	$$(call phony-ok,$$(MSG_DEP))
+	
+	$$(call phony-ok,$$(MSG_PRG_SEARCH))
 endef
 $(foreach p,$(programs),$(eval $(call program-dependency,$p)))
 
@@ -2354,29 +2356,29 @@ define extern-dependency
 $$(extdir)/$$(strip $1): | $$(extdir)
 	$$(call $$(strip $2),$$(call car,$$(strip $3)),$$@)
 
-$$(depdir)/$$(strip $1)$$(extext): d=$$(extdir)/$$(strip $1) 
+$$(depdir)/$$(strip $1)$$(extext): d=$$(extdir)/$$(strip $1)
 $$(depdir)/$$(strip $1)$$(extext): $$(externreq)
-	$$(call status,$$(MSG_MAKE_DEP))
+	$$(call status,$$(MSG_EXT_BUILD))
 	$$(quiet) $$(if $$(call cdr,$$(strip $3)),$$(strip \
 	              (cd $$d && $$(call cdr,$$(strip $3))) $$(ERROR) \
-	              || $$(call model-error,$$(MSG_MAKE_FAIL)) \
+	              || $$(call model-error,$$(MSG_EXT_BUILD_ERR)) \
 	          ),$$(strip \
 	              if [ -f $$d/[Mm]akefile ]; then \
 	                  cd $$d && $$(MAKE) -f [Mm]akefile $$(ERROR) \
-	                  || $$(call model-error,$$(MSG_MAKE_FAIL)); \
+	                  || $$(call model-error,$$(MSG_EXT_BUILD_ERR)); \
 	              elif [ -f $$d/$$(makedir)/[Mm]akefile ]; then \
 	                  cd $$d/$$(makedir) \
 	                  && $$(MAKE) -f [Mm]akefile $$(ERROR) \
-	                  || $$(call model-error,$$(MSG_MAKE_FAIL)); \
+	                  || $$(call model-error,$$(MSG_EXT_BUILD_ERR)); \
 	              else \
-	                  echo "$$(MSG_MAKE_NONE)" $$(ERROR); \
+	                  echo "$$(MSG_EXT_NO_MAKE)" $$(ERROR); \
 	              fi \
 	          ))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(call select,$$@)
 	$$(call cat,'override old_externdep += $$@')
-	$$(call ok,$$(MSG_MAKE_DEP))
+	$$(call ok,$$(MSG_EXT_BUILD))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
     $(call extern-dependency,$d,git-submodule-add,$(git_dependency.$d))))
@@ -3182,16 +3184,17 @@ MSG_GIT_SUB_RM    = "${YELLOW}[$(GIT)]${BLUE} Removing git dependency"\
 
 MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
                     "${PURPLE}from target ${DEF}$1${RES}"
-MSG_MAKE_DEP      = "${YELLOW}Building dependency ${DEF}$d${RES}"
-MSG_MAKE_NONE     = "${ERR}No Makefile found for compilation${RES}"
-MSG_MAKE_FAIL     = "${ERR}Failed compiling ${DEF}$@${RES}"
 
-MSG_DEP           = "${DEF}Searching for $d dependency"\
+MSG_PRG_SEARCH    = "${DEF}Searching for $d dependency"\
                     "${GREEN}$($d)${RES}"
-MSG_DEP_ALL       = "${YELLOW}All dependencies avaiable${RES}"
-MSG_DEP_UNDEFINED = "${ERR}Undefined variable ${GREEN}$d${DEF}"
-MSG_DEP_NOT_FOUND = "${ERR}Dependency ${GREEN}$($d)${DEF}"\
+MSG_PRG_ALL       = "${YELLOW}All dependencies avaiable${RES}"
+MSG_PRG_UNDEFINED = "${ERR}Undefined variable ${GREEN}$d${DEF}"
+MSG_PRG_NOT_FOUND = "${ERR}Dependency ${GREEN}$($d)${DEF}"\
                     "not found${RES}"
+
+MSG_EXT_BUILD     = "${YELLOW}Building dependency ${DEF}$d${RES}"
+MSG_EXT_NO_MAKE   = "${ERR}No Makefile found for compilation${RES}"
+MSG_EXT_BUILD_ERR = "${ERR}Failed compiling ${DEF}$@${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\

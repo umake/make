@@ -1569,9 +1569,9 @@ autoobj := $(addprefix $(objdir)/,$(autoobj))
 # 1) Get tests and not-root source/auto-source for dependencies
 # 2) Create dependency names
 # 3) Add dependency suffix and directory
-depall  := $(testall) $(call not-root,$(srcall) $(autoall))
-depall  := $(strip $(basename $(depall)))
-depall  := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
+depall := $(testall) $(call not-root,$(srcall) $(autoall))
+depall := $(strip $(basename $(depall)))
+depall := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
 
 # Internationalization
 # ======================

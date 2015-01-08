@@ -1802,6 +1802,37 @@ deball += rules source/format $(DEB_PROJECT).dirs
 deball := $(sort $(strip $(addprefix $(debdir)/,$(deball))))
 
 ########################################################################
+##                            VERSION                                 ##
+########################################################################
+
+# Version check
+# ===============
+# 1) program/library_version: Internally defined vars for versions
+# 2) Make variables above hash tables
+# 3) Check validity of keys
+# 4) Remove parentheses around version
+#------------------------------------------------------------------[ 1 ]
+program_version := $(strip $(PROGRAM_VERSION))
+library_version := $(strip $(LIBRARY_VERSION))
+#------------------------------------------------------------------[ 2 ]
+$(call hash-table.new,program_version)
+$(call hash-table.new,library_version)
+#------------------------------------------------------------------[ 3 ]
+$(foreach p,$(call hash-table.keys,program_version),\
+    $(if $(call not,$(findstring $p,$(programs))),\
+        $(error "$p key of PROGRAM_VERSION is not a program var name")))
+#------------------------------------------------------------------[ 4 ]
+$(foreach n,program library,\
+    $(foreach p,$(call hash-table.keys,$n_version),\
+        $(eval $n_version.$p := \
+            $(patsubst $(lparentheses)%,%,$(call car,$($n_version.$p)))\
+            $(call cdr,$($n_version.$p)))\
+        $(eval $n_version.$p := \
+            $(call rcdr,$($n_version.$p))\
+            $(patsubst %$(rparentheses),%,$(call rcar,$($n_version.$p))))\
+))
+
+########################################################################
 ##                              BUILD                                 ##
 ########################################################################
 

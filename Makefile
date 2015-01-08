@@ -2327,11 +2327,11 @@ $(foreach d,build external upgrade init tags coverage \
     $(eval $(call target-dependency,$d,$d_dependency)))
 
 #======================================================================#
-# Function: system-dependency                                          #
+# Function: program-dependency                                         #
 # @param  $1 Program name                                              #
 # @return Target to check if program exists                            #
 #======================================================================#
-define system-dependency
+define program-dependency
 $$(depdir)/$1$$(sysext): d=$1
 $$(depdir)/$1$$(sysext): | $$(depdir)
 	$$(if $$(strip $$($1)),,$$(call phony-error,$$(MSG_DEP_UNDEFINED)))
@@ -2342,7 +2342,7 @@ $$(depdir)/$1$$(sysext): | $$(depdir)
 	$$(call cat,'override OLD_$1 := $$($1)')
 	$$(call phony-ok,$$(MSG_DEP))
 endef
-$(foreach p,$(programs),$(eval $(call system-dependency,$p)))
+$(foreach p,$(programs),$(eval $(call program-dependency,$p)))
 
 #======================================================================#
 # Function: extern-dependency                                          #

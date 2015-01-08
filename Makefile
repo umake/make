@@ -1505,38 +1505,51 @@ shrlib  := $(foreach s,$(shrpatsrc),\
             )
 shrlib  := $(patsubst %,$(firstword $(libdir))/%.so,$(basename $(shrlib)))
 #------------------------------------------------------------------[ 8 ]
-# $(if $(strip $(shrpatsrc)),\
-#     $(foreach d,$(sort $(dir $(shrlib))),\
-#         $(eval ldflags := -Wl,-rpath,$d $(ldflags))\
-# ))
 
 # System libraries
 # ==================
-# 1) systemlib  : Extra libraries given by the user
-# 2) systemlib  : Filter out ignored files from above
-# 2) systemname : Extra libraries names, deduced from above
+# 1) syslib     : System libraries used by the user
+# 2) syslibname : System library names, deduced from above
 #------------------------------------------------------------------[ 1 ]
-systemlib  := \
-$(foreach e,$(libext),\
-    $(foreach d,$(wordlist 2,$(words $(libdir)),$(libdir)),\
-        $(call rwildcard,$d,*$e)\
-))
+syslib     := \
+$(foreach l,$(filter -l%,$(ldflags)),\
+    $(foreach d,/lib /usr/lib \
+                $(filter /lib%,$(patsubst -L%,%,$(ldlibs)))\
+                $(filter /usr/lib%,$(patsubst -L%,%,$(ldlibs))),\
+        $(lastword $(foreach e,$(libext),\
+            $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))))
 #------------------------------------------------------------------[ 2 ]
-systemlib  := $(call filter-ignored,$(systemlib))
-#------------------------------------------------------------------[ 3 ]
-systemname := \
-$(foreach e,$(libext),\
-    $(patsubst lib%$e,%,$(filter lib%$e,$(notdir $(systemlib))))\
-)
+syslibname := $(patsubst lib%,%,$(notdir $(basename $(syslib))))
+
+# Local libraries
+# =================
+# 1) loclib     : Local libraries used by the user
+# 2) loclibname : Local library names, deduced from above
+#------------------------------------------------------------------[ 1 ]
+loclib     := \
+$(foreach l,$(filter -l%,$(ldflags)),\
+    $(foreach d,$(call rsubdir,$(call cdr,$(libdir))),\
+        $(lastword $(foreach e,$(libext),\
+            $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))))
+#------------------------------------------------------------------[ 2 ]
+loclibname := $(patsubst lib%,%,$(notdir $(basename $(loclib))))
+
+# Dependency libraries
+# ==================
+# 1) deplibname : Dependency library names, deduced from above
+#------------------------------------------------------------------[ 1 ]
+deplibname := \
+$(call rfilter-out,$(libname) $(syslibname) $(loclibname),\
+    $(patsubst -l%,%,$(filter -l%,$(ldflags))))
 
 # General libraries
 # ===================
-# 1) lib: all static and shared libraries
-# 2) libname: all static and shared libraries names
+# 1) lib: all complete library names (path/libname.ext)
+# 2) libname: all library names (name)
 # 3) Get all subdirectories of the library dirs and
 #    add them as paths to be searched for libraries
-lib     := $(arlib) $(shrlib) $(systemlib)
-libname := $(arname) $(shrname) $(systemname)
+lib     := $(arlib) $(shrlib) $(syslib) $(loclib) $(deplib)
+libname := $(arname) $(shrname) $(syslibname) $(loclibname) $(deplibname)
 libsub   = $(if $(strip $(lib)),\
                $(foreach d,$(libdir),$(call rsubdir,$d)))
 ldlibs   = $(LDLIBS) $(sort $(addprefix -L$(space),$(libsub)))

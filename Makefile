@@ -4553,15 +4553,6 @@ else
 	$(call prompt,"incsub:       ",$(incsub)       )
 	$(call prompt,"autoinc:      ",$(autoinc)      )
 	
-	@echo "${WHITE}\nLIBRARY                 ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"lib_in:       ",$(lib_in)       )
-	$(call prompt,"libpat:       ",$(libpat)       )
-	$(call prompt,"liball:       ",$(liball)       )
-	$(call prompt,"libsrc:       ",$(libsrc)       )
-	$(call prompt,"libname:      ",$(libname)      )
-	$(call prompt,"lib:          ",$(lib)          )
-	
 	@echo "${WHITE}\nSTATIC LIBRARY          ${RES}"
 	@echo "----------------------------------------"
 	$(call prompt,"ar_in:        ",$(ar_in)        )
@@ -4579,10 +4570,29 @@ else
 	$(call prompt,"shrname:      ",$(shrname)      )
 	$(call prompt,"shrlib:       ",$(shrlib)       )
 	
-	@echo "${WHITE}\nOTHER SYSTEM LIBRARY    ${RES}"
+	@echo "${WHITE}\nSYSTEM LIBRARY          ${RES}"
 	@echo "----------------------------------------"
-	$(call prompt,"systemlib:    ",$(systemlib)    )
-	$(call prompt,"systemname:   ",$(systemname)   )
+	$(call prompt,"syslib:       ",$(syslib)       )
+	$(call prompt,"syslibname:   ",$(syslibname)   )
+	
+	@echo "${WHITE}\nLOCAL LIBRARY           ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"loclib:       ",$(syslib)       )
+	$(call prompt,"loclibname:   ",$(syslibname)   )
+	
+	@echo "${WHITE}\nDEPENDENCY LIBRARY      ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"deplib:       ",$(syslib)       )
+	$(call prompt,"deplibname:   ",$(syslibname)   )
+	
+	@echo "${WHITE}\nLIBRARY                 ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"lib_in:       ",$(lib_in)       )
+	$(call prompt,"libpat:       ",$(libpat)       )
+	$(call prompt,"liball:       ",$(liball)       )
+	$(call prompt,"libsrc:       ",$(libsrc)       )
+	$(call prompt,"libname:      ",$(libname)      )
+	$(call prompt,"lib:          ",$(lib)          )
 	
 	@echo "${WHITE}\nTEST                    ${RES}"
 	@echo "----------------------------------------"

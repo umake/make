@@ -1451,15 +1451,16 @@ $(foreach ar,$(arpat),\
                          $(call not-root,$(basename $l)\
 )))))))
 #------------------------------------------------------------------[ 4 ]
-arobj   := $(foreach ar,$(arpatsrc),$(arobj_$(ar)))
+arobj     := $(foreach ar,$(arpatsrc),$(arobj_$(ar)))
 #------------------------------------------------------------------[ 5 ]
-arname  := $(notdir $(basename $(arpatsrc)))
+arlibname := $(notdir $(basename $(arpatsrc)))
 #------------------------------------------------------------------[ 6 ]
-arlib   := $(foreach s,$(arpatsrc),\
-               $(patsubst $(subst ./,,$(dir $s))%,\
-               $(subst ./,,$(dir $s))lib%,$s)\
-           )
-arlib   := $(patsubst %,$(firstword $(libdir))/%.a,$(basename $(arlib)))
+arlib     := $(foreach s,$(arpatsrc),\
+                 $(patsubst $(subst ./,,$(dir $s))%,\
+                 $(subst ./,,$(dir $s))lib%,$s)\
+             )
+arlib     := $(patsubst %,$(firstword $(libdir))/%.a,\
+                 $(basename $(arlib)))
 
 # Dynamic libraries
 # ===================
@@ -1472,13 +1473,13 @@ arlib   := $(patsubst %,$(firstword $(libdir))/%.a,$(basename $(arlib)))
 # 7) Create library complete names, with directories, from the source
 # 8) Set directories for locally searching for the libraries
 #------------------------------------------------------------------[ 1 ]
-shrall  := \
+shrall    := \
 $(foreach so,$(shr_in),\
     $(foreach l,$(liball),\
         $(if $(findstring $(so),$l),$l)\
 ))
 #------------------------------------------------------------------[ 2 ]
-shrpat  := \
+shrpat    := \
 $(foreach so,$(shr_in),\
     $(foreach l,$(libpat),\
         $(if $(findstring $(so),$l),$l)\
@@ -1495,16 +1496,16 @@ $(foreach shr,$(shrpat),\
                          $(call not-root,$(basename $l)\
 )))))))
 #------------------------------------------------------------------[ 5 ]
-shrobj   := $(foreach shr,$(shrpatsrc),$(shrobj_$(shr)))
+shrobj     := $(foreach shr,$(shrpatsrc),$(shrobj_$(shr)))
 #------------------------------------------------------------------[ 6 ]
-shrname := $(notdir $(basename $(shrpatsrc)))
+shrlibname := $(notdir $(basename $(shrpatsrc)))
 #------------------------------------------------------------------[ 7 ]
-shrlib  := $(foreach s,$(shrpatsrc),\
-                $(patsubst $(subst ./,,$(dir $s))%,\
-                $(subst ./,,$(dir $s))lib%,$s)\
-            )
-shrlib  := $(patsubst %,$(firstword $(libdir))/%.so,$(basename $(shrlib)))
-#------------------------------------------------------------------[ 8 ]
+shrlib     := $(foreach s,$(shrpatsrc),\
+                   $(patsubst $(subst ./,,$(dir $s))%,\
+                   $(subst ./,,$(dir $s))lib%,$s)\
+               )
+shrlib     := $(patsubst %,$(firstword $(libdir))/%.so,\
+                  $(basename $(shrlib)))
 
 # System libraries
 # ==================
@@ -1550,7 +1551,8 @@ $(call rfilter-out,$(libname) $(syslibname) $(loclibname),\
 # 3) Get all subdirectories of the library dirs and
 #    add them as paths to be searched for libraries
 lib     := $(arlib) $(shrlib) $(syslib) $(loclib) $(deplib)
-libname := $(arname) $(shrname) $(syslibname) $(loclibname) $(deplibname)
+libname := $(arlibname) $(shrlibname)
+libname += $(syslibname) $(loclibname) $(deplibname)
 libsub   = $(if $(strip $(lib)),\
                $(foreach d,$(libdir),$(call rsubdir,$d)))
 ldlibs   = $(LDLIBS) $(sort $(addprefix -L$(space),$(libsub)))
@@ -4606,7 +4608,7 @@ else
 	$(call prompt,"ar_in:        ",$(ar_in)        )
 	$(call prompt,"arpat:        ",$(arpat)        )
 	$(call prompt,"arpatsrc:     ",$(arpatsrc)     )
-	$(call prompt,"arname:       ",$(arname)       )
+	$(call prompt,"arlibname:    ",$(arlibname)    )
 	$(call prompt,"arlib:        ",$(arlib)        )
 	
 	@echo "${WHITE}\nDYNAMIC LIBRARY         ${RES}"
@@ -4615,7 +4617,7 @@ else
 	$(call prompt,"shrpat:       ",$(shrpat)       )
 	$(call prompt,"shrpatsrc:    ",$(shrpatsrc)    )
 	$(call prompt,"shrall:       ",$(shrall)       )
-	$(call prompt,"shrname:      ",$(shrname)      )
+	$(call prompt,"shrlibname:   ",$(shrlibname)   )
 	$(call prompt,"shrlib:       ",$(shrlib)       )
 	
 	@echo "${WHITE}\nSYSTEM LIBRARY          ${RES}"

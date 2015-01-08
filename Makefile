@@ -2339,6 +2339,16 @@ $$(depdir)/$1$$(sysext): | $$(depdir)
 	
 	$$(quiet) which $$(firstword $$($1)) $$(NO_OUTPUT) $$(NO_ERROR) \
 	          || $$(call model-error,$$(MSG_PRG_NOT_FOUND))
+	
+	$$(if $$(strip $$(program_version.$1)),\
+	    $$(if $$(call version-ge,\
+	             $$(lastword $$(shell $$(firstword $$($1)) --version \
+	                 | grep "\([0-9a-zA-Z]\+[-.]\)\+[0-9a-zA-Z]$$$$")),\
+	             $$(lastword $$(program_version.$1))\
+	        ),,\
+	        $$(call phony-error,$$(MSG_PRG_BAD_VER))\
+	))
+	
 	$$(call select,$$@)
 	$$(call cat,'override OLD_$1 := $$($1)')
 	
@@ -3191,6 +3201,9 @@ MSG_PRG_ALL       = "${YELLOW}All dependencies avaiable${RES}"
 MSG_PRG_UNDEFINED = "${ERR}Undefined variable ${GREEN}$d${DEF}"
 MSG_PRG_NOT_FOUND = "${ERR}Dependency ${GREEN}$($d)${DEF}"\
                     "not found${RES}"
+MSG_PRG_BAD_VER   = "${ERR}$d dependency ${GREEN}$($d)${DEF}"\
+                    "has not the required version"\
+                    "($(program_version.$d)${RES})"
 
 MSG_EXT_BUILD     = "${YELLOW}Building dependency ${DEF}$d${RES}"
 MSG_EXT_NO_MAKE   = "${ERR}No Makefile found for compilation${RES}"

@@ -961,7 +961,7 @@ lexflags  := $(LEXFLAGS)
 yaccflags := $(YACCFLAGS)
 esqlflags := $(ESQLFLAGS)
 
-ldasm     := $(LDASM)
+ldas      := $(LDAS)
 ldc       := $(LDC)
 ldf       := $(LDF)
 ldcxx     := $(LDCXX)
@@ -1457,7 +1457,7 @@ cxx_all := $(call rfilter,$(addprefix %,$(cxxext)),$(srcall))
 # Type-specific library flags
 # =============================
 # 1) Add asm, c, f, cxx, lex, yacc and esql only flags in linker flags
-$(if $(strip $(asmall)), $(eval ldflags += $(ldasm)  ))
+$(if $(strip $(asmall)), $(eval ldflags += $(ldas)   ))
 $(if $(strip $(c_all)),  $(eval ldflags += $(ldc)    ))
 $(if $(strip $(f_all)),  $(eval ldflags += $(ldf)    ))
 $(if $(strip $(cxx_all)),$(eval ldflags += $(ldcxx)  ))

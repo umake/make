@@ -1559,17 +1559,13 @@ $(foreach l,$(filter -l%,$(ldflags)),\
                 $(filter /usr/lib%,$(patsubst -L%,%,$(ldlibs)))\
                 $(filter /usr/local/lib%,$(patsubst -L%,%,$(ldlibs))),\
         $(lastword $(foreach e,$(libext),\
-            $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))))
+            $(wildcard $d/lib$(patsubst -l%,%,$l)$e*)))\
+))
 #------------------------------------------------------------------[ 2 ]
-syslibname := $(patsubst lib%,%,$(notdir $(basename $(syslib))))
+syslibname := $(patsubst lib%,%,$(notdir $(call abs-basename,$(syslib))))
 #------------------------------------------------------------------[ 3 ]
 syslibdep  := $(addprefix $(depdir)/,\
                   $(addsuffix $(sysext),$(syslibname)))
-#------------------------------------------------------------------[ 4 ]
-$(foreach l,$(old_syslib),$(if $(findstring $l,$(syslib)),,\
-    $(shell $(RM) \
-        $(depdir)/$(patsubst lib%,%,$(notdir $(basename $l)))$(sysext)\
-)))
 
 # Local libraries
 # =================

@@ -1899,7 +1899,7 @@ build_dependency := \
     ESQL     => $(cesql)
 
 .PHONY: all
-all: builddep $(externdep) $(binall) $(lib)
+all: builddep $(syslibdep) $(externdep) $(binall) $(lib)
 
 .PHONY: check
 check: $(externdep) $(testrun)
@@ -2342,6 +2342,7 @@ ifneq ($(patsubst %clean,clean,$(MAKECMDGOALS)),clean)
 -include $(wildcard $(depall))
 -include $(wildcard $(progdep))
 -include $(wildcard $(externdep))
+-include $(wildcard $(syslibdep))
 endif
 
 #======================================================================#
@@ -2406,6 +2407,53 @@ $$(depdir)/$1$$(sysext): | $$(depdir)
 	$$(call phony-ok,$$(MSG_PRG_SEARCH))
 endef
 $(foreach p,$(programs),$(eval $(call program-dependency,$p)))
+
+#======================================================================#
+# Function: library-dependency                                         #
+# @param  $1 Program name                                              #
+# @return Target to check if program exists                            #
+#======================================================================#
+define library-dependency
+$$(depdir)/$1$$(sysext): d=$1
+$$(depdir)/$1$$(sysext): | $$(depdir)
+	$$(call phony-status,$$(MSG_LIB_SEARCH))
+	
+	$$(foreach l,$$(old_syslib),\
+	    $$(if $$(findstring $$l,$$(syslib)),,\
+	        $$(shell $$(RM) \
+	            $$(addprefix $$(depdir)/,\
+	                $$(addsuffix $$(sysext),\
+	                    $$(patsubst lib%,%,$$(notdir $$(basename $$l)))\
+	        ))) \
+	))
+	
+	$$(quiet) ls $2* $$(NO_OUTPUT) $$(NO_ERROR) \
+	          || $$(call model-error,$$(MSG_LIB_NOT_FOUND))
+	
+	$$(if $$(strip $$(library_version.$1)),\
+	    $$(if $$(lastword $$(shell ls $2* \
+	              | sed 's/[^ ]\+$$(suffix $2).//')),,\
+	        $$(call prony-error,$$(MSG_LIB_NO_VERSION))\
+	))
+	
+	$$(if $$(strip $$(library_version.$1)),\
+	    $$(if $$(call version-ge,\
+	             $$(lastword $$(shell ls $2* \
+	                 | sed 's/[^ ]\+$$(suffix $3).//')),\
+	             $$(lastword $$(library_version.$1))\
+	        ),,\
+	        $$(call phony-error,$$(MSG_LIB_BAD_VER))\
+	))
+	
+	$$(call select,$$@)
+	$$(call cat,'override old_syslib := $$(syslib)')
+	
+	$$(call phony-ok,$$(MSG_LIB_SEARCH))
+endef
+$(foreach p,$(syslib),$(strip \
+    $(eval $(call library-dependency,$(patsubst lib%,%,\
+               $(notdir $(basename $(call not-extra-suffix,$p)))),$p,\
+               $(call not-extra-suffix,$p)))))
 
 #======================================================================#
 # Function: extern-dependency                                          #
@@ -3255,6 +3303,14 @@ MSG_PRG_NOT_FOUND = "${ERR}Dependency ${GREEN}$($d)${DEF}"\
 MSG_PRG_BAD_VER   = "${ERR}$d dependency ${GREEN}$($d)${DEF}"\
                     "has not the required version"\
                     "($(program_version.$d)${RES})"
+
+MSG_LIB_SEARCH    = "${DEF}Searching for system library"\
+                    "${GREEN}$d${RES}"
+MSG_LIB_NOT_FOUND = "${ERR}System library ${GREEN}$d${DEF}"\
+                    "not found${RES}"
+MSG_LIB_BAD_VER   = "${ERR}System library ${RED}$d${DEF}"\
+                    "has not the required version"\
+                    "($(library_version.$d)${RES})"
 
 MSG_EXT_BUILD     = "${YELLOW}Building dependency ${DEF}$d${RES}"
 MSG_EXT_NO_MAKE   = "${ERR}No Makefile found for compilation${RES}"

@@ -771,6 +771,7 @@ endef
 # 1) root: Gets the root directory (first in the path) of a path or file
 # 2) not-root: Given a path or file, take out the root directory of it
 # 3) rm-trailing-bar: Removes the last / of a directory-only name
+
 define root
 $(strip $(foreach s,$1,\
     $(if $(findstring /,$s),\
@@ -1875,11 +1876,13 @@ $(foreach p,$(call hash-table.keys,program_version),\
 $(foreach n,program library,\
     $(foreach p,$(call hash-table.keys,$n_version),\
         $(eval $n_version.$p := \
-            $(patsubst $(lparentheses)%,%,$(call car,$($n_version.$p)))\
+            $(patsubst $(lparentheses)%,%,\
+                $(call car,$($n_version.$p)))\
             $(call cdr,$($n_version.$p)))\
         $(eval $n_version.$p := \
             $(call rcdr,$($n_version.$p))\
-            $(patsubst %$(rparentheses),%,$(call rcar,$($n_version.$p))))\
+            $(patsubst %$(rparentheses),%,\
+                $(call rcar,$($n_version.$p))))\
 ))
 
 ########################################################################
@@ -2363,11 +2366,13 @@ $1dep: \
         $$(and $$(strip $$(OLD_$$k)),$$(call ne,$$(OLD_$$k),$$($$k))),\
             $$(shell $$(RM) $$(depdir)/$$k$$(sysext))\
     )) \
-    $$(if $$(strip $$(call hash-table.values,$2)),$$(depdir)/$1$$(sysext))
+    $$(if $$(strip $$(call hash-table.values,$2)),\
+        $$(depdir)/$1$$(sysext))
 
 $$(depdir)/$1$$(sysext): \
     $$(foreach k,$$(call hash-table.keys,$2),\
-        $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k$$(sysext))) | $$(depdir)
+        $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k$$(sysext))) \
+    | $$(depdir)
 	
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_PRG_ALL))

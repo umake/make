@@ -787,6 +787,45 @@ $(strip $(foreach s,$1,\
     $(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s))))
 endef
 
+# Suffix manipulation functions
+# ===============================
+# 1) abs-basename: Extracts all but all suffixes from file names in $1
+# 2) all-suffix: Extracts all suffixes from file names in $1
+# 3) extra-suffix: Extracts all but basename with first suffix
+# 4) not-extra-suffix: Extracts basename with first suffix
+
+define abs-basename_impl
+$(strip $(if $(call is-empty,$(basename $1)),,\
+    $(if $(call eq,$(basename $1),$1),\
+        $1,$(call abs-basename_impl,$(basename $1)))))
+endef
+
+define abs-basename
+$(strip $(foreach w,$1,$(call abs-basename_impl,$w)))
+endef
+
+define all-suffix_impl
+$(if $(call abs-basename_impl,$1),\
+    $(foreach p,$(call abs-basename_impl,$1),$(patsubst $p%,%,$1)),$1)
+endef
+
+define all-suffix
+$(strip $(foreach w,$1,$(call all-suffix_impl,$1)))
+endef
+
+define suffix-list
+$(strip $(subst ., ,$(call all-suffix,$1)))
+endef
+
+define extra-suffix
+$(strip .$(call all-suffix,$(patsubst .%,%,$(call all-suffix,$1))))
+endef
+
+define not-extra-suffix
+$(strip $(foreach w,$1,\
+    $(call abs-basename,$w).$(firstword $(call suffix-list,$w))))
+endef
+
 # File identification functions
 # ===============================
 # 1) is-f:    Figures out if all files in a list are Fortran files

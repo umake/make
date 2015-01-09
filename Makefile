@@ -1357,8 +1357,6 @@ incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
 incall  := $(call filter-ignored,$(incall))
 #------------------------------------------------------------------[ 3 ]
 incsub  := $(sort $(call rm-trailing-bar,$(dir $(incall))))
-incsub  += $(patsubst %,$(extdir)/%/include,\
-               $(call hash-table.keys,git_dependency))
 incsub  += $(autoinc)
 #------------------------------------------------------------------[ 4 ]
 aslibs  := $(ASLIBS)  $(patsubst %,-I%,$(incsub))

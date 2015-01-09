@@ -71,8 +71,9 @@
     [X] Allow Makefile to be executable (add #!/usr/bin/make).
     [X] Support compilation and run of coverage test (with gcov).
     [X] Use git to upgrade Makefile when it is added as a submodule.
+    [X] Add option to check system program/library version.
+    [ ] Create subdirectory for external and library dependency.
     [ ] Check for system dependency existence iff targets need rebuild. 
-    [ ] Add option to check system program version.
     [ ] Support run of profiling tools (with gprof).
     [ ] Support compilation of CORBA with C++.
     [ ] Automatically create header 'gettext.h' for i18n defines.

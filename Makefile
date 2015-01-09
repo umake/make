@@ -4731,13 +4731,13 @@ else
 	
 	@echo "${WHITE}\nLOCAL LIBRARY           ${RES}"
 	@echo "----------------------------------------"
-	$(call prompt,"loclib:       ",$(syslib)       )
-	$(call prompt,"loclibname:   ",$(syslibname)   )
+	$(call prompt,"loclib:       ",$(loclib)       )
+	$(call prompt,"loclibname:   ",$(loclibname)   )
 	
 	@echo "${WHITE}\nDEPENDENCY LIBRARY      ${RES}"
 	@echo "----------------------------------------"
-	$(call prompt,"deplib:       ",$(syslib)       )
-	$(call prompt,"deplibname:   ",$(syslibname)   )
+	$(call prompt,"deplib:       ",$(deplib)       )
+	$(call prompt,"deplibname:   ",$(deplibname)   )
 	
 	@echo "${WHITE}\nLIBRARY                 ${RES}"
 	@echo "----------------------------------------"
@@ -4775,6 +4775,7 @@ else
 	$(call prompt,"depall:       ",$(depall)       )
 	$(call prompt,"progdep:      ",$(progdep)      )
 	$(call prompt,"externdep:    ",$(externdep)    )
+	$(call prompt,"syslibdep:    ",$(syslibdep)    )
 	
 	@echo "${WHITE}\nBINARY                  ${RES}"
 	@echo "----------------------------------------"
@@ -4802,15 +4803,32 @@ else
 	$(call prompt,"texipdf:      ",$(texipdf)      )
 	$(call prompt,"texips:       ",$(texips)       )
 	
-	@echo "${WHITE}\nFLAGS                   ${RES}"
+	@echo "${WHITE}\nCOMPILER FLAGS          ${RES}"
 	@echo "----------------------------------------"
+	$(call prompt,"asflags:      ",$(asflags)      )
 	$(call prompt,"cflags:       ",$(cflags)       )
-	$(call prompt,"clibs:        ",$(clibs)        )
 	$(call prompt,"fflags:       ",$(fflags)       )
-	$(call prompt,"flibs:        ",$(flibs)        )
 	$(call prompt,"cxxflags:     ",$(cxxflags)     )
+	
+	@echo "${WHITE}\nCOMPILER PATHS          ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"aslibs:       ",$(aslibs)       )
+	$(call prompt,"clibs:        ",$(clibs)        )
+	$(call prompt,"flibs:        ",$(flibs)        )
 	$(call prompt,"cxxlibs:      ",$(cxxlibs)      )
-	$(call prompt,"ldlibs:       ",$(ldlibs)       )
+	
+	@echo "${WHITE}\nLINKER FLAGS            ${RES}"
+	@echo "----------------------------------------"
 	$(call prompt,"ldflags:      ",$(ldflags)      )
+	$(call prompt,"ldc:          ",$(ldc)          )
+	$(call prompt,"ldf:          ",$(ldf)          )
+	$(call prompt,"ldcxx:        ",$(ldcxx)        )
+	$(call prompt,"ldlex:        ",$(ldlex)        )
+	$(call prompt,"ldyacc:       ",$(ldyacc)       )
+	$(call prompt,"ldesql:       ",$(ldesql)       )
+	
+	@echo "${WHITE}\nLINKER PATHS            ${RES}"
+	@echo "----------------------------------------"
+	$(call prompt,"ldlibs:       ",$(ldlibs)       )
 
 endif #### ifdef VAR

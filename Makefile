@@ -2364,6 +2364,7 @@ $1dep: \
     $$(if $$(strip $$(call hash-table.values,$2)),\
         $$(depdir)/$1$$(sysext))
 
+$$(depdir)/$1$$(sysext): n=$1
 $$(depdir)/$1$$(sysext): \
     $$(foreach k,$$(call hash-table.keys,$2),\
         $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k$$(sysext))) \
@@ -3294,7 +3295,7 @@ MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
 
 MSG_PRG_SEARCH    = "${DEF}Searching for $d dependency"\
                     "${GREEN}$($d)${RES}"
-MSG_PRG_ALL       = "${YELLOW}All dependencies avaiable${RES}"
+MSG_PRG_ALL       = "${YELLOW}All $n dependencies avaiable${RES}"
 MSG_PRG_UNDEFINED = "${ERR}Undefined variable ${GREEN}$d${DEF}"
 MSG_PRG_NOT_FOUND = "${ERR}Dependency ${GREEN}$($d)${DEF}"\
                     "not found${RES}"

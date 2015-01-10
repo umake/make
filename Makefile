@@ -1897,7 +1897,7 @@ build_dependency := \
     ESQL     => $(cesql)
 
 .PHONY: all
-all: builddep $(syslibdep) $(externdep) $(binall) $(lib)
+all: builddep librarydep $(externdep) $(binall) $(lib)
 
 .PHONY: check
 check: $(externdep) $(testrun)
@@ -2344,12 +2344,12 @@ ifneq ($(patsubst %clean,clean,$(MAKECMDGOALS)),clean)
 endif
 
 #======================================================================#
-# Function: target-dependency                                          #
+# Function: program-dependency-target                                  #
 # @param  $1 Dependency name (for targets)                             #
-# @param  $3 Dependency nick (hash key)                                #
+# @param  $2 Dependency nick (hash key)                                #
 # @return Target to check a set of dependencies defined in $2          #
 #======================================================================#
-define target-dependency
+define program-dependency-target
 # Creates hash from hash-key
 $$(call hash-table.new,$2)
 
@@ -2363,23 +2363,15 @@ $1dep: \
     )) \
     $$(if $$(strip $$(call hash-table.values,$2)),\
         $$(depdir)/$1$$(sysext))
-
-$$(depdir)/$1$$(sysext): n=$1
-$$(depdir)/$1$$(sysext): \
-    $$(foreach k,$$(call hash-table.keys,$2),\
-        $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k$$(sysext))) \
-    | $$(depdir)
-	
-	$$(quiet) touch $$@
-	$$(call phony-ok,$$(MSG_PRG_ALL))
 endef
 $(foreach d,build external upgrade init tags coverage \
             translation docs doxy dist dpkg install,\
-    $(eval $(call target-dependency,$d,$d_dependency)))
+    $(eval $(call program-dependency-target,$d,$d_dependency)))
 
 #======================================================================#
 # Function: program-dependency                                         #
-# @param  $1 Program name                                              #
+# @param  $1 Complete library path                                     #
+# @param  $2 Library name                                              #
 # @return Target to check if program exists                            #
 #======================================================================#
 define program-dependency
@@ -2408,6 +2400,29 @@ endef
 $(foreach p,$(programs),$(eval $(call program-dependency,$p)))
 
 #======================================================================#
+# Function: library-dependency-target                                  #
+# @param  $1 Dependency name (for targets)                             #
+# @param  $3 Dependency nick (hash key)                                #
+# @return Target to check a set of dependencies defined in $2          #
+#======================================================================#
+define library-dependency-target
+.PHONY: $1dep
+$1dep: \
+    $$(foreach l,$$(old_syslib),\
+        $$(if $$(findstring $$l,$$(syslib)),,\
+            $$(shell $$(RM) \
+                $$(addprefix $$(depdir)/,\
+                    $$(addsuffix $$(sysext),\
+                        $$(patsubst lib%,%,$$(notdir $$(basename $$l)))\
+            ))) \
+    )) \
+    $$(if $$(strip $$(call hash-table.values,$2)),\
+        $$(depdir)/$1$$(sysext))
+endef
+$(foreach d,library,\
+    $(eval $(call library-dependency-target,$d,$d_version)))
+
+#======================================================================#
 # Function: library-dependency                                         #
 # @param  $1 Program name                                              #
 # @return Target to check if program exists                            #
@@ -2416,15 +2431,6 @@ define library-dependency
 $$(depdir)/$1$$(sysext): d=$1
 $$(depdir)/$1$$(sysext): | $$(depdir)
 	$$(call phony-status,$$(MSG_LIB_SEARCH))
-	
-	$$(foreach l,$$(old_syslib),\
-	    $$(if $$(findstring $$l,$$(syslib)),,\
-	        $$(shell $$(RM) \
-	            $$(addprefix $$(depdir)/,\
-	                $$(addsuffix $$(sysext),\
-	                    $$(patsubst lib%,%,$$(notdir $$(basename $$l)))\
-	        ))) \
-	))
 	
 	$$(quiet) ls $2* $$(NO_OUTPUT) $$(NO_ERROR) \
 	          || $$(call model-error,$$(MSG_LIB_NOT_FOUND))
@@ -2453,6 +2459,28 @@ $(foreach p,$(syslib),$(strip \
     $(eval $(call library-dependency,$(patsubst lib%,%,\
                $(notdir $(basename $(call not-extra-suffix,$p)))),$p,\
                $(call not-extra-suffix,$p)))))
+
+#======================================================================#
+# Function: phony-target-dependency                                    #
+# @param  $1 Dependency name (for targets)                             #
+# @param  $2 Dependency nick (hash key)                                #
+# @return Target to check a set of dependencies defined in $2          #
+#======================================================================#
+define phony-target-dependency
+$$(depdir)/$1$$(sysext): n=$1
+$$(depdir)/$1$$(sysext): \
+    $$(foreach k,$$(call hash-table.keys,$2),\
+        $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k$$(sysext))) \
+    | $$(depdir)
+	
+	$$(quiet) touch $$@
+	$$(call phony-ok,$$(MSG_PRG_ALL))
+endef
+$(foreach d,build external upgrade init tags coverage \
+            translation docs doxy dist dpkg install,\
+    $(eval $(call phony-target-dependency,$d,$d_dependency)))
+$(foreach d,library,\
+    $(eval $(call phony-target-dependency,$d,$d_version)))
 
 #======================================================================#
 # Function: extern-dependency                                          #

@@ -1189,8 +1189,8 @@ endef
 # 1) git/web_dependency: Internally defined vars for dependencies
 # 2) Make variables above hash tables
 # 3) Create variable for all dependencies
-# 4) Paths (in first extdir) to store new dependencies
-# 5) Invert paths to compile in the right order
+# 4) Create variable with complete dependency paths
+# 5) Paths (in first extdir) to store new dependencies
 #------------------------------------------------------------------[ 1 ]
 git_dependency := $(strip $(GIT_DEPENDENCY))
 web_dependency := $(strip $(WEB_DEPENDENCY))
@@ -1198,19 +1198,21 @@ web_dependency := $(strip $(WEB_DEPENDENCY))
 $(call hash-table.new,git_dependency)
 $(call hash-table.new,web_dependency)
 #------------------------------------------------------------------[ 3 ]
-externdep := $(call hash-table.keys,git_dependency)
-externdep += $(call hash-table.keys,web_dependency)
-externdep := $(patsubst %,$(depdir)/%$(extext),$(externdep))
+ext_dependency := $(call hash-table.keys,git_dependency)
+ext_dependency += $(call hash-table.keys,web_dependency)
 #------------------------------------------------------------------[ 4 ]
-externreq := $(patsubst $(depdir)/%$(extext),$(extdir)/%,$(externdep))
-#------------------------------------------------------------------[ 5 ]
+externdep := $(addsuffix $(sysext),$(ext_dependency))
+externdep := $(addprefix $(depdir)/$(firstword $(extdir)),$(externdep))
 externdep := $(call invert,$(externdep))
+#------------------------------------------------------------------[ 5 ]
+externreq := $(addprefix $(extdir)/,$(ext_dependency))
 
 # Program dependency files
 # ==========================
 # 1) Add dependency suffix and directory
 #------------------------------------------------------------------[ 1 ]
-progdep := $(addprefix $(depdir)/,$(addsuffix $(sysext),$(programs)))
+progdep := $(addprefix $(depdir)/$(bindir)/,$(programs))
+progdep := $(addsuffix $(sysext),$(progdep))
 
 # Library files
 # ===============
@@ -1562,7 +1564,7 @@ $(foreach l,$(filter -l%,$(ldflags)),\
 #------------------------------------------------------------------[ 2 ]
 syslibname := $(patsubst lib%,%,$(notdir $(basename $(syslib))))
 #------------------------------------------------------------------[ 3 ]
-syslibdep  := $(addprefix $(depdir)/,\
+syslibdep  := $(addprefix $(depdir)/$(firstword $(libdir)),\
                   $(addsuffix $(sysext),$(syslibname)))
 
 # Local libraries
@@ -2362,7 +2364,10 @@ $$(call hash-table.new,$2)
 $1dep: \
     $$(foreach k,$$(call hash-table.keys,$2),$$(if \
         $$(and $$(strip $$(OLD_$$k)),$$(call ne,$$(OLD_$$k),$$($$k))),\
-            $$(shell $$(RM) $$(depdir)/$$k$$(sysext))\
+            $$(shell $$(RM) \
+                $$(addprefix $$(depdir)/$$(firstword $$(bindir))/,\
+                    $$(addsuffix $$(sysext),$$k) \
+            )) \
     )) \
     $$(if $$(strip $$(call hash-table.values,$2)),\
         $$(depdir)/$1$$(sysext))
@@ -2378,11 +2383,12 @@ $(foreach d,build external upgrade init tags coverage \
 # @return Target to check if program exists                            #
 #======================================================================#
 define program-dependency
-$$(depdir)/$1$$(sysext): d=$1
-$$(depdir)/$1$$(sysext): | $$(depdir)
+$$(depdir)/$$(firstword $$(bindir))/$1$$(sysext): d=$1
+$$(depdir)/$$(firstword $$(bindir))/$1$$(sysext): | $$(depdir)
 	$$(if $$(strip $$($1)),,$$(call phony-error,$$(MSG_PRG_UNDEFINED)))
 	$$(call phony-status,$$(MSG_PRG_SEARCH))
 	
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) which $$(firstword $$($1)) $$(NO_OUTPUT) $$(NO_ERROR) \
 	          || $$(call model-error,$$(MSG_PRG_NOT_FOUND))
 	
@@ -2414,7 +2420,7 @@ $1dep: \
     $$(foreach l,$$(old_syslib),\
         $$(if $$(findstring $$l,$$(syslib)),,\
             $$(shell $$(RM) \
-                $$(addprefix $$(depdir)/,\
+                $$(addprefix $$(depdir)/$$(firstword $$(libdir))/,\
                     $$(addsuffix $$(sysext),\
                         $$(patsubst lib%,%,$$(notdir $$(basename $$l)))\
             ))) \
@@ -2431,10 +2437,11 @@ $(foreach d,library,\
 # @return Target to check if program exists                            #
 #======================================================================#
 define library-dependency
-$$(depdir)/$1$$(sysext): d=$1
-$$(depdir)/$1$$(sysext): | $$(depdir)
+$$(depdir)/$$(firstword $$(libdir))/$1$$(sysext): d=$1
+$$(depdir)/$$(firstword $$(libdir))/$1$$(sysext): | $$(depdir)
 	$$(call phony-status,$$(MSG_LIB_SEARCH))
 	
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) ls $2* $$(NO_OUTPUT) $$(NO_ERROR) \
 	          || $$(call model-error,$$(MSG_LIB_NOT_FOUND))
 	
@@ -2475,7 +2482,7 @@ $1dep: \
     $$(foreach d,$$(old_externdep),\
         $$(if $$(findstring $$l,$$(externdep)),,\
             $$(shell $$(RM) \
-                $$(addprefix $$(depdir)/,\
+                $$(addprefix $$(depdir)/$$(firstword $$(extdir))/,\
                     $$(addsuffix $$(extext),$$l)\
             ))\
     )) \
@@ -2492,14 +2499,16 @@ $(foreach d,git web,\
 # @return Target to download git dependencies for building             #
 #======================================================================#
 define extern-dependency
-$$(extdir)/$$(strip $1): | $$(extdir)
-	$$(call $$(strip $2),$$(call car,$$(strip $3)),$$@)
+$$(extdir)/$1: | $$(extdir)
+	$$(call $2,$$(call car,$3),$$@)
 
-$$(depdir)/$$(strip $1)$$(sysext): d=$$(extdir)/$$(strip $1)
-$$(depdir)/$$(strip $1)$$(sysext): $$(externreq)
+$$(depdir)/$$(firstword $$(extdir))/$1$$(sysext): d=$$(extdir)/$1
+$$(depdir)/$$(firstword $$(extdir))/$1$$(sysext): $$(externreq)
 	$$(call status,$$(MSG_EXT_BUILD))
-	$$(quiet) $$(if $$(call cdr,$$(strip $3)),$$(strip \
-	              (cd $$d && $$(call cdr,$$(strip $3))) $$(ERROR) \
+	
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	$$(quiet) $$(if $$(call cdr,$3),$$(strip \
+	              (cd $$d && $$(call cdr,$3)) $$(ERROR) \
 	              || $$(call model-error,$$(MSG_EXT_BUILD_ERR)) \
 	          ),$$(strip \
 	              if [ -f $$d/[Mm]akefile ]; then \
@@ -2514,9 +2523,9 @@ $$(depdir)/$$(strip $1)$$(sysext): $$(externreq)
 	              fi \
 	          ))
 	
-	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(call select,$$@)
 	$$(call cat,'override old_externdep := $$(externdep)')
+	
 	$$(call ok,$$(MSG_EXT_BUILD))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
@@ -2531,10 +2540,10 @@ $(foreach d,$(call hash-table.keys,web_dependency),$(eval\
 # @return Target to check a set of dependencies defined in $2          #
 #======================================================================#
 define phony-target-dependency
-$$(depdir)/$1$$(sysext): n=$1
-$$(depdir)/$1$$(sysext): \
+$$(depdir)/$$(strip $1)$$(sysext): n=$1
+$$(depdir)/$$(strip $1)$$(sysext): \
     $$(foreach k,$$(call hash-table.keys,$2),\
-        $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k$$(sysext))) \
+        $$(if $$(strip $$($2.$$k)),$3/$$k$$(sysext))) \
     | $$(depdir)
 	
 	$$(quiet) touch $$@
@@ -2542,11 +2551,14 @@ $$(depdir)/$1$$(sysext): \
 endef
 $(foreach d,build external upgrade init tags coverage \
             translation docs doxy dist dpkg install,\
-    $(eval $(call phony-target-dependency,$d,$d_dependency)))
+    $(eval $(call phony-target-dependency,\
+               $d,$d_dependency,$(depdir)/$(firstword $(bindir)))))
 $(foreach d,library,\
-    $(eval $(call phony-target-dependency,$d,$d_version)))
+    $(eval $(call phony-target-dependency,\
+               $d,$d_version,$(depdir)/$(firstword $(libdir)))))
 $(foreach d,git web,\
-    $(eval $(call phony-target-dependency,$d,$d_dependency)))
+    $(eval $(call phony-target-dependency,\
+               $d,$d_dependency,$(depdir)/$(firstword $(extdir)))))
 
 #======================================================================#
 # Function: scanner-factory                                            #

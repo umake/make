@@ -1897,10 +1897,10 @@ build_dependency := \
     ESQL     => $(cesql)
 
 .PHONY: all
-all: builddep librarydep $(externdep) $(binall) $(lib)
+all: builddep librarydep gitdep webdep $(binall) $(lib)
 
 .PHONY: check
-check: $(externdep) $(testrun)
+check: gitdep webdep $(testrun)
 	$(if $(strip $^),$(call phony-ok,$(MSG_TEST_SUCCESS)))
 
 .PHONY: nothing

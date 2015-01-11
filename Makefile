@@ -2492,8 +2492,8 @@ define extern-dependency
 $$(extdir)/$$(strip $1): | $$(extdir)
 	$$(call $$(strip $2),$$(call car,$$(strip $3)),$$@)
 
-$$(depdir)/$$(strip $1)$$(extext): d=$$(extdir)/$$(strip $1)
-$$(depdir)/$$(strip $1)$$(extext): $$(externreq)
+$$(depdir)/$$(strip $1)$$(sysext): d=$$(extdir)/$$(strip $1)
+$$(depdir)/$$(strip $1)$$(sysext): $$(externreq)
 	$$(call status,$$(MSG_EXT_BUILD))
 	$$(quiet) $$(if $$(call cdr,$$(strip $3)),$$(strip \
 	              (cd $$d && $$(call cdr,$$(strip $3))) $$(ERROR) \

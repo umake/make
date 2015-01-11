@@ -2542,8 +2542,7 @@ $(foreach d,$(call hash-table.keys,web_dependency),$(eval\
 define phony-target-dependency
 $$(depdir)/$$(strip $1)$$(sysext): n=$1
 $$(depdir)/$$(strip $1)$$(sysext): \
-    $$(foreach k,$$(call hash-table.keys,$2),\
-        $$(if $$(strip $$($2.$$k)),$3/$$k$$(sysext))) \
+    $$(foreach k,$3,$$(if $$(strip $$($2.$$k)),$4/$$k$$(sysext))) \
     | $$(depdir)
 	
 	$$(quiet) touch $$@
@@ -2551,14 +2550,17 @@ $$(depdir)/$$(strip $1)$$(sysext): \
 endef
 $(foreach d,build external upgrade init tags coverage \
             translation docs doxy dist dpkg install,\
-    $(eval $(call phony-target-dependency,\
-               $d,$d_dependency,$(depdir)/$(firstword $(bindir)))))
+    $(eval $(call phony-target-dependency,$d,$d_dependency,\
+               $(call hash-table.keys,$d_dependency),\
+               $(depdir)/$(firstword $(bindir)))))
 $(foreach d,library,\
-    $(eval $(call phony-target-dependency,\
-               $d,$d_version,$(depdir)/$(firstword $(libdir)))))
+    $(eval $(call phony-target-dependency,$d,$d_version,\
+               $(call hash-table.keys,$d_version),\
+               $(depdir)/$(firstword $(libdir)))))
 $(foreach d,git web,\
-    $(eval $(call phony-target-dependency,\
-               $d,$d_dependency,$(depdir)/$(firstword $(extdir)))))
+    $(eval $(call phony-target-dependency,$d,$d_dependency,\
+               $(call invert,$(call hash-table.keys,$d_dependency)),\
+               $(depdir)/$(firstword $(extdir)))))
 
 #======================================================================#
 # Function: scanner-factory                                            #

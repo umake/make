@@ -4584,6 +4584,7 @@ projecthelp:
 	@echo " * compiler:         Outputs Compiler.mk to define compilers"
 	@echo " * config:           Outputs Config.mk for user's options   "
 	@echo " * coverage:         Creates coverage analysis information  "
+	@echo " * depend:           Checks all dependencies needed to build"
 	@echo " * deploy:           Deploys changes in BRANCH to REMOTE    "
 	@echo " * dist-*:           As 'dist', with many compressions      "
 	@echo " * dist:             Creates .tar.gz with bins and libs     "

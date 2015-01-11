@@ -2461,6 +2461,28 @@ $(foreach p,$(syslib),$(strip \
                $(call not-extra-suffix,$p)))))
 
 #======================================================================#
+# Function: extern-dependency-target                                   #
+# @param  $1 Dependency name (for targets)                             #
+# @param  $3 Dependency nick (hash key)                                #
+# @return Target to check a set of dependencies defined in $2          #
+#======================================================================#
+define extern-dependency-target
+.PHONY: $1dep
+$1dep: \
+    $$(foreach d,$$(old_externdep),\
+        $$(if $$(findstring $$l,$$(externdep)),,\
+            $$(shell $$(RM) \
+                $$(addprefix $$(depdir)/,\
+                    $$(addsuffix $$(extext),$$l)\
+            ))\
+    )) \
+    $$(if $$(strip $$(call hash-table.values,$2)),\
+        $$(depdir)/$1$$(sysext))
+endef
+$(foreach d,git web,\
+    $(eval $(call extern-dependency-target,$d,$d_dependency)))
+
+#======================================================================#
 # Function: extern-dependency                                          #
 # @param  $1 Dependency nick (hash key)                                #
 # @param  $2 Dependency path (hash value)                              #
@@ -2520,6 +2542,8 @@ $(foreach d,build external upgrade init tags coverage \
     $(eval $(call phony-target-dependency,$d,$d_dependency)))
 $(foreach d,library,\
     $(eval $(call phony-target-dependency,$d,$d_version)))
+$(foreach d,git web,\
+    $(eval $(call phony-target-dependency,$d,$d_dependency)))
 
 #======================================================================#
 # Function: scanner-factory                                            #

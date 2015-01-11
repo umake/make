@@ -2491,7 +2491,7 @@ $$(depdir)/$$(strip $1)$$(extext): $$(externreq)
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(call select,$$@)
-	$$(call cat,'override old_externdep += $$@')
+	$$(call cat,'override old_externdep := $$(externdep)')
 	$$(call ok,$$(MSG_EXT_BUILD))
 endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\

@@ -1903,7 +1903,7 @@ all: depend $(binall) $(lib)
 depend: builddep librarydep gitdep webdep
 
 .PHONY: check
-check: gitdep webdep $(testrun)
+check: all $(testrun)
 	$(if $(strip $^),$(call phony-ok,$(MSG_TEST_SUCCESS)))
 
 .PHONY: nothing

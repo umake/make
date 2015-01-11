@@ -1897,7 +1897,10 @@ build_dependency := \
     ESQL     => $(cesql)
 
 .PHONY: all
-all: builddep librarydep gitdep webdep $(binall) $(lib)
+all: depend $(binall) $(lib)
+
+.PHONY: depend
+depend: builddep librarydep gitdep webdep
 
 .PHONY: check
 check: gitdep webdep $(testrun)

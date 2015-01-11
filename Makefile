@@ -2461,28 +2461,6 @@ $(foreach p,$(syslib),$(strip \
                $(call not-extra-suffix,$p)))))
 
 #======================================================================#
-# Function: phony-target-dependency                                    #
-# @param  $1 Dependency name (for targets)                             #
-# @param  $2 Dependency nick (hash key)                                #
-# @return Target to check a set of dependencies defined in $2          #
-#======================================================================#
-define phony-target-dependency
-$$(depdir)/$1$$(sysext): n=$1
-$$(depdir)/$1$$(sysext): \
-    $$(foreach k,$$(call hash-table.keys,$2),\
-        $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k$$(sysext))) \
-    | $$(depdir)
-	
-	$$(quiet) touch $$@
-	$$(call phony-ok,$$(MSG_PRG_ALL))
-endef
-$(foreach d,build external upgrade init tags coverage \
-            translation docs doxy dist dpkg install,\
-    $(eval $(call phony-target-dependency,$d,$d_dependency)))
-$(foreach d,library,\
-    $(eval $(call phony-target-dependency,$d,$d_version)))
-
-#======================================================================#
 # Function: extern-dependency                                          #
 # @param  $1 Dependency nick (hash key)                                #
 # @param  $2 Dependency path (hash value)                              #
@@ -2520,6 +2498,28 @@ $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
     $(call extern-dependency,$d,git-submodule-add,$(git_dependency.$d))))
 $(foreach d,$(call hash-table.keys,web_dependency),$(eval\
     $(call extern-dependency,$d,web-clone,$(web_dependency.$d))))
+
+#======================================================================#
+# Function: phony-target-dependency                                    #
+# @param  $1 Dependency name (for targets)                             #
+# @param  $2 Dependency nick (hash key)                                #
+# @return Target to check a set of dependencies defined in $2          #
+#======================================================================#
+define phony-target-dependency
+$$(depdir)/$1$$(sysext): n=$1
+$$(depdir)/$1$$(sysext): \
+    $$(foreach k,$$(call hash-table.keys,$2),\
+        $$(if $$(strip $$($2.$$k)),$$(depdir)/$$k$$(sysext))) \
+    | $$(depdir)
+	
+	$$(quiet) touch $$@
+	$$(call phony-ok,$$(MSG_PRG_ALL))
+endef
+$(foreach d,build external upgrade init tags coverage \
+            translation docs doxy dist dpkg install,\
+    $(eval $(call phony-target-dependency,$d,$d_dependency)))
+$(foreach d,library,\
+    $(eval $(call phony-target-dependency,$d,$d_version)))
 
 #======================================================================#
 # Function: scanner-factory                                            #

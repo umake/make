@@ -72,7 +72,7 @@
     [X] Support compilation and run of coverage test (with gcov).
     [X] Use git to upgrade Makefile when it is added as a submodule.
     [X] Add option to check system program/library version.
-    [ ] Change commit messages to follow git convention (imperative).
+    [X] Change commit messages to follow git convention (imperative).
     [ ] Create subdirectory for external and library dependencies.
     [ ] Check for system dependency existence iff targets need rebuild. 
     [ ] Support run of profiling tools (with gprof).

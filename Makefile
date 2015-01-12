@@ -1938,11 +1938,11 @@ upgrade_dependency := \
 upgrade: upgradedep
 ifneq ($(wildcard $(makedir)/*),)
 	$(call git-pull,origin,master,$(makedir))
-	$(call git-add-commit,$(makedir),"Upgrades submodule $(makedir)")
+	$(call git-add-commit,$(makedir),"Upgrade submodule $(makedir)")
 else
 	$(call web-clone,$(MAKERAWREMOTE),$(firstword $(MAKEFILE_LIST)))
 	$(call git-add-commit,$(firstword $(MAKEFILE_LIST)),\
-                          "Upgrades $(firstword $(MAKEFILE_LIST))")
+                          "Upgrade $(firstword $(MAKEFILE_LIST))")
 endif
 
 ########################################################################
@@ -1973,11 +1973,11 @@ init: initdep
 	$(call git-tag,"v$(strip $(VERSION))")
 	
 	$(call git-add-commit,Makefile Config.mk,\
-	       "Adds Makefile and Config.mk")
+	       "Add Makefile and Config.mk")
 	$(call git-add-commit,.git[a-z]*,\
-	       "Adds git configuration files")
+	       "Add git configuration files")
 	$(call git-add-commit,.version.mk,\
-	       "Adds versioning control file .version.mk")
+	       "Add versioning control file .version.mk")
 
 .PHONY: standard
 standard: init
@@ -3571,7 +3571,7 @@ $(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
     $(call git-add-commit,\
         $(addprefix $(firstword $2)/,\
             $(foreach e,$(strip $1),$(wildcard *$e))),\
-        "Moves $(subst $(quote),,$3) files to $(firstword $2)/")\
+        "Move $(subst $(quote),,$3) files to $(firstword $2)/")\
 )
 endef
 
@@ -3906,14 +3906,14 @@ define git-submodule-add
 	             cd $(dir $2);                                     \
 	             $(call model-git-submodule-add,$1 $(notdir $2));  \
 	             $(call model-git-submodule-init,$(notdir $2));    \
-	             $(call model-git-commit,"Adds $(notdir $2)");     \
+	             $(call model-git-commit,"Add $(notdir $2)");      \
 	             cd $(MAKECURRENTDIR);                             \
 	             $(call model-git-add,$(dir $2));                  \
-	             $(call model-git-commit,"Adds sub-submodule $2"); \
+	             $(call model-git-commit,"Add sub-submodule $2");  \
 	         else \
 	             $(call model-git-submodule-add,$1 $2);            \
 	             $(call model-git-submodule-init,$2);              \
-	             $(call model-git-commit,"Adds submodule $2");     \
+	             $(call model-git-commit,"Add submodule $2");      \
 	         fi
 	$(call phony-ok,$(MSG_GIT_SUB_ADD))
 endef
@@ -3922,19 +3922,19 @@ define git-submodule-rm
 	$(call phony-status,$(MSG_GIT_SUB_RM))
 	$(quiet) if [ -f $(call rm-trailing-bar,$(dir $1))/.git ]; \
 	         then \
-	             cd $(dir $1);                                        \
-	             $(call model-git-submodule-deinit,$(notdir $1));     \
-	             $(call model-git-rm,--cached $(notdir $1));          \
-	             $(call model-git-commit,"Removes $(notdir $1)");     \
-	             cd $(MAKECURRENTDIR);                                \
-	             $(call model-git-add,$(dir $1));                     \
-	             $(call model-git-commit,"Removes sub-submodule $1"); \
-	             $(RM) -r .git/modules/$(notdir $1) $(ERROR);         \
+	             cd $(dir $1);                                       \
+	             $(call model-git-submodule-deinit,$(notdir $1));    \
+	             $(call model-git-rm,--cached $(notdir $1));         \
+	             $(call model-git-commit,"Remove $(notdir $1)");     \
+	             cd $(MAKECURRENTDIR);                               \
+	             $(call model-git-add,$(dir $1));                    \
+	             $(call model-git-commit,"Remove sub-submodule $1"); \
+	             $(RM) -r .git/modules/$(notdir $1) $(ERROR);        \
 	         else \
-	             $(call model-git-submodule-deinit,$1);               \
-	             $(call model-git-rm,--cached $1);                    \
-	             $(call model-git-commit,"Removes submodule $1");     \
-	             $(RM) -r .git/modules/$1 $(ERROR);                   \
+	             $(call model-git-submodule-deinit,$1);              \
+	             $(call model-git-rm,--cached $1);                   \
+	             $(call model-git-commit,"Remove submodule $1");     \
+	             $(RM) -r .git/modules/$1 $(ERROR);                  \
 	         fi 
 	$(call phony-ok,$(MSG_GIT_SUB_RM))
 endef
@@ -3976,7 +3976,7 @@ define web-clone
 	$(call phony-status,$(MSG_WEB_CLONE))
 	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
 	$(quiet) $(call model-git-add,$2)
-	$(quiet) $(call model-git-commit,"Adds web dependency $2")
+	$(quiet) $(call model-git-commit,"Add web dependency $2")
 	$(call phony-ok,$(MSG_WEB_CLONE))
 endef
 

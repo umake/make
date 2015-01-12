@@ -74,6 +74,9 @@
     [X] Add option to check system program/library version.
     [X] Change commit messages to follow git convention (imperative).
     [X] Create depdir subdir for external/library/program dependencies.
+    [ ] Support library with name different from directory's name.
+    [ ] Support binary with name different from directory's name.
+    [ ] Output test coverage statistics (coverage program + unit tests).
     [ ] Check for system dependency existence iff targets need rebuild. 
     [ ] Support run of profiling tools (with gprof).
     [ ] Support compilation of CORBA with C++.

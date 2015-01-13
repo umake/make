@@ -4566,12 +4566,11 @@ gitignore:
 	@echo "#======================================"
 	@$(foreach d,$(depdir),echo $d/; )
 	@$(foreach d,$(objdir),echo $d/; )
-	@$(foreach d,$(libdir),echo $d/; )
-	@$(foreach d,$(extdir),echo $d/; )
 	@$(foreach d,$(bindir),echo $d/; )
 	@$(foreach d,$(sbindir),echo $d/; )
 	@$(foreach d,$(execdir),echo $d/; )
 	@$(foreach d,$(distdir),echo $d/; )
+	@echo $(firstword $(libdir))
 	@echo ""
 	@echo "# Objects, Libraries and Binaries"
 	@echo "#=================================="
@@ -4584,7 +4583,7 @@ gitignore:
 	@echo "#================="
 	@$(if $(strip $(doxyfile)),echo $(docdir)/doxygen/)
 	@$(if $(strip $(doxyfile)),echo $(docdir)/$(doxyfile).mk)
-	@$(foreach e,$(depext),echo *$e; )
+	@$(foreach e,$(depext) $(sysext),echo *$e; )
 	@echo ""
 
 .PHONY: help

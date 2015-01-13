@@ -18,14 +18,15 @@
 # Dependencies
 # ==============
 GIT_DEPENDENCY  += \
-    gmock       => http://git.chromium.org/external/googlemock.git\
-                   cd make && make -s gmock.a && mv gmock.a libgmock.a,\
-    gmock/gtest => http://git.chromium.org/external/googletest.git\
-                   cd make && make -s gtest.a && mv gtest.a libgtest.a\
+    gmock => http://git.chromium.org/external/googlemock.git\
+             cd make && make -s gmock.a GTEST_DIR=../../gtest\
+                     && mv gmock.a libgmock.a,\
+    gtest => http://git.chromium.org/external/googletest.git\
+             cd make && make -s gtest.a && mv gtest.a libgtest.a\
 
 # Paths
 # =======
-LDLIBS          += -L external/gmock/gtest/make/ -L external/gmock/make/
+LDLIBS          += -L external/gtest/make/ -L external/gmock/make/
 
 # Flags
 # =======

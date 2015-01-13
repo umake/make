@@ -379,9 +379,7 @@ XGETTEXT        := xgettext
 MSGINIT         := msginit --no-translator
 MSGMERGE        := msgmerge
 MSGFMT          := msgfmt -c
-ENABLE_NLS      ?= $(or $(strip $(filter translation,$(MAKECMDGOALS))),\
-                        $(sort $(patsubst %,1,$(strip $(call rwildcard,\
-                           $(localedir),$(addprefix *,$(potext)))))))
+NLSREQINC       := libintl.h
 
 # Packages (Debian)
 DEBUILD         := debuild -us -uc
@@ -946,6 +944,16 @@ endef
 # Version
 # =========
 $(call version-check,$(VERSION))
+
+# Native Language Support
+# =========================
+ENABLE_NLS ?= $(strip $(and $(foreach s,$(sysincdir),\
+                  $(foreach i,$(NLSREQINC),$(wildcard $s$i))),$(strip \
+                  $(or $(strip $(filter translation,$(MAKECMDGOALS))),\
+                       $(sort $(patsubst %,1,$(strip $(call rwildcard,\
+                           $(localedir),$(addprefix *,$(potext))))))\
+                  ))\
+              ))
 
 # Documentation
 # ===============

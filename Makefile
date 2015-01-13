@@ -1202,7 +1202,7 @@ ext_dependency := $(call hash-table.keys,git_dependency)
 ext_dependency += $(call hash-table.keys,web_dependency)
 #------------------------------------------------------------------[ 4 ]
 externdep := $(addsuffix $(sysext),$(ext_dependency))
-externdep := $(addprefix $(depdir)/$(firstword $(extdir)),$(externdep))
+externdep := $(addprefix $(depdir)/$(firstword $(extdir))/,$(externdep))
 externdep := $(call invert,$(externdep))
 #------------------------------------------------------------------[ 5 ]
 externreq := $(addprefix $(extdir)/,$(ext_dependency))

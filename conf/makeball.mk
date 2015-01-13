@@ -29,16 +29,17 @@
 # =======
 # ASLIBS          += # Assembly paths
 # CLIBS           += # C paths
+# FLIBS           += # Fortran paths
 # CXXLIBS         += # C++ paths
 # LDLIBS          += # Linker paths
 
 # Compiler flags
 # ================
-# CPPFLAGS        += # Precompiler Flags
-# ASFLAGS         += # Assembly Flags
-# CFLAGS          += # C Flags
+# CPPFLAGS        += # Precompiler flags
+# ASFLAGS         += # Assembly flags
+# CFLAGS          += # C flags
 # FFLAGS          += # Fortran flags
-# CXXFLAGS        += # C++ Flags
+# CXXFLAGS        += # C++ flags
 
 # Linker flags
 # ==============

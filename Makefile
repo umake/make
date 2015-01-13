@@ -3203,10 +3203,6 @@ distclean: clean
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
 	    $(filter $(firstword $(libdir))/%,$(lib)))
-	$(foreach d,$(call invert,$(call hash-table.keys,git_dependency)),\
-	    $(if $(wildcard $(extdir)/$d),\
-	        $(call git-submodule-rm,$(extdir)/$d)$(newline)))
-	$(call rm-if-empty,$(extdir))
 
 ifneq (,$(strip $(ENABLE_NLS)))
 .PHONY: translationclean
@@ -3243,6 +3239,16 @@ coverageclean:
 	$(call rm-if-empty,$(addprefix $(covdir)/,$(srcdir)))
 	$(call rm-if-empty,$(covdir))
 
+.PHONY: externalclean
+externalclean:
+	$(foreach d,$(call invert,$(call hash-table.keys,git_dependency)),\
+	    $(if $(wildcard $(extdir)/$d),\
+	        $(call git-submodule-rm,$(extdir)/$d)$(newline)))
+	$(foreach d,$(call invert,$(call hash-table.keys,web_dependency)),\
+	    $(if $(wildcard $(extdir)/$d),\
+	        $(call rmdir,$(extdir)/$d)$(newline)))
+	$(call rm-if-empty,$(extdir),$(externreq))
+
 .PHONY: realclean
 ifndef D
 realclean:
@@ -3250,7 +3256,7 @@ realclean:
 	@echo $(MSG_WARNCLEAN_END)
 	@echo $(MSG_WARNCLEAN_ALT)
 else
-realclean: distclean docclean packageclean coverageclean \
+realclean: distclean docclean packageclean coverageclean externalclean \
            $(if $(ENABLE_NLS),translationclean)
 	$(call rm-if-exists,$(lexall),$(MSG_LEX_NONE))
 	$(foreach d,$(lexinc),$(call rm-if-empty,$d)$(newline))
@@ -3621,7 +3627,7 @@ endef
 # '---------'-----'-------'-------'------------'   otherwise           #
 #======================================================================#
 define rm-if-empty
-	$(if $(strip $2),$(call srm,$2))
+	$(if $(strip $2),$(call srmdir,$2))
 	$(foreach d,$(strip $1),\
 	    $(if $(strip $(call rwildcard,$d,*)),\
 	        $(if $(strip $2),
@@ -3831,8 +3837,8 @@ GIT_SUBMODULE_ADD    := $(GIT_SUBMODULE) add -f
 GIT_SUBMODULE_INIT   := $(GIT_SUBMODULE) init
 GIT_TAG              := $(GIT) tag
 
-ifneq ($(call version-gt,$(git-version),1.8.3),)
-GIT_SUBMODULE_DEINIT := $(GIT_SUBMODULE) deinit
+ifneq ($(call version-gt,$(git_version),1.8.3),)
+GIT_SUBMODULE_DEINIT := $(GIT_SUBMODULE) deinit -f
 else
 GIT_SUBMODULE_DEINIT := $(NO_OPERATION)
 endif
@@ -3927,15 +3933,17 @@ define git-submodule-rm
 	             $(call model-git-submodule-deinit,$(notdir $1));    \
 	             $(call model-git-rm,--cached $(notdir $1));         \
 	             $(call model-git-commit,"Remove $(notdir $1)");     \
+	             $(RMDIR) $1 $(ERROR);                               \
 	             cd $(MAKECURRENTDIR);                               \
 	             $(call model-git-add,$(dir $1));                    \
 	             $(call model-git-commit,"Remove sub-submodule $1"); \
-	             $(RM) -r .git/modules/$(notdir $1) $(ERROR);        \
+	             $(RMDIR) .git/modules/$(notdir $1) $(ERROR);        \
 	         else \
 	             $(call model-git-submodule-deinit,$1);              \
 	             $(call model-git-rm,--cached $1);                   \
 	             $(call model-git-commit,"Remove submodule $1");     \
-	             $(RM) -r .git/modules/$1 $(ERROR);                  \
+	             $(RMDIR) $1 $(ERROR);                               \
+	             $(RMDIR) .git/modules/$1 $(ERROR);                  \
 	         fi 
 	$(call phony-ok,$(MSG_GIT_SUB_RM))
 endef

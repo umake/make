@@ -4116,9 +4116,9 @@ $(if $(or $(call rsubdir,$(incbase)),$(call rsubdir,$(srcbase))),,\
 # ===========
 # C/C++ Artifacts that may be created by this Makefile
 override NAMESPACE     := $(strip $(notdir $(NAMESPACE)))
-override NMS_HEADER    := $(strip $(notdir $(NMS_HEADER)))
+override NMS_HEADER    := $(strip $(basename $(notdir $(NMS_HEADER))))
 override LIBRARY       := $(strip $(notdir $(LIBRARY)))
-override LIB_HEADER    := $(strip $(notdir $(LIB_HEADER)))
+override LIB_HEADER    := $(strip $(basename $(notdir $(LIB_HEADER))))
 override CLASS         := $(strip $(basename $(notdir $(CLASS))))
 override F_FILE        := $(strip $(basename $(notdir $(F_FILE))))
 override C_FILE        := $(strip $(basename $(notdir $(C_FILE))))
@@ -4173,6 +4173,8 @@ ifdef NMS_HEADER
 	$(call cat,'// Libraries'                                          )
 	$(call include-files,$(NMSH_FILES)                                 )
 	$(call cat,'#endif'                                                )
+	
+	$(call select,stdout)
 endif
 ifdef LIBRARY
 	$(call mkdir,$(incbase)/$(subst ::,/,$(LIBRARY)))
@@ -4208,6 +4210,8 @@ ifdef LIB_HEADER
 	$(call cat,'// Libraries'                                          )
 	$(call include-files,$(LIBH_FILES)                                 )
 	$(call cat,'#endif'                                                )
+	
+	$(call select,stdout)
 endif
 ifdef CLASS
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
@@ -4367,6 +4371,8 @@ ifdef C_MODULE
 	$(call cat,'#endif'                                                )
 	
 	$(call mkdir,$(srcbase)/$(C_MODULE))
+	
+	$(call select,stdout)
 endif
 ifdef CXX_MODULE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))

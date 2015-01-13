@@ -4129,11 +4129,14 @@ override TEMPLATE      := $(strip $(basename $(notdir $(TEMPLATE))))
 override C_MODULE      := $(strip $(basename $(notdir $(C_MODULE))))
 override CXX_MODULE    := $(strip $(basename $(notdir $(CXX_MODULE))))
 override TRANSLATION   := $(strip $(basename $(notdir $(TRANSLATION))))
+override NLS_HEADER    := $(strip $(basename $(notdir $(NLS_HEADER))))
 
 # Check if there is at least one artifact to be created/deleted
-$(if $(or $(NAMESPACE),$(NMS_HEADER),$(LIBRARY),$(LIB_HEADER),\
-     $(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),$(C_MAIN),$(CXX_MAIN),\
-     $(TEMPLATE),$(C_MODULE),$(CXX_MODULE),$(TRANSLATION)),,\
+$(if $(strip \
+    $(or $(NAMESPACE),$(NMS_HEADER),$(LIBRARY),$(LIB_HEADER),\
+         $(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),$(C_MAIN),\
+         $(CXX_MAIN),$(TEMPLATE),$(C_MODULE),$(CXX_MODULE),\
+         $(TRANSLATION),$(NLS_HEADER))),,\
      $(error No filetype defined. Type 'make projecthelp' for info))
 
 .PHONY: new
@@ -4391,11 +4394,50 @@ ifdef CXX_MODULE
 	$(call cat,'#endif'                                                )
 	
 	$(call mkdir,$(srcbase)/$(CXX_MODULE))
+	
+	$(call select,stdout)
 endif
 ifneq (,$(strip $(ENABLE_NLS)))
 ifdef TRANSLATION
 new: $(foreach t,$(intltl),$(foreach e,$(firstword $(poext)),\
         $(localedir)/$(TRANSLATION)$d/$(call not-root,$(basename $t))$e))
+endif
+ifdef NLS_HEADER
+	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
+	$(if $(call not-empty,$(c_all)),\
+	    $(if $(INC_EXT),,$(eval override INC_EXT := .h)))
+	$(if $(call not-empty,$(cxx_all)),\
+	    $(if $(INC_EXT),,$(eval override INC_EXT := .hpp)))
+	
+	$(call invalid-ext,$(INC_EXT),$(hext) $(hxxext))
+	$(call touch,$(incbase)/$(NLS_HEADER)$(INC_EXT),$(notice))
+	$(call select,$(incbase)/$(NLS_HEADER)$(INC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'#ifndef HPP_$(indef)$(call sfmt,$(NLS_HEADER))_DEFINED')
+	$(call cat,'#define HPP_$(indef)$(call sfmt,$(NLS_HEADER))_DEFINED')
+	$(call cat,''                                                      )
+	$(call cat,'#ifdef ENABLE_NLS'                                     )
+	$(call cat,''                                                      )
+	$(call cat,'/* I18n libraries */'                                  )
+	$(foreach l,$(NLSREQINC),$(call cat,'#include <$l>')$(newline))
+	$(call cat,''                                                      )
+	$(call cat,'/* I18n macros */'                                     )
+	$(call cat,'#define _(String) gettext (String)'                    )
+	$(call cat,'#define gettext_noop(String) String'                   )
+	$(call cat,'#define N_(String) gettext_noop (String)'              )
+	$(call cat,''                                                      )
+	$(call cat,'#else'                                                 )
+	$(call cat,''                                                      )
+	$(call cat,'/* I18n macros */'                                     )
+	$(call cat,'#define _(String) String'                              )
+	$(call cat,'#define gettext_noop(String) String'                   )
+	$(call cat,'#define N_(String) gettext_noop (String)'              )
+	$(call cat,''                                                      )
+	$(call cat,'#endif'                                                )
+	$(call cat,''                                                      )
+	$(call cat,'#endif'                                                )
+	
+	$(call select,stdout)
 endif
 endif
 
@@ -4502,6 +4544,10 @@ delete:
 	    $r/$d/LC_MESSAGES/$(call not-root,$b),$(moext)))
 	$(call rm-if-empty,$r/$d/LC_MESSAGES)
 	$(call rm-if-empty,$r/$d)
+endif
+ifdef NLS_HEADER
+	$(call delete-file,$(incbase)/$(NLS_HEADER),\
+	                   $(INC_EXT) $(hext) $(hxxext))
 endif
 endif
 endif # Check if D was defined
@@ -4728,6 +4774,7 @@ projecthelp:
 	@echo " * CXX_MODULE:       C++ header and dif for its sources     "
 	@echo " * TEMPLATE:         C++ template file                      "
 	@echo " * TRANSLATION:      Portable object translation            "
+	@echo " * NLS_HEADER:       Header with i18n headers and macros    "
 	@echo "                                                            "
 
 ########################################################################

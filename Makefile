@@ -3822,7 +3822,7 @@ ifndef NO_GIT
 git_version          := $(subst git version,,$(shell git --version))
 
 GIT_ADD              := $(GIT) add -f
-GIT_CLONE            := $(GIT) clone -q
+GIT_CLONE            := $(GIT) clone -q --recursive
 GIT_COMMIT           := $(GIT) commit -q -m
 GIT_DIFF             := $(GIT) diff --quiet
 GIT_INIT             := $(GIT) init -q  

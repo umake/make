@@ -3198,7 +3198,8 @@ clean: mostlyclean
 
 .PHONY: distclean
 distclean: clean
-	$(call rm-if-empty,$(depdir),$(depall) $(progdep) $(externdep))
+	$(call rm-if-empty,$(depdir),\
+	    $(depall) $(progdep) $(externdep) $(syslibdep))
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
 	    $(filter $(firstword $(libdir))/%,$(lib)))

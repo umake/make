@@ -111,6 +111,8 @@ LDLIBS     :=
 ########################################################################
 ##                            DIRECTORIES                             ##
 ########################################################################
+
+# Local directories
 ifndef SINGLE_DIR
 SRCDIR    := src
 DEPDIR    := dep
@@ -139,6 +141,15 @@ $(foreach var,\
     $(eval $(var) := .)\
 )
 endif
+
+# System directories
+SYSINCDIR  := /include /usr/include /usr/local/include
+SYSLIBDIR  := /lib     /usr/lib     /usr/local/lib      \
+              /lib32   /usr/lib32   /usr/local/lib32    \
+              /lib64   /usr/lib64   /usr/local/lib64
+SYSBINDIR  := /bin     /usr/bin     /usr/local/bin
+SYSSBINDIR := /sbin    /usr/sbin    /usr/local/sbin
+SYSEXECDIR := /libexec /usr/libexec /usr/local/libexec
 
 # Include configuration file if exists
 -include .version.mk
@@ -1016,17 +1027,27 @@ alldir := $(strip\
     $(distdir) $(confdir) $(testdir) $(datadir) $(makedir) $(localedir) \
 )
 
-# Check if directory is non-empty
+# Check if directory variable is non-empty
 $(foreach p,src inc doc deb lib srp bin sbin exec conf data,\
     $(if $(call ge,$(words $($pdir)),1),,\
         $(error There must be at least one dir in '$pdir'.)))
 
-# Check if directory has only one directory
+# Check if directory variable has only one directory
 $(foreach p,dep obj ext dist test make locale,\
     $(if $(call eq,$(words $($pdir)),1),,\
         $(error There must be only one dir in '$pdir'.)))
 
-# Extensions:
+# System Directories
+# ====================
+# No directories must end with a '/' (slash)
+override sysincdir  := $(call rm-trailing-bar,$(wildcard $(SYSINCDIR)))
+override syslibdir  := $(call rm-trailing-bar,$(wildcard $(SYSLIBDIR)))
+override sysbindir  := $(call rm-trailing-bar,$(wildcard $(SYSBINDIR)))
+override syssbindir := $(call rm-trailing-bar,$(wildcard $(SYSSBINDIR)))
+override sysexecdir := $(call rm-trailing-bar,$(wildcard $(SYSEXECDIR)))
+
+# Suffixes
+# ==========
 testsuf := $(strip $(sort $(TESTSUF)))
 ifneq ($(words $(testsuf)),1)
     $(error Just one suffix allowed for test sources!)

@@ -3690,9 +3690,16 @@ endef
 ifndef SILENT
 ifndef MORE
 
-define ERROR
-2>&1 | sed '1 s/^/stderr:\n/' | sed 's/^/> /'
+define ERROR_SEPARATOR
+########################################################################
 endef
+
+define ERROR
+2>&1 | sed '1 s/^/\$(newline)$(ERROR_SEPARATOR)\$(newline)/' \
+     | sed '$$ s/$$/\$(newline)$(ERROR_SEPARATOR)/'
+endef
+#| sed '1 s/^/> stderr:\n/'                 # '> stderr:' in 1st line
+#| sed 's/^/> /'                            # Put '> ' before each line
 #| sed ''/"> error"/s//`printf "${ERR}"`/'' # Gray color with above
 
 else # ifndef MORE

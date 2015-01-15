@@ -7,11 +7,8 @@ function setup {
   mkdir test/tmp
   cp Makefile test/tmp/Makefile
   cd test/tmp
-  if [[ "$OSTYPE" == "linux-gnu" ]]
-  then
-    echo "CC  := ${CC}"  >> .compiler.mk
-    echo "CXX := ${CXX}" >> .compiler.mk
-  fi
+  if ! [ -z "$CC" ];  then echo "CC  := ${CC}"  >> .compiler.mk; fi
+  if ! [ -z "$CXX" ]; then echo "CXX := ${CXX}" >> .compiler.mk; fi
 }
 
 function teardown {
@@ -20,7 +17,7 @@ function teardown {
 }
 
 # Targets
-echo -n Testing Targets
+echo -n "Testing Targets "
 . test/targets/test_init.sh
 . test/targets/test_standard.sh
 echo
@@ -28,7 +25,7 @@ assert_end Targets
 echo
 
 # C Tests
-echo -n Testing C
+echo -n "Testing C "
 . test/c/test_single-file.sh
 . test/c/test_multiple-file.sh
 . test/c/test_static-lib.sh
@@ -38,7 +35,7 @@ assert_end "C Tests"
 echo
 
 # C++ Tests
-echo -n Testing C++
+echo -n "Testing C++ "
 . test/c++/test_single-file.sh
 . test/c++/test_multiple-file.sh
 . test/c++/test_static-lib.sh

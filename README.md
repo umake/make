@@ -35,7 +35,7 @@ self-explanatory set of variables used by this Makefile to do all its
 magic. And the best: everything within the own Make language - no 
 extra parsers, neither extra programs. Just one single Makefile.
 
-In order to make your very first compilation, just create a .c, .cpp
+In order to make your very first compilation, just create a .c, .cpp,
 .asm or .f (or any of the many source extensions avaiable) and set the 
 variable `BIN` whith its name in Config.mk. Then  *voilà*: it will
 compile everything perfectly (at least as perfect as your program...)

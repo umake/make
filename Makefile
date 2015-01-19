@@ -3277,7 +3277,8 @@ clean: mostlyclean
 .PHONY: distclean
 distclean: clean
 	$(call rm-if-empty,$(depdir),\
-	    $(depall) $(progdep) $(externdep) $(syslibdep))
+	    $(depall) $(progdep) $(externdep) $(syslibdep) \
+	    $(phonydep) $(depdir)/make.mk)
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
 	    $(filter $(firstword $(libdir))/%,$(lib)))
@@ -3325,7 +3326,7 @@ externalclean:
 	$(foreach d,$(call invert,$(call hash-table.keys,web_dependency)),\
 	    $(if $(wildcard $(extdir)/$d),\
 	        $(call rmdir,$(extdir)/$d)$(newline)))
-	$(call rm-if-empty,$(extdir),$(externreq))
+	$(call rm-if-empty,$(extdir),$(call rwildcard,*,$(externreq)))
 
 .PHONY: realclean
 ifndef D

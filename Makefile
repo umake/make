@@ -3699,9 +3699,9 @@ define rm-if-empty
 	        $(if $(strip $2),
 	            $(if $(strip $(MAINTEINER_CLEAN)),\
 	                $(call rmdir,$d),\
-	                $(if $(strip
-	                  $(call rfilter-out,$(call rsubdir,$d)),\
-	                  $(call rfilter-out,$2,$(call rwildcard,$d,*))),\
+	                $(if $(strip \
+	                  $(call rfilter-out,$(call rsubdir,$d),\
+	                  $(call rfilter-out,$2,$(call rwildcard,$d,*)))),\
 	                    $(call phony-ok,$(MSG_RM_NOT_EMPTY)),\
 	                    $(call rmdir,$d)\
 	            )),\

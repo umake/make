@@ -430,7 +430,10 @@ comma := ,
 empty :=
 space := $(empty) $(empty)
 tab   := $(empty)	$(empty)
-define quote
+define squote
+'
+endef
+define dquote
 "
 endef
 define newline
@@ -773,6 +776,39 @@ $(if $(call eq,+,$(subst $(call version-data,$1),,$1)),\
     $(error "Version MUST NOT have an empty metadata after +"))\
 $(if $(call is-alphanumeric,$(subst -,,$(call version-metadata,$1))),,\
     $(error "Metadata MUST be ASCII alphanumeric and hyphen"))
+endef
+
+# String manipulation functions
+# ===============================
+# 1) join-strings: Create a single string from separated ones
+
+define quote-factory
+define join-$1-strings
+$$(foreach w,$$1,$$(strip \
+    $$(call join-$1-strings_impl,\
+        $$(call rcdr,$$(subst \$$($1),$$(space),$$w))\
+    ))$$(strip \
+    $$(subst $$($1),,$$(call rcar,$$(subst \$$($1),$$(space),$$w)))))
+endef
+
+define join-$1-strings_impl
+$$(strip $$(if $$(strip $$1),$$(strip \
+    $$(subst $$($1),,$$(call car,$$1))\$$($1))$$(strip \
+    $$(call join-$1-strings_impl,$$(call cdr,$$1)))$$(strip \
+)))
+endef
+endef
+$(foreach q,squote dquote,$(eval $(call quote-factory,$q)))
+
+define join-strings
+$(if $(findstring $(squote),$(subst \$(squote),,$1)),$(strip \
+    $(if $(findstring $(dquote),$(subst \$(squote),,$1)),$(strip \
+        "$(call join-squote-strings,$(strip \
+             $(call join-dquote-strings,$1)))"),$(strip \
+        '$(call join-squote-strings,$1)'))),$(strip \
+    $(if $(findstring $(dquote),$(subst \$(squote),,$1)),$(strip \
+        "$(call join-dquote-strings,$1)"),$(strip \
+        $1))))
 endef
 
 # Path manipulation functions
@@ -2536,18 +2572,20 @@ $$(depdir)/$$(firstword $$(extdir))/$1$$(sysext): $$(externreq)
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(if $$(call cdr,$3),$$(strip \
-	              (cd $$d && $$(call cdr,$3)) $$(ERROR) \
+	              (cd $$d && $$(call cdr,$3)) $$(ERROR)         \
 	              || $$(call model-error,$$(MSG_EXT_BUILD_ERR)) \
 	          ),$$(strip \
-	              if [ -f $$d/[Mm]akefile ]; then \
-	                  cd $$d && $$(MAKE) -f [Mm]akefile $$(ERROR) \
-	                  || $$(call model-error,$$(MSG_EXT_BUILD_ERR)); \
-	              elif [ -f $$d/$$(makedir)/[Mm]akefile ]; then \
-	                  cd $$d/$$(makedir) \
-	                  && $$(MAKE) -f [Mm]akefile $$(ERROR) \
-	                  || $$(call model-error,$$(MSG_EXT_BUILD_ERR)); \
+	              if [ -f $$d/[Mm]akefile ]; \
+	              then \
+	                  cd $$d && $$(MAKE) -f [Mm]akefile $$(ERROR)       \
+	                  || $$(call model-error,$$(MSG_EXT_BUILD_ERR));    \
+	              elif [ -f $$d/$$(makedir)/[Mm]akefile ]; \
+	              then \
+	                  cd $$d/$$(makedir)                                \
+	                  && $$(MAKE) -f [Mm]akefile $$(ERROR)              \
+	                  || $$(call model-error,$$(MSG_EXT_BUILD_ERR));    \
 	              else \
-	                  echo "$$(MSG_EXT_NO_MAKE)" $$(ERROR); \
+	                  $$(call println,"$$(MSG_EXT_NO_MAKE)",$$(ERROR)); \
 	              fi \
 	          ))
 	
@@ -3280,9 +3318,9 @@ externalclean:
 .PHONY: realclean
 ifndef D
 realclean:
-	@echo $(MSG_WARNCLEAN_BEG)
-	@echo $(MSG_WARNCLEAN_END)
-	@echo $(MSG_WARNCLEAN_ALT)
+	@$(call println,$(MSG_WARNCLEAN_BEG))
+	@$(call println,$(MSG_WARNCLEAN_END))
+	@$(call println,$(MSG_WARNCLEAN_ALT))
 else
 realclean: distclean docclean packageclean coverageclean externalclean \
            $(if $(ENABLE_NLS),translationclean)
@@ -3298,9 +3336,9 @@ endif
 .PHONY: mainteiner-clean
 ifndef D
 mainteiner-clean:
-	@echo $(MSG_WARNCLEAN_BEG)
-	@echo $(MSG_WARNCLEAN_END)
-	@echo $(MSG_WARNCLEAN_ALT)
+	@$(call println,$(MSG_WARNCLEAN_BEG))
+	@$(call println,$(MSG_WARNCLEAN_END))
+	@$(call println,$(MSG_WARNCLEAN_ALT))
 else
 mainteiner-clean:
 	@$(MAKE) realclean MAINTEINER_CLEAN=1 D=1
@@ -3309,8 +3347,8 @@ endif
 .PHONY: uninitialize
 ifndef U
 uninitialize:
-	@echo $(MSG_UNINIT_WARN)
-	@echo $(MSG_UNINIT_ALT)
+	@$(call println,$(MSG_UNINIT_WARN))
+	@$(call println,$(MSG_UNINIT_ALT))
 else
 uninitialize:
 	@$(MAKE) mainteiner-clean D=1
@@ -3606,7 +3644,7 @@ $(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
     $(call git-add-commit,\
         $(addprefix $(firstword $2)/,\
             $(foreach e,$(strip $1),$(wildcard *$e))),\
-        "Move $(subst $(quote),,$3) files to $(firstword $2)/")\
+        "Move $(subst $(dquote),,$3) files to $(firstword $2)/")\
 )
 endef
 
@@ -3686,6 +3724,33 @@ $(if $(wildcard $1),\
     $(call rm,$1),$(if $(strip $2),$(call phony-ok,$(strip $2))))
 endef
 
+## PRINT FUNCTIONS #####################################################
+ifndef SILENT
+
+define printf
+printf $1 $(call join-strings,$2) $(strip $3)
+endef
+
+define print
+$(call printf,"%b",$1,$2)
+endef
+
+define println
+$(call print,$1"\n",$2)
+endef
+
+else # ifndef SILENT
+
+define print
+$(NO_OPERATION)
+endef
+
+define println
+$(NO_OPERATION)
+endef
+
+endif # ifndef SILENT
+
 ## ERROR SHELL #########################################################
 ifndef SILENT
 ifndef MORE
@@ -3715,12 +3780,13 @@ endif # ifndef SILENT
 ifndef SILENT
 
 define model-error
-(echo "\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $$?)${RES}" && exit 42)
+($(call println,"\r${RED}[ERROR]${RES}" $1 \
+                "${RED}(STATUS: $$?)${RES}") && exit 42)
 endef
 
 define model-test-error
-(echo "\r${RED}[FAILURE]${RES}" $1"."\
-      "${RED}Aborting status: $$?${RES}" && exit 42)
+($(call println,"\r${RED}[FAILURE]${RES}" $1"." \
+                "${RED}Aborting status: $$?${RES}") &&  exit 42)
 endef
 
 define phony-error
@@ -3743,11 +3809,11 @@ endif # ifndef SILENT
 ifneq ($(and $(call is-empty,$(SILENT)),$(call not-empty,$(quiet))),)
 
 define model-status
-printf "%b " $1; printf "... "
+$(call print,$1 "... ")
 endef
 
 define model-vstatus
-echo $1 "... "
+$(call println,$1 "... ")
 endef
 
 define phony-status
@@ -3782,7 +3848,7 @@ endif # if empty $(SILENT) and not empty $(quiet)
 ifndef SILENT
 
 define model-ok
-echo "\r${GREEN}[OK]${RES}" $1 "     "
+$(call println,"\r${GREEN}[OK]${RES}" $1 "     ")
 endef
 
 define phony-ok
@@ -4472,8 +4538,8 @@ endef
 .PHONY: delete
 delete:
 ifndef D
-	@echo $(MSG_DELETE_WARN)
-	@echo $(MSG_DELETE_ALT)
+	@$(call println,$(MSG_DELETE_WARN))
+	@$(call println,$(MSG_DELETE_ALT))
 else
 ifdef NAMESPACE
 	$(call rm-if-empty,$(incbase)/$(subst ::,/,$(NAMESPACE)))
@@ -4792,212 +4858,217 @@ projecthelp:
 ##                            DEBUGGING                               ##
 ########################################################################
 
+define echo
+@$(call println,$1)
+endef
+
 define prompt
-@echo "${YELLOW}"$1"${RES}"\
-      $(if $(strip $2),"$(strip $2)","${RED}Empty${RES}")
+@$(call println,"${YELLOW}"$1"${RES}" \
+                $(if $(strip $2),"$(strip $2)","${RED}Empty${RES}"))
 endef
 
 .PHONY: dump
 dump:
 ifdef VAR ####
-	@echo "${YELLOW}$(VAR):${RES}"\
-	      $(if $(strip $(filter undefined,$(origin $(VAR)))),\
-	          "${RED}Undefined${RES}",\
-	          "$(or $(strip $($(VAR))),${RED}Empty${RES})")
+	@$(call println,\
+	    "${YELLOW}$(VAR):${RES}"\
+	    $(if $(strip $(filter undefined,$(origin $(VAR)))),\
+	        "${RED}Undefined${RES}",\
+	        "$(or $(strip $($(VAR))),${RED}Empty${RES})"))
 else
-	@echo "${WHITE}\nCONFIGURATION           ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"license:      ",$(license)      )
-	$(call prompt,"notice:       ",$(notice)       )
-	$(call prompt,"contributors: ",$(contributors) )
-	$(call prompt,"doxyfile:     ",$(doxyfile)     )
+	$(call echo,"${WHITE}\nCONFIGURATION           ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"license:      ",$(license)             )
+	$(call prompt,"notice:       ",$(notice)              )
+	$(call prompt,"contributors: ",$(contributors)        )
+	$(call prompt,"doxyfile:     ",$(doxyfile)            )
 	
-	@echo "${WHITE}\nIGNORED FILES           ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"ignored:      ",$(ignored)      )
+	$(call echo,"${WHITE}\nIGNORED FILES           ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"ignored:      ",$(ignored)             )
 	
-	@echo "${WHITE}\nACCEPTED EXTENSIONS     ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"srcext:       ",$(srcext)       )
-	$(call prompt,"incext:       ",$(incext)       )
-	$(call prompt,"libext:       ",$(libext)       )
-	$(call prompt,"lexext:       ",$(lexext)       )
-	$(call prompt,"lexxext:      ",$(lexxext)      )
-	$(call prompt,"yaccext:      ",$(yaccext)      )
-	$(call prompt,"yaxxext:      ",$(yaxxext)      )
-	$(call prompt,"esqlext:      ",$(esqlext)      )
-	$(call prompt,"docext:       ",$(docext)       )
+	$(call echo,"${WHITE}\nACCEPTED EXTENSIONS     ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"srcext:       ",$(srcext)              )
+	$(call prompt,"incext:       ",$(incext)              )
+	$(call prompt,"libext:       ",$(libext)              )
+	$(call prompt,"lexext:       ",$(lexext)              )
+	$(call prompt,"lexxext:      ",$(lexxext)             )
+	$(call prompt,"yaccext:      ",$(yaccext)             )
+	$(call prompt,"yaxxext:      ",$(yaxxext)             )
+	$(call prompt,"esqlext:      ",$(esqlext)             )
+	$(call prompt,"docext:       ",$(docext)              )
 	
-	@echo "${WHITE}\nLEXER                   ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"alllexer:     ",$(alllexer)     )
-	$(call prompt,"clexer:       ",$(clexer)       )
-	$(call prompt,"cxxlexer:     ",$(cxxlexer)     )
-	$(call prompt,"lexflags:     ",$(lexflags)     )
-	$(call prompt,"lexall:       ",$(lexall)       )
-	$(call prompt,"lexlibs:      ",$(lexlibs)      )
-	$(call prompt,"lexinc:       ",$(lexinc)       )
+	$(call echo,"${WHITE}\nLEXER                   ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"alllexer:     ",$(alllexer)            )
+	$(call prompt,"clexer:       ",$(clexer)              )
+	$(call prompt,"cxxlexer:     ",$(cxxlexer)            )
+	$(call prompt,"lexflags:     ",$(lexflags)            )
+	$(call prompt,"lexall:       ",$(lexall)              )
+	$(call prompt,"lexlibs:      ",$(lexlibs)             )
+	$(call prompt,"lexinc:       ",$(lexinc)              )
 	
-	@echo "${WHITE}\nPARSER                  ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"allparser:    ",$(allparser)    )
-	$(call prompt,"cparser:      ",$(cparser)      )
-	$(call prompt,"cxxparser:    ",$(cxxparser)    )
-	$(call prompt,"yaccflags:    ",$(yaccflags)    )
-	$(call prompt,"yaccall:      ",$(yaccall)      )
-	$(call prompt,"yacclibs:     ",$(yacclibs)     )
-	$(call prompt,"yaccinc:      ",$(yaccinc)      )
+	$(call echo,"${WHITE}\nPARSER                  ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"allparser:    ",$(allparser)           )
+	$(call prompt,"cparser:      ",$(cparser)             )
+	$(call prompt,"cxxparser:    ",$(cxxparser)           )
+	$(call prompt,"yaccflags:    ",$(yaccflags)           )
+	$(call prompt,"yaccall:      ",$(yaccall)             )
+	$(call prompt,"yacclibs:     ",$(yacclibs)            )
+	$(call prompt,"yaccinc:      ",$(yaccinc)             )
 	
-	@echo "${WHITE}\nEMBEDDED SQL PREPROC    ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"cesql:        ",$(cesql)        )
-	$(call prompt,"esqlflags:    ",$(esqlflags)    )
-	$(call prompt,"esqllibs:     ",$(esqllibs)     )
-	$(call prompt,"esqlall:      ",$(esqlall)      )
+	$(call echo,"${WHITE}\nEMBEDDED SQL PREPROC    ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"cesql:        ",$(cesql)               )
+	$(call prompt,"esqlflags:    ",$(esqlflags)           )
+	$(call prompt,"esqllibs:     ",$(esqllibs)            )
+	$(call prompt,"esqlall:      ",$(esqlall)             )
 	
-	@echo "${WHITE}\nSOURCE                  ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"srcall:       ",$(srcall)       )
-	$(call prompt,"srccln:       ",$(srccln)       )
-	$(call prompt,"src:          ",$(src)          )
-	$(call prompt,"asmall:       ",$(asmall)       )
-	$(call prompt,"asmcln:       ",$(asmcln)       )
-	$(call prompt,"asmsrc:       ",$(asmsrc)       )
-	$(call prompt,"autoall:      ",$(autoall)      )
-	$(call prompt,"autocln:      ",$(autocln)      )
-	$(call prompt,"autosrc:      ",$(autosrc)      )
-	$(call prompt,"c_all:        ",$(c_all)        )
-	$(call prompt,"f_all:        ",$(f_all)        )
-	$(call prompt,"cxx_all:      ",$(cxx_all)      )
+	$(call echo,"${WHITE}\nSOURCE                  ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"srcall:       ",$(srcall)              )
+	$(call prompt,"srccln:       ",$(srccln)              )
+	$(call prompt,"src:          ",$(src)                 )
+	$(call prompt,"asmall:       ",$(asmall)              )
+	$(call prompt,"asmcln:       ",$(asmcln)              )
+	$(call prompt,"asmsrc:       ",$(asmsrc)              )
+	$(call prompt,"autoall:      ",$(autoall)             )
+	$(call prompt,"autocln:      ",$(autocln)             )
+	$(call prompt,"autosrc:      ",$(autosrc)             )
+	$(call prompt,"c_all:        ",$(c_all)               )
+	$(call prompt,"f_all:        ",$(f_all)               )
+	$(call prompt,"cxx_all:      ",$(cxx_all)             )
 	
-	@echo "${WHITE}\nHEADERS                 ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"incall:       ",$(incall)       )
-	$(call prompt,"incsub:       ",$(incsub)       )
-	$(call prompt,"autoinc:      ",$(autoinc)      )
+	$(call echo,"${WHITE}\nHEADERS                 ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"incall:       ",$(incall)              )
+	$(call prompt,"incsub:       ",$(incsub)              )
+	$(call prompt,"autoinc:      ",$(autoinc)             )
 	
-	@echo "${WHITE}\nSTATIC LIBRARY          ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"ar_in:        ",$(ar_in)        )
-	$(call prompt,"arpat:        ",$(arpat)        )
-	$(call prompt,"arpatsrc:     ",$(arpatsrc)     )
-	$(call prompt,"arlibname:    ",$(arlibname)    )
-	$(call prompt,"arlib:        ",$(arlib)        )
+	$(call echo,"${WHITE}\nSTATIC LIBRARY          ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"ar_in:        ",$(ar_in)               )
+	$(call prompt,"arpat:        ",$(arpat)               )
+	$(call prompt,"arpatsrc:     ",$(arpatsrc)            )
+	$(call prompt,"arlibname:    ",$(arlibname)           )
+	$(call prompt,"arlib:        ",$(arlib)               )
 	
-	@echo "${WHITE}\nDYNAMIC LIBRARY         ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"shr_in:       ",$(shr_in)       )
-	$(call prompt,"shrpat:       ",$(shrpat)       )
-	$(call prompt,"shrpatsrc:    ",$(shrpatsrc)    )
-	$(call prompt,"shrall:       ",$(shrall)       )
-	$(call prompt,"shrlibname:   ",$(shrlibname)   )
-	$(call prompt,"shrlib:       ",$(shrlib)       )
+	$(call echo,"${WHITE}\nDYNAMIC LIBRARY         ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"shr_in:       ",$(shr_in)              )
+	$(call prompt,"shrpat:       ",$(shrpat)              )
+	$(call prompt,"shrpatsrc:    ",$(shrpatsrc)           )
+	$(call prompt,"shrall:       ",$(shrall)              )
+	$(call prompt,"shrlibname:   ",$(shrlibname)          )
+	$(call prompt,"shrlib:       ",$(shrlib)              )
 	
-	@echo "${WHITE}\nSYSTEM LIBRARY          ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"syslib:       ",$(syslib)       )
-	$(call prompt,"syslibname:   ",$(syslibname)   )
+	$(call echo,"${WHITE}\nSYSTEM LIBRARY          ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"syslib:       ",$(syslib)              )
+	$(call prompt,"syslibname:   ",$(syslibname)          )
 	
-	@echo "${WHITE}\nLOCAL LIBRARY           ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"loclib:       ",$(loclib)       )
-	$(call prompt,"loclibname:   ",$(loclibname)   )
+	$(call echo,"${WHITE}\nLOCAL LIBRARY           ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"loclib:       ",$(loclib)              )
+	$(call prompt,"loclibname:   ",$(loclibname)          )
 	
-	@echo "${WHITE}\nDEPENDENCY LIBRARY      ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"deplib:       ",$(deplib)       )
-	$(call prompt,"deplibname:   ",$(deplibname)   )
+	$(call echo,"${WHITE}\nDEPENDENCY LIBRARY      ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"deplib:       ",$(deplib)              )
+	$(call prompt,"deplibname:   ",$(deplibname)          )
 	
-	@echo "${WHITE}\nLIBRARY                 ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"lib_in:       ",$(lib_in)       )
-	$(call prompt,"libpat:       ",$(libpat)       )
-	$(call prompt,"liball:       ",$(liball)       )
-	$(call prompt,"libsrc:       ",$(libsrc)       )
-	$(call prompt,"libname:      ",$(libname)      )
-	$(call prompt,"lib:          ",$(lib)          )
+	$(call echo,"${WHITE}\nLIBRARY                 ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"lib_in:       ",$(lib_in)              )
+	$(call prompt,"libpat:       ",$(libpat)              )
+	$(call prompt,"liball:       ",$(liball)              )
+	$(call prompt,"libsrc:       ",$(libsrc)              )
+	$(call prompt,"libname:      ",$(libname)             )
+	$(call prompt,"lib:          ",$(lib)                 )
 	
-	@echo "${WHITE}\nTEST                    ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"testall:      ",$(testall)      )
-	$(call prompt,"testsrc:      ",$(testsrc)      )
-	$(call prompt,"testobj:      ",$(testobj)      )
-	$(call prompt,"testdep:      ",$(testdep)      )
-	$(call prompt,"testbin:      ",$(testbin)      )
-	$(call prompt,"testrun:      ",$(testrun)      )
+	$(call echo,"${WHITE}\nTEST                    ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"testall:      ",$(testall)             )
+	$(call prompt,"testsrc:      ",$(testsrc)             )
+	$(call prompt,"testobj:      ",$(testobj)             )
+	$(call prompt,"testdep:      ",$(testdep)             )
+	$(call prompt,"testbin:      ",$(testbin)             )
+	$(call prompt,"testrun:      ",$(testrun)             )
 	
-	@echo "${WHITE}\nCOVERAGE                ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"covbin:       ",$(covbin)       )
-	$(call prompt,"covall:       ",$(covall)       )
+	$(call echo,"${WHITE}\nCOVERAGE                ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"covbin:       ",$(covbin)              )
+	$(call prompt,"covall:       ",$(covall)              )
 	
-	@echo "${WHITE}\nOBJECT                  ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"obj:          ",$(obj)          )
-	$(call prompt,"arobj:        ",$(arobj)        )
-	$(call prompt,"shrobj:       ",$(shrobj)       )
-	$(call prompt,"autoobj:      ",$(autoobj)      )
-	$(call prompt,"objall:       ",$(objall)       )
+	$(call echo,"${WHITE}\nOBJECT                  ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"obj:          ",$(obj)                 )
+	$(call prompt,"arobj:        ",$(arobj)               )
+	$(call prompt,"shrobj:       ",$(shrobj)              )
+	$(call prompt,"autoobj:      ",$(autoobj)             )
+	$(call prompt,"objall:       ",$(objall)              )
 	
-	@echo "${WHITE}\nDEPENDENCY              ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"depall:       ",$(depall)       )
-	$(call prompt,"progdep:      ",$(progdep)      )
-	$(call prompt,"externdep:    ",$(externdep)    )
-	$(call prompt,"syslibdep:    ",$(syslibdep)    )
+	$(call echo,"${WHITE}\nDEPENDENCY              ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"depall:       ",$(depall)              )
+	$(call prompt,"progdep:      ",$(progdep)             )
+	$(call prompt,"externdep:    ",$(externdep)           )
+	$(call prompt,"syslibdep:    ",$(syslibdep)           )
 	
-	@echo "${WHITE}\nBINARY                  ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"bin:          ",$(bin)          )
-	$(call prompt,"sbin:         ",$(sbin)         )
-	$(call prompt,"libexec:      ",$(libexec)      )
+	$(call echo,"${WHITE}\nBINARY                  ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"bin:          ",$(bin)                 )
+	$(call prompt,"sbin:         ",$(sbin)                )
+	$(call prompt,"libexec:      ",$(libexec)             )
 	
-	@echo "${WHITE}\nINSTALLATION            ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"destdir:      ",$(destdir)      )
-	$(call prompt,"prefix:       ",$(prefix)       )
-	$(call prompt,"exec_prefix:  ",$(exec_prefix)  )
-	$(call prompt,"i_bindir:     ",$(i_bindir)     )
-	$(call prompt,"i_sbindir:    ",$(i_sbindir)    )
-	$(call prompt,"i_libexecdir: ",$(i_libexecdir) )
-	$(call prompt,"i_docdir:     ",$(i_docdir)     )
+	$(call echo,"${WHITE}\nINSTALLATION            ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"destdir:      ",$(destdir)             )
+	$(call prompt,"prefix:       ",$(prefix)              )
+	$(call prompt,"exec_prefix:  ",$(exec_prefix)         )
+	$(call prompt,"i_bindir:     ",$(i_bindir)            )
+	$(call prompt,"i_sbindir:    ",$(i_sbindir)           )
+	$(call prompt,"i_libexecdir: ",$(i_libexecdir)        )
+	$(call prompt,"i_docdir:     ",$(i_docdir)            )
 	
-	@echo "${WHITE}\nDOCUMENTATION           ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"texiall:      ",$(texiall)      )
-	$(call prompt,"texisrc:      ",$(texiall)      )
-	$(call prompt,"texiinfo:     ",$(texiinfo)     )
-	$(call prompt,"texihtml:     ",$(texihtml)     )
-	$(call prompt,"texidvi:      ",$(texidvi)      )
-	$(call prompt,"texipdf:      ",$(texipdf)      )
-	$(call prompt,"texips:       ",$(texips)       )
+	$(call echo,"${WHITE}\nDOCUMENTATION           ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"texiall:      ",$(texiall)             )
+	$(call prompt,"texisrc:      ",$(texiall)             )
+	$(call prompt,"texiinfo:     ",$(texiinfo)            )
+	$(call prompt,"texihtml:     ",$(texihtml)            )
+	$(call prompt,"texidvi:      ",$(texidvi)             )
+	$(call prompt,"texipdf:      ",$(texipdf)             )
+	$(call prompt,"texips:       ",$(texips)              )
 	
-	@echo "${WHITE}\nCOMPILER FLAGS          ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"asflags:      ",$(asflags)      )
-	$(call prompt,"cflags:       ",$(cflags)       )
-	$(call prompt,"fflags:       ",$(fflags)       )
-	$(call prompt,"cxxflags:     ",$(cxxflags)     )
+	$(call echo,"${WHITE}\nCOMPILER FLAGS          ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"asflags:      ",$(asflags)             )
+	$(call prompt,"cflags:       ",$(cflags)              )
+	$(call prompt,"fflags:       ",$(fflags)              )
+	$(call prompt,"cxxflags:     ",$(cxxflags)            )
 	
-	@echo "${WHITE}\nCOMPILER PATHS          ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"aslibs:       ",$(aslibs)       )
-	$(call prompt,"clibs:        ",$(clibs)        )
-	$(call prompt,"flibs:        ",$(flibs)        )
-	$(call prompt,"cxxlibs:      ",$(cxxlibs)      )
+	$(call echo,"${WHITE}\nCOMPILER PATHS          ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"aslibs:       ",$(aslibs)              )
+	$(call prompt,"clibs:        ",$(clibs)               )
+	$(call prompt,"flibs:        ",$(flibs)               )
+	$(call prompt,"cxxlibs:      ",$(cxxlibs)             )
 	
-	@echo "${WHITE}\nLINKER FLAGS            ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"ldflags:      ",$(ldflags)      )
-	$(call prompt,"ldc:          ",$(ldc)          )
-	$(call prompt,"ldf:          ",$(ldf)          )
-	$(call prompt,"ldcxx:        ",$(ldcxx)        )
-	$(call prompt,"ldlex:        ",$(ldlex)        )
-	$(call prompt,"ldyacc:       ",$(ldyacc)       )
-	$(call prompt,"ldesql:       ",$(ldesql)       )
+	$(call echo,"${WHITE}\nLINKER FLAGS            ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"ldflags:      ",$(ldflags)             )
+	$(call prompt,"ldc:          ",$(ldc)                 )
+	$(call prompt,"ldf:          ",$(ldf)                 )
+	$(call prompt,"ldcxx:        ",$(ldcxx)               )
+	$(call prompt,"ldlex:        ",$(ldlex)               )
+	$(call prompt,"ldyacc:       ",$(ldyacc)              )
+	$(call prompt,"ldesql:       ",$(ldesql)              )
 	
-	@echo "${WHITE}\nLINKER PATHS            ${RES}"
-	@echo "----------------------------------------"
-	$(call prompt,"ldlibs:       ",$(ldlibs)       )
+	$(call echo,"${WHITE}\nLINKER PATHS            ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"ldlibs:       ",$(ldlibs)              )
 
 endif #### ifdef VAR

@@ -1642,7 +1642,7 @@ $(foreach l,$(filter -l%,$(ldflags)),\
 #------------------------------------------------------------------[ 2 ]
 syslibname := $(patsubst lib%,%,$(notdir $(basename $(syslib))))
 #------------------------------------------------------------------[ 3 ]
-syslibdep  := $(addprefix $(depdir)/$(firstword $(libdir)),\
+syslibdep  := $(addprefix $(depdir)/$(firstword $(libdir))/,\
                   $(addsuffix $(sysext),$(syslibname)))
 
 # Local libraries

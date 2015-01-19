@@ -494,8 +494,8 @@ $(strip $(lastword $(strip $1)))
 endef
 
 define rcdr
-$(strip $(patsubst %.word,%,\
-    $(patsubst %.word.last,,$(strip $(addsuffix .word,$1)).last)))
+$(if $(strip $1),$(strip $(patsubst %.word,%,\
+    $(patsubst %.word.last,,$(strip $(addsuffix .word,$1)).last))))
 endef
 
 define invert

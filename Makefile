@@ -129,15 +129,15 @@ SBINDIR   := sbin
 EXECDIR   := libexec
 DISTDIR   := dist
 CONFDIR   := conf
-TESTDIR   := test
 DATADIR   := data
 MAKEDIR   := make
 DESTDIR   :=
+TESTDIR   := test
 LOCALEDIR := locale
 else
 $(foreach var,\
     SRCDIR DEPDIR INCDIR OBJDIR COVDIR LIBDIR EXTDIR SRPDIR \
-    BINDIR SBINDIR DISTDIR CONFDIR TESTDIR DATADIR MAKEDIR LOCALEDIR,\
+    BINDIR SBINDIR DISTDIR CONFDIR DATADIR MAKEDIR TESTDIR LOCALEDIR,\
     $(eval $(var) := .)\
 )
 endif
@@ -1059,16 +1059,16 @@ override sbindir   := $(call rm-trailing-bar,$(SBINDIR))
 override execdir   := $(call rm-trailing-bar,$(EXECDIR))
 override distdir   := $(call rm-trailing-bar,$(DISTDIR))
 override confdir   := $(call rm-trailing-bar,$(CONFDIR))
-override testdir   := $(call rm-trailing-bar,$(TESTDIR))
 override datadir   := $(call rm-trailing-bar,$(DATADIR))
 override makedir   := $(call rm-trailing-bar,$(MAKEDIR))
+override testdir   := $(call rm-trailing-bar,$(TESTDIR))
 override localedir := $(call rm-trailing-bar,$(LOCALEDIR))
 
 # All directories
 alldir := $(strip\
     $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)         \
     $(libdir) $(extdir) $(srpdir) $(bindir) $(sbindir) $(execdir)       \
-    $(distdir) $(confdir) $(testdir) $(datadir) $(makedir) $(localedir) \
+    $(distdir) $(confdir) $(datadir) $(makedir) $(testdir) $(localedir) \
 )
 
 # Check if directory variable is non-empty

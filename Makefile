@@ -1633,12 +1633,13 @@ shrlib     := $(patsubst %,$(firstword $(libdir))/%.so,\
 #------------------------------------------------------------------[ 1 ]
 syslib     := \
 $(foreach l,$(filter -l%,$(ldflags)),\
-    $(foreach d,$(syslibdir) \
-                $(foreach s,$(syslibdir),\
-                    $(filter $s%,$(patsubst -L%,%,$(ldlibs)))),\
-        $(lastword $(foreach e,$(libext),\
-            $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))\
-))
+    $(firstword \
+        $(foreach d,$(syslibdir) \
+                    $(foreach s,$(syslibdir),\
+                        $(filter $s%,$(patsubst -L%,%,$(ldlibs)))),\
+            $(lastword $(foreach e,$(libext),\
+                $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))\
+)))
 #------------------------------------------------------------------[ 2 ]
 syslibname := $(patsubst lib%,%,$(notdir $(basename $(syslib))))
 #------------------------------------------------------------------[ 3 ]

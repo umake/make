@@ -40,6 +40,13 @@ In order to make your very first compilation, just create a .c, .cpp,
 variable `BIN` whith its name in Config.mk. Then  *voilà*: it will
 compile everything perfectly (at least as perfect as your program...)
 
+#### Single-directory projects ####
+
+Do you have old single-directory code that is getting out of control? 
+We also have a solution! `make standard` checks and separates your
+files in our default directory structure. Improve your organization
+(and use a great new tool) with almost no work!
+
 #### Git submodule ####
 
 To keep a copy of this project as a submodule, just clone it in your
@@ -52,13 +59,6 @@ Then, create a symbolic link:
     ln -s make/Makefile .
 
 `make init` will automatically add it as a submodule.
-
-#### Single-directory projects ####
-
-Do you have old single-directory code that is getting out of control? 
-We also have a solution! `make standard` checks and separates your
-files in our default directory structure. Improve your organization
-(and use a great new tool) with almost no work!
 
 ## Makeballs ##
 
@@ -118,4 +118,4 @@ For all avaiable targets, type:
 
     make projecthelp
 
-And it will print a list with all avaiable options.
+And it will print a list with all AIO Makefile avaiable options.

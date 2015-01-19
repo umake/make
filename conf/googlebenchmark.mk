@@ -1,8 +1,8 @@
 # Dependencies
 # ==============
 GIT_DEPENDENCY  += \
-    benchmark => https://github.com/google/benchmark.git \
-                 mkdir build && cd build && cmake .. && make
+    gbenchmark => https://github.com/google/benchmark.git \
+                  mkdir build && cd build && cmake .. && make
 
 # Paths
 # =======

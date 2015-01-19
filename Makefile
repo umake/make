@@ -898,7 +898,7 @@ endef
 # 1) rsubdir:     For listing all subdirectories of a given dir
 # 2) rwildcard:   For wildcard deep-search in the directory tree
 # 3) rfilter:     For filtering a list of text from another list
-# 3) rfilter-out: For filtering out a list of text from another list
+# 4) rfilter-out: For filtering out a list of text from another list
 rsubdir     = $(strip $(foreach d,$1,$(shell $(FIND) $d $(FINDFLAGS))))
 rwildcard   = $(strip $(if $(strip $(wildcard $1/*)),\
                   $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)),\
@@ -4114,7 +4114,6 @@ override IN := $(strip $(or $(strip $(foreach d,$(srcdir) $(incdir),\
                    $(if $(strip $(patsubst $d%,%,$(call root,$(IN)))),,\
                        $(call not-root,$(IN))\
                ))),$(IN)))
-$(shell echo $(wildcard $(IN)/*))
 #------------------------------------------------------------------[ 4 ]
 indef       := $(strip $(call uc,$(subst /,_,$(strip $(IN)))))_
 #------------------------------------------------------------------[ 5 ]

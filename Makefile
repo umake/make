@@ -3891,15 +3891,15 @@ endef
 # Function: select
 # Define which ostream should be used
 define select
-$(eval ostream = \
-    $(strip $(if $(strip $(subst stdout,,$(strip $1))),$1,)))
+$(eval ostream = $(strip $(if $(call not-empty,$1),$1)))
 endef
 
 # Function: cat
 # Add a text in the end of a ostream
 define cat
-$(if $(strip $(wildcard $(ostream)*)),,\
-    $(quiet) echo $1 $(if $(strip $(ostream)),>> $(ostream)))
+$(if $(or $(call is-empty,$(ostream)),\
+          $(call not,$(wildcard $(ostream)*))),\
+    $(quiet) $(call println,$1,$(if $(strip $(ostream)),>> $(ostream))))
 endef
 
 # Function: touch

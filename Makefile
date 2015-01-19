@@ -1187,6 +1187,8 @@ programs := \
     TEXI2DVI TEXI2PDF TEXI2PS XGETTEXT MSGINIT MSGMERGE MSGFMT DCH    \
     DEBUILD CURL GIT
 
+phony_targets := $(targets) library git web
+
 ########################################################################
 ##                     COMPILATION POST PROCESSMENT                   ##
 ########################################################################
@@ -1283,6 +1285,13 @@ externreq := $(addprefix $(extdir)/,$(ext_dependency))
 #------------------------------------------------------------------[ 1 ]
 progdep := $(addprefix $(depdir)/$(bindir)/,$(programs))
 progdep := $(addsuffix $(sysext),$(progdep))
+
+# Phony target dependency files (lib + extern + tgt)
+# ====================================================
+# 1) Add dependency suffix and directory
+#------------------------------------------------------------------[ 1 ]
+phonydep := $(addprefix $(depdir)/,$(phony_targets))
+phonydep := $(addsuffix $(sysext),$(phonydep))
 
 # Library files
 # ===============

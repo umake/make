@@ -1174,6 +1174,11 @@ endif
 .SUFFIXES:
 .SUFFIXES: $(allext)
 
+# Get all dependency prefixes for targets
+targets := \
+    build external upgrade init tags coverage \
+    translation docs doxy dist dpkg install
+
 # Get all existent programs
 programs := \
     AR AS CC FC CXX RANLIB INSTALL INSTALL_DATA INSTALL_PROGRAM CP MV \
@@ -2436,9 +2441,8 @@ $1dep: \
     $$(if $$(strip $$(call hash-table.values,$2)),\
         $$(depdir)/$1$$(sysext))
 endef
-$(foreach d,build external upgrade init tags coverage \
-            translation docs doxy dist dpkg install,\
-    $(eval $(call program-dependency-target,$d,$d_dependency)))
+$(foreach t,$(targets),\
+    $(eval $(call program-dependency-target,$t,$t_dependency)))
 
 #======================================================================#
 # Function: program-dependency                                         #
@@ -2614,8 +2618,7 @@ $$(depdir)/$$(strip $1)$$(sysext): \
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_PRG_ALL))
 endef
-$(foreach d,build external upgrade init tags coverage \
-            translation docs doxy dist dpkg install,\
+$(foreach d,$(targets),\
     $(eval $(call phony-target-dependency,$d,$d_dependency,\
                $(call hash-table.keys,$d_dependency),\
                $(depdir)/$(firstword $(bindir)))))

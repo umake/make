@@ -3773,8 +3773,8 @@ define ERROR_SEPARATOR
 endef
 
 define ERROR
-2>&1 | sed '1 s/^/\$(newline)$(ERROR_SEPARATOR)\$(newline)/' \
-     | sed '$$ s/$$/\$(newline)$(ERROR_SEPARATOR)/'
+2>&1 | sed -e '1 s/^/\$(newline)$(ERROR_SEPARATOR)\$(newline)/' \
+           -e '$$ s/$$/\$(newline)$(ERROR_SEPARATOR)/'
 endef
 #| sed '1 s/^/> stderr:\n/'                 # '> stderr:' in 1st line
 #| sed 's/^/> /'                            # Put '> ' before each line

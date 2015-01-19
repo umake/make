@@ -75,11 +75,12 @@
     [X] Change commit messages to follow git convention (imperative).
     [X] Create depdir subdir for external/library/program dependencies.
     [X] Add management flag to make header with NLS headers and macros.
-    [ ] Verify why ERROR newlines do not appear in all target errors.
+    [X] Verify why ERROR newlines do not appear in all target errors.
     [ ] Support library with name different from directory's name.
     [ ] Support binary with name different from directory's name.
     [ ] Output test coverage statistics (coverage program + unit tests).
     [ ] Check for system dependency existence iff targets need rebuild. 
+    [ ] Support run of benchmark tools.
     [ ] Support run of profiling tools (with gprof).
     [ ] Support compilation of CORBA with C++.
     [ ] Create management flags to update program version.

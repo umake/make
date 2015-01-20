@@ -3402,11 +3402,12 @@ $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
 ########################################################################
 .PHONY: mostlyclean
 mostlyclean:
-	$(call rm-if-empty,$(objdir),$(objall) $(autoobj) $(testobj))
+	$(call rm-if-empty,$(objdir),$(objall) $(autoobj) \
+	                             $(testobj) $(benchobj))
 
 .PHONY: clean
 clean: mostlyclean
-	$(call rm-if-empty,$(bindir),$(bin) $(testbin))
+	$(call rm-if-empty,$(bindir),$(bin) $(testbin) $(benchbin))
 	$(call rm-if-empty,$(sbindir),$(sbin))
 	$(call rm-if-empty,$(execdir),$(libexec))
 

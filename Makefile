@@ -2878,8 +2878,8 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)
 endef
 $(foreach r,$(srcdir),$(foreach e,$(cext),\
     $(eval $(call compile-c,$(objdir),$r,$e))))
-$(foreach e,$(cext),\
-    $(eval $(call compile-c,$(objdir)/$(testdir),$(testdir),$e)))
+$(foreach p,test bench,$(foreach e,$(cext),\
+    $(eval $(call compile-c,$(objdir)/$($pdir),$($pdir),$e))))
 
 #======================================================================#
 # Function: compile-cpp                                                #
@@ -2903,8 +2903,8 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)
 endef
 $(foreach r,$(srcdir),$(foreach e,$(cxxext),\
     $(eval $(call compile-cpp,$(objdir),$r,$e))))
-$(foreach e,$(cxxext),\
-    $(eval $(call compile-cpp,$(objdir)/$(testdir),$(testdir),$e)))
+$(foreach p,test bench,$(foreach e,$(cxxext),\
+    $(eval $(call compile-cpp,$(objdir)/$($pdir),$($pdir),$e))))
 
 #======================================================================#
 # Function: compile-fortran                                            #
@@ -2928,8 +2928,8 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)
 endef
 $(foreach r,$(srcdir),$(foreach e,$(fext),\
     $(eval $(call compile-fortran,$(objdir),$r,$e))))
-$(foreach e,$(fext),\
-    $(eval $(call compile-fortran,$(objdir)/$(testdir),$(testdir),$e)))
+$(foreach p,test bench,$(foreach e,$(fext),\
+    $(eval $(call compile-fortran,$(objdir)/$($pdir),$($pdir),$e))))
 
 #======================================================================#
 # Function: compile-sharedlib-linux-c                                  #

@@ -2,12 +2,12 @@
 # ==============
 GIT_DEPENDENCY  += \
     gbenchmark => https://github.com/google/benchmark.git \
-                  mkdir build && cd build && cmake .. && make
+                  mkdir -p build && cd build && cmake .. && make
 
 # Paths
 # =======
-CXXLIBS         += -I external/benchmark/include/
-LDLIBS          += -L external/benchmark/build/src
+CXXLIBS         += -I external/gbenchmark/include/
+LDLIBS          += -L external/gbenchmark/build/src
 
 # Flags
 # =======

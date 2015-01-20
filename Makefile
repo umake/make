@@ -1225,6 +1225,7 @@ $(foreach e,.zip .tar .tgz .tbz2 .tar.gz .tar.bz2,\
 $(foreach e,$(libext),$(eval vpath lib%$e $(libdir)))
 $(foreach s,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
+$(foreach s,$(benchdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 
 ########################################################################
 ##                              FILES                                 ##

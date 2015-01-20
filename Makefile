@@ -1730,15 +1730,6 @@ objall := $(obj) $(arobj) $(shrobj) #$(autoobj)
 autoobj := $(addsuffix $(firstword $(objext)),$(basename $(autosrc)))
 autoobj := $(addprefix $(objdir)/,$(autoobj))
 
-# Source dependency files
-# =========================
-# 1) Get tests and not-root source/auto-source for dependencies
-# 2) Create dependency names
-# 3) Add dependency suffix and directory
-depall := $(testall) $(call not-root,$(srcall) $(autoall))
-depall := $(strip $(basename $(depall)))
-depall := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
-
 # Internationalization
 # ======================
 # 1) intlall: Get all portable object files (based on their locale)
@@ -1985,6 +1976,16 @@ $(foreach s,$(combenchsrc),\
 endif
 #------------------------------------------------------------------[ 10 ]
 benchrun := $(addprefix run_,$(subst /,_,$(benchbin)))
+
+# Source dependency files
+# =========================
+# 1) Get tests, benchmarks and not-root source, auto-source,
+#    assembly and libraries for dependencies
+# 2) Create dependency names
+# 3) Add dependency suffix and directory
+depall := $(testall) $(benchall) $(src) $(asmsrc) $(autosrc) $(libsrc)
+depall := $(strip $(basename $(depall)))
+depall := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
 
 # Coverage analysis
 # ===================

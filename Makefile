@@ -299,8 +299,9 @@ POTEXT  := .pot
 POEXT   := .po
 MOEXT   := .mo
 
-# Test suffix
-TESTSUF := Test
+# Suffixex
+TESTSUF  := Test
+BENCHSUF := Bench
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
@@ -1096,9 +1097,13 @@ override sysexecdir := $(call rm-trailing-bar,$(wildcard $(SYSEXECDIR)))
 
 # Suffixes
 # ==========
-testsuf := $(strip $(sort $(TESTSUF)))
+testsuf  := $(strip $(sort $(TESTSUF)))
 ifneq ($(words $(testsuf)),1)
     $(error Just one suffix allowed for test sources!)
+endif
+benchsuf := $(strip $(sort $(BENCHSUF)))
+ifneq ($(words $(benchsuf)),1)
+    $(error Just one suffix allowed for benchmark sources!)
 endif
 
 # Extensions

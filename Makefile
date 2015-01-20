@@ -1849,22 +1849,31 @@ endif
 
 # Automated tests
 # =================
-# 1) testall: Get all source files in the test directory
-# 2) testall: Filter out ignored files from above
-# 3) testdep: Basenames without test suffix, root dirs and extensions
-# 4) testrun: Alias to execute tests, prefixing run_ and
-#             substituting / for _ in $(testdep)
+#  1) testall : Get all source files in the test directory
+#  2) testall : Filter out ignored files from above
+#  3) testsrc : Remove root directory names from dir paths
+#  4) testobj : Create object file from each complete source
+#  5) testbin : Define all binary names (with extensions if avaiable)
+#  6) Store test binary-specific files from source and objects
+#  7) Store common source and objects filtering the above ones
+#  8) Create variables:
+#     8.1) binary-name_src, for test binary's specific sources;
+#     8.2) binary-name_obj, for test binary's specific objects;
+#  9) Check if test sources have test suffixes and a matching file
+# 10) testrun : Alias to execute tests, prefixing run_ and
+#               substituting / for _ in $(testdep)
 #------------------------------------------------------------------[ 1 ]
 $(foreach e,$(srcext),\
     $(eval testall += $(call rwildcard,$(testdir),*$e)))
 #------------------------------------------------------------------[ 2 ]
 testall := $(call filter-ignored,$(testall))
-#------------------------------------------------------------------[ 4 ]
+#------------------------------------------------------------------[ 3 ]
 testsrc := $(call not-root,$(testall))
-#------------------------------------------------------------------[ 5 ]
+#------------------------------------------------------------------[ 4 ]
 testobj := $(addsuffix $(firstword $(objext)),$(basename $(testsrc)))
 testobj := $(addprefix $(objdir)/$(testdir)/,$(testobj))
-#------------------------------------------------------------------[ 6 ]
+testobj += $(objall) $(autoobj)
+#------------------------------------------------------------------[ 5 ]
 testbin := $(call rm-trailing-bar,$(TESTBIN))
 testbin := $(foreach b,$(testbin),$(or $(strip \
                $(foreach d,$(testdir),$(wildcard $d/$b/*))),$b))
@@ -1873,32 +1882,33 @@ testbin := $(addprefix $(strip $(bindir)/$(testdir))/,$(testbin))
 testbin := $(if $(strip $(binext)),\
                $(addsuffix $(binext),$(testbin)),$(testbin))
 testbin := $(call filter-ignored,$(testbin))
-#------------------------------------------------------------------[ 7 ]
+#------------------------------------------------------------------[ 6 ]
 $(foreach t,$(call not-root,$(testbin)),$(or\
     $(eval $t_src := $(filter $(call not-root,$t)%,$(testsrc))),\
     $(eval $t_obj := $(filter $(objdir)/$(testdir)/$t%,$(testobj)))\
 ))
-#------------------------------------------------------------------[ 8 ]
+#------------------------------------------------------------------[ 7 ]
 define common-test-factory
 $(call rfilter-out,$(foreach t,$(call not-root,$(testbin)),$($t_$1)),$2)
 endef
 comtestsrc := $(call common-test-factory,src,$(testsrc))
 comtestobj := $(call common-test-factory,obj,$(testobj))
-#------------------------------------------------------------------[ 9 ]
+#------------------------------------------------------------------[ 8 ]
 $(foreach t,$(call not-root,$(testbin)),$(or\
     $(eval $t_src := $(comtestsrc) $($t_src)),\
     $(eval $t_obj := $(comtestobj) $($t_obj)),\
 ))
+#------------------------------------------------------------------[ 9 ]
+ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,check)))
+$(foreach s,$(comtestsrc),\
+    $(if $(filter-out %$(testsuf),$(basename $s)),\
+        $(error "Test $(testdir)/$s have no suffix $(testsuf)")))
+$(foreach s,$(comtestsrc),\
+    $(if $(filter $(subst $(testsuf).,.,$s)%,\
+                  $(src) $(autosrc) $(asmsrc) $(libsrc)),,\
+        $(error "Test $(testdir)/$s has no matching source file")))
+endif
 #------------------------------------------------------------------[ 10 ]
-$(foreach s,$(comtestsrc),\
-    $(if $(and $(filter-out %$(testsuf),$(basename $s)),$(strip \
-               $(call rfilter,check,$(MAKECMDGOALS)))),\
-        $(error "Test $(testdir)/$s does not have suffix $(testsuf)")))
-$(foreach s,$(comtestsrc),\
-    $(if $(or $(filter $(subst $(testsuf).,.,$s),$(src)),$(strip \
-              $(call not,$(call rfilter,check,$(MAKECMDGOALS))))),,\
-        $(error "Test $(testdir)/$s has no corresponding source file")))
-#------------------------------------------------------------------[ 11 ]
 testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 
 # Coverage analysis

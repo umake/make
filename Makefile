@@ -53,6 +53,7 @@ BIN             :=
 SBIN            :=
 LIBEXEC         :=
 TESTBIN         :=
+BENCHBIN        :=
 ARLIB           :=
 SHRLIB          :=
 

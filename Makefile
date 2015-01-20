@@ -134,7 +134,7 @@ DATADIR   := data
 MAKEDIR   := make
 DESTDIR   :=
 TESTDIR   := test
-BENCHDIR  := bench
+BENCHDIR  := benchmark
 LOCALEDIR := locale
 else
 $(foreach var,\

@@ -72,11 +72,13 @@ To start using Makeballs, create a `conf` directory and download one
 of the `conf/makeball.mk` avaiable. Then, add it in the end of 
 `Config.mk`:
 
-    ...
-    Makeball list
-    ===============
-    include conf/makeball_1.mk
-    include conf/makeball_2.mk
+```make
+...
+# Makeball list
+# ===============
+include conf/makeball_1.mk
+include conf/makeball_2.mk
+```
 
 If you cloned `make` to be used as a git submodule, all Makeballs are 
 already avaiable for you! Just create a symbolic link:

@@ -2088,6 +2088,10 @@ depend: builddep librarydep gitdep webdep
 check: all $(testrun)
 	$(if $(strip $^),$(call phony-ok,$(MSG_TEST_SUCCESS)))
 
+.PHONY: eval
+eval: all $(benchrun)
+	$(if $(strip $^),$(call phony-ok,$(MSG_BENCH_SUCCESS)))
+
 .PHONY: nothing
 nothing:
 
@@ -4917,6 +4921,7 @@ projecthelp:
 	@echo " * docs:             Generates docs in all formats avaiable "
 	@echo " * doxy:             Creates Doxygen docs                   "
 	@echo " * dpkg:             Creates the project's debian package   "
+	@echo " * eval:             Compiles and runs Benchmarks           "
 	@echo " * gitignore:        Outputs .gitignore model for user      "
 	@echo " * init:             Creates dirs for beggining projects    "
 	@echo " * install-*:        Installs one info/html/dvi/pdf/ps docs "

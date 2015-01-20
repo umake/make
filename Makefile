@@ -1451,16 +1451,17 @@ cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
 # 2) srcall  : Filter out ignored files from above
 # 3) srcall  : Remove automatically generated source files from srcall
 # 4) liball  : Save complete paths for libraries (wildcard-expanded)
-# 5) libpat  : Save complete paths for libraries (non-wildcard-expanded)
-# 6) srccln  : Remove library src from normal src
-# 6) asmcln  : Remove library src from assembly src
-# 6) autocln : Remove library src from normal auto generated src
-# 7) src     : Remove root directory names from dir paths
-# 7) asmsrc  : Remove root directory names from dir paths
-# 7) autosrc : Remove root directory names from dir paths
-# 8) c_all   : C files from srcall
-# 8) f_all   : Fortran files from srcall
-# 8) cxx_all : C++ files from srcall
+# 5) libsrc  : Remove root directory names from dir paths
+# 6) libpat  : Save complete paths for libraries (non-wildcard-expanded)
+# 7) srccln  : Remove library src from normal src
+# 7) asmcln  : Remove library src from assembly src
+# 7) autocln : Remove library src from normal auto generated src
+# 8) src     : Remove root directory names from dir paths
+# 8) asmsrc  : Remove root directory names from dir paths
+# 8) autosrc : Remove root directory names from dir paths
+# 9) c_all   : C files from srcall
+# 9) f_all   : Fortran files from srcall
+# 9) cxx_all : C++ files from srcall
 #------------------------------------------------------------------[ 1 ]
 ifneq ($(srcdir),.)
 srcall := $(sort\
@@ -1491,9 +1492,11 @@ $(foreach l,$(lib_in),\
     $(if $(or $(findstring $l,$(liball)),$(call rfilter,\
                 init standard nothing config gitignore,\
                 $(MAKECMDGOALS))),,\
-        $(error Library file/directory "$l" not found)\
+        $(error "Library file/directory '$l' not found")\
 ))
 #------------------------------------------------------------------[ 5 ]
+libsrc := $(call not-root,$(liball))
+#------------------------------------------------------------------[ 6 ]
 # Search-for-complete-path steps:
 # * Cases #6 (path witout root) and #7 (all path);
 # * Case  #2 (path without file);
@@ -1515,7 +1518,7 @@ libpat := $(sort \
         ))\
     ))\
 )
-#------------------------------------------------------------------[ 6 ]
+#------------------------------------------------------------------[ 7 ]
 srccln  := $(srcall)
 srccln  := $(call rfilter-out,$(liball),$(srccln))
 
@@ -1524,11 +1527,11 @@ asmcln  := $(call rfilter-out,$(liball),$(asmcln))
 
 autocln := $(autoall)
 autocln := $(call rfilter-out,$(liball),$(autocln))
-#------------------------------------------------------------------[ 7 ]
+#------------------------------------------------------------------[ 8 ]
 src     := $(call not-root,$(srccln))
 asmsrc  := $(call not-root,$(asmcln))
 autosrc := $(call not-root,$(autocln))
-#------------------------------------------------------------------[ 8 ]
+#------------------------------------------------------------------[ 9 ]
 c_all   := $(call rfilter,$(addprefix %,$(cext)),$(srcall))
 f_all   := $(call rfilter,$(addprefix %,$(fext)),$(srcall))
 cxx_all := $(call rfilter,$(addprefix %,$(cxxext)),$(srcall))
@@ -1546,21 +1549,31 @@ $(if $(strip $(esqlall)),$(eval ldflags += $(ldesql) ))
 
 # Static libraries
 # ==================
-# 1) Get complete static library paths from all libraries
-# 2) Store static library paths without root directory
-# 3) Create one var with the object dependencies for each lib above
-# 4) Create variables for all static library objects
-# 5) Create library simple names, without directories or extension
-# 6) Create library names, with directories, from the source
+# 1) Get all source files that may be compiled to create the shared lib
+# 2) Get all source files from above without root directory
+# 3) Get complete static library paths from all libraries
+# 4) Store static library paths without root directory
+# 5) Create one var with the object dependencies for each lib above
+# 6) Create variables for all static library objects
+# 7) Create library simple names, without directories or extension
+# 8) Create library names, with directories, from the source
 #------------------------------------------------------------------[ 1 ]
+arall     := \
+$(foreach ar,$(ar_in),\
+    $(foreach l,$(liball),\
+        $(if $(findstring $(ar),$l),$l)\
+))
+#------------------------------------------------------------------[ 2 ]
+arsrc      := $(call not-root,$(arall))
+#------------------------------------------------------------------[ 3 ]
 arpat   := \
 $(foreach ar,$(ar_in),\
     $(foreach l,$(libpat),\
         $(if $(findstring $(ar),$l),$l)\
 ))
-#------------------------------------------------------------------[ 2 ]
+#------------------------------------------------------------------[ 4 ]
 arpatsrc  := $(call not-root,$(arpat))
-#------------------------------------------------------------------[ 3 ]
+#------------------------------------------------------------------[ 5 ]
 $(foreach ar,$(arpat),\
     $(eval arobj_$(call not-root,$(ar)) := \
         $(foreach l,$(liball),\
@@ -1569,11 +1582,11 @@ $(foreach ar,$(arpat),\
                     $(addsuffix $(firstword $(objext)),\
                          $(call not-root,$(basename $l)\
 )))))))
-#------------------------------------------------------------------[ 4 ]
-arobj     := $(foreach ar,$(arpatsrc),$(arobj_$(ar)))
-#------------------------------------------------------------------[ 5 ]
-arlibname := $(notdir $(basename $(arpatsrc)))
 #------------------------------------------------------------------[ 6 ]
+arobj     := $(foreach ar,$(arpatsrc),$(arobj_$(ar)))
+#------------------------------------------------------------------[ 7 ]
+arlibname := $(notdir $(basename $(arpatsrc)))
+#------------------------------------------------------------------[ 8 ]
 arlib     := $(foreach s,$(arpatsrc),\
                  $(patsubst $(subst ./,,$(dir $s))%,\
                  $(subst ./,,$(dir $s))lib%,$s)\
@@ -1584,13 +1597,14 @@ arlib     := $(patsubst %,$(firstword $(libdir))/%.a,\
 # Dynamic libraries
 # ===================
 # 1) Get all source files that may be compiled to create the shared lib
-# 2) Get complete dynamic library paths from all libraries
-# 3) Store dynamic library paths without root directory
-# 4) Create one var with the object dependencies for each lib above
-# 5) Create variables for all dynamic library objects
-# 6) Create library simple names, without directories or extension
-# 7) Create library complete names, with directories, from the source
-# 8) Set directories for locally searching for the libraries
+# 2) Get all source files from above without root directory
+# 3) Get complete dynamic library paths from all libraries
+# 4) Store dynamic library paths without root directory
+# 5) Create one var with the object dependencies for each lib above
+# 6) Create variables for all dynamic library objects
+# 7) Create library simple names, without directories or extension
+# 8) Create library complete names, with directories, from the source
+# 9) Set directories for locally searching for the libraries
 #------------------------------------------------------------------[ 1 ]
 shrall    := \
 $(foreach so,$(shr_in),\
@@ -1598,14 +1612,16 @@ $(foreach so,$(shr_in),\
         $(if $(findstring $(so),$l),$l)\
 ))
 #------------------------------------------------------------------[ 2 ]
+shrsrc     := $(call not-root,$(shrall))
+#------------------------------------------------------------------[ 3 ]
 shrpat    := \
 $(foreach so,$(shr_in),\
     $(foreach l,$(libpat),\
         $(if $(findstring $(so),$l),$l)\
 ))
-#------------------------------------------------------------------[ 3 ]
-shrpatsrc := $(call not-root,$(shrpat))
 #------------------------------------------------------------------[ 4 ]
+shrpatsrc := $(call not-root,$(shrpat))
+#------------------------------------------------------------------[ 5 ]
 $(foreach shr,$(shrpat),\
     $(eval shrobj_$(call not-root,$(shr)) := \
         $(foreach l,$(liball),\
@@ -1614,11 +1630,11 @@ $(foreach shr,$(shrpat),\
                     $(addsuffix $(firstword $(objext)),\
                          $(call not-root,$(basename $l)\
 )))))))
-#------------------------------------------------------------------[ 5 ]
-shrobj     := $(foreach shr,$(shrpatsrc),$(shrobj_$(shr)))
 #------------------------------------------------------------------[ 6 ]
-shrlibname := $(notdir $(basename $(shrpatsrc)))
+shrobj     := $(foreach shr,$(shrpatsrc),$(shrobj_$(shr)))
 #------------------------------------------------------------------[ 7 ]
+shrlibname := $(notdir $(basename $(shrpatsrc)))
+#------------------------------------------------------------------[ 8 ]
 shrlib     := $(foreach s,$(shrpatsrc),\
                    $(patsubst $(subst ./,,$(dir $s))%,\
                    $(subst ./,,$(dir $s))lib%,$s)\
@@ -4966,6 +4982,8 @@ else
 	$(call echo,"${WHITE}\nSTATIC LIBRARY          ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"ar_in:        ",$(ar_in)               )
+	$(call prompt,"arall:        ",$(arall)               )
+	$(call prompt,"arsrc:        ",$(arsrc)               )
 	$(call prompt,"arpat:        ",$(arpat)               )
 	$(call prompt,"arpatsrc:     ",$(arpatsrc)            )
 	$(call prompt,"arlibname:    ",$(arlibname)           )
@@ -4974,9 +4992,10 @@ else
 	$(call echo,"${WHITE}\nDYNAMIC LIBRARY         ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"shr_in:       ",$(shr_in)              )
+	$(call prompt,"shrall:       ",$(shrall)              )
+	$(call prompt,"shrsrc:       ",$(shrsrc)              )
 	$(call prompt,"shrpat:       ",$(shrpat)              )
 	$(call prompt,"shrpatsrc:    ",$(shrpatsrc)           )
-	$(call prompt,"shrall:       ",$(shrall)              )
 	$(call prompt,"shrlibname:   ",$(shrlibname)          )
 	$(call prompt,"shrlib:       ",$(shrlib)              )
 	

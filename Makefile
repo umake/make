@@ -133,11 +133,13 @@ DATADIR   := data
 MAKEDIR   := make
 DESTDIR   :=
 TESTDIR   := test
+BENCHDIR  := bench
 LOCALEDIR := locale
 else
 $(foreach var,\
     SRCDIR DEPDIR INCDIR OBJDIR COVDIR LIBDIR EXTDIR SRPDIR \
-    BINDIR SBINDIR DISTDIR CONFDIR DATADIR MAKEDIR TESTDIR LOCALEDIR,\
+    BINDIR SBINDIR DISTDIR CONFDIR DATADIR MAKEDIR TESTDIR BENCHDIR \
+    LOCALEDIR,\
     $(eval $(var) := .)\
 )
 endif
@@ -1062,13 +1064,15 @@ override confdir   := $(call rm-trailing-bar,$(CONFDIR))
 override datadir   := $(call rm-trailing-bar,$(DATADIR))
 override makedir   := $(call rm-trailing-bar,$(MAKEDIR))
 override testdir   := $(call rm-trailing-bar,$(TESTDIR))
+override benchdir  := $(call rm-trailing-bar,$(BENCHDIR))
 override localedir := $(call rm-trailing-bar,$(LOCALEDIR))
 
 # All directories
 alldir := $(strip\
-    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)         \
-    $(libdir) $(extdir) $(srpdir) $(bindir) $(sbindir) $(execdir)       \
-    $(distdir) $(confdir) $(datadir) $(makedir) $(testdir) $(localedir) \
+    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)        \
+    $(libdir) $(extdir) $(srpdir) $(bindir) $(sbindir) $(execdir)      \
+    $(distdir) $(confdir) $(datadir) $(makedir) $(testdir) $(benchdir) \
+    $(localedir) \
 )
 
 # Check if directory variable is non-empty
@@ -1077,7 +1081,7 @@ $(foreach p,src inc doc deb lib srp bin sbin exec conf data,\
         $(error There must be at least one dir in '$pdir'.)))
 
 # Check if directory variable has only one directory
-$(foreach p,dep obj ext dist test make locale,\
+$(foreach p,dep obj ext dist make test bench locale,\
     $(if $(call eq,$(words $($pdir)),1),,\
         $(error There must be only one dir in '$pdir'.)))
 

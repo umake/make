@@ -20,39 +20,39 @@
 
 # Dependencies
 # ==============
-# GIT_DEPENDENCY  += # List of git dependencies in the format
-#                    # DEP_NAME => dep_path                  
-# WEB_DEPENDENCY  += # Same as above, but for URL downloads  
-#                    # with 'curl -o' (default) or 'wget -O' 
+GIT_DEPENDENCY  += # List of git dependencies in the format
+                   # DEP_NAME => dep_path                  
+WEB_DEPENDENCY  += # Same as above, but for URL downloads  
+                   # with 'curl -o' (default) or 'wget -O' 
 
 # Paths
 # =======
-# ASLIBS          += # Assembly paths
-# CLIBS           += # C paths
-# FLIBS           += # Fortran paths
-# CXXLIBS         += # C++ paths
-# LDLIBS          += # Linker paths
+ASLIBS          += # Assembly paths
+CLIBS           += # C paths
+FLIBS           += # Fortran paths
+CXXLIBS         += # C++ paths
+LDLIBS          += # Linker paths
 
 # Compiler flags
 # ================
-# CPPFLAGS        += # Precompiler flags
-# ASFLAGS         += # Assembly flags
-# CFLAGS          += # C flags
-# FFLAGS          += # Fortran flags
-# CXXFLAGS        += # C++ flags
+CPPFLAGS        += # Precompiler flags
+ASFLAGS         += # Assembly flags
+CFLAGS          += # C flags
+FFLAGS          += # Fortran flags
+CXXFLAGS        += # C++ flags
 
 # Linker flags
 # ==============
-# LDFLAGS         += # Linker flags
-# LDC             += # C linker flags
-# LDF             += # Fortran linker flags
-# LDCXX           += # C++ linker flags
-# LDLEX           += # Lexer linker flags
-# LDYACC          += # Parser linker flags
-# LDESQL          += # Embedded SQL linker flags
+LDFLAGS         += # Linker flags
+LDC             += # C linker flags
+LDF             += # Fortran linker flags
+LDCXX           += # C++ linker flags
+LDLEX           += # Lexer linker flags
+LDYACC          += # Parser linker flags
+LDESQL          += # Embedded SQL linker flags
 
 # Library flags
 # ===============
-# ARFLAGS         += # Static library flags
-# SOFLAGS         += # Shared library flags
+ARFLAGS         += # Static library flags
+SOFLAGS         += # Shared library flags
 

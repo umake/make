@@ -5158,6 +5158,15 @@ else
 	$(call prompt,"testbin:      ",$(testbin)             )
 	$(call prompt,"testrun:      ",$(testrun)             )
 	
+	$(call echo,"${WHITE}\nBENCHMARK               ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"benchall:     ",$(benchall)            )
+	$(call prompt,"benchsrc:     ",$(benchsrc)            )
+	$(call prompt,"benchobj:     ",$(benchobj)            )
+	$(call prompt,"benchdep:     ",$(benchdep)            )
+	$(call prompt,"benchbin:     ",$(benchbin)            )
+	$(call prompt,"benchrun:     ",$(benchrun)            )
+	
 	$(call echo,"${WHITE}\nCOVERAGE                ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"covbin:       ",$(covbin)              )

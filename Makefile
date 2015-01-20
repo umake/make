@@ -1922,6 +1922,70 @@ endif
 #------------------------------------------------------------------[ 10 ]
 testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 
+# Automated Benchmarks
+# ======================
+#  1) benchall : Get all source files in the benchmark directory
+#  2) benchall : Filter out ignored files from above
+#  3) benchsrc : Remove root directory names from dir paths
+#  4) benchobj : Create object file from each complete source
+#  5) benchbin : Define all binary names (with extensions if avaiable)
+#  6) Store bench binary-specific files from source and objects
+#  7) Store common source and objects filtering the above ones
+#  8) Create variables:
+#     8.1) binary-name_src, for bench binary's specific sources;
+#     8.2) binary-name_obj, for bench binary's specific objects;
+#  9) Check if bench sources have benchmark suffixes and a matching file
+# 10) benchrun : Alias to execute benchmarks, prefixing run_ and
+#                substituting / for _ in $(benchdep)
+#------------------------------------------------------------------[ 1 ]
+$(foreach e,$(srcext),\
+    $(eval benchall += $(call rwildcard,$(benchdir),*$e)))
+#------------------------------------------------------------------[ 2 ]
+benchall := $(call filter-ignored,$(benchall))
+#------------------------------------------------------------------[ 3 ]
+benchsrc := $(call not-root,$(benchall))
+#------------------------------------------------------------------[ 4 ]
+benchobj := $(addsuffix $(firstword $(objext)),$(basename $(benchsrc)))
+benchobj := $(addprefix $(objdir)/$(benchdir)/,$(benchobj))
+benchobj += $(objall) $(autoobj)
+#------------------------------------------------------------------[ 5 ]
+benchbin := $(call rm-trailing-bar,$(BENCHBIN))
+benchbin := $(foreach b,$(benchbin),$(or $(strip \
+               $(foreach d,$(benchdir),$(wildcard $d/$b/*))),$b))
+benchbin := $(call not-root,$(basename $(benchbin)))
+benchbin := $(addprefix $(strip $(bindir)/$(benchdir))/,$(benchbin))
+benchbin := $(if $(strip $(binext)),\
+               $(addsuffix $(binext),$(benchbin)),$(benchbin))
+benchbin := $(call filter-ignored,$(benchbin))
+#------------------------------------------------------------------[ 6 ]
+$(foreach t,$(call not-root,$(benchbin)),$(or\
+    $(eval $t_src := $(filter $(call not-root,$t)%,$(benchsrc))),\
+    $(eval $t_obj := $(filter $(objdir)/$(benchdir)/$t%,$(benchobj)))\
+))
+#------------------------------------------------------------------[ 7 ]
+define common-bench-factory
+$(call rfilter-out,$(foreach t,$(call not-root,$(benchbin)),$($t_$1)),$2)
+endef
+combenchsrc := $(call common-bench-factory,src,$(benchsrc))
+combenchobj := $(call common-bench-factory,obj,$(benchobj))
+#------------------------------------------------------------------[ 8 ]
+$(foreach t,$(call not-root,$(benchbin)),$(or\
+    $(eval $t_src := $(combenchsrc) $($t_src)),\
+    $(eval $t_obj := $(combenchobj) $($t_obj)),\
+))
+#------------------------------------------------------------------[ 9 ]
+ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,eval)))
+$(foreach s,$(combenchsrc),\
+    $(if $(filter-out %$(benchsuf),$(basename $s)),\
+        $(error "Benchmark $(benchdir)/$s have no suffix $(benchsuf)")))
+$(foreach s,$(combenchsrc),\
+    $(if $(filter $(subst $(benchsuf).,.,$s)%,\
+                  $(src) $(autosrc) $(asmsrc) $(libsrc)),,\
+        $(error "Benchmark $(benchdir)/$s has no matching source file")))
+endif
+#------------------------------------------------------------------[ 10 ]
+benchrun := $(addprefix run_,$(subst /,_,$(benchbin)))
+
 # Coverage analysis
 # ===================
 # 1) Recompiled binaries for coverage test

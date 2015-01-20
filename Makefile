@@ -3063,6 +3063,35 @@ $(foreach t,$(testbin),$(eval\
 endif
 
 #======================================================================#
+# Function: benchmark-factory                                          #
+# @param  $1 Benchmark binary's directory name                         #
+# @param  $1 Benchmark binary's name without root directory            #
+# @param  $3 Alias to execute benchmarks, prefixing run_ and           #
+#            substituting / for _ in $(benchdep)                       #
+# @return Target to generate binary file for the benchmark             #
+#======================================================================#
+ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,eval)))
+define bench-factory
+$1/$2: $$($2_obj) | $1
+	$$(call status,$$(MSG_BENCH_COMPILE))
+	$$(quiet) $$(call mksubdir,$1,$$@)
+	$$(quiet) $$(CXX) $$^ -o $$@ $$(ldflags) $$(ldlibs)
+	$$(call ok,$$(MSG_BENCH_COMPILE),$$@)
+
+.PHONY: $3
+$3: $1/$2
+	$$(call phony-vstatus,$$(MSG_BENCH))
+	@./$$<
+	$$(call ok,$$(MSG_BENCH))
+endef
+#|| $$(call model-bench-error,$$(MSG_BENCH_FAILURE))
+$(foreach t,$(benchbin),$(eval\
+    $(call bench-factory,$(call root,$t),$(call not-root,$t),\
+    run_$(subst /,_,$t)\
+)))
+endif
+
+#======================================================================#
 # Function: binary-factory                                             #
 # @param  $1 Binary root directory                                     #
 # @param  $1 Binary name witout root dir                               #
@@ -3644,6 +3673,11 @@ MSG_TEST_COMPILE  = "${DEF}Generating test executable"\
                     "${GREEN}$(notdir $(strip $@))${RES}"
 MSG_TEST_FAILURE  = "${CYAN}Test '$(notdir $<)' did not passed${RES}"
 MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
+
+MSG_BENCH         = "${BLUE}Running benchmark ${WHITE}$(notdir $<)${RES}"
+MSG_BENCH_COMPILE = "${DEF}Generating benchmark executable"\
+                    "${GREEN}$(notdir $(strip $@))${RES}"
+MSG_BENCH_SUCCESS = "${YELLOW}All benchmarks runned successfully${RES}"
 
 MSG_COV           = "${PURPLE}Generating coverage analysis for"\
                     "${DEF}$(call not-root,$@)${RES}"

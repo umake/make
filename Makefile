@@ -72,33 +72,33 @@ WEB_DEPENDENCY  :=
 ########################################################################
 
 # Preprocessor options
-CPPFLAGS   :=
+CPPFLAGS    :=
 
 # Assembly/C/C++/Fortran options
-ASFLAGS    := -f elf32
-CFLAGS     :=
-CXXFLAGS   := -std=c++11
-FFLAGS     := -cpp
+ASFLAGS     := -f elf32
+CFLAGS      :=
+CXXFLAGS    := -std=c++11
+FFLAGS      := -cpp
 
 # Library options
-ARFLAGS    := -rcv
-SHRFLAGS   := -fPIC
+ARFLAGS     := -rcv
+SHRFLAGS    := -fPIC
 
 # Program options
-LEXFLAGS   :=
-YACCFLAGS  :=
-ESQLFLAGS  :=
-COVFLAGS   := -abc
-FINDFLAGS  := -type d -print 2> /dev/null
-CTAGSFLAGS :=
-ETAGSFLAGS :=
-MAKEFLAGS  := --no-print-directory
+LEXFLAGS    :=
+YACCFLAGS   :=
+ESQLFLAGS   :=
+COVFLAGS    := -abc
+FINDFLAGS   := -type d -print 2> /dev/null
+CTAGSFLAGS  :=
+ETAGSFLAGS  :=
+MAKEFLAGS   := --no-print-directory
 
 # Coverage options
-CPPCOV     :=
-CCOV       := --coverage
-FCOV       :=
-CXXCOV     := --coverage
+CPPCOVFLAGS :=
+CCOVFLAFGS  := --coverage
+FCOVFLAGS   :=
+CXXCOVFLAGS := --coverage
 
 ########################################################################
 ##                             LINKER FLAGS                           ##
@@ -1026,28 +1026,28 @@ doxyfile     := $(strip $(firstword $(DOXYFILE)))
 # Compilation flags
 # ===================
 # Redefine flags to avoid conflict with user's local definitions
-cppflags   := $(CPPFLAGS)
-asflags    := $(ASFLAGS)
-cflags     := $(CFLAGS)
-fflags     := $(FFLAGS)
-cxxflags   := $(CXXFLAGS)
+cppflags    := $(CPPFLAGS)
+asflags     := $(ASFLAGS)
+cflags      := $(CFLAGS)
+fflags      := $(FFLAGS)
+cxxflags    := $(CXXFLAGS)
 
-arflags    := $(ARFLAGS)
-shrflags   := $(SHRFLAGS)
+arflags     := $(ARFLAGS)
+shrflags    := $(SHRFLAGS)
 
-lexflags   := $(LEXFLAGS)
-yaccflags  := $(YACCFLAGS)
-esqlflags  := $(ESQLFLAGS)
-covflags   := $(COVFLAGS)
-findflags  := $(FINDFLAGS)
-ctagsflags := $(CTAGSFLAGS)
-etagsflags := $(ETAGSFLAGS)
-makeflags  := $(MAKEFLAGS)
+lexflags    := $(LEXFLAGS)
+yaccflags   := $(YACCFLAGS)
+esqlflags   := $(ESQLFLAGS)
+covflags    := $(COVFLAGS)
+findflags   := $(FINDFLAGS)
+ctagsflags  := $(CTAGSFLAGS)
+etagsflags  := $(ETAGSFLAGS)
+makeflags   := $(MAKEFLAGS)
 
-ccov       := $(CCOV)
-fcov       := $(FCOV)
-cxxcov     := $(CXXCOV)
-cppcov     := $(CPPCOV)
+cppcovflags := $(CPPCOVFLAGS)
+ccovflags   := $(CCOVFLAGS)
+fcovflags   := $(FCOVFLAGS)
+cxxcovflags := $(CXXCOVFLAGS)
 
 # Linker flags
 # ==============
@@ -1261,14 +1261,17 @@ phony_targets := $(targets) library git web
 # Coverage
 # ==========
 # Changes needed to deal with coverage compilation.
-# 1) Preprocess flags to add coverage compiler options and remove
-#    automatic optimizations (flags -On, n > 0)
-# 2) Adds prefix $(COVDIR) as prefix for some directories
+# 1) Preprocess compilation flags to add coverage compiler options
+#    and remove automatic optimizations (flags -On, n > 0)
+# 2) Preprocess linker flags to add coverage linker options
+# 3) Adds prefix $(COVDIR) as prefix for some directories
 ifdef COVERAGE
 #------------------------------------------------------------------[ 1 ]
-$(foreach p,cpp as c f cxx ld,\
-    $(eval override $pflags := $($pcov) $(patsubst -O%,,$($pflags))))
+$(foreach p,cpp as c f cxx,\
+    $(eval override $pflags := $($pcovflags) $(patsubst -O%,,$($pflags))))
 #------------------------------------------------------------------[ 2 ]
+override ldflags += $(ldcov)
+#------------------------------------------------------------------[ 3 ]
 $(foreach p,obj bin lib,\
     $(eval override $pdir := $(addprefix $(covdir)/,$($pdir))))
 endif
@@ -5282,10 +5285,10 @@ else
 	$(call prompt,"ctagsflags:   ",$(ctagsflags)          )
 	$(call prompt,"etagsflags:   ",$(etagsflags)          )
 	$(call prompt,"makeflags:    ",$(makeflags)           )
-	$(call prompt,"ccov:         ",$(ccov)                )
-	$(call prompt,"fcov:         ",$(fcov)                )
-	$(call prompt,"cxxcov:       ",$(cxxcov)              )
-	$(call prompt,"cppcov:       ",$(cppcov)              )
+	$(call prompt,"ccovflags:    ",$(ccovflags)           )
+	$(call prompt,"fcovflags:    ",$(fcovflags)           )
+	$(call prompt,"cxxcovflags:  ",$(cxxcovflags)         )
+	$(call prompt,"cppcovflags:  ",$(cppcovflags)         )
 	
 	$(call echo,"${WHITE}\nLINKER FLAGS            ${RES}")
 	$(call echo,"----------------------------------------")

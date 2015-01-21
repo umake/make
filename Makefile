@@ -2948,13 +2948,13 @@ $(foreach p,test bench,$(foreach e,$(fext),\
     $(eval $(call compile-fortran,$(objdir)/$($pdir),$($pdir),$e))))
 
 #======================================================================#
-# Function: compile-sharedlib-linux-c                                  #
+# Function: compile-sharedlib-c                                        #
 # @param  $1 File root directory                                       #
 # @param  $2 File basename without root dir                            #
 # @param  $3 File extension                                            #
 # @return Target to compile the C library file                         #
 #======================================================================#
-define compile-sharedlib-linux-c
+define compile-sharedlib-c
 $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_C_LIBCOMP))
 	
@@ -2967,16 +2967,16 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call ok,$$(MSG_C_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(cext),$(filter %$E,$(shrall))),\
-    $(eval $(call compile-sharedlib-linux-c,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
+    $(eval $(call compile-sharedlib-c,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
 
 #======================================================================#
-# Function: compile-sharedlib-linux-cpp                                #
+# Function: compile-sharedlib-cpp                                      #
 # @param  $1 File root directory                                       #
 # @param  $2 File basename without root dir                            #
 # @param  $3 File extension                                            #
 # @return Target to compile the C++ library file                       #
 #======================================================================#
-define compile-sharedlib-linux-cpp
+define compile-sharedlib-cpp
 $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_CXX_LIBCOMP))
 	
@@ -2989,16 +2989,16 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
-    $(eval $(call compile-sharedlib-linux-cpp,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
+    $(eval $(call compile-sharedlib-cpp,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
 
 #======================================================================#
-# Function: compile-sharedlib-linux-fortran                            #
+# Function: compile-sharedlib-fortran                                  #
 # @param  $1 File root directory                                       #
 # @param  $2 File basename without root dir                            #
 # @param  $3 File extension                                            #
 # @return Target to compile the Fortran library file                   #
 #======================================================================#
-define compile-sharedlib-linux-fortran
+define compile-sharedlib-fortran
 $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call status,$$(MSG_F_LIBCOMP))
 	
@@ -3011,17 +3011,17 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(call ok,$$(MSG_F_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
-    $(eval $(call compile-sharedlib-linux-fortran,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
+    $(eval $(call compile-sharedlib-fortran,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
 
 #======================================================================#
-# Function: link-sharedlib-linux                                       #
+# Function: link-sharedlib                                             #
 # @param  $1 Directory in which the lib may be put                     #
 # @param  $2 Subdirectories in which the lib may be put                #
 # @param  $3 File/dir basename that makes the name of the dir          #
 # @param  $4 Object dependencies of this static library                #
 # @return Target to create a shared library from objects               #
 #======================================================================#
-define link-sharedlib-linux
+define link-sharedlib
 $1/$2lib$3$$(shrflags): $4 | $1
 	$$(call status,$$(MSG_CXX_SHRDLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
@@ -3029,17 +3029,17 @@ $1/$2lib$3$$(shrflags): $4 | $1
 	$$(call ok,$$(MSG_CXX_SHRDLIB),$$@)
 endef
 $(foreach s,$(shrpatsrc),\
-    $(eval $(call link-sharedlib-linux,$(firstword $(libdir)),$(patsubst ./%,%,$(dir $s)),$(notdir $(basename $s)),$(shrobj_$s))))
+    $(eval $(call link-sharedlib,$(firstword $(libdir)),$(patsubst ./%,%,$(dir $s)),$(notdir $(basename $s)),$(shrobj_$s))))
 
 #======================================================================#
-# Function: link-statlib-linux                                         #
+# Function: link-statlib                                               #
 # @param  $1 Directory in which the lib may be put                     #
 # @param  $2 Subdirectories in which the lib may be put                #
 # @param  $3 File/dir basename that makes the name of the dir          #
 # @param  $4 Object dependencies of this static library                #
 # @return Target to create a static library from objects               #
 #======================================================================#
-define link-statlib-linux
+define link-statlib
 $1/$2lib$3$$(arext): $4 | $1
 	$$(call status,$$(MSG_STATLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
@@ -3048,7 +3048,7 @@ $1/$2lib$3$$(arext): $4 | $1
 	$$(call ok,$$(MSG_STATLIB),$$@)
 endef
 $(foreach a,$(arpatsrc),\
-    $(eval $(call link-statlib-linux,$(firstword $(libdir)),$(patsubst ./%,%,$(dir $a)),$(notdir $(basename $a)),$(arobj_$a))))
+    $(eval $(call link-statlib,$(firstword $(libdir)),$(patsubst ./%,%,$(dir $a)),$(notdir $(basename $a)),$(arobj_$a))))
 
 #======================================================================#
 # Function: test-factory                                               #

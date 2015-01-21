@@ -423,7 +423,7 @@ MAKE            += -f $(firstword $(MAKEFILE_LIST)) $(MAKEFLAGS)
 # standard Linux environment. Here we present changes required to
 # the code work in different OSs.
 
-ifeq ($(shell which uname),) # 'uname' exists
+ifdef $(call is-empty,$(shell which uname 2>/dev/null)) # exists 'uname'
 
 $(warning "Platform-specific support unavaiable: 'uname' required")
 
@@ -495,6 +495,7 @@ SHELL = /bin/sh
 ##                         USEFUL DEFINITIONS                         ##
 ########################################################################
 
+T     := 1
 comma := ,
 empty :=
 space := $(empty) $(empty)
@@ -522,11 +523,11 @@ rparentheses := )
 # 2) not-empty: Returns not empty if a variable is not empty
 
 define is-empty
-$(strip $(if $(strip $1),,1))
+$(strip $(if $(strip $1),,T))
 endef
 
 define not-empty
-$(strip $(if $(strip $1),1))
+$(strip $(if $(strip $1),T))
 endef
 
 # Logic functions
@@ -535,11 +536,11 @@ endef
 # 2) eq:  Returns not empty if $1 == $2, and empty otherwise
 # 3) ne:  Returns not empty if $1 != $2, and empty otherwise
 define not
-$(strip $(if $1,,1))
+$(strip $(if $1,,T))
 endef
 
 define eq
-$(strip $(if $(strip $(filter $(strip $1),$(strip $2))),1))
+$(strip $(if $(strip $(filter $(strip $1),$(strip $2))),T))
 endef
 
 define ne
@@ -586,8 +587,8 @@ endef
 # 5) is-decimal: Returns not empty if $1 matches [+-]?[1-9]?[0-9]*
 
 define cmp-factory
-lt_$(word 1,$(subst -, ,$1))_$(word 2,$(subst -, ,$1)) := 1
-gt_$(word 2,$(subst -, ,$1))_$(word 1,$(subst -, ,$1)) := 1
+lt_$(word 1,$(subst -, ,$1))_$(word 2,$(subst -, ,$1)) := T
+gt_$(word 2,$(subst -, ,$1))_$(word 1,$(subst -, ,$1)) := T
 endef
 $(foreach p,\
     0-1 0-2 0-3 0-4 0-5 0-6 0-7 0-8 0-9 1-2 1-3 1-4 1-5 1-6 1-7 1-8   \
@@ -603,8 +604,8 @@ endef
 
 define gt_impl
 $(if $(strip $1),$(if $(strip $2),\
-    $(if $(gt_$(call car,$1)_$(call car,$2)),1,\
-        $(call gt_impl,$(call cdr,$1),$(call cdr,$2))),1))
+    $(if $(gt_$(call car,$1)_$(call car,$2)),T,\
+        $(call gt_impl,$(call cdr,$1),$(call cdr,$2))),T))
 endef
 
 define gt
@@ -624,7 +625,7 @@ $(or $(call eq,$1,$2),$(call gt,$1,$2))
 endef
 
 define lt
-$(if $(call eq,$(call ge,$1,$2),1),,1)
+$(if $(call eq,$(call ge,$1,$2),T),,T)
 endef
 
 define le
@@ -638,7 +639,7 @@ $(strip $(subst 0,,$(subst 1,,$(subst 2,,$(subst 3,,$(subst 4,,\
 endef
 
 define is-numeric
-$(if $(call rm-number,$1),,1)
+$(if $(call rm-number,$1),,T)
 endef
 
 define is-negative_impl
@@ -652,11 +653,11 @@ endef
 define is-integer
 $(if $(and $(call is-numeric,$1),$(strip \
            $(or $(call is-positive_impl,$1),$(call is-negative_impl,$1))\
-)),1)
+)),T)
 endef
 
 define is-decimal
-$(if $(and $(call not,$(filter 0%,$1)),$(call is-integer,$1)),1)
+$(if $(and $(call not,$(filter 0%,$1)),$(call is-integer,$1)),T)
 endef
 
 # Lexical comparison functions
@@ -681,8 +682,8 @@ $(strip $(if $(strip $1),$(if $(strip $2),\
     $(if $(call lexical-ne,\
              $(firstword $(sort $(call car,$1) $(call car,$2))),\
              $(call car,$1)),\
-        1,$(call lexical-gt,$(call cdr,$1),$(call cdr,$2))\
-    ),1\
+        T,$(call lexical-gt,$(call cdr,$1),$(call cdr,$2))\
+    ),T\
 )))
 endef
 
@@ -691,7 +692,7 @@ $(or $(call lexical-eq,$1,$2),$(call lexical-gt,$1,$2))
 endef
 
 define lexical-lt
-$(if $(call lexical-eq,$(call lexical-ge,$1,$2),1),,1)
+$(if $(call lexical-eq,$(call lexical-ge,$1,$2),T),,T)
 endef
 
 define lexical-le
@@ -717,12 +718,12 @@ $(strip $(subst A,,$(subst B,,$(subst C,,$(subst D,,$(subst E,,\
 endef
 
 define is-alpha
-$(if $(call is-empty,$(call rm-upper,$(call rm-lower,$1))),1)
+$(if $(call is-empty,$(call rm-upper,$(call rm-lower,$1))),T)
 endef
 
 define is-alphanumeric
 $(if $(call is-empty,$(strip \
-    $(call rm-number,$(call rm-upper,$(call rm-lower,$1))))),1)
+    $(call rm-number,$(call rm-upper,$(call rm-lower,$1))))),T)
 endef
 
 # Version comparison functions
@@ -745,13 +746,13 @@ endef
 define version-gt_impl
 $(strip $(if $(strip $1),$(if $(strip $2),\
     $(if $(and $(call is-numeric,$1),$(call is-numeric,$2)),\
-        $(if $(call gt,$(call car,$1),$(call car,$2)),1,\
+        $(if $(call gt,$(call car,$1),$(call car,$2)),T,\
             $(if $(call eq,$(call car,$1),$(call car,$2)),\
                 $(call version-gt_impl,$(call cdr,$1),$(call cdr,$2)))),\
-        $(if $(call lexical-gt,$(call car,$1),$(call car,$2)),1,\
+        $(if $(call lexical-gt,$(call car,$1),$(call car,$2)),T,\
             $(if $(call lexical-eq,$(call car,$1),$(call car,$2)),\
                 $(call version-gt_impl,$(call cdr,$1),$(call cdr,$2))))\
-    ),1\
+    ),T\
 )))
 endef
 
@@ -761,7 +762,7 @@ $(strip $(if \
         $(subst ., ,$(call car,$(subst -, ,$(word 1,$(subst +, ,$1))))),\
         $(subst ., ,$(call car,$(subst -, ,$(word 1,$(subst +, ,$2)))))\
     )),\
-    1,$(strip $(call version-gt_impl,\
+    T,$(strip $(call version-gt_impl,\
         $(subst ., ,$(call cdr,$(subst -, ,$(word 1,$(subst +, ,$1))))),\
         $(subst ., ,$(call cdr,$(subst -, ,$(word 1,$(subst +, ,$2)))))\
     ))\
@@ -773,7 +774,7 @@ $(or $(call version-eq,$1,$2),$(call version-gt,$1,$2))
 endef
 
 define version-lt
-$(if $(call version-eq,$(call version-ge,$1,$2),1),,1)
+$(if $(call version-eq,$(call version-ge,$1,$2),T),,T)
 endef
 
 define version-le
@@ -1052,13 +1053,15 @@ $(call version-check,$(VERSION))
 
 # Native Language Support
 # =========================
-ENABLE_NLS ?= $(strip $(and $(foreach s,$(sysincdir),\
+ifndef ENABLE_NLS
+ENABLE_NLS := $(strip $(and $(foreach s,$(sysincdir),\
                   $(foreach i,$(NLSREQINC),$(wildcard $s$i))),$(strip \
                   $(or $(strip $(filter translation,$(MAKECMDGOALS))),\
-                       $(sort $(patsubst %,1,$(strip $(call rwildcard,\
+                       $(sort $(patsubst %,T,$(strip $(call rwildcard,\
                            $(localedir),$(addprefix *,$(potext))))))\
                   ))\
               ))
+endif
 
 # Documentation
 # ===============
@@ -1267,15 +1270,11 @@ ifneq ($(words $(binext)),1)
     $(if $(binext),$(error Just one or none binary extensions allowed!))
 endif
 
-ifeq ($(findstring $(arext),$(libext)),)
+ifdef $(call is-empty,$(findstring $(arext),$(libext)))
     $(error Static library extension must be a valid library extension)
 endif
 
-ifeq ($(findstring $(arext),$(libext)),)
-    $(error Static library extension must be a valid library extension)
-endif
-
-ifeq ($(findstring $(shrext),$(libext)),)
+ifdef $(call is-empty,$(findstring $(shrext),$(libext)))
     $(error Shared library extension must be a valid library extension)
 endif
 
@@ -1422,21 +1421,24 @@ phonydep := $(addsuffix $(sysext),$(phonydep))
 # '---'-----'------'-----'--------'---------------------------------'
 # Examples: 1: test1/  2: test2 .c      4: test4/test4       5: test5/.c
 #           6: test6.c 7: test7/test7.c 8: src/test8/test8.c
-# 1) ar_in/shr_in: Remove the last / if there is a path only
-# 2) lib_in      : Store libraries as being shared and static libs.
-#                  If there is only a suffix, throw an error.
+# 1) Remove the last / if there is a path only
+# 2) Throw error If there is only a suffix.
+# 3) Store libraries as being shared and static libs.
 #------------------------------------------------------------------[ 1 ]
+ifeq ($(findstring =>,ARLIB),) # ARLIB is not a hash
+endif
+
 ar_in     := $(call rm-trailing-bar,$(ARLIB))
 shr_in    := $(call rm-trailing-bar,$(SHRLIB))
 #------------------------------------------------------------------[ 2 ]
+$(foreach s,$(ar_in),\
+    $(if $(call eq,$(suffix $s),$s),\
+        $(error "Invalid argument $s in library variable ARLIB")))
+$(foreach s,$(shr_in),\
+    $(if $(call eq,$(suffix $s),$s),\
+        $(error "Invalid argument $s in library variable SHRLIB")))
+#------------------------------------------------------------------[ 3 ]
 lib_in    := $(ar_in) $(shr_in)
-lib_in    := \
-$(foreach s,$(lib_in),                                                 \
-  $(if $(and                                                           \
-      $(strip $(suffix $s)),$(if $(strip $(notdir $(basename $s))),,T) \
-  ),                                                                   \
-  $(error "Invalid argument $s in library variable"),$s)               \
-)
 
 # Assembly files
 # ================
@@ -1668,7 +1670,7 @@ $(if $(strip $(esqlall)),$(eval ldflags += $(ldesql) ))
 
 # Static libraries
 # ==================
-# 1) Get all source files that may be compiled to create the shared lib
+# 1) Get all source files that may be compiled to create the static lib
 # 2) Get all source files from above without root directory
 # 3) Get complete static library paths from all libraries
 # 4) Store static library paths without root directory
@@ -1843,7 +1845,7 @@ autoobj := $(addprefix $(objdir)/,$(autoobj))
 # 1) intlall: Get all portable object files (based on their locale)
 # 2) intlall: Filter out ignored files from above
 # 3) intlobj: Names of corresponding machine object files
-ifneq (,$(strip $(ENABLE_NLS)))
+ifdef ENABLE_NLS
 #------------------------------------------------------------------[ 1 ]
 ifneq ($(srcdir),.)
 intlall := $(sort\
@@ -1946,7 +1948,7 @@ i_libexec := $(addprefix $(i_libexecdir)/,$(call not-root,$(libexec)))
 # ================================
 # 1) intltl:   Template files for executables
 # 2) cppflags: Add definitions for internationalization
-ifneq (,$(strip $(ENABLE_NLS)))
+ifdef ENABLE_NLS
 #------------------------------------------------------------------[ 1 ]
 intltl    := \
 $(foreach b,$(binall),\
@@ -2209,7 +2211,7 @@ nothing:
 ########################################################################
 
 external_dependency := \
-    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
+    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),T)
 
 .PHONY: sync
 sync: externaldep
@@ -2225,11 +2227,11 @@ deploy: externaldep
 
 upgrade_dependency := \
     CURL     => $(firstword $(MAKEFILE_LIST)),\
-    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
+    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),T)
 
 .PHONY: upgrade
 upgrade: upgradedep
-ifneq ($(wildcard $(makedir)/*),)
+ifdef $(call not-empty,$(wildcard $(makedir)/*))
 	$(call git-pull,origin,master,$(makedir))
 	$(call git-add-commit,$(makedir),"Upgrade submodule $(makedir)")
 else
@@ -2243,7 +2245,7 @@ endif
 ########################################################################
 
 init_dependency := \
-    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),1)
+    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),T)
 
 .PHONY: init
 init: initdep
@@ -2388,7 +2390,7 @@ docs_dependency := \
 docs: docsdep $(if $(strip $(doxyfile)),doxy)
 docs: $(if $(strip $(texiall)),info html dvi pdf ps)
 
-ifneq ($(strip $(doxyfile)),) ####
+ifdef $(call not-empty,$(doxyfile))
 
 .PHONY: doxy
 doxy: docsdep $(docdir)/$(doxyfile).mk
@@ -2427,7 +2429,7 @@ $(doxyfile):
 $(docdir)/doxygen:
 	$(call mkdir,$(docdir)/doxygen)
 
-endif # ifneq($(strip $(doxyfile)),) ####
+endif # ifdef $(not-empty,$(doxyfile))
 
 ########################################################################
 ##                            DISTRIBUTION                            ##
@@ -2879,7 +2881,7 @@ $$(firstword $$(srcdir))/$1.yy.$2: $3
 	
 	$$(call ok,$$(MSG_LEX),$$@)
 
-ifeq ($$(wildcard $$(firstword $$(incdir))/$1-yy),)
+ifdef $$(is-empty,$$(wildcard $$(firstword $$(incdir))/$1-yy))
 $$(firstword $$(incdir))/$1-yy/:
 	$$(call mkdir,$$@)
 endif
@@ -2916,7 +2918,7 @@ $$(firstword $$(srcdir))/$1.tab.$2: $3 $$(lexall)
 	
 	$$(call ok,$$(MSG_YACC),$$@)
 
-ifeq ($$(wildcard $$(firstword $$(incdir))/$1-tab),)
+ifdef $$(call is-empty,$$(wildcard $$(firstword $$(incdir))/$1-tab))
 $$(firstword $$(incdir))/$1-tab/:
 	$$(call mkdir,$$@)
 endif
@@ -3278,7 +3280,7 @@ $(foreach r,$(srcdir),$(foreach s,$(srcext),$(foreach c,$(covext),\
 # @param  $1 Binary name witout root dir                               #
 # @return Target to generate template translations for translators     #
 #======================================================================#
-ifneq (,$(strip $(ENABLE_NLS)))
+ifdef ENABLE_NLS
 define intl-template-factory
 $1/$2$$(firstword $$(potext)): $$($2_all) | $1
 	$$(call status,$$(MSG_INTL_TEMPLATE))
@@ -3302,7 +3304,7 @@ endif
 # @param  $1 Binary name witout root dir                               #
 # @return Target to generate machine objects to be used by binaries    #
 #======================================================================#
-ifneq (,$(strip $(ENABLE_NLS)))
+ifdef ENABLE_NLS
 define intl-translate-factory
 $1/%/$2$$(firstword $$(poext)): $1/$2$$(firstword $$(potext))
 	$$(call phony-status,$$(MSG_INTL_PORTABLE))
@@ -3528,7 +3530,7 @@ distclean: clean
 	$(call rm-if-empty,$(firstword $(libdir)),\
 	    $(filter $(firstword $(libdir))/%,$(lib)))
 
-ifneq (,$(strip $(ENABLE_NLS)))
+ifdef ENABLE_NLS
 .PHONY: translationclean
 translationclean:
 	$(call rm-if-exists,$(intltl),$(MSG_INTLTL_NONE))
@@ -4072,7 +4074,7 @@ endef
 endif # ifndef SILENT
 
 ## STATUS ##############################################################
-ifneq ($(and $(call is-empty,$(SILENT)),$(call not-empty,$(quiet))),)
+ifdef $(and $(call is-empty,$(SILENT)),$(call not-empty,$(quiet)))
 
 define model-status
 $(call print,$1 "... ")
@@ -4204,7 +4206,7 @@ GIT_SUBMODULE_ADD    := $(GIT_SUBMODULE) add -f
 GIT_SUBMODULE_INIT   := $(GIT_SUBMODULE) init
 GIT_TAG              := $(GIT) tag
 
-ifneq ($(call version-gt,$(git_version),1.8.3),)
+ifdef $(call version-gt,$(git_version),1.8.3)
 GIT_SUBMODULE_DEINIT := $(GIT_SUBMODULE) deinit -f
 else
 GIT_SUBMODULE_DEINIT := $(NO_OPERATION)
@@ -4735,7 +4737,7 @@ ifdef CXX_MODULE
 	
 	$(call select,stdout)
 endif
-ifneq (,$(strip $(ENABLE_NLS)))
+ifdef ENABLE_NLS
 ifdef TRANSLATION
 new: $(foreach t,$(intltl),$(foreach e,$(firstword $(poext)),\
         $(localedir)/$(TRANSLATION)$d/$(call not-root,$(basename $t))$e))
@@ -4871,7 +4873,7 @@ ifdef CXX_MODULE
 	$(call delete-file,$(incbase)/$(CXX_MODULE),$(INC_EXT) $(hxxext))
 	$(call rm-if-empty,$(srcbase)/$(CXX_MODULE))
 endif
-ifneq (,$(strip $(ENABLE_NLS)))
+ifdef ENABLE_NLS
 ifdef TRANSLATION
 delete: r := $(localedir)
 delete: d := $(TRANSLATION)

@@ -4024,9 +4024,9 @@ endef
 
 define ERROR
 2>&1 | sed -e '1 s/^/\$(newline)\n$(ERROR_SEPARATOR)\n\$(newline)/'    \
-           -e '1 s/\n\n/\n/g' -e '1 s/n#/#/' -e '1 s/#n/#/'            \
-           -e '2 s/^ //' -e '$$ s/$$/\$(newline)\n$(ERROR_SEPARATOR)/' \
-           -e '$$ s/\n\n/\n/g' -e '$$ s/\n#/#/'
+           -e '1 s/\n\n/\n/g' -e '1 s/n#/#/' -e '1 s/#\n /#\n/'        \
+           -e '1 s/#n/#/' -e '$$ s/$$/\$(newline)\n$(ERROR_SEPARATOR)/'\
+           -e '$$ s/\n\n/\n/g' -e '$$ s/n#/#/'
 endef
 #| sed '1 s/^/> stderr:\n/'                 # '> stderr:' in 1st line
 #| sed 's/^/> /'                            # Put '> ' before each line

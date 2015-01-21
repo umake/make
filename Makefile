@@ -185,10 +185,6 @@ SYSBINDIR  := /bin     /usr/bin     /usr/local/bin
 SYSSBINDIR := /sbin    /usr/sbin    /usr/local/sbin
 SYSEXECDIR := /libexec /usr/libexec /usr/local/libexec
 
-# Include configuration file if exists
--include .version.mk
--include .config.mk config.mk Config.mk
-
 ## INSTALLATION ########################################################
 
 ### PREFIXES
@@ -337,12 +333,6 @@ MOEXT   := .mo
 TESTSUF  := Test
 BENCHSUF := Bench
 
-#//////////////////////////////////////////////////////////////////////#
-#----------------------------------------------------------------------#
-#                           OS DEFINITIONS                             #
-#----------------------------------------------------------------------#
-#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
-
 ########################################################################
 ##                             PROGRAMS                               ##
 ########################################################################
@@ -419,8 +409,62 @@ GIT             := git
 # Make
 MAKE            += -f $(firstword $(MAKEFILE_LIST)) $(MAKEFLAGS)
 
-# Include configuration file for programs if exists
--include .config_os.mk config_os.mk Config_os.mk
+# Include configuration file if exists
+-include .version.mk
+-include .config.mk config.mk Config.mk
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                     PLATFORM SPECIFIC DEFINITIONS                    #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
+# The default definitions presented above area all set to work in a
+# standard Linux environment. Here we present changes required to
+# the code work in different OSs.
+
+ifeq ($(shell which uname),) # 'uname' exists
+
+$(warning "Platform-specific support unavaiable: 'uname' required")
+
+else # exists 'uname'
+
+# Information extracted by uname
+# ================================
+# uname_S: Kernel name
+# uname_M: Machine hardware name
+# uname_O: Operating System
+# uname_R: Kernel release
+# uname_P: Processor type (or 'unknown')
+# uname_V: Kernel version
+override uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+override uname_M := $(shell sh -c 'uname -m 2>/dev/null || echo not')
+override uname_O := $(shell sh -c 'uname -o 2>/dev/null || echo not')
+override uname_R := $(shell sh -c 'uname -r 2>/dev/null || echo not')
+override uname_P := $(shell sh -c 'uname -p 2>/dev/null || echo not')
+override uname_V := $(shell sh -c 'uname -v 2>/dev/null || echo not')
+
+PLAT_SYS  := $(uname_S)
+PLAT_ARCH := $(uname_M)
+PLAT_OS   := $(uname_O)
+PLAT_RLSE := $(uname_R)
+PLAT_PROC := $(uname_P)
+PLAT_VER  := $(uname_V)
+
+# Platform specific flags
+# =========================
+
+ifeq ($(PLAT_SYS),Darwin) # OSX Family
+SHREXT   := .dylib
+SHRFLAGS := -fno-common
+LDSHR    := -dynamiclib
+endif
+
+# Include additional platform specific changes
+-include $(PLAT_SYS).$(PLAT_ARCH).mk
+-include $(PLAT_SYS).$(PLAT_ARCH).$(PLAT_VER).mk
+
+endif # exists 'uname'
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
@@ -5098,6 +5142,15 @@ ifdef VAR ####
 	        "${RED}Undefined${RES}",\
 	        "$(or $(strip $($(VAR))),${RED}Empty${RES})"))
 else
+	$(call echo,"${WHITE}\nPLATFORM INFO           ${RES}")
+	$(call echo,"----------------------------------------")
+	$(call prompt,"PLAT_SYS:     ",$(PLAT_SYS)            )
+	$(call prompt,"PLAT_ARCH:    ",$(PLAT_ARCH)           )
+	$(call prompt,"PLAT_OS:      ",$(PLAT_OS)             )
+	$(call prompt,"PLAT_RLSE:    ",$(PLAT_RLSE)           )
+	$(call prompt,"PLAT_PROC:    ",$(PLAT_PROC)           )
+	$(call prompt,"PLAT_VER:     ",$(PLAT_VER)            )
+	
 	$(call echo,"${WHITE}\nCONFIGURATION           ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"license:      ",$(license)             )

@@ -254,7 +254,9 @@ CXXEXT  := .C .cc .cpp .CPP .cxx .c++
 TLEXT   := .tcc .icc
 
 # Library extensions
-LIBEXT  := .a .so .dll
+LIBEXT  := .a .so .dll .dylib
+AREXT   := .a
+SHREXT  := .so
 
 # Parser/Lexer extensions
 LEXEXT  := .l
@@ -1119,6 +1121,8 @@ cxxext  := $(strip $(sort $(CXXEXT)))
 tlext   := $(strip $(sort $(TLEXT)))
 asmext  := $(strip $(sort $(ASMEXT)))
 libext  := $(strip $(sort $(LIBEXT)))
+arext   := $(strip $(sort $(AREXT)))
+shrext  := $(strip $(sort $(SHREXT)))
 lexext  := $(strip $(sort $(LEXEXT)))
 lexxext := $(strip $(sort $(LEXXEXT)))
 yaccext := $(strip $(sort $(YACCEXT)))
@@ -1159,25 +1163,32 @@ $(foreach ext,$(allext),\
     $(if $(filter .%,$(ext)),,\
         $(error "$(ext)" is not a valid extension)))
 
-ifneq ($(words $(objext)),1)
-    $(error Just one object extension allowed!)
+define single-extension-test
+ifneq ($$(words $$($(strip $1)ext)),1)
+    $$(error Just one $(strip $2) extension allowed!)
 endif
-
-ifneq ($(words $(depext)),1)
-    $(error Just one dependency extension allowed!)
-endif
-
-ifneq ($(words $(extext)),1)
-    $(error Just one external dependency extension allowed!)
-endif
-
-ifneq ($(words $(sysext)),1)
-    $(error Just one system dependency extension allowed!)
-endif
+endef
+$(eval $(call single-extension-test,ar,static library))
+$(eval $(call single-extension-test,shr,shared library))
+$(eval $(call single-extension-test,dep,dependency))
+$(eval $(call single-extension-test,ext,external dependency))
+$(eval $(call single-extension-test,sys,system dependency))
+$(eval $(call single-extension-test,obj,object))
 
 ifneq ($(words $(binext)),1)
-    $(if $(binext),\
-        $(error Just one or none binary extensions allowed!))
+    $(if $(binext),$(error Just one or none binary extensions allowed!))
+endif
+
+ifeq ($(findstring $(arext),$(libext)),)
+    $(error Static library extension must be a valid library extension)
+endif
+
+ifeq ($(findstring $(arext),$(libext)),)
+    $(error Static library extension must be a valid library extension)
+endif
+
+ifeq ($(findstring $(shrext),$(libext)),)
+    $(error Shared library extension must be a valid library extension)
 endif
 
 # Define extensions as the only valid ones
@@ -1602,7 +1613,7 @@ arlib     := $(foreach s,$(arpatsrc),\
                  $(patsubst $(subst ./,,$(dir $s))%,\
                  $(subst ./,,$(dir $s))lib%,$s)\
              )
-arlib     := $(patsubst %,$(firstword $(libdir))/%.a,\
+arlib     := $(patsubst %,$(firstword $(libdir))/%$(arext),\
                  $(basename $(arlib)))
 
 # Dynamic libraries
@@ -1650,7 +1661,7 @@ shrlib     := $(foreach s,$(shrpatsrc),\
                    $(patsubst $(subst ./,,$(dir $s))%,\
                    $(subst ./,,$(dir $s))lib%,$s)\
                )
-shrlib     := $(patsubst %,$(firstword $(libdir))/%.so,\
+shrlib     := $(patsubst %,$(firstword $(libdir))/%$(shrext),\
                   $(basename $(shrlib)))
 
 # System libraries
@@ -3011,7 +3022,7 @@ $(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
 # @return Target to create a shared library from objects               #
 #======================================================================#
 define link-sharedlib-linux
-$1/$2lib$3.so: $4 | $1
+$1/$2lib$3$$(shrflags): $4 | $1
 	$$(call status,$$(MSG_CXX_SHRDLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
 	$$(quiet) $$(CXX) $$(soflags) -o $$@ $$^ $$(ERROR)
@@ -3029,7 +3040,7 @@ $(foreach s,$(shrpatsrc),\
 # @return Target to create a static library from objects               #
 #======================================================================#
 define link-statlib-linux
-$1/$2lib$3.a: $4 | $1
+$1/$2lib$3$$(arext): $4 | $1
 	$$(call status,$$(MSG_STATLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
 	$$(quiet) $$(AR) $$(arflags) $$@ $$^ $$(NO_OUTPUT) $$(NO_ERROR)

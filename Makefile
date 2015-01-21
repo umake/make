@@ -68,7 +68,7 @@ GIT_DEPENDENCY  :=
 WEB_DEPENDENCY  :=
 
 ########################################################################
-##                              FLAGS                                 ##
+##                          COMPILATION FLAGS                         ##
 ########################################################################
 
 # Preprocessor options
@@ -80,31 +80,62 @@ CFLAGS     :=
 CXXFLAGS   := -std=c++11
 FFLAGS     := -cpp
 
+# Library options
+ARFLAGS    := -rcv
+SHRFLAGS   := -fPIC
+
+# Program options
+LEXFLAGS   :=
+YACCFLAGS  :=
+ESQLFLAGS  :=
+COVFLAGS   := -abc
+FINDFLAGS  := -type d -print 2> /dev/null
+CTAGSFLAGS :=
+ETAGSFLAGS :=
+MAKEFLAGS  := --no-print-directory
+
 # Coverage options
 CPPCOV     :=
 CCOV       := --coverage
 FCOV       :=
 CXXCOV     := --coverage
-LDCOV      := --coverage
 
-# Linker options
+########################################################################
+##                             LINKER FLAGS                           ##
+########################################################################
+
+# Assembly/C/C++/Fortran options
 LDFLAGS    :=
 LDC        :=
 LDF        := -lgfortran
 LDCXX      :=
+
+# Library options
+LDSHR      := -shared
+
+# Program options
 LDLEX      := -lfl
 LDYACC     :=
 LDESQL     := -lecpg
 
-# Library options
-ARFLAGS    := -rcv
-SOFLAGS    := -shared
+# Coverage options
+LDCOV      := --coverage
+
+########################################################################
+##                               PATHS                                ##
+########################################################################
 
 # Assembly/C/C++/Fortran paths for include dirs
 ASLIBS     :=
 CLIBS      :=
 CXXLIBS    :=
 FLIBS      :=
+
+# Program paths for include dirs
+LEXLIBS    :=
+YACCLIBS   :=
+ESQLLIBS   := $(if $(strip $(shell which pg_config)),\
+                  $(shell pg_config --includedir))
 
 # Linker paths for library dirs
 LDLIBS     :=
@@ -343,33 +374,22 @@ BZIP2           := bzip2
 MKDIR           := mkdir -p
 RMDIR           := rm -rf
 FIND            := find
-FINDFLAGS       := -type d -print 2> /dev/null
 
 # Parser and Lexer
 LEX             := flex
 LEXCXX          := flexc++
-LEXLIBS         :=
-LEXFLAGS        :=
 YACC            := bison
 YACCCXX         := bisonc++
-YACCLIBS        :=
-YACCFLAGS       :=
 
 # Coverage
 COV             := gcov
-COVFLAGS        := -abc
 
 # Embedded SQL
 ESQL            := ecpg
-ESQLLIBS        := $(if $(strip $(shell which pg_config)),\
-                       $(shell pg_config --includedir))
-ESQLFLAGS       :=
 
 # Tags
 CTAGS           := ctags
-CTAGSFLAGS      :=
 ETAGS           := etags
-ETAGSFLAGS      :=
 
 # Documentation
 DOXYGEN         := doxygen
@@ -397,7 +417,6 @@ CURL            := curl -o
 GIT             := git
 
 # Make
-MAKEFLAGS       := --no-print-directory
 MAKE            += -f $(firstword $(MAKEFILE_LIST)) $(MAKEFLAGS)
 
 # Include configuration file for programs if exists
@@ -1004,37 +1023,62 @@ notice       := $(strip $(firstword $(wildcard $(NOTICE))))
 contributors := $(strip $(firstword $(wildcard $(CONTRIBUTORS))))
 doxyfile     := $(strip $(firstword $(DOXYFILE)))
 
-# Flags
+# Compilation flags
+# ===================
+# Redefine flags to avoid conflict with user's local definitions
+cppflags   := $(CPPFLAGS)
+asflags    := $(ASFLAGS)
+cflags     := $(CFLAGS)
+fflags     := $(FFLAGS)
+cxxflags   := $(CXXFLAGS)
+
+arflags    := $(ARFLAGS)
+shrflags   := $(SHRFLAGS)
+
+lexflags   := $(LEXFLAGS)
+yaccflags  := $(YACCFLAGS)
+esqlflags  := $(ESQLFLAGS)
+covflags   := $(COVFLAGS)
+findflags  := $(FINDFLAGS)
+ctagsflags := $(CTAGSFLAGS)
+etagsflags := $(ETAGSFLAGS)
+makeflags  := $(MAKEFLAGS)
+
+ccov       := $(CCOV)
+fcov       := $(FCOV)
+cxxcov     := $(CXXCOV)
+cppcov     := $(CPPCOV)
+
+# Linker flags
+# ==============
+# Redefine flags to avoid conflict with user's local definitions
+ldflags    := $(LDFLAGS)
+ldas       := $(LDAS)
+ldc        := $(LDC)
+ldf        := $(LDF)
+ldcxx      := $(LDCXX)
+
+ldshr      := $(LDSHR)
+
+ldlex      := $(LDLEX)
+ldyacc     := $(LDYACC)
+ldesql     := $(LDESQL)
+
+ldcov      := $(LDCOV)
+
+# Paths
 # =======
 # Redefine flags to avoid conflict with user's local definitions
-cppflags  := $(CPPFLAGS)
-asflags   := $(ASFLAGS)
-cflags    := $(CFLAGS)
-fflags    := $(FFLAGS)
-cxxflags  := $(CXXFLAGS)
-cxxlexer  := $(CXXLEXER)
-cxxparser := $(CXXPARSER)
-ldlibs    := $(LDLIBS)
-ldflags   := $(LDFLAGS)
-arflags   := $(ARFLAGS)
-soflags   := $(SOFLAGS)
-lexflags  := $(LEXFLAGS)
-yaccflags := $(YACCFLAGS)
-esqlflags := $(ESQLFLAGS)
+aslibs     := $(ASLIBS)
+clibs      := $(CLIBS)
+cxxlibs    := $(CXXLIBS)
+flibs      := $(FLIBS)
 
-ldas      := $(LDAS)
-ldc       := $(LDC)
-ldf       := $(LDF)
-ldcxx     := $(LDCXX)
-ldlex     := $(LDLEX)
-ldyacc    := $(LDYACC)
-ldesql    := $(LDESQL)
+lexlibs    := $(LEXLIBS)
+yacclibs   := $(YACCLIBS)
+esqllibs   := $(ESQLLIBS)
 
-ccov      := $(CCOV)
-fcov      := $(FCOV)
-cxxcov    := $(CXXCOV)
-ldcov     := $(LDCOV)
-cppcov    := $(CPPCOV)
+ldlibs     := $(LDLIBS)
 
 # Installation directories
 # ==========================
@@ -1360,66 +1404,72 @@ asmall := $(call filter-ignored,$(asmall))
 
 # Lexical analyzers
 # ===================
-# 1) Find in a directory tree all the lex files (with dir names)
-# 2) Filter out ignored files from above
-# 3) Split C++ and C lexers (to be compiled appropriately)
-# 4) Change lex extension to .yy.c or .yy.cc (for C/C++ lexers)
+# 1) Get language-specifid lexical analyzers
+# 2) Find in a directory tree all the lex files (with dir names)
+# 3) Filter out ignored files from above
+# 4) Split C++ and C lexers (to be compiled appropriately)
+# 5) Change lex extension to .yy.c or .yy.cc (for C/C++ lexers)
 #    and join all the C and C++ lexer source names
-# 5) Create lex scanners default directories for headers
-# 6) Add default header directories for lexer compilation
+# 6) Create lex scanners default directories for headers
+# 7) Add default header directories for lexer compilation
 #------------------------------------------------------------------[ 1 ]
+cxxlexer := $(CXXLEXER)
+#------------------------------------------------------------------[ 2 ]
 $(foreach root,$(srcdir),\
     $(foreach E,$(lexext) $(lexxext),\
         $(eval alllexer += $(call rwildcard,$(root),*$E))\
 ))
-#------------------------------------------------------------------[ 2 ]
-alllexer := $(call filter-ignored,$(alllexer))
 #------------------------------------------------------------------[ 3 ]
+alllexer := $(call filter-ignored,$(alllexer))
+#------------------------------------------------------------------[ 4 ]
 cxxlexer := $(foreach e,$(lexxext),$(filter %$e,$(alllexer)))
 clexer   := $(filter-out $(cxxlexer),$(alllexer))
-#------------------------------------------------------------------[ 4 ]
+#------------------------------------------------------------------[ 5 ]
 lexall   += $(foreach E,$(lexext) $(lexxext),\
                 $(patsubst %$E,%.yy.cc,$(filter %$E,$(cxxlexer))))
 lexall   += $(foreach E,$(lexext) $(lexxext),\
                 $(patsubst %$E,%.yy.c,$(filter %$E,$(clexer))))
 lexall   := $(strip $(lexall))
-#------------------------------------------------------------------[ 5 ]
+#------------------------------------------------------------------[ 6 ]
 lexinc   := $(call not-root,$(basename $(basename $(lexall))))
 lexinc   := $(addprefix $(firstword $(incdir))/,$(lexinc))
 lexinc   := $(addsuffix -yy/,$(lexinc))
-#------------------------------------------------------------------[ 6 ]
+#------------------------------------------------------------------[ 7 ]
 lexinc   += $(if $(strip $(lexall)),$(strip $(LEXLIBS)))
 
 # Syntatic analyzers
 # ====================
-# 1) Find in a directory tree all the yacc files (with dir names)
-# 2) Filter out ignored files from above
-# 3) Split C++ and C parsers (to be compiled appropriately)
-# 4) Change yacc extension to .tab.c or .tab.cc (for C/C++ parsers)
+# 1) Get language-specific syntatic analyzers
+# 2) Find in a directory tree all the yacc files (with dir names)
+# 3) Filter out ignored files from above
+# 4) Split C++ and C parsers (to be compiled appropriately)
+# 5) Change yacc extension to .tab.c or .tab.cc (for C/C++ parsers)
 #    and join all the C and C++ parser source names
-# 5) Create yacc parsers default header files
-# 6) Add default header directories for parser compilation
+# 6) Create yacc parsers default header files
+# 7) Add default header directories for parser compilation
 #------------------------------------------------------------------[ 1 ]
+cxxparser := $(CXXPARSER)
+#------------------------------------------------------------------[ 2 ]
 $(foreach root,$(srcdir),\
     $(foreach E,$(yaccext) $(yaxxext),\
         $(eval allparser += $(call rwildcard,$(root),*$E))\
 ))
-#------------------------------------------------------------------[ 2 ]
-allparser := $(call filter-ignored,$(allparser))
 #------------------------------------------------------------------[ 3 ]
+allparser := $(call filter-ignored,$(allparser))
+#------------------------------------------------------------------[ 4 ]
 cxxparser := $(foreach e,$(yaxxext),$(filter %$e,$(allparser)))
 cparser   := $(filter-out $(cxxparser),$(allparser))
-#------------------------------------------------------------------[ 4 ]
+#------------------------------------------------------------------[ 5 ]
 yaccall   += $(foreach E,$(yaccext) $(yaxxext),\
                 $(patsubst %$E,%.tab.cc,$(filter %$E,$(cxxparser))))
 yaccall   += $(foreach E,$(yaccext) $(yaxxext),\
                 $(patsubst %$E,%.tab.c,$(filter %$E,$(cparser))))
 yaccall   := $(strip $(yaccall))
-#------------------------------------------------------------------[ 5 ]
+#------------------------------------------------------------------[ 6 ]
 yaccinc   := $(call not-root,$(basename $(basename $(yaccall))))
 yaccinc   := $(addprefix $(firstword $(incdir))/,$(yaccinc))
 yaccinc   := $(addsuffix -tab/,$(yaccinc))
-#------------------------------------------------------------------[ 6 ]
+#------------------------------------------------------------------[ 7 ]
 yaccinc   += $(if $(strip $(yaccall)),$(strip $(YACCLIBS)))
 
 # Embedded SQL preprocessors
@@ -2205,12 +2255,12 @@ TAGS: tagsdep ctags etags
 
 ctags: $(incall) $(srcall)
 	$(call phony-status,$(MSG_CTAGS))
-	$(quiet) $(CTAGS) $(CTAGSFLAGS) $^ -o $@ $(ERROR)
+	$(quiet) $(CTAGS) $(ctagsflags) $^ -o $@ $(ERROR)
 	$(call phony-ok,$(MSG_CTAGS))
 
 etags: $(incall) $(srcall)
 	$(call phony-status,$(MSG_ETAGS))
-	$(quiet) $(ETAGS) $(ETAGSFLAGS) $^ -o $@ $(ERROR)
+	$(quiet) $(ETAGS) $(etagsflags) $^ -o $@ $(ERROR)
 	$(call phony-ok,$(MSG_ETAGS))
 
 ########################################################################
@@ -2961,7 +3011,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CC) -fPIC $$(cppflags) $$(clibs) $$(cflags) \
+	$$(quiet) $$(CC) $$(shrflags) $$(cppflags) $$(clibs) $$(cflags) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_LIBCOMP),$$@)
@@ -2983,7 +3033,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CXX) -fPIC $$(cppflags) $$(cxxlibs) $$(cxxflags) \
+	$$(quiet) $$(CXX) $$(shrflags) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
 	                  -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
@@ -3005,7 +3055,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) -fPIC $$(cppflags) $$(flibs) $$(fflags) \
+	$$(quiet) $$(FC) $$(shrflags) $$(cppflags) $$(flibs) $$(fflags) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_F_LIBCOMP),$$@)
@@ -3022,10 +3072,10 @@ $(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
 # @return Target to create a shared library from objects               #
 #======================================================================#
 define link-sharedlib
-$1/$2lib$3$$(shrflags): $4 | $1
+$1/$2lib$3$$(shrext): $4 | $1
 	$$(call status,$$(MSG_CXX_SHRDLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
-	$$(quiet) $$(CXX) $$(soflags) -o $$@ $$^ $$(ERROR)
+	$$(quiet) $$(CXX) $$(ldshr) -o $$@ $$^ $$(ERROR)
 	$$(call ok,$$(MSG_CXX_SHRDLIB),$$@)
 endef
 $(foreach s,$(shrpatsrc),\
@@ -5073,9 +5123,7 @@ else
 	$(call prompt,"alllexer:     ",$(alllexer)            )
 	$(call prompt,"clexer:       ",$(clexer)              )
 	$(call prompt,"cxxlexer:     ",$(cxxlexer)            )
-	$(call prompt,"lexflags:     ",$(lexflags)            )
 	$(call prompt,"lexall:       ",$(lexall)              )
-	$(call prompt,"lexlibs:      ",$(lexlibs)             )
 	$(call prompt,"lexinc:       ",$(lexinc)              )
 	
 	$(call echo,"${WHITE}\nPARSER                  ${RES}")
@@ -5083,16 +5131,12 @@ else
 	$(call prompt,"allparser:    ",$(allparser)           )
 	$(call prompt,"cparser:      ",$(cparser)             )
 	$(call prompt,"cxxparser:    ",$(cxxparser)           )
-	$(call prompt,"yaccflags:    ",$(yaccflags)           )
 	$(call prompt,"yaccall:      ",$(yaccall)             )
-	$(call prompt,"yacclibs:     ",$(yacclibs)            )
 	$(call prompt,"yaccinc:      ",$(yaccinc)             )
 	
 	$(call echo,"${WHITE}\nEMBEDDED SQL PREPROC    ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"cesql:        ",$(cesql)               )
-	$(call prompt,"esqlflags:    ",$(esqlflags)           )
-	$(call prompt,"esqllibs:     ",$(esqllibs)            )
 	$(call prompt,"esqlall:      ",$(esqlall)             )
 	
 	$(call echo,"${WHITE}\nSOURCE                  ${RES}")
@@ -5230,13 +5274,18 @@ else
 	$(call prompt,"cflags:       ",$(cflags)              )
 	$(call prompt,"fflags:       ",$(fflags)              )
 	$(call prompt,"cxxflags:     ",$(cxxflags)            )
-	
-	$(call echo,"${WHITE}\nCOMPILER PATHS          ${RES}")
-	$(call echo,"----------------------------------------")
-	$(call prompt,"aslibs:       ",$(aslibs)              )
-	$(call prompt,"clibs:        ",$(clibs)               )
-	$(call prompt,"flibs:        ",$(flibs)               )
-	$(call prompt,"cxxlibs:      ",$(cxxlibs)             )
+	$(call prompt,"lexflags:     ",$(lexflags)            )
+	$(call prompt,"yaccflags:    ",$(yaccflags)           )
+	$(call prompt,"esqlflags:    ",$(esqlflags)           )
+	$(call prompt,"covflags:     ",$(covflags)            )
+	$(call prompt,"findflags:    ",$(findflags)           )
+	$(call prompt,"ctagsflags:   ",$(ctagsflags)          )
+	$(call prompt,"etagsflags:   ",$(etagsflags)          )
+	$(call prompt,"makeflags:    ",$(makeflags)           )
+	$(call prompt,"ccov:         ",$(ccov)                )
+	$(call prompt,"fcov:         ",$(fcov)                )
+	$(call prompt,"cxxcov:       ",$(cxxcov)              )
+	$(call prompt,"cppcov:       ",$(cppcov)              )
 	
 	$(call echo,"${WHITE}\nLINKER FLAGS            ${RES}")
 	$(call echo,"----------------------------------------")
@@ -5244,12 +5293,21 @@ else
 	$(call prompt,"ldc:          ",$(ldc)                 )
 	$(call prompt,"ldf:          ",$(ldf)                 )
 	$(call prompt,"ldcxx:        ",$(ldcxx)               )
+	$(call prompt,"ldshr:        ",$(ldshr)               )
 	$(call prompt,"ldlex:        ",$(ldlex)               )
 	$(call prompt,"ldyacc:       ",$(ldyacc)              )
 	$(call prompt,"ldesql:       ",$(ldesql)              )
+	$(call prompt,"ldcov:        ",$(ldcov)               )
 	
-	$(call echo,"${WHITE}\nLINKER PATHS            ${RES}")
+	$(call echo,"${WHITE}\nPATHS                   ${RES}")
 	$(call echo,"----------------------------------------")
+	$(call prompt,"aslibs:       ",$(aslibs)              )
+	$(call prompt,"clibs:        ",$(clibs)               )
+	$(call prompt,"flibs:        ",$(flibs)               )
+	$(call prompt,"cxxlibs:      ",$(cxxlibs)             )
+	$(call prompt,"lexlibs:      ",$(lexlibs)             )
+	$(call prompt,"yacclibs:     ",$(yacclibs)            )
+	$(call prompt,"esqllibs:     ",$(esqllibs)            )
 	$(call prompt,"ldlibs:       ",$(ldlibs)              )
 
 endif #### ifdef VAR

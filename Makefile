@@ -5077,8 +5077,9 @@ projecthelp:
 	@echo "                                                            "
 	@echo "Debug targets:                                              "
 	@echo "---------------                                             "
-	@echo " * dump:             Main variables used in this Makefile   "
-	@echo " * nothing:          Self-explicative, hun?                 "
+	@echo " * debug:            Output 'dump' content in 'make.debug'  "
+	@echo " * dump:             Output main variables of this Makefile "
+	@echo " * nothing:          Self-explicative, huh?                 "
 	@echo "                                                            "
 	@echo "Cleaning targets:                                           "
 	@echo "------------------                                          "
@@ -5145,6 +5146,10 @@ define prompt
 @$(call printf,"%b%b\n","${YELLOW}"$1"${RES}" \
                         "$(or $(strip $2),${RED}Empty${RES})")
 endef
+
+.PHONY: debug
+debug:
+	$(call make-create,dump NO_COLORS=1,make.debug)
 
 .PHONY: dump
 dump:

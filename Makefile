@@ -5012,6 +5012,7 @@ gitignore:
 	@echo ""
 	@echo "# Make auxiliars"
 	@echo "#================="
+	@echo "make.debug"
 	@$(if $(strip $(doxyfile)),echo $(docdir)/doxygen/)
 	@$(if $(strip $(doxyfile)),echo $(docdir)/$(doxyfile).mk)
 	@$(foreach e,$(depext) $(sysext),echo *$e; )

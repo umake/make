@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 test "initialization"\
-  "make init" \
+  "$MAKE init" \
   should_raise 0
 
-test "if \"make init\" creates the right folders"\
-  "make init" \
+test "if \"$MAKE init\" creates the right folders"\
+  "$MAKE init" \
   "ls | sort -f" \
   should_output "Config.mk\ndep\ndoc\ninclude\nMakefile\nsrc"

@@ -3,7 +3,13 @@
 . test/assert.sh
 . test/helper.sh
 
+if which gmake 2>/dev/null;
+    then export MAKE=gmake;
+    else export MAKE=make;
+fi
+
 function setup {
+  rm -rf test/tmp
   mkdir test/tmp
   cp Makefile test/tmp/Makefile
   cd test/tmp
@@ -15,6 +21,9 @@ function teardown {
   cd ../..
   rm -rf test/tmp
 }
+
+echo "Using program: $MAKE"
+echo
 
 # Targets
 echo -n "Testing Targets "

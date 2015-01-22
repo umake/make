@@ -1,18 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test "\"make standard\"" \
+test "\"$MAKE standard\"" \
   "cp ../resources/hello.cpp hello.cpp" \
-  "make standard" \
+  "$MAKE standard" \
   should_raise 0
 
-test "if \"make standard\" creates the right folders" \
+test "if \"$MAKE standard\" creates the right folders" \
   "cp ../resources/hello.cpp hello.cpp" \
-  "make standard" \
+  "$MAKE standard" \
   "ls | sort -f" \
   should_output "Config.mk\ndep\ndoc\ninclude\nMakefile\nsrc"
 
-test "if \"make standard\" moves the source file to \"src\"" \
+test "if \"$MAKE standard\" moves the source file to \"src\"" \
   "cp ../resources/hello.cpp hello.cpp" \
-  "make standard" \
+  "$MAKE standard" \
   "ls src | sort -f" \
   should_output "hello.cpp"

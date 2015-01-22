@@ -1,14 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test "make with a single file"\
-  "make init" \
+test "$MAKE with a single file"\
+  "$MAKE init" \
   "cp ../resources/hello.c src/hello.c" \
-  "make" \
+  "$MAKE" \
   should_raise 0
 
-test "if \"make\" builds the project with a single file" \
-  "make init" \
+test "if \"$MAKE\" builds the project with a single file" \
+  "$MAKE init" \
   "cp ../resources/hello.c src/hello.c" \
-  "make" \
+  "$MAKE" \
   "./bin/a.out" \
   should_output "Hello, World!"

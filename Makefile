@@ -449,25 +449,25 @@ override uname_R := $(shell sh -c 'uname -r 2>/dev/null || echo not')
 override uname_P := $(shell sh -c 'uname -p 2>/dev/null || echo not')
 override uname_V := $(shell sh -c 'uname -v 2>/dev/null || echo not')
 
-PLAT_SYS  := $(uname_S)
-PLAT_ARCH := $(uname_M)
-PLAT_OS   := $(uname_O)
-PLAT_RLSE := $(uname_R)
-PLAT_PROC := $(uname_P)
-PLAT_VER  := $(uname_V)
+PLAT_KERNEL   ?= $(uname_S)
+PLAT_ARCH     ?= $(uname_M)
+PLAT_OS       ?= $(uname_O)
+PLAT_RELEASE  ?= $(uname_R)
+PLAT_PROC     ?= $(uname_P)
+PLAT_VERSION  ?= $(uname_V)
 
 # Platform specific flags
 # =========================
 
-ifeq ($(PLAT_SYS),Darwin) # OSX Family
+ifeq ($(PLAT_KERNEL),Darwin) # OSX Family
 SHREXT   := .dylib
 SHRFLAGS := -fno-common
 LDSHR    := -dynamiclib
 endif
 
 # Include additional platform specific changes
--include $(PLAT_SYS).$(PLAT_ARCH).mk
--include $(PLAT_SYS).$(PLAT_ARCH).$(PLAT_VER).mk
+-include $(PLAT_KERNEL).$(PLAT_ARCH).mk
+-include $(PLAT_KERNEL).$(PLAT_ARCH).$(PLAT_VERSION).mk
 
 endif # exists 'uname'
 
@@ -1055,6 +1055,15 @@ endef
 # Version
 # =========
 $(call version-check,$(VERSION))
+
+# Platform info
+# =========
+plat_kernel  := $(strip $(PLAT_KERNEL))
+plat_arch    := $(strip $(PLAT_ARCH))
+plat_os      := $(strip $(PLAT_OS))
+plat_release := $(strip $(PLAT_RELEASE))
+plat_proc    := $(strip $(PLAT_PROC))
+plat_version := $(strip $(PLAT_VERSION))
 
 # Native Language Support
 # =========================
@@ -5148,12 +5157,12 @@ ifdef VAR ####
 else
 	$(call echo,"${WHITE}\nPLATFORM INFO           ${RES}")
 	$(call echo,"----------------------------------------")
-	$(call prompt,"PLAT_SYS:     ",$(PLAT_SYS)            )
-	$(call prompt,"PLAT_ARCH:    ",$(PLAT_ARCH)           )
-	$(call prompt,"PLAT_OS:      ",$(PLAT_OS)             )
-	$(call prompt,"PLAT_RLSE:    ",$(PLAT_RLSE)           )
-	$(call prompt,"PLAT_PROC:    ",$(PLAT_PROC)           )
-	$(call prompt,"PLAT_VER:     ",$(PLAT_VER)            )
+	$(call prompt,"plat_kernel:  ",$(plat_kernel)         )
+	$(call prompt,"plat_arch:    ",$(plat_arch)           )
+	$(call prompt,"plat_os:      ",$(plat_os)             )
+	$(call prompt,"plat_release: ",$(plat_release)        )
+	$(call prompt,"plat_proc:    ",$(plat_proc)           )
+	$(call prompt,"plat_version: ",$(plat_version)        )
 	
 	$(call echo,"${WHITE}\nCONFIGURATION           ${RES}")
 	$(call echo,"----------------------------------------")

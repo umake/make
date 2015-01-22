@@ -21,6 +21,11 @@
 # Default target
 all:
 
+# Make version
+ifneq ($(firstword $(shell $(MAKE) --version)),GNU)
+$(error "All-in-One Makefile requires GNU Make. Please install it.")
+endif
+
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
 #                          USER DEFINITIONS                            #

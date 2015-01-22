@@ -77,6 +77,7 @@
     [X] Add management flag to make header with NLS headers and macros.
     [X] Verify why ERROR newlines do not appear in all target errors.
     [X] Support run of benchmark tools.
+    [X] Correct ERROR output to work in Linux, Darwin and BSD.
     [ ] Output test coverage statistics (coverage + unit tests).
     [ ] Output benchmark coverage statistics (coverage + benchmarks).
     [ ] Support library with name different from directory's name.

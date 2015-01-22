@@ -3,7 +3,7 @@
 . test/assert.sh
 . test/helper.sh
 
-if which gmake 2>/dev/null;
+if which gmake 1>/dev/null 2>/dev/null;
     then export MAKE=gmake;
     else export MAKE=make;
 fi
@@ -22,7 +22,7 @@ function teardown {
   rm -rf test/tmp
 }
 
-echo "Using program: $MAKE"
+echo "Using program \"$MAKE\""
 echo
 
 # Targets

@@ -462,7 +462,7 @@ PLAT_VERSION  ?= $(uname_V)
 ifeq ($(PLAT_KERNEL),Darwin) # OSX Family
 SHREXT   := .dylib
 SHRFLAGS := -fno-common
-LDSHR    := -dynamiclib
+LDSHR    := -dynamiclib -undefined dynamic_lookup
 endif
 
 # Include additional platform specific changes

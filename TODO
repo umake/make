@@ -78,6 +78,7 @@
     [X] Verify why ERROR newlines do not appear in all target errors.
     [X] Support run of benchmark tools.
     [X] Correct ERROR output to work in Linux, Darwin and BSD.
+    [X] Add target 'debug' to output 'dump' content in a file.
     [ ] Output test coverage statistics (coverage + unit tests).
     [ ] Output benchmark coverage statistics (coverage + benchmarks).
     [ ] Support library with name different from directory's name.

@@ -3998,11 +3998,11 @@ endef
 ifndef SILENT
 
 define printf
-printf $1 $(call join-strings,$2) $(strip $3)
+printf $1 $2 $(strip $3)
 endef
 
 define print
-$(call printf,"%b",$1,$2)
+$(call printf,"%b",$(call join-strings,$1),$2)
 endef
 
 define println
@@ -5133,8 +5133,8 @@ define echo
 endef
 
 define prompt
-@$(call println,"${YELLOW}"$1"${RES}" \
-                $(if $(strip $2),"$(strip $2)","${RED}Empty${RES}"))
+@$(call printf,"%b%b\n","${YELLOW}"$1"${RES}" \
+                        "$(or $(strip $2),${RED}Empty${RES})")
 endef
 
 .PHONY: dump

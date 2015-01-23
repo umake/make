@@ -83,7 +83,7 @@ CPPFLAGS    :=
 ASFLAGS     := -f elf32
 CFLAGS      :=
 CXXFLAGS    := -std=c++11
-FFLAGS      := -cpp
+FFLAGS      := -ffree-form -cpp
 
 # Library options
 ARFLAGS     := -rcv

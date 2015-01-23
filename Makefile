@@ -3842,7 +3842,7 @@ MSG_BENCH_SUCCESS = "${YELLOW}All benchmarks runned successfully${RES}"
 MSG_COV           = "${PURPLE}Generating coverage analysis for"\
                     "${DEF}$(call not-root,$@)${RES}"
 MSG_COV_COMPILE   = "${DEF}Building ${GREEN}$@${DEF} to generate"\
-                    "coverage files ${RES}"
+                    "coverage files${RES}"
 
 MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
 MSG_MAKEZIP       = "${RED}Generating zip file ${BLUE}$@${RES}"

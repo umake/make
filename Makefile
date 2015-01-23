@@ -1289,7 +1289,7 @@ pdfext  := $(strip $(sort $(PDFEXT)))
 psext   := $(strip $(sort $(PSEXT)))
 
 incext := $(hext) $(hxxext) $(tlext) $(hfext)
-srcext := $(cext) $(cxxext) $(fext)
+srcext := $(cext) $(cxxext) $(fext) $(asmext)
 docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 
 # Check all extensions
@@ -1395,10 +1395,15 @@ $(foreach s,$(benchdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 
 # Configuration Files
 # =====================
+# 1) Configuration files used to change the Makefile behavior
+# 2) Dependencies needed to Makefile submodule
+#------------------------------------------------------------------[ 1 ]
 make_configs := $(AUXFILES) $(license) $(notice) $(contributors)
 make_configs += $(filter $(confdir)/%,$(MAKEFILE_LIST))
 make_configs += Config.mk config.mk Config_os.mk config_os.mk
 make_configs := $(sort $(foreach f,$(make_configs),$(wildcard $f)))
+#------------------------------------------------------------------[ 2 ]
+makedep      := $(addprefix $(depdir)/,$(addsuffix $(sysext),make))
 
 # Ignored Files
 # ===============
@@ -1487,17 +1492,6 @@ $(foreach s,$(shr_in),\
         $(error "Invalid argument $s in library variable SHRLIB")))
 #------------------------------------------------------------------[ 3 ]
 lib_in    := $(ar_in) $(shr_in)
-
-# Assembly files
-# ================
-# 1) Find all assembly files in the source directory
-# 2) Filter out ignored files from above
-#------------------------------------------------------------------[ 1 ]
-$(foreach root,$(srcdir),\
-    $(foreach E,$(asmext),\
-        $(eval asmall += $(call rwildcard,$(root),*$E))))
-#------------------------------------------------------------------[ 2 ]
-asmall := $(call filter-ignored,$(asmall))
 
 # Lexical analyzers
 # ===================
@@ -1589,22 +1583,84 @@ esqlall   := $(strip $(esqlall))
 #------------------------------------------------------------------[ 4 ]
 esqlinc   := $(if $(strip $(esqlall)),$(strip $(ESQLLIBS)))
 
-# Automatically generated files
-# ===============================
+# Source files
+# ==============
+# 1) userall : Find in the dir trees all source files (with dir names)
+# 2) autoall : Join automatically generated source files
+# 3) liball  : Save complete paths for libraries
+# 4) mainall : Save complete paths for files with 'main'/'program'
+# 5) userall : Remove library and main src from user-generated src
+# 5) autoall : Remove library and main src from auto-generated src
+# 6) srcall  : Join all sources with complete path
+# 7) usersrc : Remove root directory names from usersrc
+# 7) autosrc : Remove root directory names from autoall
+# 7) libsrc  : Remove root directory names from liball
+# 7) mainsrc : Remove root directory names from mainall
+# 7) src     : Remove root directory names from srcall
+# 8) asmall  : Assembly files from srcall
+# 8) call    : C files from srcall
+# 8) fall    : Fortran files from srcall
+# 8) cxxall  : C++ files from srcall
+# 9) srcdep  : Dependency files for source files
+#------------------------------------------------------------------[ 1 ]
+ifneq ($(srcdir),.)
+userall := $(sort $(call filter-ignored,\
+               $(foreach r,$(srcdir),\
+                   $(foreach e,$(srcext),\
+                       $(call rwildcard,$r,*$e)\
+           ))))
+else
+$(warning "Source directory is '.'. Deep search for source disabled")
+userall := $(sort $(foreach e,$(srcext),$(wildcard *$e)))
+endif
+#------------------------------------------------------------------[ 2 ]
 autoall := $(yaccall) $(lexall) $(esqlall)
-autoinc := $(yaccinc) $(lexinc) $(esqlinc)
+#------------------------------------------------------------------[ 3 ]
+liball  := $(sort $(foreach r,$(userall) $(autoall),\
+               $(foreach l,$(lib_in),\
+                   $(strip $(foreach s,$r,\
+                       $(if $(findstring $l,$s),$s)))\
+           )))
+# Give error if there is no match with the lib name
+$(foreach l,$(lib_in),\
+    $(if $(or $(findstring $l,$(liball)),$(call rfilter,\
+                init standard nothing config gitignore,\
+                $(MAKECMDGOALS))),,\
+        $(error "Library file/directory '$l' not found")\
+))
+#------------------------------------------------------------------[ 4 ]
+mainall := $(foreach s,$(userall) $(autoall),$(if $(call has-main,$s),$s))
+#------------------------------------------------------------------[ 5 ]
+userall := $(call rfilter-out,$(liball) $(mainall),$(userall))
+autoall := $(call rfilter-out,$(liball) $(mainall),$(autoall))
+#------------------------------------------------------------------[ 6 ]
+srcall  := $(userall) $(autoall) $(liball) $(mainall)
+#------------------------------------------------------------------[ 7 ]
+usersrc := $(call not-root,$(userall))
+autosrc := $(call not-root,$(autoall))
+libsrc  := $(call not-root,$(liball))
+mainsrc := $(call not-root,$(mainall))
+src     := $(call not-root,$(srcall))
+#------------------------------------------------------------------[ 8 ]
+asmall  := $(call rfilter,$(addprefix %,$(asmext)),$(src))
+call    := $(call rfilter,$(addprefix %,$(cext)),$(src))
+fall    := $(call rfilter,$(addprefix %,$(fext)),$(src))
+cxxall  := $(call rfilter,$(addprefix %,$(cxxext)),$(src))
+#------------------------------------------------------------------[ 9 ]
+srcdep  := $(patsubst %,$(depdir)/%$(depext),$(basename $(src)))
 
 # Header files
 # ==============
-# 1) Get all files able to be included
-# 2) Filter out ignored files from above
-# 3) Get all subdirectories of the included dirs
-# 4) Add them as paths to be searched for headers
+# 1) incall  : Get all files able to be included
+# 2) autoinc : Join automatically generated include files
+# 3) incsub  : Get all subdirectories of the included dirs
+# 4) libs    : Add subidirectories as paths to be searched for headers
 #------------------------------------------------------------------[ 1 ]
-incall  := $(foreach i,$(incdir),$(foreach e,$(incext),\
-                $(call rwildcard,$i,*$e)))
+incall  := $(call filter-ignored,\
+               $(foreach i,$(incdir),$(foreach e,$(incext),\
+                   $(call rwildcard,$i,*$e))))
 #------------------------------------------------------------------[ 2 ]
-incall  := $(call filter-ignored,$(incall))
+autoinc := $(yaccinc) $(lexinc) $(esqlinc)
 #------------------------------------------------------------------[ 3 ]
 incsub  := $(sort $(call rm-trailing-bar,$(dir $(incall))))
 incsub  += $(autoinc)
@@ -1614,120 +1670,13 @@ clibs   := $(CLIBS)   $(patsubst %,-I%,$(incsub))
 flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))
 cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
 
-# Source files
-# ==============
-# 1) srcall  : Find in the dir trees all source files (with dir names)
-# 2) srcall  : Filter out ignored files from above
-# 3) srcall  : Remove automatically generated source files from srcall
-# 4) liball  : Save complete paths for libraries (wildcard-expanded)
-# 5) libsrc  : Remove root directory names from dir paths
-# 6) libpat  : Save complete paths for libraries (non-wildcard-expanded)
-# 7) srccln  : Remove library src from normal src
-# 7) asmcln  : Remove library src from assembly src
-# 7) autocln : Remove library src from normal auto generated src
-# 8) src     : Remove root directory names from dir paths
-# 8) asmsrc  : Remove root directory names from dir paths
-# 8) autosrc : Remove root directory names from dir paths
-# 9) c_all   : C files from srcall
-# 9) f_all   : Fortran files from srcall
-# 9) cxx_all : C++ files from srcall
-#------------------------------------------------------------------[ 1 ]
-ifneq ($(srcdir),.)
-srcall := $(sort\
-    $(foreach root,$(srcdir),\
-        $(foreach E,$(srcext),\
-            $(call rwildcard,$(root),*$E)\
-)))
-else
-$(warning Source directory is '.'. Deep search for source disabled.)
-srcall := $(sort\
-    $(foreach E,$(srcext),\
-        $(wildcard *$E)\
-))
-endif
-#------------------------------------------------------------------[ 2 ]
-srcall := $(call filter-ignored,$(srcall))
-#------------------------------------------------------------------[ 3 ]
-srcall := $(call rfilter-out,$(lexall) $(yaccall) $(esqlall),$(srcall))
-#------------------------------------------------------------------[ 4 ]
-liball := $(sort \
-    $(foreach r,$(autoall) $(srcall) $(asmall),\
-        $(foreach l,$(lib_in),\
-            $(strip $(foreach s,$r,\
-                $(if $(findstring $l,$s),$s)))\
-)))
-# Give error if there is no match with the lib name
-$(foreach l,$(lib_in),\
-    $(if $(or $(findstring $l,$(liball)),$(call rfilter,\
-                init standard nothing config gitignore,\
-                $(MAKECMDGOALS))),,\
-        $(error "Library file/directory '$l' not found")\
-))
-#------------------------------------------------------------------[ 5 ]
-libsrc := $(call not-root,$(liball))
-#------------------------------------------------------------------[ 6 ]
-# Search-for-complete-path steps:
-# * Cases #6 (path witout root) and #7 (all path);
-# * Case  #2 (path without file);
-# * Case  #4 (path with file without extension);
-libpat := $(sort \
-    $(foreach l,$(lib_in),$(or\
-        $(strip $(foreach s,$(srcall),\
-            $(if $(findstring $l,$s),\
-                $(filter %$l,$s))\
-        )),\
-        $(strip $(foreach root,$(srcdir),\
-            $(firstword $(sort \
-                $(foreach s,$(call rsubdir,$(root)),\
-                    $(if $(findstring $l,$s),$s)\
-                )\
-        )))),\
-        $(strip $(foreach s,$(srcall) $(autoall) $(asmall),\
-            $(if $(findstring $l,$s),$s)\
-        ))\
-    ))\
-)
-#------------------------------------------------------------------[ 7 ]
-srccln  := $(srcall)
-srccln  := $(call rfilter-out,$(liball),$(srccln))
-
-asmcln  := $(asmall)
-asmcln  := $(call rfilter-out,$(liball),$(asmcln))
-
-autocln := $(autoall)
-autocln := $(call rfilter-out,$(liball),$(autocln))
-#------------------------------------------------------------------[ 8 ]
-src     := $(call not-root,$(srccln))
-asmsrc  := $(call not-root,$(asmcln))
-autosrc := $(call not-root,$(autocln))
-#------------------------------------------------------------------[ 9 ]
-c_all   := $(call rfilter,$(addprefix %,$(cext)),$(srcall))
-f_all   := $(call rfilter,$(addprefix %,$(fext)),$(srcall))
-cxx_all := $(call rfilter,$(addprefix %,$(cxxext)),$(srcall))
-
-# Main files
-# ============
-# 1) c_main   : C files with 'main'
-# 1) f_main   : Fortran files with 'program'
-# 1) cxx_main : C++ files with 'main'
-# 2) mainall  : Files with all extensions with main
-# 3) mainsrc  : Remove root directory names from dir paths
-#------------------------------------------------------------------[ 1 ]
-c_main   := $(foreach s,$(c_all),$(if $(call has-c-main,$s),$s))
-f_main   := $(foreach s,$(f_all),$(if $(call has-f-main,$s),$s))
-cxx_main := $(foreach s,$(cxx_all),$(if $(call has-cxx-main,$s),$s))
-#------------------------------------------------------------------[ 2 ]
-mainall  := $(strip $(c_main) $(f_main) $(cxx_main))
-#------------------------------------------------------------------[ 3 ]
-mainsrc  := $(call not-root,$(mainall))
-
 # Type-specific library flags
 # =============================
 # 1) Add asm, c, f, cxx, lex, yacc and esql only flags in linker flags
 $(if $(strip $(asmall)), $(eval ldflags += $(ldas)   ))
-$(if $(strip $(c_all)),  $(eval ldflags += $(ldc)    ))
-$(if $(strip $(f_all)),  $(eval ldflags += $(ldf)    ))
-$(if $(strip $(cxx_all)),$(eval ldflags += $(ldcxx)  ))
+$(if $(strip $(call)),   $(eval ldflags += $(ldc)    ))
+$(if $(strip $(fall)),   $(eval ldflags += $(ldf)    ))
+$(if $(strip $(cxxall)), $(eval ldflags += $(ldcxx)  ))
 $(if $(strip $(lexall)), $(eval ldflags += $(ldlex)  ))
 $(if $(strip $(yaccall)),$(eval ldflags += $(ldyacc) ))
 $(if $(strip $(esqlall)),$(eval ldflags += $(ldesql) ))
@@ -1743,19 +1692,28 @@ $(if $(strip $(esqlall)),$(eval ldflags += $(ldesql) ))
 # 7) Create library simple names, without directories or extension
 # 8) Create library names, with directories, from the source
 #------------------------------------------------------------------[ 1 ]
-arall     := \
-$(foreach ar,$(ar_in),\
-    $(foreach l,$(liball),\
-        $(if $(findstring $(ar),$l),$l)\
-))
+arall     := $(foreach ar,$(ar_in),\
+                 $(foreach l,$(liball),\
+                     $(if $(findstring $(ar),$l),$l)\
+             ))
 #------------------------------------------------------------------[ 2 ]
-arsrc      := $(call not-root,$(arall))
+arsrc     := $(call not-root,$(arall))
 #------------------------------------------------------------------[ 3 ]
-arpat   := \
-$(foreach ar,$(ar_in),\
-    $(foreach l,$(libpat),\
-        $(if $(findstring $(ar),$l),$l)\
-))
+# Search-for-complete-path steps:
+# * Cases #6 (path witout root) and #7 (all path);
+# * Case  #2 (path without file);
+# * Case  #4 (path with file without extension);
+arpat     := \
+$(sort $(foreach l,$(ar_in),$(or\
+    $(strip $(foreach s,$(liball),\
+        $(if $(findstring $l,$s),$(filter %$l,$s))\
+    )),\
+    $(strip $(foreach root,$(srcdir),\
+        $(firstword $(sort $(foreach s,$(call rsubdir,$(root)),\
+            $(if $(findstring $l,$s),$s)\
+    ))))),\
+    $(strip $(foreach s,$(liball),$(if $(findstring $l,$s),$s)))\
+)))
 #------------------------------------------------------------------[ 4 ]
 arpatsrc  := $(call not-root,$(arpat))
 #------------------------------------------------------------------[ 5 ]
@@ -1774,8 +1732,7 @@ arlibname := $(notdir $(basename $(arpatsrc)))
 #------------------------------------------------------------------[ 8 ]
 arlib     := $(foreach s,$(arpatsrc),\
                  $(patsubst $(subst ./,,$(dir $s))%,\
-                 $(subst ./,,$(dir $s))lib%,$s)\
-             )
+                 $(subst ./,,$(dir $s))lib%,$s))
 arlib     := $(patsubst %,$(firstword $(libdir))/%$(arext),\
                  $(basename $(arlib)))
 
@@ -1791,21 +1748,30 @@ arlib     := $(patsubst %,$(firstword $(libdir))/%$(arext),\
 # 8) Create library complete names, with directories, from the source
 # 9) Set directories for locally searching for the libraries
 #------------------------------------------------------------------[ 1 ]
-shrall    := \
-$(foreach so,$(shr_in),\
-    $(foreach l,$(liball),\
-        $(if $(findstring $(so),$l),$l)\
-))
+shrall     := $(foreach so,$(shr_in),\
+                  $(foreach l,$(liball),\
+                      $(if $(findstring $(so),$l),$l)\
+              ))
 #------------------------------------------------------------------[ 2 ]
 shrsrc     := $(call not-root,$(shrall))
 #------------------------------------------------------------------[ 3 ]
+# Search-for-complete-path steps:
+# * Cases #6 (path witout root) and #7 (all path);
+# * Case  #2 (path without file);
+# * Case  #4 (path with file without extension);
 shrpat    := \
-$(foreach so,$(shr_in),\
-    $(foreach l,$(libpat),\
-        $(if $(findstring $(so),$l),$l)\
-))
+$(sort $(foreach l,$(shr_in),$(or\
+    $(strip $(foreach s,$(liball),\
+        $(if $(findstring $l,$s),$(filter %$l,$s))\
+    )),\
+    $(strip $(foreach root,$(srcdir),\
+        $(firstword $(sort $(foreach s,$(call rsubdir,$(root)),\
+            $(if $(findstring $l,$s),$s)\
+    ))))),\
+    $(strip $(foreach s,$(liball),$(if $(findstring $l,$s),$s)))\
+)))
 #------------------------------------------------------------------[ 4 ]
-shrpatsrc := $(call not-root,$(shrpat))
+shrpatsrc  := $(call not-root,$(shrpat))
 #------------------------------------------------------------------[ 5 ]
 $(foreach shr,$(shrpat),\
     $(eval shrobj_$(call not-root,$(shr)) := \
@@ -1822,8 +1788,7 @@ shrlibname := $(notdir $(basename $(shrpatsrc)))
 #------------------------------------------------------------------[ 8 ]
 shrlib     := $(foreach s,$(shrpatsrc),\
                    $(patsubst $(subst ./,,$(dir $s))%,\
-                   $(subst ./,,$(dir $s))lib%,$s)\
-               )
+                   $(subst ./,,$(dir $s))lib%,$s))
 shrlib     := $(patsubst %,$(firstword $(libdir))/%$(shrext),\
                   $(basename $(shrlib)))
 
@@ -1852,11 +1817,10 @@ syslibdep  := $(addprefix $(depdir)/$(firstword $(libdir))/,\
 # 1) Local libraries used by the user
 # 2) Local library names, deduced from above
 #------------------------------------------------------------------[ 1 ]
-loclib     := \
-$(foreach l,$(filter -l%,$(ldflags)),\
-    $(foreach d,$(call rsubdir,$(call cdr,$(libdir))),\
-        $(lastword $(foreach e,$(libext),\
-            $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))))
+loclib     := $(foreach l,$(filter -l%,$(ldflags)),\
+                  $(foreach d,$(call rsubdir,$(call cdr,$(libdir))),\
+                      $(lastword $(foreach e,$(libext),\
+                          $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))))
 #------------------------------------------------------------------[ 2 ]
 loclibname := $(patsubst lib%,%,$(notdir $(basename $(loclib))))
 
@@ -1864,17 +1828,18 @@ loclibname := $(patsubst lib%,%,$(notdir $(basename $(loclib))))
 # ==================
 # 1) Dependency library names, deduced from above
 #------------------------------------------------------------------[ 1 ]
-deplibname := \
-$(call rfilter-out,$(libname) $(syslibname) $(loclibname),\
-    $(patsubst -l%,%,$(filter -l%,$(ldflags))))
+deplibname := $(call rfilter-out,$(libname) $(syslibname) $(loclibname),\
+                  $(patsubst -l%,%,$(filter -l%,$(ldflags))))
 
 # General libraries
 # ===================
-# 1) lib: all complete library names (path/libname.ext)
-# 2) libname: all library names (name)
-# 3) Get all subdirectories of the library dirs and
+# 1) lib     : All complete library names (path/libname.ext)
+# 2) libpat  : Save complete paths for libraries (non-wildcard-expanded)
+# 3) libname : All library names (name)
+# 4) Get all subdirectories of the library dirs and
 #    add them as paths to be searched for libraries
 lib     := $(arlib) $(shrlib) $(syslib) $(loclib) $(deplib)
+libpat  := $(arpat) $(shrpat)
 libname := $(arlibname) $(shrlibname)
 libname += $(syslibname) $(loclibname) $(deplibname)
 libsub   = $(if $(strip $(lib)),\
@@ -1887,26 +1852,25 @@ ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath$(comma)%, \
 
 # Object files
 # ==============
-# 1) Add obj suffix for each 'naked' assembly source file name (basename)
-# 2) Add obj suffix for each 'naked' source file name (basename)
-# 3) Prefix the build dir before each name
-# 4) Join all object files (including auto-generated)
-# 5) Repeat (1) and (3) for the automatically generated sources
-# 6) Repeat (1) and (3) for sources with program main
+# 1) Create object file from each common source file
+# 2) Create object file from each auto-generated source file
+# 3) Create object file from each library source file
+# 4) Create object file from each main file
+# 5) Join all object files from above
 #------------------------------------------------------------------[ 1 ]
-obj := $(addsuffix $(firstword $(objext)),$(basename $(asmsrc)))
+userobj := $(addsuffix $(firstword $(objext)),$(basename $(usersrc)))
+userobj := $(addprefix $(objdir)/,$(userobj))
 #------------------------------------------------------------------[ 2 ]
-obj += $(addsuffix $(firstword $(objext)),$(basename $(src)))
-#------------------------------------------------------------------[ 3 ]
-obj := $(addprefix $(objdir)/,$(obj))
-#------------------------------------------------------------------[ 4 ]
-objall := $(obj) $(arobj) $(shrobj) #$(autoobj)
-#------------------------------------------------------------------[ 5 ]
 autoobj := $(addsuffix $(firstword $(objext)),$(basename $(autosrc)))
 autoobj := $(addprefix $(objdir)/,$(autoobj))
-#------------------------------------------------------------------[ 6 ]
+#------------------------------------------------------------------[ 3 ]
+libobj  := $(addsuffix $(firstword $(objext)),$(basename $(libsrc)))
+libobj  := $(addprefix $(objdir)/,$(libobj))
+#------------------------------------------------------------------[ 4 ]
 mainobj := $(addsuffix $(firstword $(objext)),$(basename $(mainsrc)))
 mainobj := $(addprefix $(objdir)/,$(mainobj))
+#------------------------------------------------------------------[ 5 ]
+srcobj  := $(userobj) $(autoobj) $(libobj) $(mainobj)
 
 # Internationalization
 # ======================
@@ -1942,13 +1906,14 @@ endif
 # 2) Store binary-specific files from source, objects and libs
 # 3) Store common source, objects and libs filtering the above ones
 # 4) Create variables:
-#    4.1) binary-name_src, for binary's specific sources;
-#    4.2) binary-name_obj, for binary's specific objects;
-#    4.3) binary-name_lib, for binary's specific libraries;
-#    4.4) binary-name_link, for binary's specific linker flags;
-#    4.5) binary-name_aobj, for binary's specific auto-generated objects;
-#    4.6) binary-name_asrc, for binary's specific auto-generated sources;
-#    4.7) binary-name_is_cxx, to test if the binary may be C's or C++'s
+#    4.1) binary-name_src, for not-root binary's specific sources;
+#    4.2) binary-name_all, for complete path binary's specific sources;
+#    4.3) binary-name_obj, for binary's specific objects;
+#    4.4) binary-name_lib, for binary's specific libraries;
+#    4.5) binary-name_link, for binary's specific linker flags;
+#    4.6) binary-name_has_c, to test if the binary has C files;
+#    4.7) binary-name_has_f, to test if the binary has Fortran files;
+#    4.8) binary-name_has_cxx, to test if the binary has C++ files;
 #------------------------------------------------------------------[ 1 ]
 define binary-name
 $1 := $$(call rm-trailing-bar,$2)
@@ -1964,44 +1929,42 @@ $(eval $(call binary-name,libexec,$(LIBEXEC),$(execdir)))
 
 $(if $(strip $(bin) $(sbin) $(libexec)),\
     $(eval binall := $(bin) $(sbin) $(libexec)),\
-    $(if $(strip $(srccln)),$(eval binall := $(bindir)/a.out))\
+    $(if $(strip $(mainall)),$(eval binall := $(bindir)/a.out))\
 )
+#   $(eval $b_aall += $(foreach d,$(srcdir),\
+                          $(filter $d/$b$(sep)%,$(autosrc)))),\
+#   $(eval $b_mall += $(foreach d,$(srcdir),\
+                          $(filter $d/$b$(sep)%,$(mainsrc)))),\
+#   $(eval $b_aobj += $(filter $(objdir)/$b$(sep)%,$(autoobj))),\
+#   $(eval $b_mobj += $(filter $(objdir)/$b$(sep)%,$(mainobj))),\
 #------------------------------------------------------------------[ 2 ]
 $(foreach sep,/ .,$(foreach b,$(notdir $(binall)),$(or\
-    $(eval $b_src  += $(filter $b$(sep)%,$(src))),\
-    $(eval $b_all  += $(sort $(call rfilter,\
-                          $(addprefix %,$($b_src)),$(srcall)))),\
-    $(eval $b_obj  += $(filter $(objdir)/$b$(sep)%,$(obj))),\
-    $(eval $b_aobj += $(filter $(objdir)/$b$(sep)%,$(autoobj))),\
+    $(eval $b_src  += $(filter $b$(sep)%,\
+                          $(usersrc) $(autosrc) $(mainsrc))),\
+    $(eval $b_all  += $(sort $(call rfilter,$(addprefix %,$($b_src)),\
+                          $(userall) $(autoall) $(mainall)))),\
+    $(eval $b_obj  += $(filter $(objdir)/$b$(sep)%,\
+                          $(userobj) $(autoobj) $(mainobj))),\
     $(eval $b_lib  += $(foreach d,$(libdir),\
                           $(filter $d/$b$(sep)%,$(lib)))),\
-    $(eval $b_main += $(sort $(call rfilter,$($b_all),$(mainall)))),\
     $(eval $b_link += $(foreach n,$(libname),$(if $(strip \
                           $(filter %$n,$(basename $($b_lib)))),$n))),\
-    $(eval $b_aall += $(foreach d,$(srcdir),\
-                          $(filter $d/$b$(sep)%,$(autosrc)))),\
 )))
 #------------------------------------------------------------------[ 3 ]
 define common-factory
 $(call rfilter-out,$(foreach b,$(notdir $(binall)),$($b_$1)),$2)
 endef
-comsrc  := $(call common-factory,src,$(src))
-comall  := $(call common-factory,all,$(srcall))
-comobj  := $(call common-factory,obj,$(obj))
+comsrc  := $(call common-factory,src,$(usersrc) $(autosrc) $(mainsrc))
+comall  := $(call common-factory,src,$(userall) $(autoall) $(mainall))
+comobj  := $(call common-factory,obj,$(userobj) $(autoobj) $(mainobj))
 comlib  := $(call common-factory,lib,$(lib))
-commain := $(call common-factory,main,$(mainall))
 comlink := $(call common-factory,link,$(libname))
-comaobj := $(call common-factory,aobj,$(autoobj))
-comaall := $(call common-factory,aall,$(autoall))
 #------------------------------------------------------------------[ 4 ]
 $(foreach b,$(notdir $(binall)),$(or\
     $(eval $b_src     := $(comsrc)  $($b_src)  ),\
     $(eval $b_all     := $(comall)  $($b_all)  ),\
     $(eval $b_obj     := $(comobj)  $($b_obj)  ),\
     $(eval $b_lib     := $(comlib)  $($b_lib)  ),\
-    $(eval $b_main    := $(commain) $($b_main) ),\
-    $(eval $b_aobj    := $(comaobj) $($b_aobj) ),\
-    $(eval $b_aall    := $(comasrc) $($b_aall) ),\
     $(eval $b_link    := $(sort $(addprefix -l,$($b_link) $(comlink)))),\
     $(eval $b_has_c   := $(strip $(call has-c,$($b_src)))),\
     $(eval $b_has_f   := $(strip $(call has-f,$($b_src)))),\
@@ -2040,11 +2003,13 @@ endif
 #  6) Store test binary-specific files from source and objects
 #  7) Store common source and objects filtering the above ones
 #  8) Create variables:
-#     8.1) binary-name_src, for test binary's specific sources;
-#     8.2) binary-name_obj, for test binary's specific objects;
+#     8.1) binary-name_src, for not-root test binary's sources;
+#     8.2) binary-name_all, for complete path binary's sources;
+#     8.3) binary-name_obj, for test binary's specific objects;
 #  9) Check if test sources have test suffixes and a matching file
-# 10) testrun : Alias to execute tests, prefixing run_ and
-#               substituting / for _ in $(testdep)
+# 10) testdep : Dependency files for tests
+# 11) testrun : Alias to execute tests, prefixing run_ and
+#               substituting / for _ in $(testbin)
 #------------------------------------------------------------------[ 1 ]
 $(foreach e,$(srcext),\
     $(eval testall += $(call rwildcard,$(testdir),*$e)))
@@ -2055,7 +2020,7 @@ testsrc := $(call not-root,$(testall))
 #------------------------------------------------------------------[ 4 ]
 testobj := $(addsuffix $(firstword $(objext)),$(basename $(testsrc)))
 testobj := $(addprefix $(objdir)/$(testdir)/,$(testobj))
-testobj += $(call rfilter-out,$(mainobj),$(obj) $(autoobj))
+testobj += $(userobj) $(autoobj)
 #------------------------------------------------------------------[ 5 ]
 testbin := $(call rm-trailing-bar,$(TESTBIN))
 testbin := $(foreach b,$(testbin),$(or $(strip \
@@ -2068,6 +2033,8 @@ testbin := $(call filter-ignored,$(testbin))
 #------------------------------------------------------------------[ 6 ]
 $(foreach t,$(call not-root,$(testbin)),$(or\
     $(eval $t_src := $(filter $(call not-root,$t)%,$(testsrc))),\
+    $(eval $t_all += $(sort $(call rfilter,\
+                         $(addprefix %,$($t_src)),$(testall)))),\
     $(eval $t_obj := $(filter $(objdir)/$(testdir)/$t%,$(testobj)))\
 ))
 #------------------------------------------------------------------[ 7 ]
@@ -2075,10 +2042,12 @@ define common-test-factory
 $(call rfilter-out,$(foreach t,$(call not-root,$(testbin)),$($t_$1)),$2)
 endef
 comtestsrc := $(call common-test-factory,src,$(testsrc))
+comtestall := $(call common-test-factory,all,$(testall))
 comtestobj := $(call common-test-factory,obj,$(testobj))
 #------------------------------------------------------------------[ 8 ]
 $(foreach t,$(call not-root,$(testbin)),$(or\
     $(eval $t_src := $(comtestsrc) $($t_src)),\
+    $(eval $t_src := $(comtestall) $($t_all)),\
     $(eval $t_obj := $(comtestobj) $($t_obj)),\
 ))
 #------------------------------------------------------------------[ 9 ]
@@ -2087,11 +2056,12 @@ $(foreach s,$(comtestsrc),\
     $(if $(filter-out %$(testsuf),$(basename $s)),\
         $(error "Test $(testdir)/$s have no suffix $(testsuf)")))
 $(foreach s,$(comtestsrc),\
-    $(if $(filter $(subst $(testsuf).,.,$s)%,\
-                  $(src) $(autosrc) $(asmsrc) $(libsrc)),,\
+    $(if $(filter $(subst $(testsuf).,.,$s)%,$(src)),,\
         $(error "Test $(testdir)/$s has no matching source file")))
 endif
 #------------------------------------------------------------------[ 10 ]
+testdep := $(patsubst %,$(depdir)/%$(depext),$(basename $(testsrc)))
+#------------------------------------------------------------------[ 11 ]
 testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 
 # Automated Benchmarks
@@ -2104,22 +2074,24 @@ testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 #  6) Store bench binary-specific files from source and objects
 #  7) Store common source and objects filtering the above ones
 #  8) Create variables:
-#     8.1) binary-name_src, for bench binary's specific sources;
-#     8.2) binary-name_obj, for bench binary's specific objects;
+#     8.1) binary-name_src, for bench not-root test binary's sources;
+#     8.2) binary-name_all, for bench complete path binary's sources;
+#     8.3) binary-name_obj, for bench binary's specific objects;
 #  9) Check if bench sources have benchmark suffixes and a matching file
-# 10) benchrun : Alias to execute benchmarks, prefixing run_ and
+# 10) benchdep : Dependency files for benchmarks
+# 11) benchrun : Alias to execute benchmarks, prefixing run_ and
 #                substituting / for _ in $(benchdep)
 #------------------------------------------------------------------[ 1 ]
 $(foreach e,$(srcext),\
     $(eval benchall += $(call rwildcard,$(benchdir),*$e)))
 #------------------------------------------------------------------[ 2 ]
-benchall := $(call filter-ignored,$(benchall))
+benchall := $(call filter-ignored,$(benchall)) $(userall) $(autoall)
 #------------------------------------------------------------------[ 3 ]
 benchsrc := $(call not-root,$(benchall))
 #------------------------------------------------------------------[ 4 ]
 benchobj := $(addsuffix $(firstword $(objext)),$(basename $(benchsrc)))
 benchobj := $(addprefix $(objdir)/$(benchdir)/,$(benchobj))
-benchobj += $(call rfilter-out,$(mainobj),$(obj) $(autoobj))
+benchobj += $(userobj) $(autoobj)
 #------------------------------------------------------------------[ 5 ]
 benchbin := $(call rm-trailing-bar,$(BENCHBIN))
 benchbin := $(foreach b,$(benchbin),$(or $(strip \
@@ -2132,6 +2104,8 @@ benchbin := $(call filter-ignored,$(benchbin))
 #------------------------------------------------------------------[ 6 ]
 $(foreach t,$(call not-root,$(benchbin)),$(or\
     $(eval $t_src := $(filter $(call not-root,$t)%,$(benchsrc))),\
+    $(eval $t_all += $(sort $(call rfilter,\
+                         $(addprefix %,$($t_src)),$(testall)))),\
     $(eval $t_obj := $(filter $(objdir)/$(benchdir)/$t%,$(benchobj)))\
 ))
 #------------------------------------------------------------------[ 7 ]
@@ -2139,10 +2113,12 @@ define common-bench-factory
 $(call rfilter-out,$(foreach t,$(call not-root,$(benchbin)),$($t_$1)),$2)
 endef
 combenchsrc := $(call common-bench-factory,src,$(benchsrc))
+combenchall := $(call common-bench-factory,all,$(testall))
 combenchobj := $(call common-bench-factory,obj,$(benchobj))
 #------------------------------------------------------------------[ 8 ]
 $(foreach t,$(call not-root,$(benchbin)),$(or\
     $(eval $t_src := $(combenchsrc) $($t_src)),\
+    $(eval $t_all := $(combenchsrc) $($t_all)),\
     $(eval $t_obj := $(combenchobj) $($t_obj)),\
 ))
 #------------------------------------------------------------------[ 9 ]
@@ -2151,29 +2127,29 @@ $(foreach s,$(combenchsrc),\
     $(if $(filter-out %$(benchsuf),$(basename $s)),\
         $(error "Benchmark $(benchdir)/$s have no suffix $(benchsuf)")))
 $(foreach s,$(combenchsrc),\
-    $(if $(filter $(subst $(benchsuf).,.,$s)%,\
-                  $(src) $(autosrc) $(asmsrc) $(libsrc)),,\
+    $(if $(filter $(subst $(benchsuf).,.,$s)%,$(src)),,\
         $(error "Benchmark $(benchdir)/$s has no matching source file")))
 endif
 #------------------------------------------------------------------[ 10 ]
+benchdep := $(patsubst %,$(depdir)/%$(depext),$(basename $(benchsrc)))
+#------------------------------------------------------------------[ 11 ]
 benchrun := $(addprefix run_,$(subst /,_,$(benchbin)))
 
 # Source dependency files
 # =========================
-# 1) Get tests, benchmarks and not-root source, auto-source,
-#    assembly and libraries for dependencies
-# 2) Create dependency names
-# 3) Add dependency suffix and directory
-depall := $(testall) $(benchall) $(src) $(asmsrc) $(autosrc) $(libsrc)
-depall := $(strip $(basename $(depall)))
-depall := $(addprefix $(depdir)/,$(addsuffix $(depext),$(depall)))
+# 1) Get source, test and benchmark dependencies
+# 2) Get program, external and system library dependencies
+# 3) Get phony target and submodule makefile dependencies
+depall := $(srcdep) $(testdep) $(benchdep) 
+depall += $(progdep) $(externdep) $(syslibdep)
+depall += $(phonydep) $(makedep)
 
 # Coverage analysis
 # ===================
 # 1) Recompiled binaries for coverage test
 # 2) Directories (with source file names) for coverage analysis files
 covbin := $(addprefix $(covdir)/,$(binall))
-covall := $(addprefix $(covdir)/,$(srcall))
+covall := $(addprefix $(covdir)/,$(src))
 
 # Texinfo files
 # ===============
@@ -2250,9 +2226,9 @@ $(foreach n,program library,\
 build_dependency := \
     AR       => $(arlib),\
     AS       => $(asmall),\
-    CC       => $(c_all),\
-    FC       => $(f_all),\
-    CXX      => $(cxx_all),\
+    CC       => $(call),\
+    FC       => $(fall),\
+    CXX      => $(cxxall),\
     RANLIB   => $(arlib),\
     LEX      => $(clexer),\
     LEXCXX   => $(cxxlexer),\
@@ -2324,8 +2300,8 @@ init: initdep
 	$(call git-remote-add,origin,$(GIT_REMOTE_PATH))
 	
 	$(if $(wildcard $(makedir)/*),\
-	    $(if $(wildcard $(depdir)/make.mk),,\
-	        $(call touch,$(depdir)/make.mk)$(newline)\
+	    $(if $(wildcard $(makedep)),,\
+	        $(call touch,$(makedep))$(newline)\
 	        $(call git-submodule-add,$(MAKEGITREMOTE),$(makedir))))
 	
 	$(call mkdir,$(srcdir))
@@ -2356,7 +2332,6 @@ standard: init
 	$(call mv,$(poext),  $(localedir),"portable object")
 	$(call mv,$(moext),  $(localedir),"machine object")
 	$(call mv,$(incext), $(incdir),   "header")
-	$(call mv,$(asmext), $(srcdir),   "assembly")
 	$(call mv,$(srcext), $(srcdir),   "source")
 	$(call mv,$(esqlext),$(srcdir),   "embedded SQL")
 	$(call mv,$(lexext)  $(lexxext),$(srcdir),"lexer")
@@ -2417,10 +2392,11 @@ statistics:
 	@echo "$(PROJECT)-$(VERSION)                                       "
 	@echo "=============================                               "
 	@echo "                                                            "
-	@echo "C            : $(call statistic-count,$(c_all))             "
-	@echo "C++          : $(call statistic-count,$(cxx_all))           "
-	@echo "Fortran      : $(call statistic-count,$(f_all))             "
+	@echo "C            : $(call statistic-count,$(call))              "
+	@echo "C++          : $(call statistic-count,$(cxxall))            "
+	@echo "Fortran      : $(call statistic-count,$(fall))              "
 	@echo "Assembly     : $(call statistic-count,$(asmall))            "
+	@echo "Libraries    : $(call statistic-count,$(liball))            "
 	@echo "Headers      : $(call statistic-count,$(incall))            "
 	@echo "Lexers       : $(call statistic-count,$(alllexer))          "
 	@echo "Parsers      : $(call statistic-count,$(allparser))         "
@@ -2428,8 +2404,8 @@ statistics:
 	@echo "Tests        : $(call statistic-count,$(testall))           "
 	@echo "-----------------------------------                         "
 	@echo "Total        :"\
-          "$(call statistic-count,$(srcall) $(asmall) $(incall)        \
-           $(alllexer) $(allparser) $(cesql) $(testall))               "
+          "$(call statistic-count,$(userall) $(liball) $(mainall)      \
+           $(incall) $(alllexer) $(allparser) $(cesql) $(testall))     "
 	@echo "                                                            "
 
 ########################################################################
@@ -2470,7 +2446,7 @@ doxy: docsdep $(docdir)/$(doxyfile).mk
 	$(call phony-ok,$(MSG_DOXY_DOCS))
 
 $(docdir)/$(doxyfile).mk: | $(docdir) $(docdir)/doxygen
-$(docdir)/$(doxyfile).mk: $(doxyfile) $(srcall) $(incall)
+$(docdir)/$(doxyfile).mk: $(doxyfile)
 	$(call status,$(MSG_DOXY_MAKE))
 	$(quiet) $(CP) $< $@
 	
@@ -2709,9 +2685,6 @@ uninstall-info:
 # Include dependencies for each src extension, unless cleaning files
 ifneq ($(patsubst %clean,clean,$(MAKECMDGOALS)),clean)
 -include $(wildcard $(depall))
--include $(wildcard $(progdep))
--include $(wildcard $(externdep))
--include $(wildcard $(syslibdep))
 endif
 
 #======================================================================#
@@ -3226,7 +3199,7 @@ $(foreach a,$(arpatsrc),\
 # @param  $1 Unit test binary's directory name                         #
 # @param  $1 Unit test binary's name without root directory            #
 # @param  $3 Alias to execute tests, prefixing run_ and                #
-#            substituting / for _ in $(testdep)                        #
+#            substituting / for _ in $(testbin)                        #
 # @return Target to generate binary file for the unit test             #
 #======================================================================#
 ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,check)))
@@ -3288,7 +3261,7 @@ endif
 #         files (to create objdir and automatic source)                #
 #======================================================================#
 define binary-factory
-$1/$2: $$($2_lib) $$($2_aobj) $$($2_obj) | $1
+$1/$2: $$($2_lib) $$($2_obj) | $1
 	$$(call status,$$(MSG_$$(strip $3)_LINKAGE))
 	
 	@# Check if executable has files
@@ -3300,9 +3273,7 @@ $1/$2: $$($2_lib) $$($2_aobj) $$($2_obj) | $1
 	          $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
 	$$(call ok,$$(MSG_$$(strip $3)_LINKAGE),$$@)
 
-$$($2_obj): | $$(objdir)
-
-$$($2_aobj): $$($2_aall) | $$(objdir)
+$$($2_obj): $$($2_all) | $$(objdir)
 endef
 $(foreach b,$(binall),$(eval \
     $(call binary-factory,$(bindir),$(notdir $b),\
@@ -3584,8 +3555,7 @@ $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
 ########################################################################
 .PHONY: mostlyclean
 mostlyclean:
-	$(call rm-if-empty,$(objdir),$(objall) $(autoobj) \
-	                             $(testobj) $(benchobj))
+	$(call rm-if-empty,$(objdir),$(srcobj) $(testobj) $(benchobj))
 
 .PHONY: clean
 clean: mostlyclean
@@ -3595,9 +3565,7 @@ clean: mostlyclean
 
 .PHONY: distclean
 distclean: clean
-	$(call rm-if-empty,$(depdir),\
-	    $(depall) $(progdep) $(externdep) $(syslibdep) \
-	    $(phonydep) $(depdir)/make.mk)
+	$(call rm-if-empty,$(depdir),$(depall))
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
 	    $(filter $(firstword $(libdir))/%,$(lib)))
@@ -4813,9 +4781,9 @@ new: $(foreach t,$(intltl),$(foreach e,$(firstword $(poext)),\
 endif
 ifdef NLS_HEADER
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
-	$(if $(call not-empty,$(c_all)),\
+	$(if $(call not-empty,$(call)),\
 	    $(if $(INC_EXT),,$(eval override INC_EXT := .h)))
-	$(if $(call not-empty,$(cxx_all)),\
+	$(if $(call not-empty,$(cxxall)),\
 	    $(if $(INC_EXT),,$(eval override INC_EXT := .hpp)))
 	
 	$(call invalid-ext,$(INC_EXT),$(hext) $(hxxext))
@@ -5293,18 +5261,18 @@ else
 	
 	$(call echo,"${WHITE}\nSOURCE                  ${RES}")
 	$(call echo,"----------------------------------------")
-	$(call prompt,"srcall:       ",$(srcall)              )
-	$(call prompt,"srccln:       ",$(srccln)              )
-	$(call prompt,"src:          ",$(src)                 )
-	$(call prompt,"asmall:       ",$(asmall)              )
-	$(call prompt,"asmcln:       ",$(asmcln)              )
-	$(call prompt,"asmsrc:       ",$(asmsrc)              )
+	$(call prompt,"asmall:       ",$(cxxall)              )
+	$(call prompt,"call:         ",$(call)                )
+	$(call prompt,"fall:         ",$(fall)                )
+	$(call prompt,"cxxall:       ",$(cxxall)              )
+	$(call prompt,"userall:      ",$(userall)             )
+	$(call prompt,"usersrc:      ",$(usersrc)             )
 	$(call prompt,"autoall:      ",$(autoall)             )
-	$(call prompt,"autocln:      ",$(autocln)             )
 	$(call prompt,"autosrc:      ",$(autosrc)             )
-	$(call prompt,"c_all:        ",$(c_all)               )
-	$(call prompt,"f_all:        ",$(f_all)               )
-	$(call prompt,"cxx_all:      ",$(cxx_all)             )
+	$(call prompt,"liball:       ",$(liball)              )
+	$(call prompt,"libsrc:       ",$(libsrc)              )
+	$(call prompt,"mainall:      ",$(mainall)             )
+	$(call prompt,"mainsrc:      ",$(mainsrc)             )
 	
 	$(call echo,"${WHITE}\nHEADERS                 ${RES}")
 	$(call echo,"----------------------------------------")
@@ -5351,8 +5319,6 @@ else
 	$(call echo,"----------------------------------------")
 	$(call prompt,"lib_in:       ",$(lib_in)              )
 	$(call prompt,"libpat:       ",$(libpat)              )
-	$(call prompt,"liball:       ",$(liball)              )
-	$(call prompt,"libsrc:       ",$(libsrc)              )
 	$(call prompt,"libname:      ",$(libname)             )
 	$(call prompt,"lib:          ",$(lib)                 )
 	
@@ -5361,7 +5327,6 @@ else
 	$(call prompt,"testall:      ",$(testall)             )
 	$(call prompt,"testsrc:      ",$(testsrc)             )
 	$(call prompt,"testobj:      ",$(testobj)             )
-	$(call prompt,"testdep:      ",$(testdep)             )
 	$(call prompt,"testbin:      ",$(testbin)             )
 	$(call prompt,"testrun:      ",$(testrun)             )
 	
@@ -5370,7 +5335,6 @@ else
 	$(call prompt,"benchall:     ",$(benchall)            )
 	$(call prompt,"benchsrc:     ",$(benchsrc)            )
 	$(call prompt,"benchobj:     ",$(benchobj)            )
-	$(call prompt,"benchdep:     ",$(benchdep)            )
 	$(call prompt,"benchbin:     ",$(benchbin)            )
 	$(call prompt,"benchrun:     ",$(benchrun)            )
 	
@@ -5381,24 +5345,30 @@ else
 	
 	$(call echo,"${WHITE}\nOBJECT                  ${RES}")
 	$(call echo,"----------------------------------------")
-	$(call prompt,"obj:          ",$(obj)                 )
 	$(call prompt,"arobj:        ",$(arobj)               )
 	$(call prompt,"shrobj:       ",$(shrobj)              )
 	$(call prompt,"autoobj:      ",$(autoobj)             )
-	$(call prompt,"objall:       ",$(objall)              )
+	$(call prompt,"libobj:       ",$(libobj)              )
+	$(call prompt,"mainobj:      ",$(mainobj)             )
+	$(call prompt,"srcobj:       ",$(srcobj)              )
 	
 	$(call echo,"${WHITE}\nDEPENDENCY              ${RES}")
 	$(call echo,"----------------------------------------")
-	$(call prompt,"depall:       ",$(depall)              )
+	$(call prompt,"srcdep:       ",$(srcdep)              )
+	$(call prompt,"testdep:      ",$(testdep)             )
+	$(call prompt,"benchdep:     ",$(benchdep)            )
 	$(call prompt,"progdep:      ",$(progdep)             )
 	$(call prompt,"externdep:    ",$(externdep)           )
 	$(call prompt,"syslibdep:    ",$(syslibdep)           )
+	$(call prompt,"phonydep:     ",$(phonydep)            )
+	$(call prompt,"depall:       ",$(depall)              )
 	
 	$(call echo,"${WHITE}\nBINARY                  ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"bin:          ",$(bin)                 )
 	$(call prompt,"sbin:         ",$(sbin)                )
 	$(call prompt,"libexec:      ",$(libexec)             )
+	$(call prompt,"binall:       ",$(binall)              )
 	
 	$(call echo,"${WHITE}\nINSTALLATION            ${RES}")
 	$(call echo,"----------------------------------------")

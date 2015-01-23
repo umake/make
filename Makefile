@@ -1970,8 +1970,8 @@ $(if $(strip $(bin) $(sbin) $(libexec)),\
 $(foreach sep,/ .,$(foreach b,$(notdir $(binall)),$(or\
     $(eval $b_src  += $(filter $b$(sep)%,$(src))),\
     $(eval $b_all  += $(sort $(call rfilter,\
-                          $(addprefix %,$($b_src)),$(srcall))))\
-    $(eval $b_obj  += $(filter $(objdir)/$b$(sep)%,$(objall))),\
+                          $(addprefix %,$($b_src)),$(srcall)))),\
+    $(eval $b_obj  += $(filter $(objdir)/$b$(sep)%,$(obj))),\
     $(eval $b_aobj += $(filter $(objdir)/$b$(sep)%,$(autoobj))),\
     $(eval $b_lib  += $(foreach d,$(libdir),\
                           $(filter $d/$b$(sep)%,$(lib)))),\
@@ -1987,7 +1987,7 @@ $(call rfilter-out,$(foreach b,$(notdir $(binall)),$($b_$1)),$2)
 endef
 comsrc  := $(call common-factory,src,$(src))
 comall  := $(call common-factory,all,$(srcall))
-comobj  := $(call common-factory,obj,$(objall))
+comobj  := $(call common-factory,obj,$(obj))
 comlib  := $(call common-factory,lib,$(lib))
 commain := $(call common-factory,main,$(mainall))
 comlink := $(call common-factory,link,$(libname))
@@ -2055,7 +2055,7 @@ testsrc := $(call not-root,$(testall))
 #------------------------------------------------------------------[ 4 ]
 testobj := $(addsuffix $(firstword $(objext)),$(basename $(testsrc)))
 testobj := $(addprefix $(objdir)/$(testdir)/,$(testobj))
-testobj += $(objall) $(autoobj)
+testobj += $(call rfilter-out,$(mainobj),$(obj) $(autoobj))
 #------------------------------------------------------------------[ 5 ]
 testbin := $(call rm-trailing-bar,$(TESTBIN))
 testbin := $(foreach b,$(testbin),$(or $(strip \
@@ -2119,7 +2119,7 @@ benchsrc := $(call not-root,$(benchall))
 #------------------------------------------------------------------[ 4 ]
 benchobj := $(addsuffix $(firstword $(objext)),$(basename $(benchsrc)))
 benchobj := $(addprefix $(objdir)/$(benchdir)/,$(benchobj))
-benchobj += $(objall) $(autoobj)
+benchobj += $(call rfilter-out,$(mainobj),$(obj) $(autoobj))
 #------------------------------------------------------------------[ 5 ]
 benchbin := $(call rm-trailing-bar,$(BENCHBIN))
 benchbin := $(foreach b,$(benchbin),$(or $(strip \

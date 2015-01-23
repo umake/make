@@ -1060,7 +1060,7 @@ endef
 $(call version-check,$(VERSION))
 
 # Platform info
-# =========
+# ===============
 plat_kernel  := $(strip $(PLAT_KERNEL))
 plat_arch    := $(strip $(PLAT_ARCH))
 plat_os      := $(strip $(PLAT_OS))

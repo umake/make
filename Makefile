@@ -4178,7 +4178,8 @@ endef
 define cat
 $(if $(or $(call is-empty,$(ostream)),\
           $(call not,$(wildcard $(ostream)*))),\
-    $(quiet) $(call println,$1,$(if $(strip $(ostream)),>> $(ostream))))
+    $(quiet) $(call printf,"%b\n",$1,\
+                           $(if $(strip $(ostream)),>> $(ostream))))
 endef
 
 # Function: touch

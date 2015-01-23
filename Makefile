@@ -952,23 +952,23 @@ endef
 
 # File identification functions
 # ===============================
-# 1) is-f:    Figures out if all files in a list are Fortran files
-# 2) has-cxx: Figures out if there is a C++ file in a list
-# 3) is-cxx:  Figures out if all files in a list are C++ files
+# 1) has-c: Figures out if there are C files in $1
+# 2) has-f: Figures out if there are Fortran files in $1
+# 3) has-cxx: Figures out if there are C++ file in $1
 
-define is_c
+define has-c
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
-    $(if $(strip $(findstring $s,$(cext))),$s))),is_c)
+                 $(if $(findstring $s,$(cext)),$s))),T)
 endef
 
-define is_f
+define has-f
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
-    $(if $(strip $(findstring $s,$(fext))),$s))),is_f)
+                 $(if $(findstring $s,$(fext)),$s))),T)
 endef
 
-define is_cxx
+define has-cxx
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
-    $(if $(strip $(findstring $s,$(cxxext))),$s))),is_cxx)
+                 $(if $(findstring $s,$(cxxext)),$s))),T)
 endef
 
 # Auxiliar recursive functions
@@ -1942,16 +1942,16 @@ comaobj := $(call common-factory,aobj,$(autoobj))
 comaall := $(call common-factory,aall,$(autoall))
 #------------------------------------------------------------------[ 4 ]
 $(foreach b,$(notdir $(binall)),$(or\
-    $(eval $b_src    := $(comsrc)  $($b_src)  ),\
-    $(eval $b_all    := $(comall)  $($b_all)  ),\
-    $(eval $b_obj    := $(comobj)  $($b_obj)  ),\
-    $(eval $b_lib    := $(comlib)  $($b_lib)  ),\
-    $(eval $b_aobj   := $(comaobj) $($b_aobj) ),\
-    $(eval $b_aall   := $(comasrc) $($b_aall) ),\
-    $(eval $b_link   := $(sort $(addprefix -l,$($b_link) $(comlink)))),\
-    $(eval $b_is_c   := $(strip $(call is_c,$($b_src)))),\
-    $(eval $b_is_f   := $(strip $(call is_f,$($b_src)))),\
-    $(eval $b_is_cxx := $(strip $(call is_cxx,$($b_src)))),\
+    $(eval $b_src     := $(comsrc)  $($b_src)  ),\
+    $(eval $b_all     := $(comall)  $($b_all)  ),\
+    $(eval $b_obj     := $(comobj)  $($b_obj)  ),\
+    $(eval $b_lib     := $(comlib)  $($b_lib)  ),\
+    $(eval $b_aobj    := $(comaobj) $($b_aobj) ),\
+    $(eval $b_aall    := $(comasrc) $($b_aall) ),\
+    $(eval $b_link    := $(sort $(addprefix -l,$($b_link) $(comlink)))),\
+    $(eval $b_has_c   := $(strip $(call has-c,$($b_src)))),\
+    $(eval $b_has_f   := $(strip $(call has-f,$($b_src)))),\
+    $(eval $b_has_cxx := $(strip $(call has-cxx,$($b_src)))),\
 ))
 
 # Binary installation
@@ -3252,14 +3252,14 @@ endef
 $(foreach b,$(binall),$(eval \
     $(call binary-factory,$(bindir),$(notdir $b),\
     $(strip \
-        $(if $($(notdir $b)_is_c),C,\
-        $(if $($(notdir $b)_is_f),F,\
-        $(if $($(notdir $b)_is_cxx),CXX,CXX\
+        $(if $($(notdir $b)_has_c),C,\
+        $(if $($(notdir $b)_has_f),F,\
+        $(if $($(notdir $b)_has_cxx),CXX,CXX\
     )))),\
     $(strip \
-        $(if $($(notdir $b)_is_c),$(CC),\
-        $(if $($(notdir $b)_is_f),$(FC),\
-        $(if $($(notdir $b)_is_cxx),$(CXX),$(CXX)\
+        $(if $($(notdir $b)_has_c),$(CC),\
+        $(if $($(notdir $b)_has_f),$(FC),\
+        $(if $($(notdir $b)_has_cxx),$(CXX),$(CXX)\
     )))),\
 )))
 

@@ -1705,6 +1705,22 @@ c_all   := $(call rfilter,$(addprefix %,$(cext)),$(srcall))
 f_all   := $(call rfilter,$(addprefix %,$(fext)),$(srcall))
 cxx_all := $(call rfilter,$(addprefix %,$(cxxext)),$(srcall))
 
+# Main files
+# ============
+# 1) c_main   : C files with 'main'
+# 1) f_main   : Fortran files with 'program'
+# 1) cxx_main : C++ files with 'main'
+# 2) mainall  : Files with all extensions with main
+# 3) mainsrc  : Remove root directory names from dir paths
+#------------------------------------------------------------------[ 1 ]
+c_main   := $(foreach s,$(c_all),$(if $(call has-c-main,$s),$s))
+f_main   := $(foreach s,$(f_all),$(if $(call has-f-main,$s),$s))
+cxx_main := $(foreach s,$(cxx_all),$(if $(call has-cxx-main,$s),$s))
+#------------------------------------------------------------------[ 2 ]
+mainall  := $(strip $(c_main) $(f_main) $(cxx_main))
+#------------------------------------------------------------------[ 3 ]
+mainsrc  := $(call not-root,$(mainall))
+
 # Type-specific library flags
 # =============================
 # 1) Add asm, c, f, cxx, lex, yacc and esql only flags in linker flags
@@ -1876,6 +1892,7 @@ ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath$(comma)%, \
 # 3) Prefix the build dir before each name
 # 4) Join all object files (including auto-generated)
 # 5) Repeat (1) and (3) for the automatically generated sources
+# 6) Repeat (1) and (3) for sources with program main
 #------------------------------------------------------------------[ 1 ]
 obj := $(addsuffix $(firstword $(objext)),$(basename $(asmsrc)))
 #------------------------------------------------------------------[ 2 ]
@@ -1887,6 +1904,9 @@ objall := $(obj) $(arobj) $(shrobj) #$(autoobj)
 #------------------------------------------------------------------[ 5 ]
 autoobj := $(addsuffix $(firstword $(objext)),$(basename $(autosrc)))
 autoobj := $(addprefix $(objdir)/,$(autoobj))
+#------------------------------------------------------------------[ 6 ]
+mainobj := $(addsuffix $(firstword $(objext)),$(basename $(mainsrc)))
+mainobj := $(addprefix $(objdir)/,$(mainobj))
 
 # Internationalization
 # ======================
@@ -1955,6 +1975,7 @@ $(foreach sep,/ .,$(foreach b,$(notdir $(binall)),$(or\
     $(eval $b_aobj += $(filter $(objdir)/$b$(sep)%,$(autoobj))),\
     $(eval $b_lib  += $(foreach d,$(libdir),\
                           $(filter $d/$b$(sep)%,$(lib)))),\
+    $(eval $b_main += $(sort $(call rfilter,$($b_all),$(mainall)))),\
     $(eval $b_link += $(foreach n,$(libname),$(if $(strip \
                           $(filter %$n,$(basename $($b_lib)))),$n))),\
     $(eval $b_aall += $(foreach d,$(srcdir),\
@@ -1968,6 +1989,7 @@ comsrc  := $(call common-factory,src,$(src))
 comall  := $(call common-factory,all,$(srcall))
 comobj  := $(call common-factory,obj,$(objall))
 comlib  := $(call common-factory,lib,$(lib))
+commain := $(call common-factory,main,$(mainall))
 comlink := $(call common-factory,link,$(libname))
 comaobj := $(call common-factory,aobj,$(autoobj))
 comaall := $(call common-factory,aall,$(autoall))
@@ -1977,6 +1999,7 @@ $(foreach b,$(notdir $(binall)),$(or\
     $(eval $b_all     := $(comall)  $($b_all)  ),\
     $(eval $b_obj     := $(comobj)  $($b_obj)  ),\
     $(eval $b_lib     := $(comlib)  $($b_lib)  ),\
+    $(eval $b_main    := $(commain) $($b_main) ),\
     $(eval $b_aobj    := $(comaobj) $($b_aobj) ),\
     $(eval $b_aall    := $(comasrc) $($b_aall) ),\
     $(eval $b_link    := $(sort $(addprefix -l,$($b_link) $(comlink)))),\

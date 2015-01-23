@@ -3195,7 +3195,8 @@ define link-sharedlib
 $1/$2lib$3$$(shrext): $4 | $1
 	$$(call status,$$(MSG_CXX_SHRDLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
-	$$(quiet) $$(CXX) $$(ldshr) -o $$@ $$^ $$(ERROR)
+	$$(quiet) $$(CXX) $$(ldflags) $$(ldshr) $$(ldlibs) \
+	                  -o $$@ $$^ $$(ERROR)
 	$$(call ok,$$(MSG_CXX_SHRDLIB),$$@)
 endef
 $(foreach s,$(shrpatsrc),\

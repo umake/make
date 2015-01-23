@@ -2148,10 +2148,11 @@ depall += $(phonydep) $(makedep)
 
 # Coverage analysis
 # ===================
-# 1) Recompiled binaries for coverage test
+# 1) Recompiled binaries for coverage statistics
 # 2) Directories (with source file names) for coverage analysis files
-covbin := $(addprefix $(covdir)/,$(binall))
-covall := $(addprefix $(covdir)/,$(src))
+covbin      := $(addprefix $(covdir)/,$(binall))
+covtestbin  := $(addprefix $(covdir)/,$(testbin))
+covbenchbin := $(addprefix $(covdir)/,$(benchbin))
 
 # Texinfo files
 # ===============
@@ -2369,17 +2370,41 @@ eval: all $(benchrun)
 ########################################################################
 
 coverage_dependency := \
-    COV => $(patsubst %,$(covdir)/%/,$(srcall))
+    COV => $(covbin) $(covtestbin) $(covbenchbin)
 
 ifndef COVERAGE
+
+ifdef $(call not-empty,$(covbin))
 $(covbin):
 	$(call phony-vstatus,$(MSG_COV_COMPILE))
 	$(quiet) $(MAKE) COVERAGE=1 $@
 	$(call phony-ok,$(MSG_COV_COMPILE))
 endif
 
+ifdef $(call not-empty,$(covtestbin))
+$(covtestbin):
+	$(call phony-vstatus,$(MSG_COV_COMPILE))
+	$(quiet) $(MAKE) check COVERAGE=1
+	$(call phony-ok,$(MSG_COV_COMPILE))
+endif
+endif
+
+ifdef $(call not-empty,$(covbenchbin))
+$(covbenchbin):
+	$(call phony-vstatus,$(MSG_COV_COMPILE))
+	$(quiet) $(MAKE) eval COVERAGE=1
+	$(call phony-ok,$(MSG_COV_COMPILE))
+
+endif # ifndef COVERAGE
+
 .PHONY: coverage
-coverage: coveragedep $(covbin) $(covall)
+coverage: coveragedep $(covbin)
+
+.PHONY: check-coverage
+check-coverage: coveragedep $(covtestbin)
+
+.PHONY: eval-coverage
+eval-coverage: coveragedep $(covbenchbin)
 
 ########################################################################
 ##                             STATISTICS                             ##
@@ -3322,6 +3347,10 @@ $1/$2/%$3: $1/$$(objdir)/%$$(firstword $$(objext)) $1/$$(objdir)/%.* | $1
 endef
 $(foreach r,$(srcdir),$(foreach s,$(srcext),$(foreach c,$(covext),\
     $(eval $(call coverage-factory,$(covdir),$r,$s,$c)))))
+$(foreach r,$(srcdir),$(foreach s,$(srcext),$(foreach c,$(covext),\
+    $(eval $(call coverage-factory,$(covdir)/$(testdir),$r,$s,$c)))))
+$(foreach r,$(srcdir),$(foreach s,$(srcext),$(foreach c,$(covext),\
+    $(eval $(call coverage-factory,$(covdir)/$(benchdir),$r,$s,$c)))))
 
 #======================================================================#
 # Function: intl-template-factory                                      #
@@ -5347,7 +5376,8 @@ else
 	$(call echo,"${WHITE}\nCOVERAGE                ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"covbin:       ",$(covbin)              )
-	$(call prompt,"covall:       ",$(covall)              )
+	$(call prompt,"covtestbin:   ",$(covtestbin)          )
+	$(call prompt,"covbenchbin:  ",$(covbenchbin)         )
 	
 	$(call echo,"${WHITE}\nOBJECT                  ${RES}")
 	$(call echo,"----------------------------------------")

@@ -473,6 +473,30 @@ endif # exists 'uname'
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
+#                     FLAG-SPECIFIC POST PROCESSMENT                   #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
+# Coverage
+# ==========
+# Changes needed to deal with coverage compilation.
+# 1) Preprocess compilation flags to add coverage compiler options
+#    and remove automatic optimizations (flags -On, n > 0)
+# 2) Preprocess linker flags to add coverage linker options
+# 3) Adds prefix $(COVDIR) as prefix for some directories
+ifdef COVERAGE
+#------------------------------------------------------------------[ 1 ]
+$(foreach p,CPP AS C F CXX,\
+    $(eval override $pFLAGS := $($pCOVFLAGS) $(patsubst -O%,,$($pFLAGS))))
+#------------------------------------------------------------------[ 2 ]
+override LDFLAGS += $(LDCOV)
+#------------------------------------------------------------------[ 3 ]
+$(foreach p,OBJ BIN LIB,\
+    $(eval override $pDIR := $(addprefix $(COVDIR)/,$($pDIR))))
+endif
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
 #                        DEVELOPER DEFINITIONS                         #
 #----------------------------------------------------------------------#
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
@@ -1344,28 +1368,6 @@ programs := \
     DEBUILD CURL GIT
 
 phony_targets := $(targets) library git web
-
-########################################################################
-##                     COMPILATION POST PROCESSMENT                   ##
-########################################################################
-
-# Coverage
-# ==========
-# Changes needed to deal with coverage compilation.
-# 1) Preprocess compilation flags to add coverage compiler options
-#    and remove automatic optimizations (flags -On, n > 0)
-# 2) Preprocess linker flags to add coverage linker options
-# 3) Adds prefix $(COVDIR) as prefix for some directories
-ifdef COVERAGE
-#------------------------------------------------------------------[ 1 ]
-$(foreach p,cpp as c f cxx,\
-    $(eval override $pflags := $($pcovflags) $(patsubst -O%,,$($pflags))))
-#------------------------------------------------------------------[ 2 ]
-override ldflags += $(ldcov)
-#------------------------------------------------------------------[ 3 ]
-$(foreach p,obj bin lib,\
-    $(eval override $pdir := $(addprefix $(covdir)/,$($pdir))))
-endif
 
 ########################################################################
 ##                              PATHS                                 ##

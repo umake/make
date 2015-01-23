@@ -893,9 +893,12 @@ endef
 # 3) rm-trailing-bar: Removes the last / of a directory-only name
 
 define root
-$(strip $(foreach s,$1,\
+$(strip $(foreach s,$1,$(or $(strip \
+    $(lastword $(sort $(foreach d,$(alldir),\
+        $(if $(filter $d/%,$1),$d))))),$(strip \
     $(if $(findstring /,$s),\
-        $(call root,$(patsubst %/,%,$(dir $s))),$(strip $s))))
+        $(call root,$(patsubst %/,%,$(dir $s))),$(strip $s)))\
+)))
 endef
 
 define not-root

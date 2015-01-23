@@ -2242,14 +2242,6 @@ all: depend $(binall) $(lib)
 .PHONY: depend
 depend: builddep librarydep gitdep webdep
 
-.PHONY: check
-check: all $(testrun)
-	$(if $(strip $^),$(call phony-ok,$(MSG_TEST_SUCCESS)))
-
-.PHONY: eval
-eval: all $(benchrun)
-	$(if $(strip $^),$(call phony-ok,$(MSG_BENCH_SUCCESS)))
-
 .PHONY: nothing
 nothing:
 
@@ -2357,6 +2349,18 @@ etags: $(incall) $(srcall)
 	$(call phony-status,$(MSG_ETAGS))
 	$(quiet) $(ETAGS) $(etagsflags) $^ -o $@ $(ERROR)
 	$(call phony-ok,$(MSG_ETAGS))
+
+########################################################################
+##                               TESTS                                ##
+########################################################################
+
+.PHONY: check
+check: all $(testrun)
+	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_TEST_SUCCESS)))
+
+.PHONY: eval
+eval: all $(benchrun)
+	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_BENCH_SUCCESS)))
 
 ########################################################################
 ##                              COVERAGE                              ##

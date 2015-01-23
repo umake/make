@@ -1844,7 +1844,7 @@ libname := $(arlibname) $(shrlibname)
 libname += $(syslibname) $(loclibname) $(deplibname)
 libsub   = $(if $(strip $(lib)),\
                $(foreach d,$(libdir),$(call rsubdir,$d)))
-ldlibs   = $(LDLIBS) $(sort $(addprefix -L$(space),$(libsub)))
+ldlibs   = $(LDLIBS) $(addprefix -L$(space),$(sort $(libsub)))
 ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath$(comma)%, \
                $(subst -L$(space),-L,$(LDLIBS))              \
                $(addprefix -L,$(libsub))                     \

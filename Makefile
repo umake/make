@@ -955,6 +955,9 @@ endef
 # 1) has-c: Figures out if there are C files in $1
 # 2) has-f: Figures out if there are Fortran files in $1
 # 3) has-cxx: Figures out if there are C++ file in $1
+# 4) has-c-main: Figures out if there are C 'main' in $1
+# 5) has-f-main: Figures out if there are Fortran 'program' in $1
+# 6) has-cxx-main: Figures out if there are C++ 'main' in $1
 
 define has-c
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
@@ -969,6 +972,34 @@ endef
 define has-cxx
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
                  $(if $(findstring $s,$(cxxext)),$s))),T)
+endef
+
+define has-c-main
+$(if $(call has-c,$1),$(strip \
+    $(if $(shell cat $1 | sed 's/a/aA/g; s/__/aB/g; s/#/aC/g' \
+                        | $(CC) -P -E - \
+                        | sed 's/aC/#/g; s/aB/__/g; s/aA/a/g' \
+                        | grep "^\ *int \+main *(.*)"),T)))
+endef
+
+define has-f-main
+$(if $(call has-f,$1),$(strip \
+    $(if $(shell cat $1 | grep -i "^program"),T)))
+endef
+
+define has-cxx-main
+$(if $(call has-cxx,$1),$(strip \
+    $(if $(shell cat $1 | sed 's/a/aA/g; s/__/aB/g; s/#/aC/g' \
+                        | $(CXX) -P -E - \
+                        | sed 's/aC/#/g; s/aB/__/g; s/aA/a/g' \
+                        | grep "^\ *int \+main *(.*)"),T)))
+endef
+
+define has-main
+$(if $(or $(strip \
+         $(call has-c-main,$s)),$(strip \
+         $(call has-f-main,$s)),$(strip \
+         $(call has-cxx-main,$s))),T)
 endef
 
 # Auxiliar recursive functions

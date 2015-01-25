@@ -1692,7 +1692,8 @@ $(if $(strip $(esqlall)),$(eval ldflags += $(ldesql) ))
 # 5) Create one var with the object dependencies for each lib above
 # 6) Create variables for all static library objects
 # 7) Create library simple names, without directories or extension
-# 8) Create library names, with directories, from the source
+# 8) Create library flags, to be used with the linker
+# 9) Create library names, with directories, from the source
 #------------------------------------------------------------------[ 1 ]
 arall     := $(foreach ar,$(ar_in),\
                  $(foreach l,$(liball),\
@@ -1732,6 +1733,8 @@ arobj     := $(foreach ar,$(arpatsrc),$(arobj_$(ar)))
 #------------------------------------------------------------------[ 7 ]
 arlibname := $(notdir $(basename $(arpatsrc)))
 #------------------------------------------------------------------[ 8 ]
+arlink    := $(addprefix -l,$(arlibname))
+#------------------------------------------------------------------[ 9 ]
 arlib     := $(foreach s,$(arpatsrc),\
                  $(patsubst $(subst ./,,$(dir $s))%,\
                  $(subst ./,,$(dir $s))lib%,$s))
@@ -1747,8 +1750,8 @@ arlib     := $(patsubst %,$(firstword $(libdir))/%$(arext),\
 # 5) Create one var with the object dependencies for each lib above
 # 6) Create variables for all dynamic library objects
 # 7) Create library simple names, without directories or extension
-# 8) Create library complete names, with directories, from the source
-# 9) Set directories for locally searching for the libraries
+# 8) Create library flags, to be used with the linker
+# 9) Create library complete names, with directories, from the source
 #------------------------------------------------------------------[ 1 ]
 shrall     := $(foreach so,$(shr_in),\
                   $(foreach l,$(liball),\
@@ -1788,6 +1791,8 @@ shrobj     := $(foreach shr,$(shrpatsrc),$(shrobj_$(shr)))
 #------------------------------------------------------------------[ 7 ]
 shrlibname := $(notdir $(basename $(shrpatsrc)))
 #------------------------------------------------------------------[ 8 ]
+shrlink    := $(addprefix -l,$(shrlibname))
+#------------------------------------------------------------------[ 9 ]
 shrlib     := $(foreach s,$(shrpatsrc),\
                    $(patsubst $(subst ./,,$(dir $s))%,\
                    $(subst ./,,$(dir $s))lib%,$s))
@@ -1838,8 +1843,8 @@ deplibname := $(call rfilter-out,$(libname) $(syslibname) $(loclibname),\
 # 1) lib     : All complete library names (path/libname.ext)
 # 2) libpat  : Save complete paths for libraries (non-wildcard-expanded)
 # 3) libname : All library names (name)
-# 4) Get all subdirectories of the library dirs and
-#    add them as paths to be searched for libraries
+# 4) ldlibs  : Get all subdirectories of the library dirs and
+#              add them as paths to be searched for libraries
 lib     := $(arlib) $(shrlib) $(syslib) $(loclib) $(deplib)
 libpat  := $(arpat) $(shrpat)
 libname := $(arlibname) $(shrlibname)
@@ -1933,12 +1938,6 @@ $(if $(strip $(bin) $(sbin) $(libexec)),\
     $(eval binall := $(bin) $(sbin) $(libexec)),\
     $(if $(strip $(mainall)),$(eval binall := $(bindir)/a.out))\
 )
-#   $(eval $b_aall += $(foreach d,$(srcdir),\
-                          $(filter $d/$b$(sep)%,$(autosrc)))),\
-#   $(eval $b_mall += $(foreach d,$(srcdir),\
-                          $(filter $d/$b$(sep)%,$(mainsrc)))),\
-#   $(eval $b_aobj += $(filter $(objdir)/$b$(sep)%,$(autoobj))),\
-#   $(eval $b_mobj += $(filter $(objdir)/$b$(sep)%,$(mainobj))),\
 #------------------------------------------------------------------[ 2 ]
 $(foreach sep,/ .,$(foreach b,$(notdir $(binall)),$(or\
     $(eval $b_src  += $(filter $b$(sep)%,\
@@ -1949,8 +1948,9 @@ $(foreach sep,/ .,$(foreach b,$(notdir $(binall)),$(or\
                           $(userobj) $(autoobj) $(mainobj))),\
     $(eval $b_lib  += $(foreach d,$(libdir),\
                           $(filter $d/$b$(sep)%,$(lib)))),\
-    $(eval $b_link += $(foreach n,$(libname),$(if $(strip \
-                          $(filter %$n,$(basename $($b_lib)))),$n))),\
+    $(eval $b_link += $(foreach n,$(arlink) $(shrlink),\
+                          $(if $(strip $(filter %$n,\
+                                   $(basename $($b_lib)))),$n))),\
 )))
 #------------------------------------------------------------------[ 3 ]
 define common-factory
@@ -3260,7 +3260,8 @@ define test-factory
 $1/$2: $$($2_obj) | $1/
 	$$(call status,$$(MSG_TEST_COMPILE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(CXX) $$^ -o $$@ $$(ldflags) $$(ldlibs)
+	$$(quiet) $$(CXX) $$^ -o $$@ \
+	                  $$(ldflags) $$(arlink) $$(shrlink) $$(ldlibs)
 	$$(call ok,$$(MSG_TEST_COMPILE),$$@)
 
 .PHONY: $3
@@ -3288,7 +3289,8 @@ define bench-factory
 $1/$2: $$($2_obj) | $1/
 	$$(call status,$$(MSG_BENCH_COMPILE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(CXX) $$^ -o $$@ $$(ldflags) $$(ldlibs)
+	$$(quiet) $$(CXX) $$^ -o $$@ \
+	                  $$(ldflags) $$(arlink) $$(shrlink) $$(ldlibs)
 	$$(call ok,$$(MSG_BENCH_COMPILE),$$@)
 
 .PHONY: $3
@@ -3322,8 +3324,8 @@ $1/$2: $$($2_lib) $$($2_obj) | $1/
 	    $$(call phony-error,$$(MSG_$$(strip $3)_NO_FILE)))
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $4 $$($2_aobj) $$($2_obj) -o $$@ \
-	          $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
+	$$(quiet) $4 $$($2_obj) -o $$@ \
+	             $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
 	$$(call ok,$$(MSG_$$(strip $3)_LINKAGE),$$@)
 
 $$($2_obj): $$($2_all) | $$(objdir)/
@@ -5328,7 +5330,7 @@ else
 	
 	$(call echo,"${WHITE}\nSOURCE                  ${RES}")
 	$(call echo,"----------------------------------------")
-	$(call prompt,"asmall:       ",$(cxxall)              )
+	$(call prompt,"asmall:       ",$(asmall)              )
 	$(call prompt,"call:         ",$(call)                )
 	$(call prompt,"fall:         ",$(fall)                )
 	$(call prompt,"cxxall:       ",$(cxxall)              )
@@ -5355,6 +5357,7 @@ else
 	$(call prompt,"arpat:        ",$(arpat)               )
 	$(call prompt,"arpatsrc:     ",$(arpatsrc)            )
 	$(call prompt,"arlibname:    ",$(arlibname)           )
+	$(call prompt,"arlink:       ",$(arlink)              )
 	$(call prompt,"arlib:        ",$(arlib)               )
 	
 	$(call echo,"${WHITE}\nDYNAMIC LIBRARY         ${RES}")
@@ -5365,6 +5368,7 @@ else
 	$(call prompt,"shrpat:       ",$(shrpat)              )
 	$(call prompt,"shrpatsrc:    ",$(shrpatsrc)           )
 	$(call prompt,"shrlibname:   ",$(shrlibname)          )
+	$(call prompt,"shrlink:      ",$(shrlink)             )
 	$(call prompt,"shrlib:       ",$(shrlib)              )
 	
 	$(call echo,"${WHITE}\nSYSTEM LIBRARY          ${RES}")

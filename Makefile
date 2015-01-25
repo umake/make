@@ -5086,6 +5086,7 @@ gitignore:
 	@echo "#======================================"
 	@$(foreach d,$(depdir),echo $d/; )
 	@$(foreach d,$(objdir),echo $d/; )
+	@$(foreach d,$(covdir),echo $d/; )
 	@$(foreach d,$(bindir),echo $d/; )
 	@$(foreach d,$(sbindir),echo $d/; )
 	@$(foreach d,$(execdir),echo $d/; )

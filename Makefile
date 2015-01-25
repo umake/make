@@ -484,15 +484,20 @@ endif # exists 'uname'
 #    and remove automatic optimizations (flags -On, n > 0)
 # 2) Preprocess linker flags to add coverage linker options
 # 3) Adds prefix $(COVDIR) as prefix for some directories
+# 4) Do not produce static or shared libraries
 ifdef COVERAGE
 #------------------------------------------------------------------[ 1 ]
 $(foreach p,CPP AS C F CXX,\
-    $(eval override $pFLAGS := $($pCOVFLAGS) $(patsubst -O%,,$($pFLAGS))))
+    $(eval override $pFLAGS := $(strip $($pCOVFLAGS) \
+                                       $(patsubst -O%,,$($pFLAGS) ))))
 #------------------------------------------------------------------[ 2 ]
 override LDFLAGS += $(LDCOV)
 #------------------------------------------------------------------[ 3 ]
 $(foreach p,OBJ BIN LIB,\
     $(eval override $pDIR := $(addprefix $(COVDIR)/,$($pDIR))))
+#------------------------------------------------------------------[ 4 ]
+NO_ARLIBS  := 1
+NO_SHRLIBS := 1
 endif
 
 #//////////////////////////////////////////////////////////////////////#

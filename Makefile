@@ -1480,11 +1480,13 @@ phonydep := $(addsuffix $(sysext),$(phonydep))
 # 2) Throw error If there is only a suffix.
 # 3) Store libraries as being shared and static libs.
 #------------------------------------------------------------------[ 1 ]
-ifeq ($(findstring =>,ARLIB),) # ARLIB is not a hash
+ifndef NO_ARLIBS
+ar_in  := $(call rm-trailing-bar,$(ARLIB))
 endif
 
-ar_in     := $(call rm-trailing-bar,$(ARLIB))
-shr_in    := $(call rm-trailing-bar,$(SHRLIB))
+ifndef NO_SHRLIBS
+shr_in := $(call rm-trailing-bar,$(SHRLIB))
+endif
 #------------------------------------------------------------------[ 2 ]
 $(foreach s,$(ar_in),\
     $(if $(call eq,$(suffix $s),$s),\
@@ -1694,6 +1696,8 @@ $(if $(strip $(esqlall)),$(eval ldflags += $(ldesql) ))
 # 7) Create library simple names, without directories or extension
 # 8) Create library flags, to be used with the linker
 # 9) Create library names, with directories, from the source
+#------------------------------------------------------------------[   ]
+ifndef NO_ARLIBS
 #------------------------------------------------------------------[ 1 ]
 arall     := $(foreach ar,$(ar_in),\
                  $(foreach l,$(liball),\
@@ -1740,6 +1744,8 @@ arlib     := $(foreach s,$(arpatsrc),\
                  $(subst ./,,$(dir $s))lib%,$s))
 arlib     := $(patsubst %,$(firstword $(libdir))/%$(arext),\
                  $(basename $(arlib)))
+#------------------------------------------------------------------[   ]
+endif # ifndef NO_ARLIBS
 
 # Dynamic libraries
 # ===================
@@ -1752,6 +1758,8 @@ arlib     := $(patsubst %,$(firstword $(libdir))/%$(arext),\
 # 7) Create library simple names, without directories or extension
 # 8) Create library flags, to be used with the linker
 # 9) Create library complete names, with directories, from the source
+#------------------------------------------------------------------[   ]
+ifndef NO_SHRLIBS
 #------------------------------------------------------------------[ 1 ]
 shrall     := $(foreach so,$(shr_in),\
                   $(foreach l,$(liball),\
@@ -1798,6 +1806,8 @@ shrlib     := $(foreach s,$(shrpatsrc),\
                    $(subst ./,,$(dir $s))lib%,$s))
 shrlib     := $(patsubst %,$(firstword $(libdir))/%$(shrext),\
                   $(basename $(shrlib)))
+#------------------------------------------------------------------[   ]
+endif # ifndef NO_SHRLIBS
 
 # System libraries
 # ==================

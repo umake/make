@@ -305,7 +305,7 @@ EXTEXT  := .dy
 SYSEXT  := .dep
 
 # Coverage extensions
-COVEXT  := .gcov
+COVEXT  := .info
 
 # Binary extensions
 OBJEXT  := .o
@@ -377,7 +377,7 @@ YACC            := bison
 YACCCXX         := bisonc++
 
 # Coverage
-COV             := gcov
+COV             := lcov
 
 # Embedded SQL
 ESQL            := ecpg
@@ -2149,10 +2149,27 @@ depall += $(phonydep) $(makedep)
 # Coverage analysis
 # ===================
 # 1) Recompiled binaries for coverage statistics
-# 2) Directories (with source file names) for coverage analysis files
-covbin      := $(addprefix $(covdir)/,$(binall))
-covtestbin  := $(addprefix $(covdir)/,$(testbin))
-covbenchbin := $(addprefix $(covdir)/,$(benchbin))
+# 2) Report files with coverage information
+# 2) Report files with coverage information
+# 3) Alias to show reports, prefixing show_ and replacing / for _ above
+#------------------------------------------------------------------[ 1 ]
+covbin       := $(addprefix $(covdir)/,$(binall))
+covtestbin   := $(addprefix $(covdir)/,$(testbin))
+covbenchbin  := $(addprefix $(covdir)/,$(benchbin))
+#------------------------------------------------------------------[ 2 ]
+covrep       := $(addprefix $(covdir)/$(firstword $(datadir))/,\
+                    $(addsuffix $(covext),\
+                        $(call not-root,$(basename $(binall)))))
+covtestrep   :=  $(addprefix $(covdir)/$(firstword $(datadir))/,\
+                    $(addsuffix $(covext),\
+                        $(call not-root,$(basename $(testbin)))))
+covbenchrep  :=  $(addprefix $(covdir)/$(firstword $(datadir))/,\
+                    $(addsuffix $(covext),\
+                        $(call not-root,$(basename $(benchbin)))))
+#------------------------------------------------------------------[ 3 ]
+covshow      := $(addprefix show_,$(subst /,_,$(covrep)))
+covtestshow  := $(addprefix show_,$(subst /,_,$(covtestrep)))
+covbenchshow := $(addprefix show_,$(subst /,_,$(covbenchrep)))
 
 # Texinfo files
 # ===============
@@ -2376,35 +2393,29 @@ ifndef COVERAGE
 
 ifdef $(call not-empty,$(covbin))
 $(covbin):
-	$(call phony-vstatus,$(MSG_COV_COMPILE))
 	$(quiet) $(MAKE) COVERAGE=1 $@
-	$(call phony-ok,$(MSG_COV_COMPILE))
 endif
 
 ifdef $(call not-empty,$(covtestbin))
 $(covtestbin):
-	$(call phony-vstatus,$(MSG_COV_COMPILE))
-	$(quiet) $(MAKE) check COVERAGE=1
-	$(call phony-ok,$(MSG_COV_COMPILE))
+	$(quiet) $(MAKE) COVERAGE=1 check
 endif
 endif
 
 ifdef $(call not-empty,$(covbenchbin))
 $(covbenchbin):
-	$(call phony-vstatus,$(MSG_COV_COMPILE))
-	$(quiet) $(MAKE) eval COVERAGE=1
-	$(call phony-ok,$(MSG_COV_COMPILE))
+	$(quiet) $(MAKE) COVERAGE=1 eval
 
 endif # ifndef COVERAGE
 
 .PHONY: coverage
-coverage: coveragedep $(covbin)
+coverage: coveragedep $(covshow)
 
-.PHONY: check-coverage
-check-coverage: coveragedep $(covtestbin)
+.PHONY: check-coverage test-coverage
+check-coverage test-coverage: coveragedep $(covtestshow)
 
-.PHONY: eval-coverage
-eval-coverage: coveragedep $(covbenchbin)
+.PHONY: eval-coverage benchmark-coverage
+eval-coverage benchmark-coverage: coveragedep $(covbenchshow)
 
 ########################################################################
 ##                             STATISTICS                             ##
@@ -3341,27 +3352,40 @@ $(foreach b,$(binall),$(eval \
 #         files (to create objdir and automatic source)                #
 #======================================================================#
 define coverage-factory
-$1/$2/%$3: $1/$$(objdir)/%$$(firstword $$(objext)) $1/$$(objdir)/%.* | $1
+$1/$2$3: $4/$2$5
+	$$(call status,$$(MSG_COV_COMPILE))
+	
+	$$(call mksubdir,$1,$$(call not-root,$$@))
+	$$(call mksubdir,$4,$$(call not-root,$$@))
+	$$(quiet) $$(COV) -q --directory $$(covdir)/$$(objdir)/$$(dir $2) \
+	                     --capture --no-external -o $$@ $$(ERROR)
+	$$(quiet) if [[ -s $$@ ]]; \
+	          then \
+	              $$(COV) -q '$$(extdir)/*' '$$(testdir)/*' -r $$@ \
+                          -o $$@ $$(ERROR); \
+	          fi
+	
+	$$(call ok,$$(MSG_COV_COMPILE))
+
+.PHONY: show_$$(subst /,_,$1/$2$3)
+show_$$(subst /,_,$1/$2$3): $1/$2$3
 	$$(call phony-status,$$(MSG_COV))
-	
-	$$(call mksubdir,$1,$$@/)
-	$$(quiet) $$(COV) $$(COVFLAFS) -o $1/$$(objdir) $2/$$*$3 \
-	          1> $$(basename $$@/$$*).out $$(ERROR)
-	$$(quiet) $$(foreach e,$$(covext),$$(strip \
-	              for f in *$$e; do \
-	                  [ ! -f "$$$$f" ] && break; \
-	                  $$(MV) $$$$f $$@ $$(ERROR); \
-	              done;\
-	          ))
-	
-	$$(call phony-ok,$$(MSG_COV))
+	$$(quiet) if [[ -s $$< ]]; \
+	          then \
+	              $$(COV) -l $$< $$(ERROR); \
+	              $$(call model-ok,$$(MSG_COV)); \
+	          else \
+	              $$(call model-ok,$$(MSG_COV_NONE)); \
+	          fi
 endef
-$(foreach r,$(srcdir),$(foreach s,$(srcext),$(foreach c,$(covext),\
-    $(eval $(call coverage-factory,$(covdir),$r,$s,$c)))))
-$(foreach r,$(srcdir),$(foreach s,$(srcext),$(foreach c,$(covext),\
-    $(eval $(call coverage-factory,$(covdir)/$(testdir),$r,$s,$c)))))
-$(foreach r,$(srcdir),$(foreach s,$(srcext),$(foreach c,$(covext),\
-    $(eval $(call coverage-factory,$(covdir)/$(benchdir),$r,$s,$c)))))
+$(foreach b,$(binall) $(testbin) $(benchbin),\
+    $(eval $(call coverage-factory,$(strip \
+        $(covdir)/$(firstword $(datadir))),$(strip \
+        $(call not-root,$(call abs-basename,$b))),$(strip \
+        $(firstword $(covext))),$(strip \
+        $(covdir)/$(call root,$b)),$(strip \
+        $(call all-suffix,$b)\
+))))
 
 #======================================================================#
 # Function: intl-template-factory                                      #
@@ -3883,10 +3907,9 @@ MSG_BENCH_COMPILE = "${DEF}Generating benchmark executable"\
                     "${GREEN}$(notdir $(strip $@))${RES}"
 MSG_BENCH_SUCCESS = "${YELLOW}All benchmarks runned successfully${RES}"
 
-MSG_COV           = "${PURPLE}Generating coverage analysis for"\
-                    "${DEF}$(call not-root,$@)${RES}"
-MSG_COV_COMPILE   = "${DEF}Building ${GREEN}$@${DEF} to generate"\
-                    "coverage files${RES}"
+MSG_COV           = "${BLUE}Showing coverage analysis ${DEF}$<${RES}"
+MSG_COV_NONE      = "${PURPLE}No coverage analysis reported in $<${RES}"
+MSG_COV_COMPILE   = "${DEF}Generating coverage analysis ${WHITE}$@${RES}"
 
 MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
 MSG_MAKEZIP       = "${RED}Generating zip file ${BLUE}$@${RES}"
@@ -5105,6 +5128,7 @@ projecthelp:
 	@echo " * compiler:         Outputs Compiler.mk to define compilers"
 	@echo " * config:           Outputs Config.mk for user's options   "
 	@echo " * coverage:         Creates coverage analysis information  "
+	@echo " * *-coverage:       As 'coverage' for tests and benchmarks "
 	@echo " * depend:           Checks all dependencies needed to build"
 	@echo " * deploy:           Deploys changes in BRANCH to REMOTE    "
 	@echo " * dist-*:           As 'dist', with many compressions      "
@@ -5383,8 +5407,11 @@ else
 	$(call echo,"${WHITE}\nCOVERAGE                ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"covbin:       ",$(covbin)              )
+	$(call prompt,"covrep:       ",$(covrep)              )
 	$(call prompt,"covtestbin:   ",$(covtestbin)          )
+	$(call prompt,"covtestrep:   ",$(covtestrep)          )
 	$(call prompt,"covbenchbin:  ",$(covbenchbin)         )
+	$(call prompt,"covbenchrep:  ",$(covbenchrep)         )
 	
 	$(call echo,"${WHITE}\nOBJECT                  ${RES}")
 	$(call echo,"----------------------------------------")

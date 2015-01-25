@@ -3374,12 +3374,12 @@ $1/$2$3: $4/$2$5
 	
 	$$(call mksubdir,$1,$$(call not-root,$$@))
 	$$(call mksubdir,$4,$$(call not-root,$$@))
-	$$(quiet) $$(COV) -q --directory $$(covdir)/$$(objdir)/$$(dir $2) \
-	                     --capture --no-external -o $$@ $$(ERROR)
+	$$(quiet) $$(COV) -q -b $$(covdir) --capture -o $$@ \
+	                  -d $$(covdir)/$$(objdir) $$(ERROR)
 	$$(quiet) if [[ -s $$@ ]]; \
 	          then \
-	              $$(COV) -q '$$(extdir)/*' '$$(testdir)/*' -r $$@ \
-                          -o $$@ $$(ERROR); \
+	              $$(COV) -q '$$(extdir)/*' '$$(testdir)/*' '/usr/*' \
+	                      -r $$@ -o $$@ $$(ERROR); \
 	          fi
 	
 	$$(call ok,$$(MSG_COV_COMPILE))

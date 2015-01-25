@@ -2357,12 +2357,12 @@ etags: $(incall) $(srcall)
 ##                               TESTS                                ##
 ########################################################################
 
-.PHONY: check
-check: all $(testrun)
+.PHONY: check test
+check test: all $(testrun)
 	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_TEST_SUCCESS)))
 
-.PHONY: eval
-eval: all $(benchrun)
+.PHONY: eval benchmark
+eval benchmark: all $(benchrun)
 	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_BENCH_SUCCESS)))
 
 ########################################################################
@@ -5100,7 +5100,8 @@ projecthelp:
 	@echo "Default targets:                                            "
 	@echo "-----------------                                           "
 	@echo " * all:              Generates all executables              "
-	@echo " * check:            Compiles and run Unit Tests            "
+	@echo " * benchmark:        Compiles and runs Benchmarks           "
+	@echo " * check:            Compiles and runs Unit Tests           "
 	@echo " * compiler:         Outputs Compiler.mk to define compilers"
 	@echo " * config:           Outputs Config.mk for user's options   "
 	@echo " * coverage:         Creates coverage analysis information  "
@@ -5111,7 +5112,7 @@ projecthelp:
 	@echo " * docs:             Generates docs in all formats avaiable "
 	@echo " * doxy:             Creates Doxygen docs                   "
 	@echo " * dpkg:             Creates the project's debian package   "
-	@echo " * eval:             Compiles and runs Benchmarks           "
+	@echo " * eval:             Same as 'benchmark'                    "
 	@echo " * gitignore:        Outputs .gitignore model for user      "
 	@echo " * init:             Creates dirs for beggining projects    "
 	@echo " * install-*:        Installs one info/html/dvi/pdf/ps docs "
@@ -5124,6 +5125,7 @@ projecthelp:
 	@echo " * statistics:       Outputs file countage and LOC          "
 	@echo " * sync:             Synchronizes from REMOTE to BRANCH     "
 	@echo " * tar:              Creates .tar with bins and libs        "
+	@echo " * test:             Same as 'check'                        "
 	@echo " * translation:      Creates files for internationalization "
 	@echo " * uninstall-*:      Uninstalls info/html/dvi/pdf/ps docs   "
 	@echo " * uninstall:        Uninstalls anything created by installs"

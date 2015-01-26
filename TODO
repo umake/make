@@ -79,8 +79,8 @@
     [X] Support run of benchmark tools.
     [X] Correct ERROR output to work in Linux, Darwin and BSD.
     [X] Add target 'debug' to output 'dump' content in a file.
-    [ ] Output test coverage statistics (coverage + unit tests).
-    [ ] Output benchmark coverage statistics (coverage + benchmarks).
+    [X] Output test coverage statistics (coverage + unit tests).
+    [X] Output benchmark coverage statistics (coverage + benchmarks).
     [ ] Support library with name different from directory's name.
     [ ] Support binary with name different from directory's name.
     [ ] Check for system dependency existence iff targets need rebuild. 

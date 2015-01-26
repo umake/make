@@ -3375,11 +3375,9 @@ $1/$2$3: $4/$2$5
 	$$(call mksubdir,$1,$$(call not-root,$$@))
 	$$(call mksubdir,$4,$$(call not-root,$$@))
 	
-	$$(quiet) $$(COV) --zero-counters \
-	                  -d $$(covdir)/$$(objdir) $$(ERROR)
 	$$(quiet) $$(COV) -q -b $$(covdir) --capture -o $$@ \
 	                  -d $$(covdir)/$$(objdir) $$(ERROR)
-	$$(quiet) if [[ -s $$@ ]]; \
+	$$(quiet) if [ -s $$@ ]; \
 	          then \
 	              $$(COV) -q '$$(extdir)/*' '$$(testdir)/*' '/usr/*' \
 	                      -r $$@ -o $$@ $$(ERROR); \
@@ -3390,7 +3388,7 @@ $1/$2$3: $4/$2$5
 .PHONY: show_$$(subst /,_,$1/$2$3)
 show_$$(subst /,_,$1/$2$3): $1/$2$3
 	$$(call phony-status,$$(MSG_COV))
-	$$(quiet) if [[ -s $$< ]]; \
+	$$(quiet) if [ -s $$< ]; \
 	          then \
 	              $$(COV) -l $$< $$(ERROR); \
 	              $$(call model-ok,$$(MSG_COV)); \

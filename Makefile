@@ -101,7 +101,7 @@ MAKEFLAGS   := --no-print-directory
 
 # Coverage options
 CPPCOVFLAGS :=
-CCOVFLAFGS  := --coverage
+CCOVFLAGS   := --coverage
 FCOVFLAGS   :=
 CXXCOVFLAGS := --coverage
 

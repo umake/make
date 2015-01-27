@@ -544,6 +544,17 @@ endef
 lparentheses := (
 rparentheses := )
 
+n0 :=
+n1 := 1
+n2 := 1 1
+n3 := 1 1 1
+n4 := 1 1 1 1
+n5 := 1 1 1 1 1
+n6 := 1 1 1 1 1 1
+n7 := 1 1 1 1 1 1 1
+n8 := 1 1 1 1 1 1 1 1
+n9 := 1 1 1 1 1 1 1 1 1
+
 ########################################################################
 ##                             FUNCTIONS                              ##
 ########################################################################
@@ -696,32 +707,36 @@ define le
 $(or $(call eq,$1,$2),$(call lt,$1,$2))
 endef
 
-define rm-number
-$(strip $(subst 0,,$(subst 1,,$(subst 2,,$(subst 3,,$(subst 4,,\
-        $(subst 5,,$(subst 6,,$(subst 7,,$(subst 8,,$(subst 9,,\
-        $(strip $1))))))))))))
+# Arithmetic functions
+# ======================
+# 1) oppose:    Returns -$1 if $1 >= 0, or $1 otherwise
+# 2) add:       Returns sum of $1 and $2
+# 3) increment: Returns sum of $1 with 1
+
+define oppose
+$(if $(call is-negative,$1),$(patsubst -%,%,$1),-$1)
 endef
 
-define is-numeric
-$(if $(call rm-number,$1),,T)
+define add_impl
+$(if $(strip $1 $2 $3),\
+    $(foreach n,$(words $(n$(or $(call rcar,$1),0)) \
+                        $(n$(or $(call rcar,$2),0)) \
+                        $(n$(or $(call rcar,$3),0))),\
+        $(if $(call eq,1,$(words $(call expand,$n))),\
+            $n $(call add_impl,$(call rcdr,$1),$(call rcdr,$2)),\
+            $(lastword $(call expand,$n)) $(call add_impl,\
+                $(call rcdr,$1),$(call rcdr,$2),\
+                    $(firstword $(call expand,$n)))\
+)))
 endef
 
-define is-negative_impl
-$(if $(filter -%,$1))
+define add
+$(strip $(subst $(space),,$(call invert,\
+    $(call add_impl,$(call expand,$1),$(call expand,$2)))))
 endef
 
-define is-positive_impl
-$(call not,$(call is-negative,$1))
-endef
-
-define is-integer
-$(if $(and $(call is-numeric,$1),$(strip \
-           $(or $(call is-positive_impl,$1),$(call is-negative_impl,$1))\
-)),T)
-endef
-
-define is-decimal
-$(if $(and $(call not,$(filter 0%,$1)),$(call is-integer,$1)),T)
+define increment
+$(call add,$1,1)
 endef
 
 # Lexical comparison functions

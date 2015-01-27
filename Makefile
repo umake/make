@@ -3998,7 +3998,7 @@ MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
 
 ## TARGET FILES ########################################################
 define make-create
-$(if $(wildcard $2),,\
+$(if $(and $(call is-empty,$3),$(wildcard $2)),,\
 	$(call phony-status,$(MSG_MAKE_CREATE))$(newline)\
 	$(quiet) $(MAKE) $1 $(if $(filter -k,$(MAKE)),,> $2)$(newline)\
 	$(call phony-ok,$(MSG_MAKE_CREATE)))$(newline)

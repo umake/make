@@ -305,7 +305,8 @@ EXTEXT  := .dy
 SYSEXT  := .dep
 
 # Coverage extensions
-COVEXT  := .info
+COVEXT  := .gcno .gcda
+REPEXT  := .info
 
 # Binary extensions
 OBJEXT  := .o
@@ -1300,6 +1301,7 @@ depext  := $(strip $(sort $(DEPEXT)))
 extext  := $(strip $(sort $(EXTEXT)))
 sysext  := $(strip $(sort $(SYSEXT)))
 covext  := $(strip $(sort $(COVEXT)))
+repext  := $(strip $(sort $(REPEXT)))
 objext  := $(strip $(sort $(OBJEXT)))
 binext  := $(strip $(sort $(BINEXT)))
 
@@ -1325,8 +1327,8 @@ docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 allext := $(strip \
     $(incext) $(srcext) $(asmext) $(libext) $(lexext) $(lexxext)   \
     $(yaccext) $(yaxxext) $(esqlext) $(depext) $(extext) $(sysext) \
-    $(covext) $(objext) $(binext) $(srpext) $(dataext) $(potext)   \
-    $(poext) $(moext) $(docext) \
+    $(covext) $(repext) $(objext) $(binext) $(srpext) $(dataext)   \
+    $(potext) $(poext) $(moext) $(docext) \
 )
 $(foreach e,$(allext),$(if $(filter .%,$e),,\
    $(error "'$e' is not a valid extension (MUST start with dot)")))
@@ -5313,6 +5315,7 @@ else
 	$(call prompt,"objext:       ",$(objext)              )
 	$(call prompt,"binext:       ",$(binext)              )
 	$(call prompt,"covext:       ",$(covext)              )
+	$(call prompt,"repext:       ",$(repext)              )
 	$(call prompt,"potext:       ",$(potext)              )
 	$(call prompt,"poext:        ",$(poext)               )
 	$(call prompt,"moext:        ",$(moext)               )

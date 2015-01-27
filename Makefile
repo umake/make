@@ -484,22 +484,18 @@ endif # exists 'uname'
 # 1) Preprocess compilation flags to add coverage compiler options
 #    and remove automatic optimizations (flags -On, n > 0)
 # 2) Preprocess linker flags to add coverage linker options
-# 3) Adds prefix $(COVDIR) as prefix for some directories
-# 4) Do not produce static or shared libraries
-ifdef COVERAGE
+#------------------------------------------------------------------[   ]
+ifndef DEPLOY
+ifndef NO_COVERAGE
 #------------------------------------------------------------------[ 1 ]
 $(foreach p,CPP AS C F CXX,\
     $(eval override $pFLAGS := $(strip $($pCOVFLAGS) \
                                        $(patsubst -O%,,$($pFLAGS) ))))
 #------------------------------------------------------------------[ 2 ]
 override LDFLAGS += $(LDCOV)
-#------------------------------------------------------------------[ 3 ]
-$(foreach p,OBJ BIN LIB,\
-    $(eval override $pDIR := $(addprefix $(COVDIR)/,$($pDIR))))
-#------------------------------------------------------------------[ 4 ]
-NO_ARLIBS  := 1
-NO_SHRLIBS := 1
-endif
+#------------------------------------------------------------------[   ]
+endif # ifndef NO_COVERAGE
+endif # ifndef DEPLOY
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
@@ -2165,28 +2161,36 @@ depall += $(phonydep) $(makedep)
 
 # Coverage analysis
 # ===================
-# 1) Recompiled binaries for coverage statistics
-# 2) Report files with coverage information
+# 1) Data files used to generate coverage information
 # 2) Report files with coverage information
 # 3) Alias to show reports, prefixing show_ and replacing / for _ above
+#------------------------------------------------------------------[   ]
+ifndef DEPLOY
+ifndef NO_COVERAGE
 #------------------------------------------------------------------[ 1 ]
-covbin       := $(addprefix $(covdir)/,$(binall))
-covtestbin   := $(addprefix $(covdir)/,$(testbin))
-covbenchbin  := $(addprefix $(covdir)/,$(benchbin))
+covdata      := $(foreach e,$(covext),$(addsuffix $e,\
+                    $(basename $(srcobj))))
+covtestdata  := $(foreach e,$(covext),$(addsuffix $e,\
+                    $(basename $(testobj))))
+covbenchdata := $(foreach e,$(covext),,$(addsuffix $e,\
+                    $(basename $(benchobj))))
 #------------------------------------------------------------------[ 2 ]
-covrep       := $(addprefix $(covdir)/$(firstword $(datadir))/,\
-                    $(addsuffix $(covext),\
+covrep       := $(addprefix $(covdir)/,\
+                    $(addsuffix $(firstword $(repext)),\
                         $(call not-root,$(basename $(binall)))))
-covtestrep   :=  $(addprefix $(covdir)/$(firstword $(datadir))/,\
-                    $(addsuffix $(covext),\
+covtestrep   := $(addprefix $(covdir)/,\
+                    $(addsuffix $(firstword $(repext)),\
                         $(call not-root,$(basename $(testbin)))))
-covbenchrep  :=  $(addprefix $(covdir)/$(firstword $(datadir))/,\
-                    $(addsuffix $(covext),\
+covbenchrep  := $(addprefix $(covdir)/,\
+                    $(addsuffix $(firstword $(repext)),\
                         $(call not-root,$(basename $(benchbin)))))
 #------------------------------------------------------------------[ 3 ]
 covshow      := $(addprefix show_,$(subst /,_,$(covrep)))
 covtestshow  := $(addprefix show_,$(subst /,_,$(covtestrep)))
 covbenchshow := $(addprefix show_,$(subst /,_,$(covbenchrep)))
+#------------------------------------------------------------------[   ]
+endif # ifndef NO_COVERAGE
+endif # ifndef DEPLOY
 
 # Texinfo files
 # ===============
@@ -2404,26 +2408,7 @@ eval benchmark: all $(benchrun)
 ########################################################################
 
 coverage_dependency := \
-    COV => $(covbin) $(covtestbin) $(covbenchbin)
-
-ifndef COVERAGE
-
-ifdef $(call not-empty,$(covbin))
-$(covbin):
-	$(quiet) $(MAKE) COVERAGE=1 $@
-endif
-
-ifdef $(call not-empty,$(covtestbin))
-$(covtestbin):
-	$(quiet) $(MAKE) COVERAGE=1 check
-endif
-endif
-
-ifdef $(call not-empty,$(covbenchbin))
-$(covbenchbin):
-	$(quiet) $(MAKE) COVERAGE=1 eval
-
-endif # ifndef COVERAGE
+    COV => $(binall) $(testbin) $(benchbin)
 
 .PHONY: coverage
 coverage: coveragedep $(covshow)
@@ -3272,7 +3257,7 @@ $(foreach a,$(arpatsrc),\
 #            substituting / for _ in $(testbin)                        #
 # @return Target to generate binary file for the unit test             #
 #======================================================================#
-ifneq (,$(call rfilter,check test,$(MAKECMDGOALS)))
+ifneq (,$(call rfilter,check test %-coverage,$(MAKECMDGOALS)))
 define test-factory
 $1/$2: $$($2_obj) | $1/
 	$$(call status,$$(MSG_TEST_COMPILE))
@@ -3301,7 +3286,7 @@ endif
 #            substituting / for _ in $(benchdep)                       #
 # @return Target to generate binary file for the benchmark             #
 #======================================================================#
-ifneq (,$(call rfilter,eval benchmark,$(MAKECMDGOALS)))
+ifneq (,$(call rfilter,eval benchmark %-coverage,$(MAKECMDGOALS)))
 define bench-factory
 $1/$2: $$($2_obj) | $1/
 	$$(call status,$$(MSG_BENCH_COMPILE))
@@ -3363,22 +3348,20 @@ $(foreach b,$(binall),$(eval \
 
 #======================================================================#
 # Function: coverage-factory                                           #
-# @param  $1 Binary root directory                                     #
-# @param  $1 Binary name witout root dir                               #
-# @param  $3 Comments to be used (C's, Fortran's or C++'s)             #
-# @param  $4 Compiler to be used (C's, Fortran's or C++'s)             #
-# @return Target to generate binaries and dependencies of its object   #
-#         files (to create objdir and automatic source)                #
+# @param  $1 Report file                                               #
+# @param  $1 Binary file                                               #
+# @param  $3 Phony target to show coverage statistics for $2           #
+# @return Target to generate coverage and show coverage statistics     #
 #======================================================================#
+ifndef DEPLOY
+ifndef NO_COVERAGE
 define coverage-factory
-$1/$2$3: $4/$2$5
+$1: $2
 	$$(call status,$$(MSG_COV_COMPILE))
 	
-	$$(call mksubdir,$1,$$(call not-root,$$@))
-	$$(call mksubdir,$4,$$(call not-root,$$@))
-	
+	$$(call mksubdir,$$(covdir),$$@)
 	$$(quiet) $$(COV) -q -b $$(covdir) --capture -o $$@ \
-	                  -d $$(covdir)/$$(objdir) $$(ERROR)
+	                  -d $$(objdir) -d $$(firstword $$(libdir)) $$(ERROR)
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
 	              $$(COV) -q '$$(extdir)/*' '$$(testdir)/*' '/usr/*' \
@@ -3387,8 +3370,8 @@ $1/$2$3: $4/$2$5
 	
 	$$(call ok,$$(MSG_COV_COMPILE))
 
-.PHONY: show_$$(subst /,_,$1/$2$3)
-show_$$(subst /,_,$1/$2$3): $1/$2$3
+.PHONY: show_$$(subst /,_,$1)
+show_$$(subst /,_,$1): $1
 	$$(call phony-status,$$(MSG_COV))
 	$$(quiet) if [ -s $$< ]; \
 	          then \
@@ -3398,14 +3381,17 @@ show_$$(subst /,_,$1/$2$3): $1/$2$3
 	              $$(call model-ok,$$(MSG_COV_NONE)); \
 	          fi
 endef
-$(foreach b,$(binall) $(testbin) $(benchbin),\
+$(foreach b,$(binall),\
     $(eval $(call coverage-factory,$(strip \
-        $(covdir)/$(firstword $(datadir))),$(strip \
-        $(call not-root,$(call abs-basename,$b))),$(strip \
-        $(firstword $(covext))),$(strip \
-        $(covdir)/$(call root,$b)),$(strip \
-        $(call all-suffix,$b)\
-))))
+        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
+$(foreach b,$(testbin),\
+    $(eval $(call coverage-factory,$(strip \
+        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
+$(foreach b,$(benchbin),\
+    $(eval $(call coverage-factory,$(strip \
+        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
+endif # ifndef NO_COVERAGE
+endif # ifndef DEPLOY
 
 #======================================================================#
 # Function: intl-template-factory                                      #
@@ -3646,7 +3632,9 @@ $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
 ########################################################################
 .PHONY: mostlyclean
 mostlyclean:
-	$(call rm-if-empty,$(objdir),$(srcobj) $(testobj) $(benchobj))
+	$(call rm-if-empty,$(objdir),\
+	    $(srcobj) $(testobj) $(benchobj)\
+	    $(covdata) $(covtestdata) $(covbenchdata))
 
 .PHONY: clean
 clean: mostlyclean
@@ -3660,6 +3648,7 @@ distclean: clean
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
 	    $(filter $(firstword $(libdir))/%,$(lib)))
+	$(call rm-if-empty,$(covdir),$(covrep) $(covtestrep) $(covbenchrep))
 
 ifdef ENABLE_NLS
 .PHONY: translationclean
@@ -3686,16 +3675,6 @@ packageclean:
 	$(call rm-if-empty,$(distdir)/$(DEB_PROJECT)-$(VERSION))
 	$(call rm-if-empty,$(debdir),$(deball))
 
-.PHONY: coverageclean
-coverageclean:
-	$(call rm-if-empty,$(addprefix $(covdir)/,$(objdir)))
-	$(call rm-if-empty,$(addprefix $(covdir)/,$(bindir)))
-	$(call rm-if-empty,$(addprefix $(covdir)/,$(sbindir)))
-	$(call rm-if-empty,$(addprefix $(covdir)/,$(execdir)))
-	$(call rm-if-empty,$(addprefix $(covdir)/,$(firstword $(libdir))))
-	$(call rm-if-empty,$(addprefix $(covdir)/,$(srcdir)))
-	$(call rm-if-empty,$(covdir))
-
 .PHONY: externalclean
 externalclean:
 	$(foreach d,$(call invert,$(call hash-table.keys,git_dependency)),\
@@ -3713,7 +3692,7 @@ realclean:
 	@$(call println,$(MSG_WARNCLEAN_END))
 	@$(call println,$(MSG_WARNCLEAN_ALT))
 else
-realclean: distclean docclean packageclean coverageclean externalclean \
+realclean: distclean docclean packageclean externalclean \
            $(if $(ENABLE_NLS),translationclean)
 	$(call rm-if-exists,$(lexall),$(MSG_LEX_NONE))
 	$(foreach d,$(lexinc),$(call rm-if-empty,$d)$(newline))
@@ -5430,11 +5409,11 @@ else
 	
 	$(call echo,"${WHITE}\nCOVERAGE                ${RES}")
 	$(call echo,"----------------------------------------")
-	$(call prompt,"covbin:       ",$(covbin)              )
+	$(call prompt,"covdata:      ",$(covdata)             )
 	$(call prompt,"covrep:       ",$(covrep)              )
-	$(call prompt,"covtestbin:   ",$(covtestbin)          )
+	$(call prompt,"covtestdata:  ",$(covtestdata)         )
 	$(call prompt,"covtestrep:   ",$(covtestrep)          )
-	$(call prompt,"covbenchbin:  ",$(covbenchbin)         )
+	$(call prompt,"covbenchdata: ",$(covbenchdata)        )
 	$(call prompt,"covbenchrep:  ",$(covbenchrep)         )
 	
 	$(call echo,"${WHITE}\nOBJECT                  ${RES}")

@@ -4997,21 +4997,24 @@ ifdef MAJOR_RELEASE
 	$(call inc-version,$(VERSION),major,$(ALPHA) $(BETA),$(TIMESTAMP)))
 	
 	$(call make-create,version VERSION=$(VERSION),.version.mk,T)
-	$(call git-tag,"v$(strip $(VERSION))")
+	$(call git-add-commit,.version.mk,"Update to version v$(VERSION)")
+	$(call git-tag,"v$(VERSION)")
 endif
 ifdef MINOR_RELEASE
 	$(eval override VERSION := \
 	$(call inc-version,$(VERSION),minor,$(ALPHA) $(BETA),$(TIMESTAMP)))
 	
 	$(call make-create,version VERSION=$(VERSION),.version.mk,T)
-	$(call git-tag,"v$(strip $(VERSION))")
+	$(call git-add-commit,.version.mk,"Update to version v$(VERSION)")
+	$(call git-tag,"v$(VERSION)")
 endif
 ifdef PATCH_RELEASE
 	$(eval override VERSION := \
 	$(call inc-version,$(VERSION),patch,$(ALPHA) $(BETA),$(TIMESTAMP)))
 	
 	$(call make-create,version VERSION=$(VERSION),.version.mk,T)
-	$(call git-tag,"v$(strip $(VERSION))")
+	$(call git-add-commit,.version.mk,"Update to version v$(VERSION)")
+	$(call git-tag,"v$(VERSION)")
 endif
 
 .PHONY: update

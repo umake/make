@@ -927,6 +927,62 @@ $(if $(call is-alphanumeric,$(subst -,,$(call version-metadata,$1))),,\
     $(error "Metadata MUST be ASCII alphanumeric and hyphen"))
 endef
 
+# Semantic versioning update
+# ============================
+# 1) inc-major:     Increments major version (X)
+# 2) inc-minor:     Increments minor version (Y)
+# 3) inc-patch:     Increments patch version (Z)
+# 4) inc-alpha:     Increments to alpha version pre-release
+# 5) inc-beta:      Increments to beta version pre-release
+# 6) add-timestamp: Add timestamp as metadata
+# 7) inc-version:   Increment version accordingly to arguments
+
+define inc-major
+$(subst $(space),,$(call increment,$(call version-major,$1)).0.0)
+endef
+
+define inc-minor
+$(subst $(space),,$(call version-major,$1)\
+                  .$(call increment,$(call version-minor,$1)).0)
+endef
+
+define inc-patch
+$(subst $(space),,$(call version-major,$1)\
+                  .$(call version-minor,$1)\
+                  .$(call increment,$(call version-patch,$1)))
+endef
+
+define inc-alpha
+$(subst $(space),,$(call version-major,$1)\
+                  .$(call version-minor,$1)\
+                  .$(call version-patch,$1)-alpha)
+endef
+
+define inc-beta
+$(subst $(space),,$(call version-major,$1)\
+                  .$(call version-minor,$1)\
+                  .$(call version-patch,$1)-beta)
+endef
+
+define add-timestamp
+$(subst $(space),,$(call version-major,$1)\
+                  .$(call version-minor,$1)\
+                  .$(call version-patch,$1)\
+                  $(addprefix -,$(call version-pre-release,$1))\
+                  +$(shell date +%Y-%m-%d-%H-%M-%S))
+endef
+
+define inc-version
+$(foreach v,$(firstword \
+    $(if $(call eq,$2,major),$(call inc-major,$1)) \
+    $(if $(call eq,$2,minor),$(call inc-minor,$1)) \
+    $(if $(call eq,$2,patch),$(call inc-patch,$1)) \
+    ),$(foreach u,$(firstword \
+        $(if $(call eq,$3,alpha),$(call inc-alpha,$v))    \
+        $(if $(call eq,$3,beta),$(call inc-beta,$v)) $v), \
+            $(if $(call eq,$4,timestamp),$(call add-timestamp,$u),$u)))
+endef
+
 # String manipulation functions
 # ===============================
 # 1) join-strings: Create a single string from separated ones
@@ -3852,7 +3908,7 @@ MSG_GIT_SUB_RM    = "${YELLOW}[$(GIT)]${BLUE} Removing git dependency"\
                     "${DEF}$(strip $1)${RES}"
 
 MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
-                    "${PURPLE}from target ${DEF}$1${RES}"
+                    "${PURPLE}from target ${DEF}$(firstword $1)${RES}"
 
 MSG_PRG_SEARCH    = "${DEF}Searching for $d dependency"\
                     "${GREEN}$($d)${RES}"
@@ -4618,13 +4674,21 @@ override C_MODULE      := $(strip $(basename $(notdir $(C_MODULE))))
 override CXX_MODULE    := $(strip $(basename $(notdir $(CXX_MODULE))))
 override TRANSLATION   := $(strip $(basename $(notdir $(TRANSLATION))))
 override NLS_HEADER    := $(strip $(basename $(notdir $(NLS_HEADER))))
+override MAJOR_RELEASE := $(strip $(basename $(notdir $(MAJOR_RELEASE))))
+override MINOR_RELEASE := $(strip $(basename $(notdir $(MINOR_RELEASE))))
+override PATCH_RELEASE := $(strip $(basename $(notdir $(PATCH_RELEASE))))
+
+$(foreach f,ALPHA BETA TIMESTAMP,\
+    $(if $($f),$(eval $f := $(call lc,$f))))
 
 # Check if there is at least one artifact to be created/deleted
 $(if $(strip \
     $(or $(NAMESPACE),$(NMS_HEADER),$(LIBRARY),$(LIB_HEADER),\
          $(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),$(C_MAIN),\
          $(CXX_MAIN),$(TEMPLATE),$(C_MODULE),$(CXX_MODULE),\
-         $(TRANSLATION),$(NLS_HEADER))),,\
+         $(TRANSLATION),$(NLS_HEADER),$(MAJOR_RELEASE),\
+         $(MINOR_RELEASE),$(PATCH_RELEASE),\
+     )),,\
      $(error No filetype defined. Type 'make projecthelp' for info))
 
 .PHONY: new
@@ -4927,6 +4991,27 @@ ifdef NLS_HEADER
 	
 	$(call select,stdout)
 endif
+endif
+ifdef MAJOR_RELEASE
+	$(eval override VERSION := \
+	$(call inc-version,$(VERSION),major,$(ALPHA) $(BETA),$(TIMESTAMP)))
+	
+	$(call make-create,version VERSION=$(VERSION),.version.mk,T)
+	$(call git-tag,"v$(strip $(VERSION))")
+endif
+ifdef MINOR_RELEASE
+	$(eval override VERSION := \
+	$(call inc-version,$(VERSION),minor,$(ALPHA) $(BETA),$(TIMESTAMP)))
+	
+	$(call make-create,version VERSION=$(VERSION),.version.mk,T)
+	$(call git-tag,"v$(strip $(VERSION))")
+endif
+ifdef PATCH_RELEASE
+	$(eval override VERSION := \
+	$(call inc-version,$(VERSION),patch,$(ALPHA) $(BETA),$(TIMESTAMP)))
+	
+	$(call make-create,version VERSION=$(VERSION),.version.mk,T)
+	$(call git-tag,"v$(strip $(VERSION))")
 endif
 
 .PHONY: update

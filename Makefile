@@ -1359,7 +1359,7 @@ endif
 
 # Get all dependency prefixes for targets
 targets := \
-    build external upgrade init tags coverage \
+    build remote upgrade init tags coverage \
     translation docs doxy dist dpkg install
 
 # Get all existent programs
@@ -2287,23 +2287,23 @@ depend: builddep librarydep gitdep webdep
 nothing:
 
 ########################################################################
-##                       EXTERNAL REPOSITORIES                        ##
+##                        REMOTE REPOSITORIES                         ##
 ########################################################################
 
-external_dependency := \
+remote_dependency := \
     GIT      => $(and $(call not-empty,$(GIT_REMOTE_PATH)),$(strip \
                       $(call is-empty,$(NO_GIT))))
 
 .PHONY: sync
-sync: externaldep
+sync: remotedep
 	$(call git-pull,$(REMOTE),$(BRANCH))
 
 .PHONY: deploy
-deploy: externaldep
+deploy: remotedep
 	$(call git-push,$(REMOTE),$(BRANCH))
 
 ########################################################################
-##                              UPGRADE                               ##
+##                             UPGRADE                                ##
 ########################################################################
 
 upgrade_dependency := \

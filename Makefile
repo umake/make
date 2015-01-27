@@ -2291,7 +2291,8 @@ nothing:
 ########################################################################
 
 external_dependency := \
-    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),T)
+    GIT      => $(and $(call not-empty,$(GIT_REMOTE_PATH)),$(strip \
+                      $(call is-empty,$(NO_GIT))))
 
 .PHONY: sync
 sync: externaldep

@@ -50,7 +50,7 @@ DESCRIPTION     := default long description
 
 # Debian package
 DEB_VERSION     := 1
-DEB_PROJECT     := Default
+DEB_PROJECT     := default
 DEB_PRIORITY    := optional
 
 # Program settings
@@ -405,8 +405,8 @@ NLSREQINC       := libintl.h
 
 # Packages (Debian)
 DEBUILD         := debuild -us -uc
-DCH             := dch --create -v $(VERSION)-$(DEB_VERSION) \
-                       --package $(DEB_PROJECT)
+DCH              = dch --create -v $(version)-$(deb_version) \
+                       --package $(deb_project)
 
 # Remote
 CURL            := curl -o
@@ -1216,9 +1216,34 @@ endef
 ##                       USER INPUT VALIDATION                        ##
 ########################################################################
 
-# Version
-# =========
-$(call version-check,$(VERSION))
+# Project settings
+# ==================
+project       := $(strip $(PROJECT))
+first_version := $(strip $(VERSION))
+version       := $(strip $(or $(version),$(first_version)))
+deb_version   := $(subst $(space),,\
+                     $(call version-major,$(version))\
+                     .$(call version-minor,$(version)\
+                     -$(call version-patch,$(version))))
+
+$(call version-check,$(version))
+export version
+export deb_version
+
+# Package info
+# ==================
+auxfiles        := $(strip $(AUXFILES))
+mainteiner_name := $(strip $(MAINTEINER_NAME))
+mainteiner_mail := $(strip $(MAINTEINER_MAIL))
+copyright       := $(strip $(COPYRIGHT))
+synopsis        := $(strip $(SYNOPSIS))
+description     := $(strip $(DESCRIPTION))
+
+# Debian package
+# ==================
+deb_version     := $(strip $(DEB_VERSION))
+deb_project     := $(strip $(DEB_PROJECT))
+deb_priority    := $(strip $(DEB_PRIORITY))
 
 # Platform info
 # ===============
@@ -1507,8 +1532,8 @@ $(foreach s,$(benchdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 # 1) Configuration files used to change the Makefile behavior
 # 2) Dependencies needed to Makefile submodule
 #------------------------------------------------------------------[ 1 ]
-make_configs := $(AUXFILES) $(license) $(notice) $(contributors)
-make_configs += $(filter $(confdir)/%,$(MAKEFILE_LIST))
+make_configs := $(auxfiles) $(license) $(notice) $(contributors)
+make_configs += $(confdir) $(makedir)
 make_configs += Config.mk config.mk Config_os.mk config_os.mk
 make_configs := $(sort $(foreach f,$(make_configs),$(wildcard $f)))
 #------------------------------------------------------------------[ 2 ]
@@ -2328,7 +2353,7 @@ $(foreach doc,info html dvi pdf ps,\
 # ======================
 # 1) deball: debian packaging files in the default debian directory
 deball := changelog compat control copyright
-deball += rules source/format $(DEB_PROJECT).dirs
+deball += rules source/format $(deb_project).dirs
 deball := $(sort $(strip $(addprefix $(debdir)/,$(deball))))
 
 ########################################################################
@@ -2450,7 +2475,7 @@ init: initdep
 	$(call make-create,version,.version.mk)
 	$(call make-create,gitignore,.gitignore)
 	
-	$(call git-tag,"v$(strip $(VERSION))")
+	$(call git-tag,"v$(strip $(version))")
 	
 	$(call git-add-commit,Makefile Config.mk,\
 	       "Add Makefile and Config.mk")
@@ -2538,7 +2563,7 @@ endef
 .PHONY: statistics
 statistics:
 	@echo "                                                            "
-	@echo "$(PROJECT)-$(VERSION)                                       "
+	@echo "$(project)-$(version)                                       "
 	@echo "=============================                               "
 	@echo "                                                            "
 	@echo "C            : $(call statistic-count,$(call))              "
@@ -2605,9 +2630,9 @@ $(docdir)/$(doxyfile).mk: $(doxyfile)
 	@echo "######################################################" >> $@
 	@echo "                                                      " >> $@
 	@echo "# Project info                                        " >> $@
-	@echo "PROJECT_NAME     = $(PROJECT)                         " >> $@
-	@echo "PROJECT_NUMBER   = $(VERSION)                         " >> $@
-	@echo "PROJECT_BRIEF    = $(SYNOPSIS)                        " >> $@
+	@echo "PROJECT_NAME     = $(project)                         " >> $@
+	@echo "PROJECT_NUMBER   = $(version)                         " >> $@
+	@echo "PROJECT_BRIEF    = $(synopsis)                        " >> $@
 	@echo "                                                      " >> $@
 	@echo "# Source info                                         " >> $@
 	@echo "INPUT            = $(call rsubdir,$(srcdir) $(incdir))" >> $@
@@ -2660,28 +2685,28 @@ dpkg: dpkgdep package-tar.gz $(deball)
 	
 	@# Step 1: Rename the upstream tarball
 	$(call phony-status,$(MSG_DEB_STEP1))
-	$(quiet) $(MV) $(distdir)/$(PROJECT)-$(VERSION)_src.tar.gz \
-	         $(distdir)/$(DEB_PROJECT)_$(VERSION).orig.tar.gz $(ERROR)
+	$(quiet) $(MV) $(distdir)/$(project)-$(version)_src.tar.gz \
+	         $(distdir)/$(deb_project)_$(version).orig.tar.gz $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP1))
 	
 	@# Step 2: Unpack the upstream tarball
 	$(call phony-status,$(MSG_DEB_STEP2))
 	$(quiet) cd $(distdir) \
-	         && tar xf $(DEB_PROJECT)_$(VERSION).orig.tar.gz $(ERROR)
-	$(call srmdir,$(distdir)/$(DEB_PROJECT)-$(VERSION))
-	$(quiet) $(MV) $(distdir)/$(PROJECT)-$(VERSION)_src \
-	         $(distdir)/$(DEB_PROJECT)-$(VERSION) $(ERROR)
+	         && tar xf $(deb_project)_$(version).orig.tar.gz $(ERROR)
+	$(call srmdir,$(distdir)/$(deb_project)-$(version))
+	$(quiet) $(MV) $(distdir)/$(project)-$(version)_src \
+	         $(distdir)/$(deb_project)-$(version) $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP2))
 	
 	@# Step 3: Add the Debian packaging files
 	$(call phony-status,$(MSG_DEB_STEP3))
 	$(quiet) $(CP) $(debdir) \
-	         $(distdir)/$(DEB_PROJECT)-$(VERSION) $(ERROR)
+	         $(distdir)/$(deb_project)-$(version) $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP3))
 	
 	@# Step 4: Install the package
 	$(call phony-status,$(MSG_DEB_STEP4))
-	$(quiet) cd $(distdir)/$(DEB_PROJECT)-$(VERSION) \
+	$(quiet) cd $(distdir)/$(deb_project)-$(version) \
 	         && $(DEBUILD) $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP4))
 
@@ -2699,18 +2724,18 @@ $(debdir)/control: | $(firstword $(debdir))/
 	$(call touch,$@)
 	$(call select,$@)
 	@echo " "                                                 >> $@
-	@echo "Source: $(DEB_PROJECT)"                            >> $@
-	@echo "Maintainer: $(MAINTEINER_NAME) $(MAINTEINER_MAIL)" >> $@
+	@echo "Source: $(deb_project)"                            >> $@
+	@echo "Maintainer: $(mainteiner_name) $(mainteiner_mail)" >> $@
 	@echo "Section: misc"                                     >> $@
-	@echo "Priority: $(DEB_PRIORITY)"                         >> $@
-	@echo "Standards-Version: $(VERSION)"                     >> $@
+	@echo "Priority: $(deb_priority)"                         >> $@
+	@echo "Standards-Version: $(version)"                     >> $@
 	@echo "Build-Depends: debhelper (>= 9)"                   >> $@
 	@echo " "                                                 >> $@
-	@echo "Package: $(DEB_PROJECT)"                           >> $@
+	@echo "Package: $(deb_project)"                           >> $@
 	@echo "Architecture: any"                                 >> $@
 	@echo "Depends: "$$"{shlibs:Depends}, "$$"{misc:Depends}" >> $@
-	@echo "Description: $(SYNOPSIS)"                          >> $@
-	@echo " $(DESCRIPTION)"                                   >> $@
+	@echo "Description: $(synopsis)"                          >> $@
+	@echo " $(description)"                                   >> $@
 	$(call select,stdout)
 
 $(debdir)/copyright: | $(firstword $(debdir))/
@@ -2726,7 +2751,7 @@ $(debdir)/rules: | $(firstword $(debdir))/
 	$(call cat,"                                                      ")
 	$(call cat,"override_dh_auto_install:                             ")
 	$(call cat,"\t"$$"(MAKE) \\"                                       )
-	$(call cat,"    DESTDIR="$$""$$"(pwd)/debian/$(DEB_PROJECT) \\"    )
+	$(call cat,"    DESTDIR="$$""$$"(pwd)/debian/$(deb_project) \\"    )
 	$(call cat,"    prefix=/usr install"                               )
 	$(call select,stdout)
 
@@ -2735,7 +2760,7 @@ $(debdir)/source/format: | $(firstword $(debdir))/
 	$(call touch,$@)
 	$(quiet) echo "3.0 (quilt)" >> $@
 
-$(debdir)/$(DEB_PROJECT).dirs: | $(firstword $(debdir))/
+$(debdir)/$(deb_project).dirs: | $(firstword $(debdir))/
 	$(call touch,$@)
 	$(call select,$@)
 	$(if $(strip $(bin)),     $(call cat,'$(i_bindir)                '))
@@ -3510,10 +3535,10 @@ $1/$2$$(firstword $$(potext)): $$($2_all) | $1/
 	$$(call status,$$(MSG_INTL_TEMPLATE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(XGETTEXT)\
-	          --copyright-holder=$$(call shstring,$$(COPYRIGHT))\
-	          --msgid-bugs-address=$$(call shstring,$$(MAINTEINER_MAIL))\
-	          --package-name=$$(call shstring,$$(PROJECT))\
-	          --package-version=$$(VERSION)\
+	          --copyright-holder=$$(call shstring,$$(copyright))\
+	          --msgid-bugs-address=$$(call shstring,$$(mainteiner_mail))\
+	          --package-name=$$(call shstring,$$(project))\
+	          --package-version=$$(version)\
 	          -d $2 -k_ -kN_ -s $$^ -o $$@
 	$$(call ok,$$(MSG_INTL_TEMPLATE),$$@)
 endef
@@ -3722,12 +3747,12 @@ define dist-factory
 package-$1: dirs := Makefile $$(make_configs) $$(wildcard .git*)
 package-$1: dirs += $$(srcdir) $$(incdir) $$(datadir) $$(docdir)
 package-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir)
-package-$1: distdep $$(distdir)/$$(PROJECT)-$$(VERSION)_src.$1
+package-$1: distdep $$(distdir)/$$(project)-$$(version)_src.$1
 
 .PHONY: dist-$1
 dist-$1: dirs := Makefile $$(make_configs)
 dist-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir)
-dist-$1: distdep $$(distdir)/$$(PROJECT)-$$(VERSION).$1
+dist-$1: distdep $$(distdir)/$$(project)-$$(version).$1
 endef
 $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
     $(eval $(call dist-factory,$e)))
@@ -3777,7 +3802,7 @@ docclean:
 
 .PHONY: packageclean
 packageclean:
-	$(call rm-if-empty,$(distdir)/$(DEB_PROJECT)-$(VERSION))
+	$(call rm-if-empty,$(distdir)/$(deb_project)-$(version))
 	$(call rm-if-empty,$(debdir),$(deball))
 
 .PHONY: externalclean
@@ -3985,7 +4010,7 @@ MSG_INSTALL_DOC   = "${DEF}Installing document file ${BLUE}$f${RES}"
 MSG_UNINSTALL_DOC = "${DEF}Uninstalling document file ${BLUE}$f${RES}"
 
 MSG_DEB_STEP1     = "${YELLOW}[STEP_1]${DEF} Rename upstream tarball to"\
-                    "${BLUE}${DEB_PROJECT}_${VERSION}.orig.tar.gz${RES}"
+                    "${BLUE}${deb_project}_${version}.orig.tar.gz${RES}"
 MSG_DEB_STEP2     = "${YELLOW}[STEP_2]${DEF} Unpacking upstream tarball"\
                     "and renaming directory${RES}"
 MSG_DEB_STEP3     = "${YELLOW}[STEP_3]${DEF} Adding directory${CYAN}"\
@@ -4993,28 +5018,28 @@ ifdef NLS_HEADER
 endif
 endif
 ifdef MAJOR_RELEASE
-	$(eval override VERSION := \
-	$(call inc-version,$(VERSION),major,$(ALPHA) $(BETA),$(TIMESTAMP)))
+	$(eval override version := \
+	$(call inc-version,$(version),major,$(ALPHA) $(BETA),$(TIMESTAMP)))
 	
-	$(call make-create,version VERSION=$(VERSION),.version.mk,T)
-	$(call git-add-commit,.version.mk,"Update to version v$(VERSION)")
-	$(call git-tag,"v$(VERSION)")
+	$(call make-create,version version=$(version),.version.mk,T)
+	$(call git-add-commit,.version.mk,"Update to version v$(version)")
+	$(call git-tag,"v$(version)")
 endif
 ifdef MINOR_RELEASE
-	$(eval override VERSION := \
-	$(call inc-version,$(VERSION),minor,$(ALPHA) $(BETA),$(TIMESTAMP)))
+	$(eval override version := \
+	$(call inc-version,$(version),minor,$(ALPHA) $(BETA),$(TIMESTAMP)))
 	
-	$(call make-create,version VERSION=$(VERSION),.version.mk,T)
-	$(call git-add-commit,.version.mk,"Update to version v$(VERSION)")
-	$(call git-tag,"v$(VERSION)")
+	$(call make-create,version version=$(version),.version.mk,T)
+	$(call git-add-commit,.version.mk,"Update to version v$(version)")
+	$(call git-tag,"v$(version)")
 endif
 ifdef PATCH_RELEASE
-	$(eval override VERSION := \
-	$(call inc-version,$(VERSION),patch,$(ALPHA) $(BETA),$(TIMESTAMP)))
+	$(eval override version := \
+	$(call inc-version,$(version),patch,$(ALPHA) $(BETA),$(TIMESTAMP)))
 	
-	$(call make-create,version VERSION=$(VERSION),.version.mk,T)
-	$(call git-add-commit,.version.mk,"Update to version v$(VERSION)")
-	$(call git-tag,"v$(VERSION)")
+	$(call make-create,version version=$(version),.version.mk,T)
+	$(call git-add-commit,.version.mk,"Update to version v$(version)")
+	$(call git-tag,"v$(version)")
 endif
 
 .PHONY: update
@@ -5199,7 +5224,7 @@ config:
 
 .PHONY: version
 version:
-	@echo "override VERSION := $(VERSION)"
+	@echo "override version := $(version)"
 
 .PHONY: compiler
 compiler:
@@ -5291,7 +5316,7 @@ projecthelp:
 	@echo " * uninstall-*:      Uninstalls info/html/dvi/pdf/ps docs   "
 	@echo " * uninstall:        Uninstalls anything created by installs"
 	@echo " * upgrade:          Upgrades Makefile from remote repo     "
-	@echo " * version:          Outputs .version.mk to store VERSION   "
+	@echo " * version:          Outputs current version in .version.mk "
 	@echo "                                                            "
 	@echo "Management targets:                                         "
 	@echo "--------------------                                        "

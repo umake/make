@@ -607,15 +607,48 @@ $(if $(strip $1),\
     $(call invert,$(wordlist 2,$(words $1),$1))) $(firstword $1)
 endef
 
+# Numeric classification functions
+# ==================================
+# 1) is-numeric:  Returns not empty if $1 matches [0-9]*
+# 2) is-positive: Returns not empty if $1 matches -[0-9]*
+# 3) is-negative: Returns not empty if $1 matches +?[0-9]*
+# 4) is-integer:  Returns not empty if $1 matches [+-]?[0-9]*
+# 5) is-decimal:  Returns not empty if $1 matches [+-]?[1-9]?[0-9]*
+
+define rm-number
+$(strip $(subst 0,,$(subst 1,,$(subst 2,,$(subst 3,,$(subst 4,,\
+        $(subst 5,,$(subst 6,,$(subst 7,,$(subst 8,,$(subst 9,,\
+        $(strip $1))))))))))))
+endef
+
+define is-numeric
+$(if $(call rm-number,$1),,T)
+endef
+
+define is-negative
+$(if $(and $(call is-numeric,$1),$(filter -%,$1)),T)
+endef
+
+define is-positive
+$(call not,$(call is-negative,$(patsubst +%,%,$1)))
+endef
+
+define is-integer
+$(if $(and $(call is-numeric,$1),$(strip \
+           $(or $(call is-positive,$1),$(call is-negative,$1))\
+)),T)
+endef
+
+define is-decimal
+$(if $(and $(call not,$(filter 0%,$1)),$(call is-integer,$1)),T)
+endef
+
 # Numeric comparison functions
 # ==============================
-# 1) gt:         Returns not empty if $1 is greater than $2
-# 2) lt:         Returns not empty if $1 is less than $2
-# 3) ge:         Returns not empty if $1 is greater or equal than $2
-# 4) le:         Returns not empty if $1 is less or equal than $2
-# 5) is-numeric: Returns not empty if $1 matches [0-9]*
-# 5) is-integer: Returns not empty if $1 matches [+-]?[0-9]*
-# 5) is-decimal: Returns not empty if $1 matches [+-]?[1-9]?[0-9]*
+# 1) gt: Returns not empty if $1 is greater than $2
+# 2) lt: Returns not empty if $1 is less than $2
+# 3) ge: Returns not empty if $1 is greater or equal than $2
+# 4) le: Returns not empty if $1 is less or equal than $2
 
 define cmp-factory
 lt_$(word 1,$(subst -, ,$1))_$(word 2,$(subst -, ,$1)) := T

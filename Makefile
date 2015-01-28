@@ -2195,13 +2195,15 @@ $(foreach t,$(call not-root,$(testbin)),$(or\
     $(eval $t_obj := $(comtestobj) $($t_obj)),\
 ))
 #------------------------------------------------------------------[ 9 ]
-ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,check)))
+ifneq (,$(comtestsrc))
+ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,check test)))
 $(foreach s,$(comtestsrc),\
     $(if $(filter-out %$(testsuf),$(basename $s)),\
         $(error "Test $(testdir)/$s have no suffix $(testsuf)")))
 $(foreach s,$(comtestsrc),\
     $(if $(filter $(subst $(testsuf).,.,$s)%,$(src)),,\
         $(error "Test $(testdir)/$s has no matching source file")))
+endif
 endif
 #------------------------------------------------------------------[ 10 ]
 testdep := $(patsubst %,$(depdir)/%$(depext),$(basename $(testsrc)))
@@ -2229,7 +2231,7 @@ testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 $(foreach e,$(srcext),\
     $(eval benchall += $(call rwildcard,$(benchdir),*$e)))
 #------------------------------------------------------------------[ 2 ]
-benchall := $(call filter-ignored,$(benchall)) $(userall) $(autoall)
+benchall := $(call filter-ignored,$(benchall))
 #------------------------------------------------------------------[ 3 ]
 benchsrc := $(call not-root,$(benchall))
 #------------------------------------------------------------------[ 4 ]
@@ -2266,13 +2268,15 @@ $(foreach t,$(call not-root,$(benchbin)),$(or\
     $(eval $t_obj := $(combenchobj) $($t_obj)),\
 ))
 #------------------------------------------------------------------[ 9 ]
-ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,eval)))
+ifneq (,$(combenchsrc))
+ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,eval benchmark)))
 $(foreach s,$(combenchsrc),\
     $(if $(filter-out %$(benchsuf),$(basename $s)),\
         $(error "Benchmark $(benchdir)/$s have no suffix $(benchsuf)")))
 $(foreach s,$(combenchsrc),\
     $(if $(filter $(subst $(benchsuf).,.,$s)%,$(src)),,\
         $(error "Benchmark $(benchdir)/$s has no matching source file")))
+endif
 endif
 #------------------------------------------------------------------[ 10 ]
 benchdep := $(patsubst %,$(depdir)/%$(depext),$(basename $(benchsrc)))
@@ -3494,7 +3498,8 @@ $1: $2
 	                  -d $$(objdir) -d $$(firstword $$(libdir)) $$(ERROR)
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
-	              $$(COV) -q '$$(extdir)/*' '$$(testdir)/*' '/usr/*' \
+	              $$(COV) -q '$$(extdir)/*' '/usr/*' \
+	                         '$$(testdir)/*' '$$(benchdir)/*' 
 	                      -r $$@ -o $$@ $$(ERROR); \
 	          fi
 	

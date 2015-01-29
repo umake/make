@@ -3527,7 +3527,7 @@ $1: $2
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
 	              $$(COV) -q '$$(extdir)/*' '/usr/*' \
-	                         '$$(testdir)/*' '$$(benchdir)/*' 
+	                         '$$(testdir)/*' '$$(benchdir)/*'; \
 	                      -r $$@ -o $$@ $$(ERROR); \
 	          fi
 	

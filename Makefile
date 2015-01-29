@@ -1787,20 +1787,25 @@ srcdep  := $(patsubst %,$(depdir)/%$(depext),$(basename $(src)))
 
 # Header files
 # ==============
-# 1) incall  : Get all files able to be included
+# 1) incall  : Get all directories able to be included
+# 2) incall  : Remove empty directories in the leaves of incall tree
 # 2) autoinc : Join automatically generated include files
 # 3) incsub  : Get all subdirectories of the included dirs
 # 4) libs    : Add subidirectories as paths to be searched for headers
 #------------------------------------------------------------------[ 1 ]
 incall  := $(call filter-ignored,\
-               $(foreach i,$(incdir),$(foreach e,$(incext),\
-                   $(call rwildcard,$i,*$e))))
+               $(foreach i,$(incdir),$(call rsubdir,$i)))
 #------------------------------------------------------------------[ 2 ]
-autoinc := $(yaccinc) $(lexinc) $(esqlinc)
+incall  := $(foreach i,$(sort $(incall)),\
+               $(if $(filter $i/%,$(incall)),$i,\
+                   $(if $(call not-empty,$(foreach e,$(incext),\
+                            $(call rwildcard,$i,*$e))),$i)))
 #------------------------------------------------------------------[ 3 ]
-incsub  := $(sort $(call rm-trailing-bar,$(dir $(incall))))
-incsub  += $(autoinc)
+autoinc := $(yaccinc) $(lexinc) $(esqlinc)
 #------------------------------------------------------------------[ 4 ]
+incsub  := $(sort $(call rm-trailing-bar,$(incall)))
+incsub  += $(autoinc)
+#------------------------------------------------------------------[ 5 ]
 aslibs  := $(ASLIBS)  $(patsubst %,-I%,$(incsub))
 clibs   := $(CLIBS)   $(patsubst %,-I%,$(incsub))
 flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))

@@ -778,6 +778,14 @@ define lexical-le
 $(or $(call lexical-eq,$1,$2),$(call lexical-lt,$1,$2))
 endef
 
+# Lexical classification functions
+# ==================================
+# 1) is-lower:        Returns not empty if $1 matches [a-z]*
+# 2) is-upper:        Returns not empty if $1 matches [A-Z]*
+# 3) is-alpha:        Returns not emtpy if $1 matches [A-Za-z]*
+# 4) is-alphanumeric: Returns not empty if $1 matches [A-Za-z0-9]*
+# 5) is-identifier:   Returns not empty if $1 matches [A-Za-z0-9_]*
+
 define rm-lower
 $(strip $(subst a,,$(subst b,,$(subst c,,$(subst d,,$(subst e,,\
         $(subst f,,$(subst g,,$(subst h,,$(subst i,,$(subst j,,\
@@ -796,6 +804,14 @@ $(strip $(subst A,,$(subst B,,$(subst C,,$(subst D,,$(subst E,,\
         $(subst Z,,$(strip $1))))))))))))))))))))))))))))
 endef
 
+define is-lower
+$(if $(call is-empty,$(call rm-upper,$1)),T)
+endef
+
+define is-upper
+$(if $(call is-empty,$(call rm-lower,$1)),T)
+endef
+
 define is-alpha
 $(if $(call is-empty,$(call rm-upper,$(call rm-lower,$1))),T)
 endef
@@ -803,6 +819,10 @@ endef
 define is-alphanumeric
 $(if $(call is-empty,$(strip \
     $(call rm-number,$(call rm-upper,$(call rm-lower,$1))))),T)
+endef
+
+define is-identifier
+$(call is-alphanumeric,$(subst _,,$1))
 endef
 
 # Version comparison functions

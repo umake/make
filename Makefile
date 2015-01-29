@@ -5205,7 +5205,7 @@ endif
 endif
 endif # Check if D was defined
 
-endif # Check if one goal is 'new' or 'delete'
+endif # Check if one goal is 'new', 'delete' or 'update'
 
 ########################################################################
 ##                         CONFIGURATION FILES                        ##

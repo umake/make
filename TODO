@@ -81,6 +81,8 @@
     [X] Add target 'debug' to output 'dump' content in a file.
     [X] Output test coverage statistics (coverage + unit tests).
     [X] Output benchmark coverage statistics (coverage + benchmarks).
+    [ ] Create variable to set project C++ namespace (for 'new' files).
+    [ ] Support run of linting tools (for code style check).
     [ ] Support library with name different from directory's name.
     [ ] Support binary with name different from directory's name.
     [ ] Check for system dependency existence iff targets need rebuild. 

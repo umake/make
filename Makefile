@@ -72,6 +72,9 @@ DOXYFILE        := Doxyfile
 GIT_DEPENDENCY  :=
 WEB_DEPENDENCY  :=
 
+# Project namespace (C/C++)
+STD_NAMESPACE   :=
+
 ########################################################################
 ##                          COMPILATION FLAGS                         ##
 ########################################################################
@@ -4626,13 +4629,11 @@ endef
 # Executes iff one of the make goals is 'new' or 'delete'
 ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,new delete update)))
 
-# Namespace/Module variable
-# ===========================
+# File path
+# ===========
 # 1) Remove trailing bars if it is a directory-only name
 # 2) Substitute C++ namespace style (::) by path style (/)
 # 3) If the name includes a root src/inc directory, remove-it.
-# 4) Manipulates IN to be used in a #ifndef C/C++ preproc directive
-# 5) Define identation accordingly to namespace depth
 ifdef IN
 #------------------------------------------------------------------[ 1 ]
 override IN := $(strip $(call rm-trailing-bar,$(IN)))
@@ -4643,11 +4644,32 @@ override IN := $(strip $(or $(strip $(foreach d,$(srcdir) $(incdir),\
                    $(if $(strip $(patsubst $d%,%,$(call root,$(IN)))),,\
                        $(call not-root,$(IN))\
                ))),$(IN)))
-#------------------------------------------------------------------[ 4 ]
-indef       := $(strip $(call uc,$(subst /,_,$(strip $(IN)))))_
-#------------------------------------------------------------------[ 5 ]
-idnt        := $(if $(strip $(IN)),    )
 endif
+
+# File properties
+# =================
+# 1) Get standard namespace
+# 2) Check if standard namespace number of words and style
+# 4) Create default #ifndef to be used in C/C++ preproc directive
+# 5) Create default namespace structure to be used with C++
+# 6) Create namespace name to 'using namespace' in C++ source file
+# 7) Define identation accordingly to namespace depth
+#------------------------------------------------------------------[ 4 ]
+std_namespace := $(strip $(STD_NAMESPACE))
+#------------------------------------------------------------------[ 4 ]
+$(if $(call gt,$(words $(std_namespace)),1),\
+    $(error "Standard namespace MUST have only one word"))
+$(if $(call not,$(call is-identifier,$(std_namespace))),\
+    $(error "Standard namespace MUST have match [A-Za-z0-9_]*"))
+#------------------------------------------------------------------[ 4 ]
+indef         := $(strip $(addsuffix _,$(call uc,$(std_namespace))))
+indef         := $(indef)$(addsuffix _,$(call uc,$(subst /,_,$(IN))))
+#------------------------------------------------------------------[ 5 ]
+innms         := $(strip $(call lc,$(subst _,$(space),$(indef))))
+#------------------------------------------------------------------[ 6 ]
+inusing       := $(strip $(subst $(space),::,$(innms)))
+#------------------------------------------------------------------[ 7 ]
+idnt          := $(if $(strip $(IN)),    )
 
 # Extension variables
 # =====================
@@ -4677,22 +4699,18 @@ endef
 # If there are 'n' namespaces, put the first 'n-1' with open
 # curly-braces in the same line, and the last one in the last line
 define start-namespace
-$(if $(strip $(IN)),\
-    $(call cat,$(subst \\n ,\\n,\
-        $(patsubst %,namespace % {\\n,\
-            $(subst $(lastword $(subst /, ,$(IN))),,\
-                $(subst /, ,$(IN))\
-            )\
-        )$(patsubst %,namespace % \\n{,\
-            $(lastword $(subst /, ,$(IN))))\
-)))
+$(if $(innms),\
+    $(call cat,"$(strip $(subst \\n$(space),\\n,\
+        $(patsubst %,namespace % {\\n,$(call rcdr,$(innms)))\
+        $(patsubst %,namespace % \\n{,$(call rcar,$(innms)))\
+))"))
 endef
 
 # Function: end-namespace
 # End the namespaces using the IN variable for namespace depth
 define end-namespace
-$(if $(strip $(IN)),\
-    $(call cat,$(subst } ,},$(foreach n,$(subst /, ,$(IN)),}))))
+$(if $(innms),\
+    $(call cat,"$(subst } ,},$(foreach n,$(innms),}))"))
 endef
 
 # Function: include-files
@@ -4851,7 +4869,7 @@ ifdef CLASS
 	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'// Libraries'                                          )
 	$(call cat,'#include "$(CLASS)$(INC_EXT)"'                         )
-	$(call cat,$(if $(IN),'using namespace $(subst /,::,$(IN));')      )
+	$(call cat,$(if $(inusing),'using namespace $(inusing);')          )
 	$(call cat,''                                                      )
 	
 	$(call select,stdout)
@@ -4916,7 +4934,7 @@ ifdef CXX_FILE
 	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'// Libraries'                                          )
 	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"'                      )
-	$(call cat,$(if $(IN),'using namespace $(subst /,::,$(IN));')      )
+	$(call cat,$(if $(inusing),'using namespace $(inusing);')          )
 	$(call cat,''                                                      )
 	
 	$(call select,stdout)
@@ -5202,6 +5220,7 @@ config:
 	@echo "# ==============="
 	@echo "# PROJECT         := # Project name (def: Default)"
 	@echo "# VERSION         := # Version (def: 1.0.0)"
+	@echo "# STD_NAMESPACE   := # Project namespace for C/C++"
 	@echo "# GIT_REMOTE_PATH := # Remote path for git repository"
 	@echo "# MAINTEINER_NAME := # Your name"
 	@echo "# MAINTEINER_MAIL := # your_name@mail.com"

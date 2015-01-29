@@ -3943,24 +3943,24 @@ MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
 MSG_PRG_SEARCH    = "${DEF}Searching for $d dependency"\
                     "${GREEN}$($d)${RES}"
 MSG_PRG_ALL       = "${YELLOW}All $n dependencies avaiable${RES}"
-MSG_PRG_UNDEFINED = "${ERR}Undefined variable ${GREEN}$d${DEF}"
-MSG_PRG_NOT_FOUND = "${ERR}Dependency ${GREEN}$($d)${DEF}"\
+MSG_PRG_UNDEFINED = "${DEF}Undefined variable ${GREEN}$d${RES}"
+MSG_PRG_NOT_FOUND = "${DEF}Dependency ${GREEN}$($d)${DEF}"\
                     "not found${RES}"
-MSG_PRG_BAD_VER   = "${ERR}$d dependency ${GREEN}$($d)${DEF}"\
+MSG_PRG_BAD_VER   = "${DEF}$d dependency ${GREEN}$($d)${DEF}"\
                     "has not the required version"\
-                    "($(program_version.$d)${RES})"
+                    "($(program_version.$d))${RES}"
 
 MSG_LIB_SEARCH    = "${DEF}Searching for system library"\
                     "${GREEN}$d${RES}"
-MSG_LIB_NOT_FOUND = "${ERR}System library ${GREEN}$d${DEF}"\
+MSG_LIB_NOT_FOUND = "${DEF}System library ${GREEN}$d${DEF}"\
                     "not found${RES}"
-MSG_LIB_BAD_VER   = "${ERR}System library ${RED}$d${DEF}"\
+MSG_LIB_BAD_VER   = "${DEF}System library ${RED}$d${DEF}"\
                     "has not the required version"\
-                    "($(library_version.$d)${RES})"
+                    "($(library_version.$d))${RES}"
 
 MSG_EXT_BUILD     = "${YELLOW}Building dependency ${DEF}$d${RES}"
-MSG_EXT_NO_MAKE   = "${ERR}No Makefile found for compilation${RES}"
-MSG_EXT_BUILD_ERR = "${ERR}Failed compiling ${DEF}$@${RES}"
+MSG_EXT_NO_MAKE   = "${DEF}No Makefile found for compilation${RES}"
+MSG_EXT_BUILD_ERR = "${DEF}Failed compiling ${DEF}$@${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\

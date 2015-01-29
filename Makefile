@@ -1037,8 +1037,8 @@ $(strip $(foreach s,$1,\
 endef
 
 define rm-trailing-bar
-$(strip $(foreach s,$(patsubst %/.,%/,$1),\
-    $(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(subst ./,,$(patsubst %/,%,$s)))))
+$(strip $(foreach s,$1,\
+    $(patsubst %/,%,$(patsubst %/.,%/,$(subst ./,,$s)))))
 endef
 
 # Suffix manipulation functions

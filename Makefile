@@ -2305,7 +2305,7 @@ covdata      := $(foreach e,$(covext),$(addsuffix $e,\
                     $(basename $(srcobj))))
 covtestdata  := $(foreach e,$(covext),$(addsuffix $e,\
                     $(basename $(testobj))))
-covbenchdata := $(foreach e,$(covext),,$(addsuffix $e,\
+covbenchdata := $(foreach e,$(covext),$(addsuffix $e,\
                     $(basename $(benchobj))))
 #------------------------------------------------------------------[ 2 ]
 covrep       := $(addprefix $(covdir)/,\
@@ -5509,6 +5509,8 @@ else
 	$(call prompt,"libsrc:       ",$(libsrc)              )
 	$(call prompt,"mainall:      ",$(mainall)             )
 	$(call prompt,"mainsrc:      ",$(mainsrc)             )
+	$(call prompt,"srcall:       ",$(srcall)              )
+	$(call prompt,"src:          ",$(src)                 )
 	
 	$(call echo,"${WHITE}\nHEADERS                 ${RES}")
 	$(call echo,"----------------------------------------")
@@ -5589,6 +5591,7 @@ else
 	$(call echo,"----------------------------------------")
 	$(call prompt,"arobj:        ",$(arobj)               )
 	$(call prompt,"shrobj:       ",$(shrobj)              )
+	$(call prompt,"userobj:      ",$(userobj)             )
 	$(call prompt,"autoobj:      ",$(autoobj)             )
 	$(call prompt,"libobj:       ",$(libobj)              )
 	$(call prompt,"mainobj:      ",$(mainobj)             )

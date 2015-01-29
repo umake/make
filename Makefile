@@ -4649,8 +4649,8 @@ endef
 
 # Function: start-namespace
 # Create new namespaces from the IN variable
-# If there is 'n' namespace, put the first 'n-1' with open curly-braces
-# in the same line, and the last one in the last line
+# If there are 'n' namespaces, put the first 'n-1' with open
+# curly-braces in the same line, and the last one in the last line
 define start-namespace
 $(if $(strip $(IN)),\
     $(call cat,$(subst \\n ,\\n,\

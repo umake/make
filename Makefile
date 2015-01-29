@@ -4727,9 +4727,11 @@ endef
 override incbase := $(strip $(firstword $(incdir)))$(if $(IN),/$(IN))
 override srcbase := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
 
-# Check if namespace exists
-$(if $(or $(call rsubdir,$(incbase)),$(call rsubdir,$(srcbase))),,\
+# Check if directory exists
+ifdef $(call not-empty,$(IN))
+$(if $(findstring $(IN),$(call rsubdir,$(incbase) $(srcbase))),,\
     $(error Namespace "$(IN)" does not exist))
+endif
 
 # Artifacts
 # ===========

@@ -1787,29 +1787,29 @@ srcdep  := $(patsubst %,$(depdir)/%$(depext),$(basename $(src)))
 
 # Header files
 # ==============
-# 1) incall  : Get all directories able to be included
-# 2) incall  : Remove empty directories in the leaves of incall tree
+# 1) userinc : Get all directories able to be included
+# 2) userinc : Remove empty directories in the leaves of userinc tree
 # 2) autoinc : Join automatically generated include files
-# 3) incsub  : Get all subdirectories of the included dirs
+# 3) incall  : Get all subdirectories of the included dirs
 # 4) libs    : Add subidirectories as paths to be searched for headers
 #------------------------------------------------------------------[ 1 ]
-incall  := $(call filter-ignored,\
+userinc := $(call filter-ignored,\
                $(foreach i,$(incdir),$(call rsubdir,$i)))
 #------------------------------------------------------------------[ 2 ]
-incall  := $(foreach i,$(sort $(incall)),\
-               $(if $(filter $i/%,$(incall)),$i,\
+userinc := $(foreach i,$(sort $(userinc)),\
+               $(if $(filter $i/%,$(userinc)),$i,\
                    $(if $(call not-empty,$(foreach e,$(incext),\
                             $(call rwildcard,$i,*$e))),$i)))
 #------------------------------------------------------------------[ 3 ]
 autoinc := $(yaccinc) $(lexinc) $(esqlinc)
 #------------------------------------------------------------------[ 4 ]
-incsub  := $(sort $(call rm-trailing-bar,$(incall)))
-incsub  += $(autoinc)
+incall  := $(sort $(call rm-trailing-bar,$(userinc)))
+incall  += $(autoinc)
 #------------------------------------------------------------------[ 5 ]
-aslibs  := $(ASLIBS)  $(patsubst %,-I%,$(incsub))
-clibs   := $(CLIBS)   $(patsubst %,-I%,$(incsub))
-flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))
-cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
+aslibs  := $(ASLIBS)  $(patsubst %,-I%,$(incall))
+clibs   := $(CLIBS)   $(patsubst %,-I%,$(incall))
+flibs   := $(FLIBS)   $(patsubst %,-I%,$(incall))
+cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incall))
 
 # Type-specific library flags
 # =============================
@@ -2580,7 +2580,7 @@ statistics:
 	@echo "Fortran      : $(call statistic-count,$(fall))              "
 	@echo "Assembly     : $(call statistic-count,$(asmall))            "
 	@echo "Libraries    : $(call statistic-count,$(liball))            "
-	@echo "Headers      : $(call statistic-count,$(incall))            "
+	@echo "Headers      : $(call statistic-count,$(userinc))           "
 	@echo "Lexers       : $(call statistic-count,$(alllexer))          "
 	@echo "Parsers      : $(call statistic-count,$(allparser))         "
 	@echo "Embedded SQL : $(call statistic-count,$(cesql))             "
@@ -2588,7 +2588,7 @@ statistics:
 	@echo "-----------------------------------                         "
 	@echo "Total        :"\
           "$(call statistic-count,$(userall) $(liball) $(mainall)      \
-           $(incall) $(alllexer) $(allparser) $(cesql) $(testall))     "
+           $(userinc) $(alllexer) $(allparser) $(cesql) $(testall))    "
 	@echo "                                                            "
 
 ########################################################################
@@ -5519,9 +5519,9 @@ else
 	
 	$(call echo,"${WHITE}\nHEADERS                 ${RES}")
 	$(call echo,"----------------------------------------")
-	$(call prompt,"incall:       ",$(incall)              )
-	$(call prompt,"incsub:       ",$(incsub)              )
+	$(call prompt,"userinc:      ",$(userinc)             )
 	$(call prompt,"autoinc:      ",$(autoinc)             )
+	$(call prompt,"incall:       ",$(incall)              )
 	
 	$(call echo,"${WHITE}\nSTATIC LIBRARY          ${RES}")
 	$(call echo,"----------------------------------------")

@@ -3527,18 +3527,19 @@ $1: $2
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
 	              $$(COV) -q '$$(extdir)/*' '/usr/*' \
-	                         '$$(testdir)/*' '$$(benchdir)/*'; \
+	                         '$$(testdir)/*' '$$(benchdir)/*' \
 	                      -r $$@ -o $$@ $$(ERROR); \
 	          fi
 	
 	$$(call ok,$$(MSG_COV_COMPILE))
 
 .PHONY: show_$$(subst /,_,$1)
-show_$$(subst /,_,$1): $1
+show_$$(subst /,_,$1): f=$1
+show_$$(subst /,_,$1): $3 $1
 	$$(call phony-status,$$(MSG_COV))
-	$$(quiet) if [ -s $$< ]; \
+	$$(quiet) if [ -s $1 ]; \
 	          then \
-	              $$(COV) -l $$< $$(ERROR); \
+	              $$(COV) -l $1 $$(ERROR); \
 	              $$(call model-ok,$$(MSG_COV)); \
 	          else \
 	              $$(call model-ok,$$(MSG_COV_NONE)); \
@@ -3549,10 +3550,10 @@ $(foreach b,$(binall),\
         $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
 $(foreach b,$(testbin),\
     $(eval $(call coverage-factory,$(strip \
-        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
+        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b,check)))
 $(foreach b,$(benchbin),\
     $(eval $(call coverage-factory,$(strip \
-        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
+        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b,eval)))
 endif # ifndef NO_COVERAGE
 endif # ifndef DEPLOY
 
@@ -4069,8 +4070,8 @@ MSG_BENCH_COMPILE = "${DEF}Generating benchmark executable"\
                     "${GREEN}$(notdir $(strip $@))${RES}"
 MSG_BENCH_SUCCESS = "${YELLOW}All benchmarks runned successfully${RES}"
 
-MSG_COV           = "${BLUE}Showing coverage analysis ${DEF}$<${RES}"
-MSG_COV_NONE      = "${PURPLE}No coverage analysis reported in $<${RES}"
+MSG_COV           = "${BLUE}Showing coverage analysis ${DEF}$f${RES}"
+MSG_COV_NONE      = "${PURPLE}No coverage analysis reported in $f${RES}"
 MSG_COV_COMPILE   = "${DEF}Generating coverage analysis ${WHITE}$@${RES}"
 
 MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"

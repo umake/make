@@ -1037,8 +1037,8 @@ $(strip $(foreach s,$1,\
 endef
 
 define rm-trailing-bar
-$(strip $(foreach s,$1,\
-    $(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(patsubst %/,%,$s))))
+$(strip $(foreach s,$(patsubst %/.,%/,$1),\
+    $(if $(or $(call not,$(dir $s)),$(suffix $s),$(notdir $(basename $s))),$s,$(subst ./,,$(patsubst %/,%,$s)))))
 endef
 
 # Suffix manipulation functions
@@ -2623,7 +2623,7 @@ doxy: docsdep $(docdir)/$(doxyfile).mk
 	$(quiet) $(DOXYGEN) $(word 2,2,$^) $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_DOXY_DOCS))
 
-$(docdir)/$(doxyfile).mk: | $(firstword $(docdir))/ $(docdir)/doxygen
+$(docdir)/$(doxyfile).mk: | $(firstword $(docdir))/./ $(docdir)/doxygen
 $(docdir)/$(doxyfile).mk: $(doxyfile)
 	$(call status,$(MSG_DOXY_MAKE))
 	$(quiet) $(CP) $< $@
@@ -2717,14 +2717,14 @@ dpkg: dpkgdep package-tar.gz $(deball)
 # Executes iff one of the make goals is 'dpkg'
 ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,dpkg)))
 
-$(debdir)/changelog: | $(firstword $(debdir))/
+$(debdir)/changelog: | $(firstword $(debdir))/./
 	$(quiet) $(DCH)
 
-$(debdir)/compat: | $(firstword $(debdir))/
+$(debdir)/compat: | $(firstword $(debdir))/./
 	$(call touch,$@)
 	$(quiet) echo 9 >> $@
 
-$(debdir)/control: | $(firstword $(debdir))/
+$(debdir)/control: | $(firstword $(debdir))/./
 	$(call touch,$@)
 	$(call select,$@)
 	@echo " "                                                 >> $@
@@ -2742,10 +2742,10 @@ $(debdir)/control: | $(firstword $(debdir))/
 	@echo " $(description)"                                   >> $@
 	$(call select,stdout)
 
-$(debdir)/copyright: | $(firstword $(debdir))/
+$(debdir)/copyright: | $(firstword $(debdir))/./
 	$(call touch,$@,$(notice))
 
-$(debdir)/rules: | $(firstword $(debdir))/
+$(debdir)/rules: | $(firstword $(debdir))/./
 	$(call touch,$@)
 	$(call select,$@)
 	$(call cat,"#!/usr/bin/make -f                                    ")
@@ -2759,12 +2759,12 @@ $(debdir)/rules: | $(firstword $(debdir))/
 	$(call cat,"    prefix=/usr install"                               )
 	$(call select,stdout)
 
-$(debdir)/source/format: | $(firstword $(debdir))/
+$(debdir)/source/format: | $(firstword $(debdir))/./
 	$(call mksubdir,$(debdir),$@)
 	$(call touch,$@)
 	$(quiet) echo "3.0 (quilt)" >> $@
 
-$(debdir)/$(deb_project).dirs: | $(firstword $(debdir))/
+$(debdir)/$(deb_project).dirs: | $(firstword $(debdir))/./
 	$(call touch,$@)
 	$(call select,$@)
 	$(if $(strip $(bin)),     $(call cat,'$(i_bindir)                '))
@@ -2871,7 +2871,7 @@ endif
 # @return Target to create a root directory (used in '| $(root)')      #
 #======================================================================#
 define root-factory
-$1/:
+$1/./:
 	$$(call mkdir,$$@)
 endef
 $(foreach d,$(alldir),$(eval $(call root-factory,$d)))
@@ -2911,7 +2911,7 @@ $(foreach t,$(targets),\
 #======================================================================#
 define program-dependency
 $$(depdir)/$$(firstword $$(bindir))/$1$$(sysext): d=$1
-$$(depdir)/$$(firstword $$(bindir))/$1$$(sysext): | $$(depdir)/
+$$(depdir)/$$(firstword $$(bindir))/$1$$(sysext): | $$(depdir)/./
 	$$(if $$(strip $$($1)),,$$(call phony-error,$$(MSG_PRG_UNDEFINED)))
 	$$(call phony-status,$$(MSG_PRG_SEARCH))
 	
@@ -2965,7 +2965,7 @@ $(foreach d,library,\
 #======================================================================#
 define library-dependency
 $$(depdir)/$$(firstword $$(libdir))/$1$$(sysext): d=$1
-$$(depdir)/$$(firstword $$(libdir))/$1$$(sysext): | $$(depdir)/
+$$(depdir)/$$(firstword $$(libdir))/$1$$(sysext): | $$(depdir)/./
 	$$(call phony-status,$$(MSG_LIB_SEARCH))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -3026,7 +3026,7 @@ $(foreach d,git web,\
 # @return Target to download git dependencies for building             #
 #======================================================================#
 define extern-dependency
-$$(extdir)/$1: | $$(extdir)/
+$$(extdir)/$1: | $$(extdir)/./
 	$$(call $2,$$(call car,$3),$$@)
 
 $$(depdir)/$$(firstword $$(extdir))/$1$$(sysext): d=$$(extdir)/$1
@@ -3072,7 +3072,7 @@ define phony-target-dependency
 $$(depdir)/$$(strip $1)$$(sysext): n=$1
 $$(depdir)/$$(strip $1)$$(sysext): \
     $$(foreach k,$3,$$(if $$(strip $$($2.$$k)),$4/$$k$$(sysext))) \
-    | $$(depdir)/
+    | $$(depdir)/./
 	
 	$$(quiet) touch $$@
 	$$(call phony-ok,$$(MSG_PRG_ALL))
@@ -3189,7 +3189,7 @@ $(foreach s,$(cesql),$(eval\
 #         extension, looking in the right root directory               #
 #======================================================================#
 define compile-asm
-$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/
+$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(call status,$$(MSG_ASM_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -3213,7 +3213,7 @@ $(foreach r,$(srcdir),\
 #         looking in the right root directory                          #
 #======================================================================#
 define compile-c
-$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/
+$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(call status,$$(MSG_C_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -3238,7 +3238,7 @@ $(foreach p,test bench,$(foreach e,$(cext),\
 #         looking in the right root directory                          #
 #======================================================================#
 define compile-cpp
-$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/
+$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(call status,$$(MSG_CXX_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -3263,7 +3263,7 @@ $(foreach p,test bench,$(foreach e,$(cxxext),\
 #         extension, looking in the right root directory               #
 #======================================================================#
 define compile-fortran
-$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/
+$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(call status,$$(MSG_F_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -3287,7 +3287,7 @@ $(foreach p,test bench,$(foreach e,$(fext),\
 # @return Target to compile the C library file                         #
 #======================================================================#
 define compile-sharedlib-c
-$$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/
+$$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(call status,$$(MSG_C_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -3309,7 +3309,7 @@ $(foreach s,$(foreach E,$(cext),$(filter %$E,$(shrall))),\
 # @return Target to compile the C++ library file                       #
 #======================================================================#
 define compile-sharedlib-cpp
-$$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/
+$$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(call status,$$(MSG_CXX_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -3331,7 +3331,7 @@ $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
 # @return Target to compile the Fortran library file                   #
 #======================================================================#
 define compile-sharedlib-fortran
-$$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/
+$$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(call status,$$(MSG_F_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
@@ -3354,7 +3354,7 @@ $(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
 # @return Target to create a shared library from objects               #
 #======================================================================#
 define link-sharedlib
-$1/$2lib$3$$(shrext): $4 | $1/
+$1/$2lib$3$$(shrext): $4 | $1/./
 	$$(call status,$$(MSG_CXX_SHRDLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
 	$$(quiet) $$(CXX) $$(ldflags) $$(ldshr) $$(ldlibs) \
@@ -3373,7 +3373,7 @@ $(foreach s,$(shrpatsrc),\
 # @return Target to create a static library from objects               #
 #======================================================================#
 define link-statlib
-$1/$2lib$3$$(arext): $4 | $1/
+$1/$2lib$3$$(arext): $4 | $1/./
 	$$(call status,$$(MSG_STATLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
 	$$(quiet) $$(AR) $$(arflags) $$@ $$^ $$(NO_OUTPUT) $$(NO_ERROR)
@@ -3393,7 +3393,7 @@ $(foreach a,$(arpatsrc),\
 #======================================================================#
 ifneq (,$(call rfilter,check test %-coverage,$(MAKECMDGOALS)))
 define test-factory
-$1/$2: $$($2_obj) | $1/
+$1/$2: $$($2_obj) | $1/./
 	$$(call status,$$(MSG_TEST_COMPILE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(CXX) $$^ -o $$@ \
@@ -3422,7 +3422,7 @@ endif
 #======================================================================#
 ifneq (,$(call rfilter,eval benchmark %-coverage,$(MAKECMDGOALS)))
 define bench-factory
-$1/$2: $$($2_obj) | $1/
+$1/$2: $$($2_obj) | $1/./
 	$$(call status,$$(MSG_BENCH_COMPILE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(CXX) $$^ -o $$@ \
@@ -3452,7 +3452,7 @@ endif
 #         files (to create objdir and automatic source)                #
 #======================================================================#
 define binary-factory
-$1/$2: $$($2_lib) $$($2_obj) | $1/
+$1/$2: $$($2_lib) $$($2_obj) | $1/./
 	$$(call status,$$(MSG_$$(strip $3)_LINKAGE))
 	
 	@# Check if executable has files
@@ -3464,7 +3464,7 @@ $1/$2: $$($2_lib) $$($2_obj) | $1/
 	             $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
 	$$(call ok,$$(MSG_$$(strip $3)_LINKAGE),$$@)
 
-$$($2_obj): $$($2_all) | $$(objdir)/
+$$($2_obj): $$($2_all) | $$(objdir)/./
 endef
 $(foreach b,$(binall),$(eval \
     $(call binary-factory,$(bindir),$(notdir $b),\
@@ -3536,7 +3536,7 @@ endif # ifndef DEPLOY
 #======================================================================#
 ifdef ENABLE_NLS
 define intl-template-factory
-$1/$2$$(firstword $$(potext)): $$($2_all) | $1/
+$1/$2$$(firstword $$(potext)): $$($2_all) | $1/./
 	$$(call status,$$(MSG_INTL_TEMPLATE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(XGETTEXT)\
@@ -3655,7 +3655,7 @@ $(foreach d,$(i_libdir) $(i_bindir) $(i_sbindir) $(i_libexecdir),\
 # @return Target to install some data file                             #
 #======================================================================#
 define install-data
-$1/$$(call not-root,$2): | $1/
+$1/$$(call not-root,$2): | $1/./
 	$$(call phony-status,$$(MSG_INSTALL_DAT))
 	$$(call mksubdir,$1,$2)
 	$$(quiet) $$(INSTALL_DATA) $2 $$@
@@ -3671,7 +3671,7 @@ $(foreach t,lib,$(foreach b,$($t),\
 # @return Target to install some program                               #
 #======================================================================#
 define install-program
-$1/$$(call not-root,$2): | $1/
+$1/$$(call not-root,$2): | $1/./
 	$$(call phony-status,$$(MSG_INSTALL_BIN))
 	$$(call mksubdir,$1,$2)
 	$$(quiet) $$(INSTALL_PROGRAM) $2 $$@
@@ -4724,7 +4724,7 @@ $(if $(strip \
      $(error No filetype defined. Type 'make projecthelp' for info))
 
 .PHONY: new
-new: | $(call root,$(incbase))/ $(call root,$(srcbase))/
+new: | $(call root,$(incbase))/./ $(call root,$(srcbase))/./
 ifdef NAMESPACE
 	$(call mkdir,$(incbase)/$(subst ::,/,$(NAMESPACE)))
 	$(call mkdir,$(srcbase)/$(subst ::,/,$(NAMESPACE)))

@@ -87,7 +87,7 @@ already avaiable for you! Just create a symbolic link:
 
 And include them as above.
 
-#### Didn't find you favorite library? ####
+#### Didn't find your favorite library? ####
 
 Then just create you own `Makeball`! `conf/makeball.mk` provides the
 most complete set of variables that could be used to add funcionalities

@@ -49,7 +49,6 @@ SYNOPSIS        := default short synopsis
 DESCRIPTION     := default long description
 
 # Debian package
-DEB_VERSION     := 1
 DEB_PROJECT     := default
 DEB_PRIORITY    := optional
 
@@ -405,7 +404,7 @@ NLSREQINC       := libintl.h
 
 # Packages (Debian)
 DEBUILD         := debuild -us -uc
-DCH              = dch --create -v $(version)-$(deb_version) \
+DCH              = dch --create -v $(deb_version) \
                        --package $(deb_project)
 
 # Remote
@@ -1222,13 +1221,12 @@ project       := $(strip $(PROJECT))
 first_version := $(strip $(VERSION))
 version       := $(strip $(or $(version),$(first_version)))
 deb_version   := $(subst $(space),,\
-                     $(call version-major,$(version))\
-                     .$(call version-minor,$(version)\
-                     -$(call version-patch,$(version))))
+                      $(call version-major,$(version))\
+                     .$(call version-minor,$(version))\
+                     -$(call version-patch,$(version)))
 
 $(call version-check,$(version))
 export version
-export deb_version
 
 # Package info
 # ==================
@@ -1241,7 +1239,6 @@ description     := $(strip $(DESCRIPTION))
 
 # Debian package
 # ==================
-deb_version     := $(strip $(DEB_VERSION))
 deb_project     := $(strip $(DEB_PROJECT))
 deb_priority    := $(strip $(DEB_PRIORITY))
 
@@ -2690,16 +2687,17 @@ dpkg: dpkgdep package-tar.gz $(deball)
 	@# Step 1: Rename the upstream tarball
 	$(call phony-status,$(MSG_DEB_STEP1))
 	$(quiet) $(MV) $(distdir)/$(project)-$(version)_src.tar.gz \
-	         $(distdir)/$(deb_project)_$(version).orig.tar.gz $(ERROR)
+	               $(distdir)/$(deb_project)_$(deb_version).orig.tar.gz \
+	               $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP1))
 	
 	@# Step 2: Unpack the upstream tarball
 	$(call phony-status,$(MSG_DEB_STEP2))
 	$(quiet) cd $(distdir) \
-	         && tar xf $(deb_project)_$(version).orig.tar.gz $(ERROR)
+	         && tar xf $(deb_project)_$(deb_version).orig.tar.gz $(ERROR)
 	$(call srmdir,$(distdir)/$(deb_project)-$(version))
 	$(quiet) $(MV) $(distdir)/$(project)-$(version)_src \
-	         $(distdir)/$(deb_project)-$(version) $(ERROR)
+	               $(distdir)/$(deb_project)-$(version) $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP2))
 	
 	@# Step 3: Add the Debian packaging files

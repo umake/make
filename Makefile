@@ -71,6 +71,9 @@ DOXYFILE        := Doxyfile
 GIT_DEPENDENCY  :=
 WEB_DEPENDENCY  :=
 
+# Project namespace (C/C++)
+STD_NAMESPACE   :=
+
 ########################################################################
 ##                          COMPILATION FLAGS                         ##
 ########################################################################
@@ -777,6 +780,14 @@ define lexical-le
 $(or $(call lexical-eq,$1,$2),$(call lexical-lt,$1,$2))
 endef
 
+# Lexical classification functions
+# ==================================
+# 1) is-lower:        Returns not empty if $1 matches [a-z]*
+# 2) is-upper:        Returns not empty if $1 matches [A-Z]*
+# 3) is-alpha:        Returns not emtpy if $1 matches [A-Za-z]*
+# 4) is-alphanumeric: Returns not empty if $1 matches [A-Za-z0-9]*
+# 5) is-identifier:   Returns not empty if $1 matches [A-Za-z0-9_]*
+
 define rm-lower
 $(strip $(subst a,,$(subst b,,$(subst c,,$(subst d,,$(subst e,,\
         $(subst f,,$(subst g,,$(subst h,,$(subst i,,$(subst j,,\
@@ -795,6 +806,14 @@ $(strip $(subst A,,$(subst B,,$(subst C,,$(subst D,,$(subst E,,\
         $(subst Z,,$(strip $1))))))))))))))))))))))))))))
 endef
 
+define is-lower
+$(if $(call is-empty,$(call rm-upper,$1)),T)
+endef
+
+define is-upper
+$(if $(call is-empty,$(call rm-lower,$1)),T)
+endef
+
 define is-alpha
 $(if $(call is-empty,$(call rm-upper,$(call rm-lower,$1))),T)
 endef
@@ -802,6 +821,10 @@ endef
 define is-alphanumeric
 $(if $(call is-empty,$(strip \
     $(call rm-number,$(call rm-upper,$(call rm-lower,$1))))),T)
+endef
+
+define is-identifier
+$(call is-alphanumeric,$(subst _,,$1))
 endef
 
 # Version comparison functions
@@ -1784,24 +1807,29 @@ srcdep  := $(patsubst %,$(depdir)/%$(depext),$(basename $(src)))
 
 # Header files
 # ==============
-# 1) incall  : Get all files able to be included
+# 1) userinc : Get all directories able to be included
+# 2) userinc : Remove empty directories in the leaves of userinc tree
 # 2) autoinc : Join automatically generated include files
-# 3) incsub  : Get all subdirectories of the included dirs
+# 3) incall  : Get all subdirectories of the included dirs
 # 4) libs    : Add subidirectories as paths to be searched for headers
 #------------------------------------------------------------------[ 1 ]
-incall  := $(call filter-ignored,\
-               $(foreach i,$(incdir),$(foreach e,$(incext),\
-                   $(call rwildcard,$i,*$e))))
+userinc := $(call filter-ignored,\
+               $(foreach i,$(incdir),$(call rsubdir,$i)))
 #------------------------------------------------------------------[ 2 ]
-autoinc := $(yaccinc) $(lexinc) $(esqlinc)
+userinc := $(foreach i,$(sort $(userinc)),\
+               $(if $(filter $i/%,$(userinc)),$i,\
+                   $(if $(call not-empty,$(foreach e,$(incext),\
+                            $(call rwildcard,$i,*$e))),$i)))
 #------------------------------------------------------------------[ 3 ]
-incsub  := $(sort $(call rm-trailing-bar,$(dir $(incall))))
-incsub  += $(autoinc)
+autoinc := $(yaccinc) $(lexinc) $(esqlinc)
 #------------------------------------------------------------------[ 4 ]
-aslibs  := $(ASLIBS)  $(patsubst %,-I%,$(incsub))
-clibs   := $(CLIBS)   $(patsubst %,-I%,$(incsub))
-flibs   := $(FLIBS)   $(patsubst %,-I%,$(incsub))
-cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incsub))
+incall  := $(sort $(call rm-trailing-bar,$(userinc)))
+incall  += $(autoinc)
+#------------------------------------------------------------------[ 5 ]
+aslibs  := $(ASLIBS)  $(patsubst %,-I%,$(incall))
+clibs   := $(CLIBS)   $(patsubst %,-I%,$(incall))
+flibs   := $(FLIBS)   $(patsubst %,-I%,$(incall))
+cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incall))
 
 # Type-specific library flags
 # =============================
@@ -2572,7 +2600,7 @@ statistics:
 	@echo "Fortran      : $(call statistic-count,$(fall))              "
 	@echo "Assembly     : $(call statistic-count,$(asmall))            "
 	@echo "Libraries    : $(call statistic-count,$(liball))            "
-	@echo "Headers      : $(call statistic-count,$(incall))            "
+	@echo "Headers      : $(call statistic-count,$(userinc))           "
 	@echo "Lexers       : $(call statistic-count,$(alllexer))          "
 	@echo "Parsers      : $(call statistic-count,$(allparser))         "
 	@echo "Embedded SQL : $(call statistic-count,$(cesql))             "
@@ -2580,7 +2608,7 @@ statistics:
 	@echo "-----------------------------------                         "
 	@echo "Total        :"\
           "$(call statistic-count,$(userall) $(liball) $(mainall)      \
-           $(incall) $(alllexer) $(allparser) $(cesql) $(testall))     "
+           $(userinc) $(alllexer) $(allparser) $(cesql) $(testall))    "
 	@echo "                                                            "
 
 ########################################################################
@@ -3497,18 +3525,19 @@ $1: $2
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
 	              $$(COV) -q '$$(extdir)/*' '/usr/*' \
-	                         '$$(testdir)/*' '$$(benchdir)/*' 
+	                         '$$(testdir)/*' '$$(benchdir)/*' \
 	                      -r $$@ -o $$@ $$(ERROR); \
 	          fi
 	
 	$$(call ok,$$(MSG_COV_COMPILE))
 
 .PHONY: show_$$(subst /,_,$1)
-show_$$(subst /,_,$1): $1
+show_$$(subst /,_,$1): f=$1
+show_$$(subst /,_,$1): $3 $1
 	$$(call phony-status,$$(MSG_COV))
-	$$(quiet) if [ -s $$< ]; \
+	$$(quiet) if [ -s $1 ]; \
 	          then \
-	              $$(COV) -l $$< $$(ERROR); \
+	              $$(COV) -l $1 $$(ERROR); \
 	              $$(call model-ok,$$(MSG_COV)); \
 	          else \
 	              $$(call model-ok,$$(MSG_COV_NONE)); \
@@ -3519,10 +3548,10 @@ $(foreach b,$(binall),\
         $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
 $(foreach b,$(testbin),\
     $(eval $(call coverage-factory,$(strip \
-        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
+        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b,check)))
 $(foreach b,$(benchbin),\
     $(eval $(call coverage-factory,$(strip \
-        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
+        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b,eval)))
 endif # ifndef NO_COVERAGE
 endif # ifndef DEPLOY
 
@@ -4039,8 +4068,8 @@ MSG_BENCH_COMPILE = "${DEF}Generating benchmark executable"\
                     "${GREEN}$(notdir $(strip $@))${RES}"
 MSG_BENCH_SUCCESS = "${YELLOW}All benchmarks runned successfully${RES}"
 
-MSG_COV           = "${BLUE}Showing coverage analysis ${DEF}$<${RES}"
-MSG_COV_NONE      = "${PURPLE}No coverage analysis reported in $<${RES}"
+MSG_COV           = "${BLUE}Showing coverage analysis ${DEF}$f${RES}"
+MSG_COV_NONE      = "${PURPLE}No coverage analysis reported in $f${RES}"
 MSG_COV_COMPILE   = "${DEF}Generating coverage analysis ${WHITE}$@${RES}"
 
 MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
@@ -4599,13 +4628,11 @@ endef
 # Executes iff one of the make goals is 'new' or 'delete'
 ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,new delete update)))
 
-# Namespace/Module variable
-# ===========================
+# File path
+# ===========
 # 1) Remove trailing bars if it is a directory-only name
 # 2) Substitute C++ namespace style (::) by path style (/)
 # 3) If the name includes a root src/inc directory, remove-it.
-# 4) Manipulates IN to be used in a #ifndef C/C++ preproc directive
-# 5) Define identation accordingly to namespace depth
 ifdef IN
 #------------------------------------------------------------------[ 1 ]
 override IN := $(strip $(call rm-trailing-bar,$(IN)))
@@ -4616,11 +4643,32 @@ override IN := $(strip $(or $(strip $(foreach d,$(srcdir) $(incdir),\
                    $(if $(strip $(patsubst $d%,%,$(call root,$(IN)))),,\
                        $(call not-root,$(IN))\
                ))),$(IN)))
-#------------------------------------------------------------------[ 4 ]
-indef       := $(strip $(call uc,$(subst /,_,$(strip $(IN)))))_
-#------------------------------------------------------------------[ 5 ]
-idnt        := $(if $(strip $(IN)),    )
 endif
+
+# File properties
+# =================
+# 1) Get standard namespace
+# 2) Check if standard namespace number of words and style
+# 4) Create default #ifndef to be used in C/C++ preproc directive
+# 5) Create default namespace structure to be used with C++
+# 6) Create namespace name to 'using namespace' in C++ source file
+# 7) Define identation accordingly to namespace depth
+#------------------------------------------------------------------[ 4 ]
+std_namespace := $(strip $(STD_NAMESPACE))
+#------------------------------------------------------------------[ 4 ]
+$(if $(call gt,$(words $(std_namespace)),1),\
+    $(error "Standard namespace MUST have only one word"))
+$(if $(call not,$(call is-identifier,$(std_namespace))),\
+    $(error "Standard namespace MUST have match [A-Za-z0-9_]*"))
+#------------------------------------------------------------------[ 4 ]
+indef         := $(strip $(addsuffix _,$(call uc,$(std_namespace))))
+indef         := $(indef)$(addsuffix _,$(call uc,$(subst /,_,$(IN))))
+#------------------------------------------------------------------[ 5 ]
+innms         := $(strip $(call lc,$(subst _,$(space),$(indef))))
+#------------------------------------------------------------------[ 6 ]
+inusing       := $(strip $(subst $(space),::,$(innms)))
+#------------------------------------------------------------------[ 7 ]
+idnt          := $(if $(strip $(IN)),    )
 
 # Extension variables
 # =====================
@@ -4647,25 +4695,21 @@ endef
 
 # Function: start-namespace
 # Create new namespaces from the IN variable
-# If there is 'n' namespace, put the first 'n-1' with open curly-braces
-# in the same line, and the last one in the last line
+# If there are 'n' namespaces, put the first 'n-1' with open
+# curly-braces in the same line, and the last one in the last line
 define start-namespace
-$(if $(strip $(IN)),\
-    $(call cat,$(subst \\n ,\\n,\
-        $(patsubst %,namespace % {\\n,\
-            $(subst $(lastword $(subst /, ,$(IN))),,\
-                $(subst /, ,$(IN))\
-            )\
-        )$(patsubst %,namespace % \\n{,\
-            $(lastword $(subst /, ,$(IN))))\
-)))
+$(if $(innms),\
+    $(call cat,"$(strip $(subst \\n$(space),\\n,\
+        $(patsubst %,namespace % {\\n,$(call rcdr,$(innms)))\
+        $(patsubst %,namespace % \\n{,$(call rcar,$(innms)))\
+))"))
 endef
 
 # Function: end-namespace
 # End the namespaces using the IN variable for namespace depth
 define end-namespace
-$(if $(strip $(IN)),\
-    $(call cat,$(subst } ,},$(foreach n,$(subst /, ,$(IN)),}))))
+$(if $(innms),\
+    $(call cat,"$(subst } ,},$(foreach n,$(innms),}))"))
 endef
 
 # Function: include-files
@@ -4682,9 +4726,11 @@ endef
 override incbase := $(strip $(firstword $(incdir)))$(if $(IN),/$(IN))
 override srcbase := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))
 
-# Check if namespace exists
-$(if $(or $(call rsubdir,$(incbase)),$(call rsubdir,$(srcbase))),,\
+# Check if directory exists
+ifdef $(call not-empty,$(IN))
+$(if $(findstring $(IN),$(call rsubdir,$(incbase) $(srcbase))),,\
     $(error Namespace "$(IN)" does not exist))
+endif
 
 # Artifacts
 # ===========
@@ -4824,7 +4870,7 @@ ifdef CLASS
 	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'// Libraries'                                          )
 	$(call cat,'#include "$(CLASS)$(INC_EXT)"'                         )
-	$(call cat,$(if $(IN),'using namespace $(subst /,::,$(IN));')      )
+	$(call cat,$(if $(inusing),'using namespace $(inusing);')          )
 	$(call cat,''                                                      )
 	
 	$(call select,stdout)
@@ -4889,7 +4935,7 @@ ifdef CXX_FILE
 	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'// Libraries'                                          )
 	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"'                      )
-	$(call cat,$(if $(IN),'using namespace $(subst /,::,$(IN));')      )
+	$(call cat,$(if $(inusing),'using namespace $(inusing);')          )
 	$(call cat,''                                                      )
 	
 	$(call select,stdout)
@@ -5158,7 +5204,7 @@ endif
 endif
 endif # Check if D was defined
 
-endif # Check if one goal is 'new' or 'delete'
+endif # Check if one goal is 'new', 'delete' or 'update'
 
 ########################################################################
 ##                         CONFIGURATION FILES                        ##
@@ -5175,6 +5221,7 @@ config:
 	@echo "# ==============="
 	@echo "# PROJECT         := # Project name (def: Default)"
 	@echo "# VERSION         := # Version (def: 1.0.0)"
+	@echo "# STD_NAMESPACE   := # Project namespace for C/C++"
 	@echo "# GIT_REMOTE_PATH := # Remote path for git repository"
 	@echo "# MAINTEINER_NAME := # Your name"
 	@echo "# MAINTEINER_MAIL := # your_name@mail.com"
@@ -5185,9 +5232,9 @@ config:
 	@echo "# Program settings"
 	@echo "# =================="
 	@echo "# BIN             := # Binaries' names. If a subdir of any"
-	@echo "#                    # src dir has the same name of this bin"
-	@echo "#                    # it and all its subdir will be compiled"
-	@echo "#                    # only for this specific binary"
+	@echo "                     # src dir has the same name of this bin"
+	@echo "                     # it and all its subdir will be compiled"
+	@echo "                     # only for this specific binary"
 	@echo "# ARLIB           := # Static/Shared libraries' names. If"
 	@echo "# SHRLIB          := # one is a dir, all srcs within will"
 	@echo "                     # make the lib"
@@ -5512,9 +5559,9 @@ else
 	
 	$(call echo,"${WHITE}\nHEADERS                 ${RES}")
 	$(call echo,"----------------------------------------")
-	$(call prompt,"incall:       ",$(incall)              )
-	$(call prompt,"incsub:       ",$(incsub)              )
+	$(call prompt,"userinc:      ",$(userinc)             )
 	$(call prompt,"autoinc:      ",$(autoinc)             )
+	$(call prompt,"incall:       ",$(incall)              )
 	
 	$(call echo,"${WHITE}\nSTATIC LIBRARY          ${RES}")
 	$(call echo,"----------------------------------------")

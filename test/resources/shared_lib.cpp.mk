@@ -16,7 +16,7 @@
 
 # Program settings
 # ==================
-BIN             := calculator
+BIN             := simple_calc
 # ARLIB           := 
 SHRLIB          := mathlib.cpp
                      

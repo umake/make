@@ -112,40 +112,40 @@ CXXCOVFLAGS := --coverage
 ########################################################################
 
 # Assembly/C/C++/Fortran options
-LDFLAGS    :=
-LDC        :=
-LDF        := -lgfortran
-LDCXX      :=
+LDFLAGS     :=
+LDC         :=
+LDF         := -lgfortran
+LDCXX       :=
 
 # Library options
-LDSHR      := -shared
+LDSHR       := -shared
 
 # Program options
-LDLEX      := -lfl
-LDYACC     :=
-LDESQL     := -lecpg
+LDLEX       := -lfl
+LDYACC      :=
+LDESQL      := -lecpg
 
 # Coverage options
-LDCOV      := --coverage
+LDCOV       := --coverage
 
 ########################################################################
 ##                               PATHS                                ##
 ########################################################################
 
 # Assembly/C/C++/Fortran paths for include dirs
-ASLIBS     :=
-CLIBS      :=
-CXXLIBS    :=
-FLIBS      :=
+ASLIBS      :=
+CLIBS       :=
+CXXLIBS     :=
+FLIBS       :=
 
 # Program paths for include dirs
-LEXLIBS    :=
-YACCLIBS   :=
-ESQLLIBS   := $(if $(strip $(shell which pg_config)),\
-                  $(shell pg_config --includedir))
+LEXLIBS     :=
+YACCLIBS    :=
+ESQLLIBS    := $(if $(strip $(shell which pg_config)),\
+                   $(shell pg_config --includedir))
 
 # Linker paths for library dirs
-LDLIBS     :=
+LDLIBS      :=
 
 ########################################################################
 ##                            DIRECTORIES                             ##
@@ -3403,7 +3403,7 @@ $(foreach a,$(arpatsrc),\
 #======================================================================#
 # Function: test-factory                                               #
 # @param  $1 Unit test binary's directory name                         #
-# @param  $1 Unit test binary's name without root directory            #
+# @param  $2 Unit test binary's name without root directory            #
 # @param  $3 Alias to execute tests, prefixing run_ and                #
 #            substituting / for _ in $(testbin)                        #
 # @return Target to generate binary file for the unit test             #
@@ -3432,7 +3432,7 @@ endif
 #======================================================================#
 # Function: benchmark-factory                                          #
 # @param  $1 Benchmark binary's directory name                         #
-# @param  $1 Benchmark binary's name without root directory            #
+# @param  $2 Benchmark binary's name without root directory            #
 # @param  $3 Alias to execute benchmarks, prefixing run_ and           #
 #            substituting / for _ in $(benchdep)                       #
 # @return Target to generate binary file for the benchmark             #
@@ -3452,7 +3452,6 @@ $3: $1/$2
 	@./$$<
 	$$(call ok,$$(MSG_BENCH))
 endef
-#|| $$(call model-bench-error,$$(MSG_BENCH_FAILURE))
 $(foreach t,$(benchbin),$(eval\
     $(call bench-factory,$(call root,$t),$(call not-root,$t),\
     run_$(subst /,_,$t)\
@@ -3462,7 +3461,7 @@ endif
 #======================================================================#
 # Function: binary-factory                                             #
 # @param  $1 Binary root directory                                     #
-# @param  $1 Binary name witout root dir                               #
+# @param  $2 Binary name witout root dir                               #
 # @param  $3 Comments to be used (C's, Fortran's or C++'s)             #
 # @param  $4 Compiler to be used (C's, Fortran's or C++'s)             #
 # @return Target to generate binaries and dependencies of its object   #

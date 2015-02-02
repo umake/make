@@ -2082,10 +2082,9 @@ endif
 #    4.8) binary-name_has_cxx, to test if the binary has C++ files;
 #------------------------------------------------------------------[ 1 ]
 define binary-name
-$1 := $$(call rm-trailing-bar,$2)
-$1 := $$(foreach b,$$($1),$$(or $$(strip $$(wildcard $$b/*)),\
-          $$(strip $$(foreach d,$$(srcdir),$$(wildcard $$d/$$b/*))),$$b))
-$1 := $$(addprefix $$(strip $3)/,$$(basename $$(call not-root,$$($1))))
+$1 := $$(call rm-trailing-bar,$$(basename $2))
+$1 := $$(call expand-path,$$($1),$$(basename $$(src)),$$(srcdir))
+$1 := $$(addprefix $$(strip $3)/,$$($1))
 $1 := $$(if $$(strip $$(binext)),$$(addsuffix $$(binext),$$($1)),$$($1))
 $1 := $$(call filter-ignored,$$($1))
 endef
@@ -2098,7 +2097,7 @@ $(if $(strip $(bin) $(sbin) $(libexec)),\
     $(if $(strip $(mainall)),$(eval binall := $(bindir)/a.out))\
 )
 #------------------------------------------------------------------[ 2 ]
-$(foreach sep,/ .,$(foreach b,$(notdir $(binall)),$(or\
+$(foreach sep,/ .,$(foreach b,$(call not-root,$(binall)),$(or\
     $(eval $b_src  += $(filter $b$(sep)%,\
                           $(usersrc) $(autosrc) $(mainsrc))),\
     $(eval $b_all  += $(sort $(call rfilter,$(addprefix %,$($b_src)),\
@@ -2113,7 +2112,7 @@ $(foreach sep,/ .,$(foreach b,$(notdir $(binall)),$(or\
 )))
 #------------------------------------------------------------------[ 3 ]
 define common-factory
-$(call rfilter-out,$(foreach b,$(notdir $(binall)),$($b_$1)),$2)
+$(call rfilter-out,$(foreach b,$(call not-root,$(binall)),$($b_$1)),$2)
 endef
 comsrc  := $(call common-factory,src,$(usersrc) $(autosrc) $(mainsrc))
 comall  := $(call common-factory,src,$(userall) $(autoall) $(mainall))
@@ -2121,7 +2120,7 @@ comobj  := $(call common-factory,obj,$(userobj) $(autoobj) $(mainobj))
 comlib  := $(call common-factory,lib,$(lib))
 comlink := $(call common-factory,link,$(libname))
 #------------------------------------------------------------------[ 4 ]
-$(foreach b,$(notdir $(binall)),$(or\
+$(foreach b,$(call not-root,$(binall)),$(or\
     $(eval $b_src     := $(comsrc)  $($b_src)  ),\
     $(eval $b_all     := $(comall)  $($b_all)  ),\
     $(eval $b_obj     := $(comobj)  $($b_obj)  ),\
@@ -3480,22 +3479,23 @@ $1/$2: $$($2_lib) $$($2_obj) | $1/./
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $4 $$($2_obj) -o $$@ \
 	             $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
+	
 	$$(call ok,$$(MSG_$$(strip $3)_LINKAGE),$$@)
 
 $$($2_obj): $$($2_all) | $$(objdir)/./
 endef
 $(foreach b,$(binall),$(eval \
-    $(call binary-factory,$(bindir),$(notdir $b),\
+    $(call binary-factory,$(call root,$b),$(call not-root,$b),\
     $(strip \
-        $(if $($(notdir $b)_has_c),C,\
-        $(if $($(notdir $b)_has_f),F,\
-        $(if $($(notdir $b)_has_cxx),CXX,CXX\
+        $(if $($(call not-root,$b)_has_c),C,\
+        $(if $($(call not-root,$b)_has_f),F,\
+        $(if $($(call not-root,$b)_has_cxx),CXX,CXX\
     )))),\
     $(strip \
-        $(if $($(notdir $b)_has_c),$(CC),\
-        $(if $($(notdir $b)_has_f),$(FC),\
-        $(if $($(notdir $b)_has_cxx),$(CXX),$(CXX)\
-    )))),\
+        $(if $($(call not-root,$b)_has_c),$(CC),\
+        $(if $($(call not-root,$b)_has_f),$(FC),\
+        $(if $($(call not-root,$b)_has_cxx),$(CXX),$(CXX)\
+    ))))\
 )))
 
 #======================================================================#

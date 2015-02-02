@@ -2115,7 +2115,7 @@ define common-factory
 $(call rfilter-out,$(foreach b,$(call not-root,$(binall)),$($b_$1)),$2)
 endef
 comsrc  := $(call common-factory,src,$(usersrc) $(autosrc) $(mainsrc))
-comall  := $(call common-factory,src,$(userall) $(autoall) $(mainall))
+comall  := $(call common-factory,all,$(userall) $(autoall) $(mainall))
 comobj  := $(call common-factory,obj,$(userobj) $(autoobj) $(mainobj))
 comlib  := $(call common-factory,lib,$(lib))
 comlink := $(call common-factory,link,$(libname))

@@ -1043,6 +1043,7 @@ endef
 # 1) root: Gets the root directory (first in the path) of a path or file
 # 2) not-root: Given a path or file, take out the root directory of it
 # 3) rm-trailing-bar: Removes the last / of a directory-only name
+# 4) expand-path: Get path from a partial name
 
 define root
 $(strip $(foreach s,$1,$(or $(strip \
@@ -1061,6 +1062,39 @@ endef
 define rm-trailing-bar
 $(strip $(foreach s,$1,\
     $(patsubst %/,%,$(patsubst %/.,%/,$(subst ./,,$s)))))
+endef
+
+# .---.-----.------.-----.--------.---------------------------------.
+# | # | dir | base | ext | STATUS |             ACTION              |
+# |===|=====|======|=====|========|=================================|
+# | 0 |     |      |     | Ok     | None                            |
+# | 1 |  X  |      |     | Warn   | Correct to fall in case #4      |
+# | 2 |     |  X   |     | Ok     | Match all bases with this dir   |
+# | 3 |     |      |  X  | Warn   | Treaded as hidden dir in #4     |
+# | 4 |  X  |  X   |     | Ok     | Find base in this dir           |
+# | 5 |  X  |      |  X  | Warn   | Treated as hidden dir in #4     |
+# | 6 |     |  X   |  X  | Ok     | Find all bases with this ext    |
+# | 7 |  X  |  X   |  X  | Ok     | Find the specific file          |
+# '---'-----'------'-----'--------'---------------------------------'
+# Examples: 1: test1/  2: test2 .c      4: test4/test4       5: test5/.c
+#           6: test6.c 7: test7/test7.c 8: src/test8/test8.c
+#
+# Expand-path steps:
+# 1) Case  #1 (correct to fall in case #4)
+# 2) Cases #6 (path witout root) and #7 (all path);
+# 3) Case  #2 (path without file);
+# 4) Case  #4 (path with file without extension);
+define expand-path
+$(strip $(sort $(foreach p,$(call rm-trailing-bar,$1),$(or \
+    $(strip $(foreach s,$2,\
+        $(if $(findstring $p,$s),$(filter %$p,$s))\
+    )),\
+    $(strip $(foreach r,$3,\
+        $(firstword $(sort $(foreach s,$(call rsubdir,$r),\
+            $(if $(findstring $p,$s),$s)\
+    ))))),\
+    $(strip $(foreach s,$2,$(if $(findstring $p,$s),$s)))\
+))))
 endef
 
 # Suffix manipulation functions
@@ -1614,20 +1648,6 @@ phonydep := $(addsuffix $(sysext),$(phonydep))
 
 # Library files
 # ===============
-# .---.-----.------.-----.--------.---------------------------------.
-# | # | dir | base | ext | STATUS |             ACTION              |
-# |===|=====|======|=====|========|=================================|
-# | 0 |     |      |     | Ok     | None                            |
-# | 1 |  X  |      |     | Warn   | Correct to fall in case #4      |
-# | 2 |     |  X   |     | Ok     | Matches all bases with this dir |
-# | 3 |     |      |  X  | Error  | Extension only not allowed      |
-# | 4 |  X  |  X   |     | Ok     | Find base in this dir           |
-# | 5 |  X  |      |  X  | Error  | Extension only not allowed      |
-# | 6 |     |  X   |  X  | Ok     | Find all bases with this ext    |
-# | 7 |  X  |  X   |  X  | Ok     | Find the specific file          |
-# '---'-----'------'-----'--------'---------------------------------'
-# Examples: 1: test1/  2: test2 .c      4: test4/test4       5: test5/.c
-#           6: test6.c 7: test7/test7.c 8: src/test8/test8.c
 # 1) Remove the last / if there is a path only
 # 2) Throw error If there is only a suffix.
 # 3) Store libraries as being shared and static libs.
@@ -1647,7 +1667,7 @@ $(foreach s,$(shr_in),\
     $(if $(call eq,$(suffix $s),$s),\
         $(error "Invalid argument $s in library variable SHRLIB")))
 #------------------------------------------------------------------[ 3 ]
-lib_in    := $(ar_in) $(shr_in)
+lib_in := $(ar_in) $(shr_in)
 
 # Lexical analyzers
 # ===================
@@ -1863,21 +1883,7 @@ arall     := $(foreach ar,$(ar_in),\
 #------------------------------------------------------------------[ 2 ]
 arsrc     := $(call not-root,$(arall))
 #------------------------------------------------------------------[ 3 ]
-# Search-for-complete-path steps:
-# * Cases #6 (path witout root) and #7 (all path);
-# * Case  #2 (path without file);
-# * Case  #4 (path with file without extension);
-arpat     := \
-$(sort $(foreach l,$(ar_in),$(or\
-    $(strip $(foreach s,$(liball),\
-        $(if $(findstring $l,$s),$(filter %$l,$s))\
-    )),\
-    $(strip $(foreach root,$(srcdir),\
-        $(firstword $(sort $(foreach s,$(call rsubdir,$(root)),\
-            $(if $(findstring $l,$s),$s)\
-    ))))),\
-    $(strip $(foreach s,$(liball),$(if $(findstring $l,$s),$s)))\
-)))
+arpat     := $(call expand-path,$(ar_in),$(liball),$(srcdir))
 #------------------------------------------------------------------[ 4 ]
 arpatsrc  := $(call not-root,$(arpat))
 #------------------------------------------------------------------[ 5 ]
@@ -1925,21 +1931,7 @@ shrall     := $(foreach so,$(shr_in),\
 #------------------------------------------------------------------[ 2 ]
 shrsrc     := $(call not-root,$(shrall))
 #------------------------------------------------------------------[ 3 ]
-# Search-for-complete-path steps:
-# * Cases #6 (path witout root) and #7 (all path);
-# * Case  #2 (path without file);
-# * Case  #4 (path with file without extension);
-shrpat    := \
-$(sort $(foreach l,$(shr_in),$(or\
-    $(strip $(foreach s,$(liball),\
-        $(if $(findstring $l,$s),$(filter %$l,$s))\
-    )),\
-    $(strip $(foreach root,$(srcdir),\
-        $(firstword $(sort $(foreach s,$(call rsubdir,$(root)),\
-            $(if $(findstring $l,$s),$s)\
-    ))))),\
-    $(strip $(foreach s,$(liball),$(if $(findstring $l,$s),$s)))\
-)))
+shrpat     := $(call expand-path,$(shr_in),$(liball),$(srcdir))
 #------------------------------------------------------------------[ 4 ]
 shrpatsrc  := $(call not-root,$(shrpat))
 #------------------------------------------------------------------[ 5 ]

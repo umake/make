@@ -372,7 +372,7 @@ INSTALL_DATA    := $(INSTALL)
 INSTALL_PROGRAM := $(INSTALL) -m 644
 
 # File manipulation
-CP              := cp -rap
+CP              := cp -a
 MV              := mv
 RM              := rm -f
 TAR             := tar -cvf

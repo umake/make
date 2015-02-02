@@ -101,6 +101,16 @@ CTAGSFLAGS  :=
 ETAGSFLAGS  :=
 MAKEFLAGS   := --no-print-directory
 
+# Analysis lint options
+CALFLAGS    := --quiet --enable=style
+FALFLAGS    :=
+CXXALFLAGS  := --quiet --enable=style
+
+# Style l options
+CSLFLAGS    :=
+FSLFLAGS    :=
+CXXSLFLAGS  :=
+
 # Coverage options
 CPPCOVFLAGS :=
 CCOVFLAGS   := --coverage
@@ -378,6 +388,16 @@ LEX             := flex
 LEXCXX          := flexc++
 YACC            := bison
 YACCCXX         := bisonc++
+
+# Analysis lint
+CALINT          := cppcheck
+FALINT          :=
+CXXALINT        := cppcheck
+
+# Syntax lint
+CSLINT          :=
+FSLINT          :=
+CXXSLINT        := cpplint.py
 
 # Coverage
 COV             := lcov
@@ -1348,6 +1368,14 @@ ctagsflags  := $(CTAGSFLAGS)
 etagsflags  := $(ETAGSFLAGS)
 makeflags   := $(MAKEFLAGS)
 
+calflags    := $(CALFLAGS)
+falflags    := $(FALFLAGS)
+cxxalflags  := $(CXXALFLAGS)
+
+cslflags    := $(CSLFLAGS)
+fslflags    := $(FSLFLAGS)
+cxxslflags  := $(CXXSLFLAGS)
+
 cppcovflags := $(CPPCOVFLAGS)
 ccovflags   := $(CCOVFLAGS)
 fcovflags   := $(FCOVFLAGS)
@@ -1542,16 +1570,16 @@ endif
 
 # Get all dependency prefixes for targets
 targets := \
-    build remote upgrade init tags coverage \
+    build remote upgrade init tags lint coverage \
     translation docs doxy dist dpkg install
 
 # Get all existent programs
 programs := \
-    AR AS CC FC CXX RANLIB INSTALL INSTALL_DATA INSTALL_PROGRAM CP MV \
-    RM TAR ZIP GZIP BZIP2 MKDIR RMDIR FIND LEX LEXCXX YACC YACCCXX    \
-    COV ESQL CTAGS ETAGS DOXYGEN MAKEINFO INSTALL_INFO TEXI2HTML      \
-    TEXI2DVI TEXI2PDF TEXI2PS XGETTEXT MSGINIT MSGMERGE MSGFMT DCH    \
-    DEBUILD CURL GIT
+    AR AS CC FC CXX RANLIB INSTALL INSTALL_DATA INSTALL_PROGRAM CP MV  \
+    RM TAR ZIP GZIP BZIP2 MKDIR RMDIR FIND LEX LEXCXX YACC YACCCXX     \
+    CALINT FALINT CXXALINT CSLINT FSLINT CXXSLINT COV ESQL CTAGS ETAGS \
+    DOXYGEN MAKEINFO INSTALL_INFO TEXI2HTML TEXI2DVI TEXI2PDF TEXI2PS  \
+    XGETTEXT MSGINIT MSGMERGE MSGFMT DCH DEBUILD CURL GIT
 
 phony_targets := $(targets) library git web
 
@@ -2299,6 +2327,21 @@ benchdep := $(patsubst %,$(depdir)/%$(depext),$(basename $(benchsrc)))
 #------------------------------------------------------------------[ 11 ]
 benchrun := $(addprefix run_,$(subst /,_,$(benchbin)))
 
+# Lint style check
+# ==================
+# 1) alintrun : Alias to execute analysis lint, prefixing analysis_lint_
+#               and substituting / for _ in $(benchdep)
+# 2) slintrun : Alias to execute style lint, prefixing style_lint_
+#               and substituting / for _ in $(benchdep)
+#------------------------------------------------------------------[ 1 ]
+alintrun := $(addprefix analysis_lint_,$(subst /,_,$(binall)))
+alintrun += $(addprefix analysis_lint_,$(subst /,_,$(testbin)))
+alintrun += $(addprefix analysis_lint_,$(subst /,_,$(benchbin)))
+#------------------------------------------------------------------[ 2 ]
+slintrun := $(addprefix style_lint_,$(subst /,_,$(binall)))
+slintrun += $(addprefix style_lint_,$(subst /,_,$(testbin)))
+slintrun += $(addprefix style_lint_,$(subst /,_,$(benchbin)))
+
 # Source dependency files
 # =========================
 # 1) Get source, test and benchmark dependencies
@@ -2552,6 +2595,35 @@ check test: all $(testrun)
 .PHONY: eval benchmark
 eval benchmark: all $(benchrun)
 	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_BENCH_SUCCESS)))
+
+########################################################################
+##                                LINT                                ##
+########################################################################
+
+ifneq (,$(call rfilter,analysis-lint lint,$(MAKECMDGOALS)))
+lint_dependency += \
+    CALINT   => $(call),\
+    FALINT   => $(fall),\
+    CXXALINT => $(cxxall)
+endif
+
+ifneq (,$(call rfilter,style-lint lint,$(MAKECMDGOALS)))
+lint_dependency += \
+    CSLINT   => $(call),\
+    FSLINT   => $(fall),\
+    CXXSLINT => $(cxxall)
+endif
+
+.PHONY: analysis-lint
+analysis-lint: lintdep $(alintrun)
+	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_ALINT_SUCCESS)))
+
+.PHONY: style-lint
+style-lint: lintdep $(slintrun)
+	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_SLINT_SUCCESS)))
+
+.PHONY: lint
+lint: analysis-lint style-lint
 
 ########################################################################
 ##                              COVERAGE                              ##
@@ -3498,6 +3570,53 @@ $(foreach b,$(binall),$(eval \
 )))
 
 #======================================================================#
+# Function: analysis-lint-factory                                      #
+# @param  $1 Alias to execute analysis lint, prefixing analysis_lint_  #
+#            and replacing / for _ in $(binall)/$(testbin)/$(benchbin) #
+# @param  $2 Analysis lint binary's name without root directory        #
+# @param  $3 Lint tool to be used (C's, Fortran's or C++'s)            #
+# @return Target to generate binary file for the analysis lint         #
+#======================================================================#
+define analysis-lint-factory
+$1: f=$2
+$1: $$($$(call not-root,$2)_all)
+	$$(call phony-status,$$(MSG_ALINT))
+	$$(quiet) $$($3ALINT) $$($$(call lc,$3)libs) \
+	                      $$($$(call lc,$3)alflags) $$^ $$(ERROR)
+	$$(call phony-ok,$$(MSG_ALINT))
+endef
+$(foreach b,$(binall) $(testbin) $(benchbin),\
+    $(eval $(call analysis-lint-factory,\
+        $(addprefix analysis_lint_,$(subst /,_,$b)),$b,$(strip \
+        $(lastword $(if $($(call not-root,$b)_has_f),F)\
+                   $(if $($(call not-root,$b)_has_c),C)\
+                   $(if $($(call not-root,$b)_has_cxx),CXX))\
+))))
+
+#======================================================================#
+# Function: style-lint-factory                                         #
+# @param  $1 Alias to execute style lint, prefixing style_lint_ and    #
+#            replacing / for _ in $(binall)/$(testbin)/$(benchbin)     #
+# @param  $2 Style lint binary's name without root directory           #
+# @param  $3 Lint tool to be used (C's, Fortran's or C++'s)            #
+# @return Target to generate binary file for the style lint            #
+#======================================================================#
+define style-lint-factory
+$1: f=$2
+$1: $$($$(call not-root,$2)_all)
+	$$(call phony-status,$$(MSG_SLINT))
+	$$(quiet) $$($3SLINT) $$($$(call lc,$3)slflags) $$^ $$(ERROR)
+	$$(call phony-ok,$$(MSG_SLINT))
+endef
+$(foreach b,$(binall) $(testbin) $(benchbin),\
+    $(eval $(call style-lint-factory,\
+        $(addprefix style_lint_,$(subst /,_,$b)),$b,$(strip \
+        $(lastword $(if $($(call not-root,$b)_has_f),F)\
+                   $(if $($(call not-root,$b)_has_c),C)\
+                   $(if $($(call not-root,$b)_has_cxx),CXX))\
+))))
+
+#======================================================================#
 # Function: coverage-factory                                           #
 # @param  $1 Report file                                               #
 # @param  $1 Binary file                                               #
@@ -4058,6 +4177,12 @@ MSG_BENCH         = "${BLUE}Running benchmark ${WHITE}$(notdir $<)${RES}"
 MSG_BENCH_COMPILE = "${DEF}Generating benchmark executable"\
                     "${GREEN}$(notdir $(strip $@))${RES}"
 MSG_BENCH_SUCCESS = "${YELLOW}All benchmarks runned successfully${RES}"
+
+MSG_ALINT         = "${BLUE}Running analysis lint for ${GREEN}$f${RES}"
+MSG_ALINT_SUCCESS = "${YELLOW}All analysis lints runned successfully${RES}"
+
+MSG_SLINT         = "${BLUE}Running style lint for ${GREEN}$f${RES}"
+MSG_SLINT_SUCCESS = "${YELLOW}All style lints runned successfully${RES}"
 
 MSG_COV           = "${BLUE}Showing coverage analysis ${DEF}$f${RES}"
 MSG_COV_NONE      = "${PURPLE}No coverage analysis reported in $f${RES}"

@@ -82,7 +82,8 @@
     [X] Output test coverage statistics (coverage + unit tests).
     [X] Output benchmark coverage statistics (coverage + benchmarks).
     [X] Create variable to set project C++ namespace (for 'new' files).
-    [ ] Support run of linting tools (for code style check).
+    [X] Add deep directory search of binary name.
+    [X] Support run of linting tools (for code style check).
     [ ] Support library with name different from directory's name.
     [ ] Support binary with name different from directory's name.
     [ ] Check for system dependency existence iff targets need rebuild. 
@@ -90,7 +91,6 @@
     [ ] Support compilation of CORBA with C++.
     [ ] Create management flags to update program version.
     [ ] Test internationalization feature in non-trivial cases.
-    [ ] Add deep directory search of test binary name.
     [ ] Add option to automatically create a RPM package.
 
 [Makeballs]

@@ -1636,6 +1636,8 @@ ignore    := $(sort $(foreach f,$(ignore),\
 define filter-ignored
 $(call rfilter-out,$(ignore),$1)
 endef
+#------------------------------------------------------------------[ 3 ]
+covignore := $(sort $(COV_IGNORE))
 
 # External dependency files
 # ===========================
@@ -3672,10 +3674,11 @@ $1: $2
 	                  -d $$(objdir) -d $$(firstword $$(libdir)) $$(ERROR)
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
-	              $$(COV) -q -o $$@                                \
-	                      -r $$@ '$$(extdir)/*' '/usr/*'           \
-	                             '$$(testdir)/*' '$$(benchdir)/*'  \
-	                      $$(ERROR);                               \
+	              $$(COV) -q -o $$@                               \
+	                      -r $$@ '$$(extdir)/*' '/usr/*'          \
+	                             '$$(testdir)/*' '$$(benchdir)/*' \
+	                             $$(patsubst %,'%',$$(covignore)) \
+	                      $$(ERROR);                              \
 	          fi
 	
 	$$(call ok,$$(MSG_COV_COMPILE))
@@ -5644,6 +5647,7 @@ else
 	$(call echo,"${WHITE}\nIGNORED FILES           ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"ignore:       ",$(ignored)             )
+	$(call prompt,"covignore:    ",$(covignore)           )
 	
 	$(call echo,"${WHITE}\nACCEPTED EXTENSIONS     ${RES}")
 	$(call echo,"----------------------------------------")

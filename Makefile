@@ -1911,9 +1911,9 @@ arall     := $(foreach ar,$(ar_in),\
 #------------------------------------------------------------------[ 2 ]
 arsrc     := $(call not-root,$(arall))
 #------------------------------------------------------------------[ 3 ]
-arpat     := $(call expand-path,$(ar_in),$(liball),$(srcdir))
+arpatall  := $(call expand-path,$(ar_in),$(liball),$(srcdir))
 #------------------------------------------------------------------[ 4 ]
-arpatsrc  := $(call not-root,$(arpat))
+arpatsrc  := $(call not-root,$(arpatall))
 #------------------------------------------------------------------[ 5 ]
 $(foreach ar,$(arpat),\
     $(eval arobj_$(call not-root,$(ar)) := \
@@ -1959,9 +1959,9 @@ shrall     := $(foreach so,$(shr_in),\
 #------------------------------------------------------------------[ 2 ]
 shrsrc     := $(call not-root,$(shrall))
 #------------------------------------------------------------------[ 3 ]
-shrpat     := $(call expand-path,$(shr_in),$(liball),$(srcdir))
+shrpatall  := $(call expand-path,$(shr_in),$(liball),$(srcdir))
 #------------------------------------------------------------------[ 4 ]
-shrpatsrc  := $(call not-root,$(shrpat))
+shrpatsrc  := $(call not-root,$(shrpatall))
 #------------------------------------------------------------------[ 5 ]
 $(foreach shr,$(shrpat),\
     $(eval shrobj_$(call not-root,$(shr)) := \
@@ -2033,7 +2033,7 @@ deplibname := $(call rfilter-out,$(libname) $(syslibname) $(loclibname),\
 # 4) ldlibs  : Get all subdirectories of the library dirs and
 #              add them as paths to be searched for libraries
 lib     := $(arlib) $(shrlib) $(syslib) $(loclib) $(deplib)
-libpat  := $(arpat) $(shrpat)
+libpat  := $(arpatall) $(shrpatall)
 libname := $(arlibname) $(shrlibname)
 libname += $(syslibname) $(loclibname) $(deplibname)
 libsub   = $(if $(strip $(lib)),\
@@ -5687,7 +5687,7 @@ else
 	$(call prompt,"ar_in:        ",$(ar_in)               )
 	$(call prompt,"arall:        ",$(arall)               )
 	$(call prompt,"arsrc:        ",$(arsrc)               )
-	$(call prompt,"arpat:        ",$(arpat)               )
+	$(call prompt,"arpatall:     ",$(arpatall)            )
 	$(call prompt,"arpatsrc:     ",$(arpatsrc)            )
 	$(call prompt,"arlibname:    ",$(arlibname)           )
 	$(call prompt,"arlink:       ",$(arlink)              )
@@ -5698,7 +5698,7 @@ else
 	$(call prompt,"shr_in:       ",$(shr_in)              )
 	$(call prompt,"shrall:       ",$(shrall)              )
 	$(call prompt,"shrsrc:       ",$(shrsrc)              )
-	$(call prompt,"shrpat:       ",$(shrpat)              )
+	$(call prompt,"shrpatall:    ",$(shrpatall)           )
 	$(call prompt,"shrpatsrc:    ",$(shrpatsrc)           )
 	$(call prompt,"shrlibname:   ",$(shrlibname)          )
 	$(call prompt,"shrlink:      ",$(shrlink)             )

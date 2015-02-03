@@ -1892,15 +1892,16 @@ $(if $(strip $(esqlall)),$(eval ldflags += $(ldesql) ))
 
 # Static libraries
 # ==================
-# 1) Get all source files that may be compiled to create the static lib
-# 2) Get all source files from above without root directory
-# 3) Get complete static library paths from all libraries
-# 4) Store static library paths without root directory
-# 5) Create one var with the object dependencies for each lib above
-# 6) Create variables for all static library objects
-# 7) Create library simple names, without directories or extension
-# 8) Create library flags, to be used with the linker
-# 9) Create library names, with directories, from the source
+#  1) Get all source files that may be compiled to create the static lib
+#  2) Get all source files from above without root directory
+#  3) Get complete static library paths from all libraries
+#  4) Store static library paths without root directory
+#  5) Create library simple names, without directories or extension
+#  6) Create library flags, to be used with the linker
+#  7) Create library names, with directories, from the source
+#  8) Create one var with complete path sources for each lib above
+#  9) Create one var with objects for each lib above
+# 10) Create variables for all static library objects
 #------------------------------------------------------------------[   ]
 ifndef NO_ARLIBS
 #------------------------------------------------------------------[ 1 ]
@@ -1915,40 +1916,45 @@ arpatall  := $(call expand-path,$(ar_in),$(liball),$(srcdir))
 #------------------------------------------------------------------[ 4 ]
 arpatsrc  := $(call not-root,$(arpatall))
 #------------------------------------------------------------------[ 5 ]
-$(foreach ar,$(arpat),\
-    $(eval arobj_$(call not-root,$(ar)) := \
-        $(foreach l,$(liball),\
-            $(if $(strip $(findstring $(ar),$l)),\
-                $(addprefix $(objdir)/,\
-                    $(addsuffix $(firstword $(objext)),\
-                         $(call not-root,$(basename $l)\
-)))))))
-#------------------------------------------------------------------[ 6 ]
-arobj     := $(foreach ar,$(arpatsrc),$(arobj_$(ar)))
-#------------------------------------------------------------------[ 7 ]
 arlibname := $(notdir $(basename $(arpatsrc)))
-#------------------------------------------------------------------[ 8 ]
+#------------------------------------------------------------------[ 6 ]
 arlink    := $(addprefix -l,$(arlibname))
+#------------------------------------------------------------------[ 7 ]
+define arlib-name
+$(foreach p,$(call not-root,$(basename $1)),\
+    $(patsubst $(subst ./,,$(dir $p))%,\
+       $(firstword $(libdir))/$(subst ./,,$(dir $p))lib%$(arext),$p))
+endef
+arlib     := $(call arlib-name,$(arpatall))
+#------------------------------------------------------------------[ 8 ]
+$(foreach p,$(arpatall),\
+    $(eval $(call not-root,$(call arlib-name,$p))_all := \
+        $(foreach l,$(liball),\
+            $(if $(strip $(findstring $p,$l)),$l)\
+)))
 #------------------------------------------------------------------[ 9 ]
-arlib     := $(foreach s,$(arpatsrc),\
-                 $(patsubst $(subst ./,,$(dir $s))%,\
-                 $(subst ./,,$(dir $s))lib%,$s))
-arlib     := $(patsubst %,$(firstword $(libdir))/%$(arext),\
-                 $(basename $(arlib)))
+$(foreach p,$(call not-root,$(arlib)),\
+    $(eval $p_obj := \
+        $(addprefix $(objdir)/,$(addsuffix $(objext),\
+            $(call not-root,$(basename $($p_all))))\
+)))
+#------------------------------------------------------------------[ 10 ]
+arobj     := $(sort $(foreach p,$(arlib),$($p_obj)))
 #------------------------------------------------------------------[   ]
 endif # ifndef NO_ARLIBS
 
 # Dynamic libraries
 # ===================
-# 1) Get all source files that may be compiled to create the shared lib
-# 2) Get all source files from above without root directory
-# 3) Get complete dynamic library paths from all libraries
-# 4) Store dynamic library paths without root directory
-# 5) Create one var with the object dependencies for each lib above
-# 6) Create variables for all dynamic library objects
-# 7) Create library simple names, without directories or extension
-# 8) Create library flags, to be used with the linker
-# 9) Create library complete names, with directories, from the source
+#  1) Get all source files that may be compiled to create the shared lib
+#  2) Get all source files from above without root directory
+#  3) Get complete dynamic library paths from all libraries
+#  4) Store dynamic library paths without root directory
+#  5) Create library simple names, without directories or extension
+#  6) Create library flags, to be used with the linker
+#  7) Create library complete names, with directories, from the source
+#  8) Create one var with complete path sources for each lib above
+#  9) Create one var with objects for each lib above
+# 10) Create variables for all dynamic library objects
 #------------------------------------------------------------------[   ]
 ifndef NO_SHRLIBS
 #------------------------------------------------------------------[ 1 ]
@@ -1963,26 +1969,30 @@ shrpatall  := $(call expand-path,$(shr_in),$(liball),$(srcdir))
 #------------------------------------------------------------------[ 4 ]
 shrpatsrc  := $(call not-root,$(shrpatall))
 #------------------------------------------------------------------[ 5 ]
-$(foreach shr,$(shrpat),\
-    $(eval shrobj_$(call not-root,$(shr)) := \
-        $(foreach l,$(liball),\
-            $(if $(strip $(findstring $(shr),$l)),\
-                $(addprefix $(objdir)/,\
-                    $(addsuffix $(firstword $(objext)),\
-                         $(call not-root,$(basename $l)\
-)))))))
-#------------------------------------------------------------------[ 6 ]
-shrobj     := $(foreach shr,$(shrpatsrc),$(shrobj_$(shr)))
-#------------------------------------------------------------------[ 7 ]
 shrlibname := $(notdir $(basename $(shrpatsrc)))
-#------------------------------------------------------------------[ 8 ]
+#------------------------------------------------------------------[ 6 ]
 shrlink    := $(addprefix -l,$(shrlibname))
+#------------------------------------------------------------------[ 7 ]
+define shrlib-name
+$(foreach p,$(call not-root,$(basename $1)),\
+    $(patsubst $(subst ./,,$(dir $p))%,\
+       $(firstword $(libdir))/$(subst ./,,$(dir $p))lib%$(shrext),$p))
+endef
+shrlib     := $(call shrlib-name,$(shrpatall))
+#------------------------------------------------------------------[ 8 ]
+$(foreach p,$(shrpatall),\
+    $(eval $(call not-root,$(call shrlib-name,$p))_all := \
+        $(foreach l,$(liball),\
+            $(if $(strip $(findstring $p,$l)),$l)\
+)))
 #------------------------------------------------------------------[ 9 ]
-shrlib     := $(foreach s,$(shrpatsrc),\
-                   $(patsubst $(subst ./,,$(dir $s))%,\
-                   $(subst ./,,$(dir $s))lib%,$s))
-shrlib     := $(patsubst %,$(firstword $(libdir))/%$(shrext),\
-                  $(basename $(shrlib)))
+$(foreach p,$(call not-root,$(shrlib)),\
+    $(eval $p_obj := \
+        $(addprefix $(objdir)/,$(addsuffix $(objext),\
+            $(call not-root,$(basename $($p_all))))\
+)))
+#------------------------------------------------------------------[ 10 ]
+shrobj     := $(sort $(foreach p,$(shrlib),$($p_obj)))
 #------------------------------------------------------------------[   ]
 endif # ifndef NO_SHRLIBS
 

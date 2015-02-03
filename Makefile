@@ -3453,15 +3453,19 @@ $(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
 # @return Target to create a shared library from objects               #
 #======================================================================#
 define link-sharedlib
-$1/$2lib$3$$(shrext): $4 | $1/./
+$1/$2$3$$(shrext): $4 | $1/./
 	$$(call status,$$(MSG_CXX_SHRDLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
 	$$(quiet) $$(CXX) $$(ldflags) $$(ldshr) $$(ldlibs) \
 	                  -o $$@ $$^ $$(ERROR)
 	$$(call ok,$$(MSG_CXX_SHRDLIB),$$@)
 endef
-$(foreach s,$(shrpatsrc),\
-    $(eval $(call link-sharedlib,$(firstword $(libdir)),$(patsubst ./%,%,$(dir $s)),$(notdir $(basename $s)),$(shrobj_$s))))
+$(foreach l,$(shrlib),$(eval $(call link-sharedlib,$(strip \
+    $(call root,$l)),$(strip \
+    $(call rm-trailing-bar,$(call not-root,$(dir $l)))),$(strip \
+    $(notdir $(basename $l))),$(strip \
+    $($(call not-root,$l)_obj))\
+)))
 
 #======================================================================#
 # Function: link-statlib                                               #
@@ -3472,15 +3476,19 @@ $(foreach s,$(shrpatsrc),\
 # @return Target to create a static library from objects               #
 #======================================================================#
 define link-statlib
-$1/$2lib$3$$(arext): $4 | $1/./
+$1/$2$3$$(arext): $4 | $1/./
 	$$(call status,$$(MSG_STATLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
 	$$(quiet) $$(AR) $$(arflags) $$@ $$^ $$(NO_OUTPUT) $$(NO_ERROR)
 	$$(quiet) $$(RANLIB) $$@
 	$$(call ok,$$(MSG_STATLIB),$$@)
 endef
-$(foreach a,$(arpatsrc),\
-    $(eval $(call link-statlib,$(firstword $(libdir)),$(patsubst ./%,%,$(dir $a)),$(notdir $(basename $a)),$(arobj_$a))))
+$(foreach l,$(arlib),$(eval $(call link-statlib,$(strip \
+    $(call root,$l)),$(strip \
+    $(call rm-trailing-bar,$(call not-root,$(dir $l)))),$(strip \
+    $(notdir $(basename $l))),$(strip \
+    $($(call not-root,$l)_obj))\
+)))
 
 #======================================================================#
 # Function: test-factory                                               #

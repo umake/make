@@ -2264,7 +2264,8 @@ $(foreach s,$(comtestsrc),\
 endif
 endif
 #------------------------------------------------------------------[ 10 ]
-testdep := $(patsubst %,$(depdir)/%$(depext),$(basename $(testsrc)))
+testdep := $(addprefix $(depdir)/$(testdir)/,\
+               $(addsuffix $(depext),$(basename $(testsrc))))
 #------------------------------------------------------------------[ 11 ]
 testrun := $(addprefix run_,$(subst /,_,$(testbin)))
 
@@ -2341,7 +2342,8 @@ $(foreach s,$(combenchsrc),\
 endif
 endif
 #------------------------------------------------------------------[ 10 ]
-benchdep := $(patsubst %,$(depdir)/%$(depext),$(basename $(benchsrc)))
+benchdep := $(addprefix $(depdir)/$(benchdir)/,\
+                $(addsuffix $(depext),$(basename $(benchsrc))))
 #------------------------------------------------------------------[ 11 ]
 benchrun := $(addprefix run_,$(subst /,_,$(benchbin)))
 

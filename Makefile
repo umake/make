@@ -3672,9 +3672,10 @@ $1: $2
 	                  -d $$(objdir) -d $$(firstword $$(libdir)) $$(ERROR)
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
-	              $$(COV) -q '$$(extdir)/*' '/usr/*' \
-	                         '$$(testdir)/*' '$$(benchdir)/*' \
-	                      -r $$@ -o $$@ $$(ERROR); \
+	              $$(COV) -q -o $$@                                \
+	                      -r $$@ '$$(extdir)/*' '/usr/*'           \
+	                             '$$(testdir)/*' '$$(benchdir)/*'  \
+	                      $$(ERROR);                               \
 	          fi
 	
 	$$(call ok,$$(MSG_COV_COMPILE))

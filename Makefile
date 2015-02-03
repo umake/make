@@ -3385,80 +3385,86 @@ $(foreach p,test bench,$(foreach e,$(fext),\
     $(eval $(call compile-fortran,$(objdir)/$($pdir),$($pdir),$e))))
 
 #======================================================================#
-# Function: compile-sharedlib-c                                        #
+# Function: compile-shrlib-c                                           #
 # @param  $1 File root directory                                       #
 # @param  $2 File basename without root dir                            #
 # @param  $3 File extension                                            #
 # @return Target to compile the C library file                         #
 #======================================================================#
-define compile-sharedlib-c
+define compile-shrlib-c
 $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(call status,$$(MSG_C_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CC) $$(shrflags) $$(cppflags) $$(clibs) $$(cflags) \
+	$$(quiet) $$(CC) $$(cppflags) $$(clibs) $$(shrflags) $$(cflags) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_LIBCOMP),$$@)
 endef
-$(foreach s,$(foreach E,$(cext),$(filter %$E,$(shrall))),\
-    $(eval $(call compile-sharedlib-c,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
+$(foreach s,$(foreach e,$(cext),$(filter %$e,$(shrall))),\
+    $(eval $(call compile-shrlib-c,$(strip \
+        $(call root,$s)/),$(call not-root,$(basename $s)),$(suffix $s))\
+))
 
 #======================================================================#
-# Function: compile-sharedlib-cpp                                      #
+# Function: compile-shrlib-cpp                                         #
 # @param  $1 File root directory                                       #
 # @param  $2 File basename without root dir                            #
 # @param  $3 File extension                                            #
 # @return Target to compile the C++ library file                       #
 #======================================================================#
-define compile-sharedlib-cpp
+define compile-shrlib-cpp
 $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(call status,$$(MSG_CXX_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CXX) $$(shrflags) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
+	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) $$(shrflags) $$(cxxflags) \
 	                  -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
-    $(eval $(call compile-sharedlib-cpp,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
+    $(eval $(call compile-shrlib-cpp,$(strip \
+        $(call root,$s)/),$(call not-root,$(basename $s)),$(suffix $s))\
+))
 
 #======================================================================#
-# Function: compile-sharedlib-fortran                                  #
+# Function: compile-shrlib-fortran                                     #
 # @param  $1 File root directory                                       #
 # @param  $2 File basename without root dir                            #
 # @param  $3 File extension                                            #
 # @return Target to compile the Fortran library file                   #
 #======================================================================#
-define compile-sharedlib-fortran
+define compile-shrlib-fortran
 $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(call status,$$(MSG_F_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) $$(shrflags) $$(cppflags) $$(flibs) $$(fflags) \
+	$$(quiet) $$(FC) $$(cppflags) $$(flibs) $$(shrflags) $$(fflags) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_F_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
-    $(eval $(call compile-sharedlib-fortran,$(call root,$s)/,$(call not-root,$(basename $s)),$(suffix $s))))
+    $(eval $(call compile-shrlib-fortran,$(strip \
+        $(call root,$s)/),$(call not-root,$(basename $s)),$(suffix $s))\
+))
 
 #======================================================================#
-# Function: link-sharedlib                                             #
+# Function: link-shrlib                                                #
 # @param  $1 Directory in which the lib may be put                     #
 # @param  $2 Subdirectories in which the lib may be put                #
 # @param  $3 File/dir basename that makes the name of the dir          #
 # @param  $4 Object dependencies of this static library                #
 # @return Target to create a shared library from objects               #
 #======================================================================#
-define link-sharedlib
+define link-shrlib
 $1/$2$3$$(shrext): $4 | $1/./
 	$$(call status,$$(MSG_CXX_SHRDLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
@@ -3466,7 +3472,7 @@ $1/$2$3$$(shrext): $4 | $1/./
 	                  -o $$@ $$^ $$(ERROR)
 	$$(call ok,$$(MSG_CXX_SHRDLIB),$$@)
 endef
-$(foreach l,$(shrlib),$(eval $(call link-sharedlib,$(strip \
+$(foreach l,$(shrlib),$(eval $(call link-shrlib,$(strip \
     $(call root,$l)),$(strip \
     $(call rm-trailing-bar,$(call not-root,$(dir $l)))),$(strip \
     $(notdir $(basename $l))),$(strip \
@@ -3474,14 +3480,14 @@ $(foreach l,$(shrlib),$(eval $(call link-sharedlib,$(strip \
 )))
 
 #======================================================================#
-# Function: link-statlib                                               #
+# Function: link-arlib                                                 #
 # @param  $1 Directory in which the lib may be put                     #
 # @param  $2 Subdirectories in which the lib may be put                #
 # @param  $3 File/dir basename that makes the name of the dir          #
 # @param  $4 Object dependencies of this static library                #
 # @return Target to create a static library from objects               #
 #======================================================================#
-define link-statlib
+define link-arlib
 $1/$2$3$$(arext): $4 | $1/./
 	$$(call status,$$(MSG_STATLIB))
 	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
@@ -3489,7 +3495,7 @@ $1/$2$3$$(arext): $4 | $1/./
 	$$(quiet) $$(RANLIB) $$@
 	$$(call ok,$$(MSG_STATLIB),$$@)
 endef
-$(foreach l,$(arlib),$(eval $(call link-statlib,$(strip \
+$(foreach l,$(arlib),$(eval $(call link-arlib,$(strip \
     $(call root,$l)),$(strip \
     $(call rm-trailing-bar,$(call not-root,$(dir $l)))),$(strip \
     $(notdir $(basename $l))),$(strip \

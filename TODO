@@ -84,6 +84,7 @@
     [X] Create variable to set project C++ namespace (for 'new' files).
     [X] Add deep directory search of binary name.
     [X] Support run of linting tools (for code style check).
+    [X] Run linting tools for library sources.
     [ ] Check if test/benchmark is recompiled when header is modified.
     [ ] Add option to ignore files when calculating coverage statistics.
     [ ] Support library with name different from directory's name.

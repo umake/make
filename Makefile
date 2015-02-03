@@ -2240,9 +2240,12 @@ $(foreach t,$(call not-root,$(testbin)),$(or\
 define common-test-factory
 $(call rfilter-out,$(foreach t,$(call not-root,$(testbin)),$($t_$1)),$2)
 endef
-comtestsrc := $(call common-test-factory,src,$(testsrc))
-comtestall := $(call common-test-factory,all,$(testall))
-comtestobj := $(call common-test-factory,obj,$(testobj))
+comtestsrc := $(call common-test-factory,src,\
+                  $(testsrc) $(usersrc) $(autosrc))
+comtestall := $(call common-test-factory,all,\
+                  $(testall) $(userall) $(autoall))
+comtestobj := $(call common-test-factory,obj,\
+                  $(testobj) $(userobj) $(autoobj))
 #------------------------------------------------------------------[ 8 ]
 $(foreach t,$(call not-root,$(testbin)),$(or\
     $(eval $t_src := $(comtestsrc) $($t_src)),\
@@ -2314,9 +2317,12 @@ $(foreach t,$(call not-root,$(benchbin)),$(or\
 define common-bench-factory
 $(call rfilter-out,$(foreach t,$(call not-root,$(benchbin)),$($t_$1)),$2)
 endef
-combenchsrc := $(call common-bench-factory,src,$(benchsrc))
-combenchall := $(call common-bench-factory,all,$(testall))
-combenchobj := $(call common-bench-factory,obj,$(benchobj))
+combenchsrc := $(call common-bench-factory,src,\
+                  $(benchsrc) $(usersrc) $(autosrc))
+combenchall := $(call common-bench-factory,all,\
+                  $(benchall) $(userall) $(autoall))
+combenchobj := $(call common-bench-factory,obj,\
+                  $(benchobj) $(userobj) $(autoobj))
 #------------------------------------------------------------------[ 8 ]
 $(foreach t,$(call not-root,$(benchbin)),$(or\
     $(eval $t_src := $(combenchsrc) $($t_src)),\

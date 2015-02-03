@@ -2349,10 +2349,14 @@ benchrun := $(addprefix run_,$(subst /,_,$(benchbin)))
 alintrun := $(addprefix analysis_lint_,$(subst /,_,$(binall)))
 alintrun += $(addprefix analysis_lint_,$(subst /,_,$(testbin)))
 alintrun += $(addprefix analysis_lint_,$(subst /,_,$(benchbin)))
+alintrun += $(addprefix analysis_lint_,$(subst /,_,$(arlib)))
+alintrun += $(addprefix analysis_lint_,$(subst /,_,$(shrlib)))
 #------------------------------------------------------------------[ 2 ]
 slintrun := $(addprefix style_lint_,$(subst /,_,$(binall)))
 slintrun += $(addprefix style_lint_,$(subst /,_,$(testbin)))
 slintrun += $(addprefix style_lint_,$(subst /,_,$(benchbin)))
+slintrun += $(addprefix style_lint_,$(subst /,_,$(arlib)))
+slintrun += $(addprefix style_lint_,$(subst /,_,$(shrlib)))
 
 # Source dependency files
 # =========================
@@ -3605,12 +3609,12 @@ $1: $$($$(call not-root,$2)_all)
 	                      $$($$(call lc,$3)alflags) $$^ $$(ERROR)
 	$$(call phony-ok,$$(MSG_ALINT))
 endef
-$(foreach b,$(binall) $(testbin) $(benchbin),\
+$(foreach b,$(binall) $(testbin) $(benchbin) $(arlib) $(shrlib),\
     $(eval $(call analysis-lint-factory,\
         $(addprefix analysis_lint_,$(subst /,_,$b)),$b,$(strip \
-        $(lastword $(if $($(call not-root,$b)_has_f),F)\
-                   $(if $($(call not-root,$b)_has_c),C)\
-                   $(if $($(call not-root,$b)_has_cxx),CXX))\
+        $(lastword $(if $(call has-c,$($(call not-root,$b)_all)),F)\
+                   $(if $(call has-f,$($(call not-root,$b)_all)),C)\
+                   $(if $(call has-cxx,$($(call not-root,$b)_all)),CXX))\
 ))))
 
 #======================================================================#
@@ -3628,12 +3632,12 @@ $1: $$($$(call not-root,$2)_all)
 	$$(quiet) $$($3SLINT) $$($$(call lc,$3)slflags) $$^ $$(ERROR)
 	$$(call phony-ok,$$(MSG_SLINT))
 endef
-$(foreach b,$(binall) $(testbin) $(benchbin),\
+$(foreach b,$(binall) $(testbin) $(benchbin) $(arlib) $(shrlib),\
     $(eval $(call style-lint-factory,\
         $(addprefix style_lint_,$(subst /,_,$b)),$b,$(strip \
-        $(lastword $(if $($(call not-root,$b)_has_f),F)\
-                   $(if $($(call not-root,$b)_has_c),C)\
-                   $(if $($(call not-root,$b)_has_cxx),CXX))\
+        $(lastword $(if $(call has-c,$($(call not-root,$b)_all)),F)\
+                   $(if $(call has-f,$($(call not-root,$b)_all)),C)\
+                   $(if $(call has-cxx,$($(call not-root,$b)_all)),CXX))\
 ))))
 
 #======================================================================#

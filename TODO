@@ -86,7 +86,7 @@
     [X] Support run of linting tools (for code style check).
     [X] Run linting tools for library sources.
     [X] Check if test/benchmark is recompiled when header is modified.
-    [ ] Add option to ignore files when calculating coverage statistics.
+    [X] Add option to ignore files when calculating coverage statistics.
     [ ] Support library with name different from directory's name.
     [ ] Support binary with name different from directory's name.
     [ ] Check for system dependency existence iff targets need rebuild. 

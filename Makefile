@@ -2218,7 +2218,6 @@ testsrc := $(call not-root,$(testall))
 #------------------------------------------------------------------[ 4 ]
 testobj := $(addsuffix $(firstword $(objext)),$(basename $(testsrc)))
 testobj := $(addprefix $(objdir)/$(testdir)/,$(testobj))
-testobj += $(userobj) $(autoobj)
 #------------------------------------------------------------------[ 5 ]
 testbin := $(call rm-trailing-bar,$(TESTBIN))
 testbin := $(foreach b,$(testbin),$(or $(strip \
@@ -2230,10 +2229,12 @@ testbin := $(if $(strip $(binext)),\
 testbin := $(call filter-ignored,$(testbin))
 #------------------------------------------------------------------[ 6 ]
 $(foreach t,$(call not-root,$(testbin)),$(or\
-    $(eval $t_src := $(filter $(call not-root,$t)%,$(testsrc))),\
-    $(eval $t_all += $(sort $(call rfilter,\
-                         $(addprefix %,$($t_src)),$(testall)))),\
-    $(eval $t_obj := $(filter $(objdir)/$(testdir)/$t%,$(testobj)))\
+    $(eval $t_src := $(filter $(call not-root,$t)%,\
+                         $(testsrc)) $(usersrc) $(autosrc)),\
+    $(eval $t_all += $(sort $(call rfilter,$(addprefix %,$($t_src)),\
+                         $(testall) $(userall) $(autoall)))),\
+    $(eval $t_obj := $(filter $(objdir)/$(testdir)/$t%,\
+                         $(testobj) $(userobj) $(autoobj)))\
 ))
 #------------------------------------------------------------------[ 7 ]
 define common-test-factory
@@ -2291,7 +2292,6 @@ benchsrc := $(call not-root,$(benchall))
 #------------------------------------------------------------------[ 4 ]
 benchobj := $(addsuffix $(firstword $(objext)),$(basename $(benchsrc)))
 benchobj := $(addprefix $(objdir)/$(benchdir)/,$(benchobj))
-benchobj += $(userobj) $(autoobj)
 #------------------------------------------------------------------[ 5 ]
 benchbin := $(call rm-trailing-bar,$(BENCHBIN))
 benchbin := $(foreach b,$(benchbin),$(or $(strip \
@@ -2303,10 +2303,12 @@ benchbin := $(if $(strip $(binext)),\
 benchbin := $(call filter-ignored,$(benchbin))
 #------------------------------------------------------------------[ 6 ]
 $(foreach t,$(call not-root,$(benchbin)),$(or\
-    $(eval $t_src := $(filter $(call not-root,$t)%,$(benchsrc))),\
-    $(eval $t_all += $(sort $(call rfilter,\
-                         $(addprefix %,$($t_src)),$(testall)))),\
-    $(eval $t_obj := $(filter $(objdir)/$(benchdir)/$t%,$(benchobj)))\
+    $(eval $t_src := $(filter $(call not-root,$t)%,\
+                         $(benchsrc)) $(usersrc) $(autosrc)),\
+    $(eval $t_all += $(sort $(call rfilter,$(addprefix %,$($t_src)),\
+                         $(benchall) $(userall) $(autoall)))),\
+    $(eval $t_obj := $(filter $(objdir)/$(benchdir)/$t%,\
+                         $(benchobj) $(userobj) $(autoobj)))\
 ))
 #------------------------------------------------------------------[ 7 ]
 define common-bench-factory

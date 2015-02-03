@@ -1626,15 +1626,15 @@ makedep      := $(addprefix $(depdir)/,$(addsuffix $(sysext),make))
 # 1) Find complete paths for the ignored files
 # 2) Define a function for filtering out the ignored files
 #------------------------------------------------------------------[ 1 ]
-ignored := $(sort $(IGNORED))
-ignored := $(sort $(foreach f,$(ignored),\
-               $(foreach r,$(alldir) $(bin) $(sbin) $(libexec),\
-                   $(foreach d,$(call rsubdir,$r),\
-                       $(wildcard $d/$f*)\
-           ))))
+ignore    := $(sort $(IGNORE))
+ignore    := $(sort $(foreach f,$(ignore),\
+                 $(foreach r,$(alldir) $(bin) $(sbin) $(libexec),\
+                     $(foreach d,$(call rsubdir,$r),\
+                         $(wildcard $d/$f*)\
+             ))))
 #------------------------------------------------------------------[ 2 ]
 define filter-ignored
-$(call rfilter-out,$(ignored),$1)
+$(call rfilter-out,$(ignore),$1)
 endef
 
 # External dependency files
@@ -5643,7 +5643,7 @@ else
 	
 	$(call echo,"${WHITE}\nIGNORED FILES           ${RES}")
 	$(call echo,"----------------------------------------")
-	$(call prompt,"ignored:      ",$(ignored)             )
+	$(call prompt,"ignore:       ",$(ignored)             )
 	
 	$(call echo,"${WHITE}\nACCEPTED EXTENSIONS     ${RES}")
 	$(call echo,"----------------------------------------")

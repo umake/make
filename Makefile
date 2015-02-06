@@ -1208,6 +1208,25 @@ $(if $(or $(strip \
          $(call has-cxx-main,$s))),T)
 endef
 
+# Language precedence functions
+# ===============================
+# 1) choose-comment: Choose comment for files in $1
+# 2) choose-compiler: Choose compiler for files in $1
+
+define choose-comment
+$(strip $(lastword \
+    $(if $(call has-c,$1),F)\
+    $(if $(call has-f,$1),C)\
+    $(if $(call has-cxx,$1),CXX)))
+endef
+
+define choose-compiler
+$(strip $(lastword \
+    $(if $(call has-c,$1),$(FC))\
+    $(if $(call has-f,$1),$(CC))\
+    $(if $(call has-cxx,$1),$(CXX))))
+endef
+
 # Auxiliar recursive functions
 # ==============================
 # 1) rsubdir:     For listing all subdirectories of a given dir

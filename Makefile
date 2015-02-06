@@ -3495,16 +3495,19 @@ $(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
 #======================================================================#
 define link-shrlib
 $1/$2: $$($2_obj) | $1/./
-	$$(call status,$$(MSG_CXX_SHRDLIB))
+	$$(call status,$$(MSG_$3_SHRLIB))
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(CXX) $$^ -o $$@ $$(ldflags) $$(ldshr) $$(ldlibs) \
-	                  $$(ERROR)
+	$$(quiet) $4 $$^ -o $$@ $$(ldflags) $$(ldshr) $$(ldlibs) $$(ERROR)
 	
-	$$(call ok,$$(MSG_CXX_SHRDLIB),$$@)
+	$$(call ok,$$(MSG_$3_SHRLIB))
 endef
 $(foreach l,$(shrlib),\
-    $(eval $(call link-shrlib,$(call root,$l),$(call not-root,$l))))
+    $(eval $(call link-shrlib,$(strip \
+        $(call root,$l)),$(call not-root,$l),$(strip \
+        $(call choose-comment,$($(call not-root,$l)_all))),$(strip \
+        $(call choose-compiler,$($(call not-root,$l)_all)))\
+)))
 
 #======================================================================#
 # Function: link-arlib                                                 #
@@ -4245,7 +4248,7 @@ MSG_ARLIB         = "${RED}Generating static library $@${RES}"
 
 MSG_C_COMPILE     = "${DEF}Generating C artifact ${WHITE}$@${RES}"
 MSG_C_LINKAGE     = "${YELLOW}Generating C executable ${GREEN}$@${RES}"
-MSG_C_SHRDLIB     = "${RED}Generating C shared library $@${RES}"
+MSG_C_SHRLIB      = "${RED}Generating C shared library $@${RES}"
 MSG_C_NO_FILE     = "${DEF}No files for C executable ${GREEN}$@${RES}"
 MSG_C_LIBCOMP     = "${DEF}Generating C library artifact"\
                     "${YELLOW}$@${RES}"
@@ -4253,7 +4256,7 @@ MSG_C_LIBCOMP     = "${DEF}Generating C library artifact"\
 MSG_F_COMPILE     = "${DEF}Generating Fortran artifact ${WHITE}$@${RES}"
 MSG_F_LINKAGE     = "${YELLOW}Generating Fortran executable"\
                     "${GREEN}$@${RES}"
-MSG_F_SHRDLIB     = "${RED}Generating Fortran shared library $@${RES}"
+MSG_F_SHRLIB      = "${RED}Generating Fortran shared library $@${RES}"
 MSG_F_NO_FILE     = "${DEF}No files for Fortran executable"\
                     "${GREEN}$@${RES}"
 MSG_F_LIBCOMP     = "${DEF}Generating Fortran library artifact"\
@@ -4261,7 +4264,7 @@ MSG_F_LIBCOMP     = "${DEF}Generating Fortran library artifact"\
 
 MSG_CXX_COMPILE   = "${DEF}Generating C++ artifact ${WHITE}$@${RES}"
 MSG_CXX_LINKAGE   = "${YELLOW}Generating C++ executable ${GREEN}$@${RES}"
-MSG_CXX_SHRDLIB   = "${RED}Generating C++ shared library $@${RES}"
+MSG_CXX_SHRLIB    = "${RED}Generating C++ shared library $@${RES}"
 MSG_CXX_NO_FILE   = "${DEF}No files for C++ executable ${GREEN}$@${RES}"
 MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
                     "${YELLOW}$@${RES}"

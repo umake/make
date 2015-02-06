@@ -3596,32 +3596,24 @@ endif
 #======================================================================#
 define binary-factory
 $1/$2: $$($2_lib) $$($2_obj) | $1/./
-	$$(call status,$$(MSG_$$(strip $3)_LINKAGE))
+	$$(call status,$$(MSG_$3_LINKAGE))
 	
-	@# Check if executable has files
 	$$(if $$(strip $$($2_all)),,\
-	    $$(call phony-error,$$(MSG_$$(strip $3)_NO_FILE)))
+	    $$(call phony-error,$$(MSG_$3_NO_FILE)))
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $4 $$($2_obj) -o $$@ \
 	             $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
 	
-	$$(call ok,$$(MSG_$$(strip $3)_LINKAGE),$$@)
+	$$(call ok,$$(MSG_$3_LINKAGE),$$@)
 
 $$($2_obj): $$($2_all) | $$(objdir)/./
 endef
-$(foreach b,$(binall),$(eval \
-    $(call binary-factory,$(call root,$b),$(call not-root,$b),\
-    $(strip \
-        $(if $($(call not-root,$b)_has_c),C,\
-        $(if $($(call not-root,$b)_has_f),F,\
-        $(if $($(call not-root,$b)_has_cxx),CXX,CXX\
-    )))),\
-    $(strip \
-        $(if $($(call not-root,$b)_has_c),$(CC),\
-        $(if $($(call not-root,$b)_has_f),$(FC),\
-        $(if $($(call not-root,$b)_has_cxx),$(CXX),$(CXX)\
-    ))))\
+$(foreach b,$(binall),\
+    $(eval $(call binary-factory,$(strip \
+        $(call root,$b)),$(call not-root,$b),$(strip \
+        $(call choose-comment,$($(call not-root,$b)_all))),$(strip \
+        $(call choose-compiler,$($(call not-root,$b)_all)))\
 )))
 
 #======================================================================#
@@ -3641,12 +3633,10 @@ $1: $$($$(call not-root,$2)_all)
 	$$(call phony-ok,$$(MSG_ALINT))
 endef
 $(foreach b,$(binall) $(testbin) $(benchbin) $(arlib) $(shrlib),\
-    $(eval $(call analysis-lint-factory,\
-        $(addprefix analysis_lint_,$(subst /,_,$b)),$b,$(strip \
-        $(lastword $(if $(call has-c,$($(call not-root,$b)_all)),F)\
-                   $(if $(call has-f,$($(call not-root,$b)_all)),C)\
-                   $(if $(call has-cxx,$($(call not-root,$b)_all)),CXX))\
-))))
+    $(eval $(call analysis-lint-factory,$(strip \
+        $(addprefix analysis_lint_,$(subst /,_,$b))),$b,$(strip \
+        $(call choose-comment,$($(call not-root,$b)_all)))\
+)))
 
 #======================================================================#
 # Function: style-lint-factory                                         #
@@ -3664,12 +3654,10 @@ $1: $$($$(call not-root,$2)_all)
 	$$(call phony-ok,$$(MSG_SLINT))
 endef
 $(foreach b,$(binall) $(testbin) $(benchbin) $(arlib) $(shrlib),\
-    $(eval $(call style-lint-factory,\
-        $(addprefix style_lint_,$(subst /,_,$b)),$b,$(strip \
-        $(lastword $(if $(call has-c,$($(call not-root,$b)_all)),F)\
-                   $(if $(call has-f,$($(call not-root,$b)_all)),C)\
-                   $(if $(call has-cxx,$($(call not-root,$b)_all)),CXX))\
-))))
+    $(eval $(call style-lint-factory,$(strip \
+        $(addprefix style_lint_,$(subst /,_,$b))),$b,$(strip \
+        $(call choose-comment,$($(call not-root,$b)_all)))\
+)))
 
 #======================================================================#
 # Function: coverage-factory                                           #

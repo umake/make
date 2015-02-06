@@ -3516,13 +3516,13 @@ $(foreach l,$(shrlib),\
 #======================================================================#
 define link-arlib
 $1/$2: $$($2_obj) | $1/./
-	$$(call status,$$(MSG_STATLIB))
+	$$(call status,$$(MSG_ARLIB))
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(AR) $$(arflags) $$@ $$^ $$(NO_OUTPUT) $$(NO_ERROR)
 	$$(quiet) $$(RANLIB) $$@
 	
-	$$(call ok,$$(MSG_STATLIB),$$@)
+	$$(call ok,$$(MSG_ARLIB),$$@)
 endef
 $(foreach l,$(arlib),\
     $(eval $(call link-arlib,$(call root,$l),$(call not-root,$l))))
@@ -4241,7 +4241,7 @@ MSG_MAKETBZ2      = "${YELLOW}Compressing file ${BLUE}$@"\
                     "${YELLOW}(bzip2)${RES}"
 
 MSG_ASM_COMPILE   = "${DEF}Generating Assembly artifact ${WHITE}$@${RES}"
-MSG_STATLIB       = "${RED}Generating static library $@${RES}"
+MSG_ARLIB         = "${RED}Generating static library $@${RES}"
 
 MSG_C_COMPILE     = "${DEF}Generating C artifact ${WHITE}$@${RES}"
 MSG_C_LINKAGE     = "${YELLOW}Generating C executable ${GREEN}$@${RES}"

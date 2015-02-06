@@ -3475,19 +3475,17 @@ $(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
 # @return Target to create a shared library from objects               #
 #======================================================================#
 define link-shrlib
-$1/$2$3$$(shrext): $4 | $1/./
+$1/$2: $$($2_obj) | $1/./
 	$$(call status,$$(MSG_CXX_SHRDLIB))
-	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
-	$$(quiet) $$(CXX) $$(ldflags) $$(ldshr) $$(ldlibs) \
-	                  -o $$@ $$^ $$(ERROR)
+	
+	$$(quiet) $$(call mksubdir,$1,$$@)
+	$$(quiet) $$(CXX) $$^ -o $$@ $$(ldflags) $$(ldshr) $$(ldlibs) \
+	                  $$(ERROR)
+	
 	$$(call ok,$$(MSG_CXX_SHRDLIB),$$@)
 endef
-$(foreach l,$(shrlib),$(eval $(call link-shrlib,$(strip \
-    $(call root,$l)),$(strip \
-    $(call rm-trailing-bar,$(call not-root,$(dir $l)))),$(strip \
-    $(notdir $(basename $l))),$(strip \
-    $($(call not-root,$l)_obj))\
-)))
+$(foreach l,$(shrlib),\
+    $(eval $(call link-shrlib,$(call root,$l),$(call not-root,$l))))
 
 #======================================================================#
 # Function: link-arlib                                                 #
@@ -3498,19 +3496,17 @@ $(foreach l,$(shrlib),$(eval $(call link-shrlib,$(strip \
 # @return Target to create a static library from objects               #
 #======================================================================#
 define link-arlib
-$1/$2$3$$(arext): $4 | $1/./
+$1/$2: $$($2_obj) | $1/./
 	$$(call status,$$(MSG_STATLIB))
-	$$(quiet) $$(call mksubdir,$1,$$(objdir)/$2)
+	
+	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(AR) $$(arflags) $$@ $$^ $$(NO_OUTPUT) $$(NO_ERROR)
 	$$(quiet) $$(RANLIB) $$@
+	
 	$$(call ok,$$(MSG_STATLIB),$$@)
 endef
-$(foreach l,$(arlib),$(eval $(call link-arlib,$(strip \
-    $(call root,$l)),$(strip \
-    $(call rm-trailing-bar,$(call not-root,$(dir $l)))),$(strip \
-    $(notdir $(basename $l))),$(strip \
-    $($(call not-root,$l)_obj))\
-)))
+$(foreach l,$(arlib),\
+    $(eval $(call link-arlib,$(call root,$l),$(call not-root,$l))))
 
 #======================================================================#
 # Function: test-factory                                               #

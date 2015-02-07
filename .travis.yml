@@ -40,15 +40,15 @@ install:
            --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90;
     fi
 
-  # clang/clang++ 3.4
-  - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ "$CXX" == "clang++" ]; 
-    then 
-      sudo apt-get install --allow-unauthenticated -qq clang-3.4;
-      sudo update-alternatives 
-           --install /usr/bin/clang clang /usr/bin/clang-3.4 90;
-      sudo update-alternatives 
-           --install /usr/bin/clang++ clang++ /usr/bin/clang++-3.4 90;
-    fi
+  # # clang/clang++ 3.4
+  # - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ "$CXX" == "clang++" ]; 
+  # then 
+  #   sudo apt-get install --allow-unauthenticated -qq clang-3.4;
+  #   sudo update-alternatives 
+  #        --install /usr/bin/clang clang /usr/bin/clang-3.4 90;
+  #   sudo update-alternatives 
+  #        --install /usr/bin/clang++ clang++ /usr/bin/clang++-3.4 90;
+  # fi
 
 script:
   - ./test/tests.sh

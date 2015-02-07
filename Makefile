@@ -5634,6 +5634,9 @@ projecthelp:
 	@echo " * IN:               Directory for 'new' files              "
 	@echo " * INC_EXT:          Include extension for 'new' files      "
 	@echo " * SRC_EXT:          Source extension for 'new' files       "
+	@echo " * ALPHA:            Make 'new' release an alpha release    "
+	@echo " * BETA:             Make 'new' release a beta release      "
+	@echo " * TIMESTAMP:        Add timestamp metadata in 'new' release"
 	@echo "                                                            "
 	@echo "Management flags:                                           "
 	@echo "------------------                                          "
@@ -5654,6 +5657,9 @@ projecthelp:
 	@echo " * TEMPLATE:         C++ template file                      "
 	@echo " * TRANSLATION:      Portable object translation            "
 	@echo " * NLS_HEADER:       Header with i18n headers and macros    "
+	@echo " * MAJOR_RELEASE:    Projetc major release                  "
+	@echo " * MINOR_RELEASE:    Project minor release                  "
+	@echo " * PATCH_RELEASE:    Project patch release                  "
 	@echo "                                                            "
 
 ########################################################################

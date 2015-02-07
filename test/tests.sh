@@ -20,7 +20,7 @@ function setup {
 
 function teardown {
   cd ../..
-  rm -rf test/tmp
+#  rm -rf test/tmp
 }
 
 echo "Using program \"$MAKE\""
@@ -64,3 +64,9 @@ echo -n "Testing Fortran "
 echo
 assert_end "Fortran Tests"
 echo
+
+. test/c/test_single-file.sh
+cd test/tmp
+make
+make dump
+cd ../..

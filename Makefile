@@ -1841,10 +1841,9 @@ endif
 #------------------------------------------------------------------[ 2 ]
 autoall := $(yaccall) $(lexall) $(esqlall)
 #------------------------------------------------------------------[ 3 ]
-liball  := $(sort $(foreach r,$(userall) $(autoall),\
-               $(foreach l,$(lib_in),\
-                   $(strip $(foreach s,$r,\
-                       $(if $(findstring $l,$s),$s)))\
+liball  := $(foreach s,$(userall) $(autoall),\
+               $(lastword $(foreach i,$(sort $(lib_in)),\
+                   $(if $(findstring $i,$s),$s)\
            )))
 # Give error if there is no match with the lib name
 $(foreach l,$(lib_in),\
@@ -1926,10 +1925,10 @@ $(if $(strip $(esqlall)),$(eval ldflags += $(ldesql) ))
 #------------------------------------------------------------------[   ]
 ifndef NO_ARLIBS
 #------------------------------------------------------------------[ 1 ]
-arall     := $(foreach ar,$(ar_in),\
-                 $(foreach l,$(liball),\
-                     $(if $(findstring $(ar),$l),$l)\
-             ))
+arall     := $(foreach l,$(liball),\
+                 $(lastword $(foreach i,$(sort $(ar_in)),\
+                    $(if $(findstring $i,$l),$l)\
+             )))
 #------------------------------------------------------------------[ 2 ]
 arsrc     := $(call not-root,$(arall))
 #------------------------------------------------------------------[ 3 ]
@@ -1979,10 +1978,10 @@ endif # ifndef NO_ARLIBS
 #------------------------------------------------------------------[   ]
 ifndef NO_SHRLIBS
 #------------------------------------------------------------------[ 1 ]
-shrall     := $(foreach so,$(shr_in),\
-                  $(foreach l,$(liball),\
-                      $(if $(findstring $(so),$l),$l)\
-              ))
+shrall     := $(foreach l,$(liball),\
+                  $(lastword $(foreach i,$(sort $(shr_in)),\
+                     $(if $(findstring $i,$l),$l)\
+              )))
 #------------------------------------------------------------------[ 2 ]
 shrsrc     := $(call not-root,$(shrall))
 #------------------------------------------------------------------[ 3 ]

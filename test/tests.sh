@@ -67,7 +67,9 @@ echo
 
 echo -n "Basic test"
 . test/c/test_single-file.sh
+echo
 cd test/tmp
+make distclean
 make
 make dump
 cd ../..

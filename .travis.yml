@@ -36,9 +36,9 @@ install:
     then
       echo "Using gcc/g++ for C/C++ compilation";
       sudo apt-get install -qq g++-4.8;
-      sudo update-alternatives 
+      sudo update-alternatives
            --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90;
-      sudo update-alternatives 
+      do update-alternatives
            --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90;
     fi
 
@@ -46,12 +46,12 @@ install:
   - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CXX" == "clang++" ]; 
     then 
       echo "Using clang/clang++ for C/C++ compilation";
+      sudo apt-get install --allow-unauthenticated -qq clang-3.4;
+      sudo update-alternatives
+           --install /usr/bin/clang clang /usr/bin/clang-3.4 90;
+      sudo update-alternatives
+           --install /usr/bin/clang++ clang++ /usr/bin/clang++-3.4 90;
     fi
-      # sudo apt-get install --allow-unauthenticated -qq clang-3.4;
-      # sudo update-alternatives 
-      #      --install /usr/bin/clang clang /usr/bin/clang-3.4 90;
-      # sudo update-alternatives 
-      #      --install /usr/bin/clang++ clang++ /usr/bin/clang++-3.4 90;
 
 script:
   - ./test/tests.sh

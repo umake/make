@@ -51,3 +51,12 @@ echo -n "Testing C++ "
 . test/c++/test_shared-lib.sh
 echo
 assert_end "C++ Tests"
+echo
+
+# Fortran Tests
+echo -n "Testing Fortran "
+. test/fortran/test_single-file.sh
+. test/fortran/test_multiple-file.sh
+echo
+assert_end "Fortran Tests"
+echo

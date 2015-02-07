@@ -4909,9 +4909,12 @@ override F_FILE        := $(strip $(basename $(notdir $(F_FILE))))
 override C_FILE        := $(strip $(basename $(notdir $(C_FILE))))
 override CXX_FILE      := $(strip $(basename $(notdir $(CXX_FILE))))
 override C_MAIN        := $(strip $(basename $(notdir $(C_MAIN))))
+override F_MAIN        := $(strip $(basename $(notdir $(F_MAIN))))
 override CXX_MAIN      := $(strip $(basename $(notdir $(CXX_MAIN))))
 override TEMPLATE      := $(strip $(basename $(notdir $(TEMPLATE))))
 override C_MODULE      := $(strip $(basename $(notdir $(C_MODULE))))
+override F_MODULE      := $(strip $(basename $(notdir $(F_MODULE))))
+override C_FILE        := $(strip $(basename $(notdir $(C_FILE))))
 override CXX_MODULE    := $(strip $(basename $(notdir $(CXX_MODULE))))
 override TRANSLATION   := $(strip $(basename $(notdir $(TRANSLATION))))
 override NLS_HEADER    := $(strip $(basename $(notdir $(NLS_HEADER))))
@@ -4924,9 +4927,9 @@ $(foreach f,ALPHA BETA TIMESTAMP,\
 
 # Check if there is at least one artifact to be created/deleted
 $(if $(strip \
-    $(or $(NAMESPACE),$(NMS_HEADER),$(LIBRARY),$(LIB_HEADER),\
-         $(CLASS),$(F_FILE),$(C_FILE),$(CXX_FILE),$(C_MAIN),\
-         $(CXX_MAIN),$(TEMPLATE),$(C_MODULE),$(CXX_MODULE),\
+    $(or $(NAMESPACE),$(NMS_HEADER),$(LIBRARY),$(LIB_HEADER),$(CLASS),\
+         $(C_FILE),$(F_FILE),$(CXX_FILE),$(C_MAIN),$(F_MAIN),\
+         $(CXX_MAIN),$(TEMPLATE),$(C_MODULE),$(F_MODULE),$(CXX_MODULE),\
          $(TRANSLATION),$(NLS_HEADER),$(MAJOR_RELEASE),\
          $(MINOR_RELEASE),$(PATCH_RELEASE),\
      )),,\
@@ -5040,20 +5043,6 @@ ifdef CLASS
 	
 	$(call select,stdout)
 endif
-ifdef F_FILE
-	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
-	
-	$(call invalid-ext,$(SRC_EXT),$(fext))
-	$(call touch,$(srcbase)/$(F_FILE)$(SRC_EXT),$(notice))
-	$(call select,$(srcbase)/$(F_FILE)$(SRC_EXT))
-	$(call cat,'c $(call lc,$(F_FILE))$(SRC_EXT)'                      )
-	$(call cat,''                                                      )
-	$(call cat,'      program $(call lc,$(F_FILE))'                    )
-	$(call cat,'          stop'                                        )
-	$(call cat,'      end'                                             )
-	
-	$(call select,stdout)
-endif
 ifdef C_FILE
 	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
@@ -5073,6 +5062,20 @@ ifdef C_FILE
 	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'/* Libraries */'                                       )
 	$(call cat,'#include "$(C_FILE)$(INC_EXT)"'                        )
+	$(call cat,''                                                      )
+	
+	$(call select,stdout)
+endif
+ifdef F_FILE
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
+	
+	$(call invalid-ext,$(SRC_EXT),$(fext))
+	$(call touch,$(srcbase)/$(F_FILE)$(SRC_EXT),$(notice),\
+                 | sed 's/\//!/g')
+	$(call select,$(srcbase)/$(F_FILE)$(SRC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,''                                                      )
+	$(call cat,'$(idnt)'                                               )
 	$(call cat,''                                                      )
 	
 	$(call select,stdout)
@@ -5116,6 +5119,19 @@ ifdef C_MAIN
 	$(call cat,'{'                                                     )
 	$(call cat,'    return 0;'                                         )
 	$(call cat,'}'                                                     )
+	
+	$(call select,stdout)
+endif
+ifdef F_MAIN
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
+	
+	$(call invalid-ext,$(SRC_EXT),$(fext))
+	$(call touch,$(srcbase)/$(F_MAIN)$(SRC_EXT),$(notice),\
+                 | sed 's/\//!/g')
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call select,$(srcbase)/$(F_MAIN)$(SRC_EXT))
+	$(call cat,'program $(F_MAIN)'                                     )
+	$(call cat,'end program $(F_MAIN)'                                 )
 	
 	$(call select,stdout)
 endif
@@ -5167,6 +5183,27 @@ ifdef C_MODULE
 	$(call cat,'#endif'                                                )
 	
 	$(call mkdir,$(srcbase)/$(C_MODULE))
+	
+	$(call select,stdout)
+endif
+ifdef F_MODULE
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
+	
+	$(call invalid-ext,$(SRC_EXT),$(fext))
+	$(call touch,$(srcbase)/$(F_MODULE)$(SRC_EXT),$(notice),\
+                 | sed 's/\//!/g')
+	$(call select,$(srcbase)/$(F_MODULE)$(SRC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'module $(F_MODULE)'                                    )
+	$(call cat,''                                                      )
+	$(call cat,'    implicit none'                                     )
+	$(call cat,''                                                      )
+	$(call cat,'    private'                                           )
+	$(call cat,'    public'                                            )
+	$(call cat,''                                                      )
+	$(call cat,'contains'                                              )
+	$(call cat,''                                                      )
+	$(call cat,'end module $(F_MODULE)'                                )
 	
 	$(call select,stdout)
 endif
@@ -5322,12 +5359,12 @@ ifdef CLASS
 	$(call delete-file,$(incbase)/$(CLASS),$(INC_EXT) $(hxxext))
 	$(call delete-file,$(srcbase)/$(CLASS),$(SRC_EXT) $(cxxext))
 endif
-ifdef F_FILE
-	$(call delete-file,$(srcbase)/$(F_FILE),$(SRC_EXT) $(fext))
-endif
 ifdef C_FILE
 	$(call delete-file,$(incbase)/$(C_FILE),$(INC_EXT) $(hext))
 	$(call delete-file,$(srcbase)/$(C_FILE),$(SRC_EXT) $(cext))
+endif
+ifdef F_FILE
+	$(call delete-file,$(srcbase)/$(F_FILE),$(SRC_EXT) $(fext))
 endif
 ifdef CXX_FILE
 	$(call delete-file,$(incbase)/$(CXX_FILE),$(INC_EXT) $(hxxext))
@@ -5335,6 +5372,9 @@ ifdef CXX_FILE
 endif
 ifdef C_MAIN
 	$(call delete-file,$(srcbase)/$(C_MAIN),$(SRC_EXT) $(cext))
+endif
+ifdef F_MAIN
+	$(call delete-file,$(srcbase)/$(F_MAIN),$(SRC_EXT) $(fext))
 endif
 ifdef CXX_MAIN
 	$(call delete-file,$(srcbase)/$(CXX_MAIN),$(SRC_EXT) $(cxxext))
@@ -5345,6 +5385,9 @@ endif
 ifdef C_MODULE
 	$(call delete-file,$(incbase)/$(C_MODULE),$(INC_EXT) $(hext))
 	$(call rm-if-empty,$(srcbase)/$(C_MODULE))
+endif
+ifdef F_MODULE
+	$(call delete-file,$(srcbase)/$(F_MODULE),$(SRC_EXT) $(fext))
 endif
 ifdef CXX_MODULE
 	$(call delete-file,$(incbase)/$(CXX_MODULE),$(INC_EXT) $(hxxext))
@@ -5597,12 +5640,14 @@ projecthelp:
 	@echo " * LIBRARY:          Directory for library (of templates)   "
 	@echo " * LIB_HEADER:       Header with all includes in a library  "
 	@echo " * CLASS:            New file for a C++ class               "
-	@echo " * F_FILE:           Ordinary C file                        "
 	@echo " * C_FILE:           Ordinary C source and header           "
+	@echo " * F_FILE:           Ordinary C file                        "
 	@echo " * CXX_FILE:         Ordinary C++ source and header         "
 	@echo " * C_MAIN:           Ordinary C main                        "
+	@echo " * F_MAIN:           Ordinary Fortran program               "
 	@echo " * CXX_MAIN:         Ordinary C++ main                      "
 	@echo " * C_MODULE:         C header and dir for its sources       "
+	@echo " * F_MODULE:         Fortran module                         "
 	@echo " * CXX_MODULE:       C++ header and dif for its sources     "
 	@echo " * TEMPLATE:         C++ template file                      "
 	@echo " * TRANSLATION:      Portable object translation            "

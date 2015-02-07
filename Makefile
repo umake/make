@@ -5829,22 +5829,26 @@ else
 	$(call echo,"----------------------------------------")
 	$(call prompt,"syslib:       ",$(syslib)              )
 	$(call prompt,"syslibname:   ",$(syslibname)          )
+	$(call prompt,"syslink:      ",$(syslink)             )
 	
 	$(call echo,"${WHITE}\nLOCAL LIBRARY           ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"loclib:       ",$(loclib)              )
 	$(call prompt,"loclibname:   ",$(loclibname)          )
+	$(call prompt,"loclink:      ",$(loclink)             )
 	
 	$(call echo,"${WHITE}\nDEPENDENCY LIBRARY      ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"deplib:       ",$(deplib)              )
 	$(call prompt,"deplibname:   ",$(deplibname)          )
+	$(call prompt,"deplink:      ",$(deplink)             )
 	
 	$(call echo,"${WHITE}\nLIBRARY                 ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"lib_in:       ",$(lib_in)              )
 	$(call prompt,"libpat:       ",$(libpat)              )
 	$(call prompt,"libname:      ",$(libname)             )
+	$(call prompt,"liblink:      ",$(liblink)             )
 	$(call prompt,"lib:          ",$(lib)                 )
 	
 	$(call echo,"${WHITE}\nTEST                    ${RES}")

@@ -25,7 +25,7 @@ install:
   # gfortran 4.8
   - if [ "$TRAVIS_OS_NAME" = "linux" ];
     then
-      echo "Using gfortran for Fortran compilation"
+      echo "Using gfortran for Fortran compilation";
       sudo apt-get install -qq gfortran-4.8;
       sudo update-alternatives
            --install /usr/bin/gfortran gfortran /usr/bin/gfortran-4.8 90;
@@ -34,7 +34,7 @@ install:
   # gcc/g++ 4.8.1
   - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CXX" = "g++" ];
     then
-      echo "Using gcc/g++ for C/C++ compilation"
+      echo "Using gcc/g++ for C/C++ compilation";
       sudo apt-get install -qq g++-4.8;
       sudo update-alternatives 
            --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90;
@@ -45,7 +45,7 @@ install:
   # clang/clang++ 3.4
   - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CXX" == "clang++" ]; 
     then 
-      echo "Using clang/clang++ for C/C++ compilation"
+      echo "Using clang/clang++ for C/C++ compilation";
     fi
       # sudo apt-get install --allow-unauthenticated -qq clang-3.4;
       # sudo update-alternatives 

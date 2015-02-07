@@ -65,6 +65,7 @@ echo
 assert_end "Fortran Tests"
 echo
 
+echo -n "Basic test"
 . test/c/test_single-file.sh
 cd test/tmp
 make

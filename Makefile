@@ -1912,16 +1912,15 @@ $(if $(strip $(esqlall)),$(eval ldflags += $(ldesql) ))
 
 # Static libraries
 # ==================
-#  1) Get all source files that may be compiled to create the static lib
-#  2) Get all source files from above without root directory
-#  3) Get complete static library paths from all libraries
-#  4) Store static library paths without root directory
-#  5) Create library simple names, without directories or extension
-#  6) Create library flags, to be used with the linker
-#  7) Create library names, with directories, from the source
-#  8) Create one var with complete path sources for each lib above
-#  9) Create one var with objects for each lib above
-# 10) Create variables for all static library objects
+# 1) Get all source files that may be compiled to create the static lib
+# 2) Get all source files from above without root directory
+# 3) Get complete static library paths from all libraries
+# 4) Create library simple names, without directories or extension
+# 5) Create library flags, to be used with the linker
+# 6) Create library names, with directories, from the source
+# 7) Create one var with complete path sources for each lib above
+# 8) Create one var with objects for each lib above
+# 9) Create variables for all static library objects
 #------------------------------------------------------------------[   ]
 ifndef NO_ARLIBS
 #------------------------------------------------------------------[ 1 ]
@@ -1932,49 +1931,46 @@ arall     := $(foreach l,$(liball),\
 #------------------------------------------------------------------[ 2 ]
 arsrc     := $(call not-root,$(arall))
 #------------------------------------------------------------------[ 3 ]
-arpatall  := $(call expand-path,$(ar_in),$(liball),$(srcdir))
+arpat     := $(call expand-path,$(ar_in),$(liball),$(srcdir))
 #------------------------------------------------------------------[ 4 ]
-arpatsrc  := $(call not-root,$(arpatall))
+arname    := $(notdir $(basename $(arpat)))
 #------------------------------------------------------------------[ 5 ]
-arlibname := $(notdir $(basename $(arpatsrc)))
+arlink    := $(addprefix -l,$(arname))
 #------------------------------------------------------------------[ 6 ]
-arlink    := $(addprefix -l,$(arlibname))
-#------------------------------------------------------------------[ 7 ]
 define arlib-name
 $(foreach p,$(call not-root,$(basename $1)),\
     $(patsubst $(subst ./,,$(dir $p))%,\
        $(firstword $(libdir))/$(subst ./,,$(dir $p))lib%$(arext),$p))
 endef
-arlib     := $(call arlib-name,$(arpatall))
-#------------------------------------------------------------------[ 8 ]
-$(foreach p,$(arpatall),\
+arlib     := $(call arlib-name,$(arpat))
+#------------------------------------------------------------------[ 7 ]
+$(foreach p,$(arpat),\
     $(eval $(call not-root,$(call arlib-name,$p))_all := \
         $(foreach l,$(liball),\
             $(if $(strip $(findstring $p,$l)),$l)\
 )))
-#------------------------------------------------------------------[ 9 ]
+#------------------------------------------------------------------[ 8 ]
 $(foreach p,$(call not-root,$(arlib)),\
     $(eval $p_obj := \
         $(addprefix $(objdir)/,$(addsuffix $(objext),\
             $(call not-root,$(basename $($p_all))))\
 )))
-#------------------------------------------------------------------[ 10 ]
+#------------------------------------------------------------------[ 9 ]
 arobj     := $(sort $(foreach p,$(arlib),$($p_obj)))
 #------------------------------------------------------------------[   ]
 endif # ifndef NO_ARLIBS
 
 # Dynamic libraries
 # ===================
-#  1) Get all source files that may be compiled to create the shared lib
-#  2) Get all source files from above without root directory
-#  3) Get complete dynamic library paths from all libraries
-#  4) Store dynamic library paths without root directory
-#  5) Create library simple names, without directories or extension
-#  6) Create library flags, to be used with the linker
-#  7) Create library complete names, with directories, from the source
-#  8) Create one var with complete path sources for each lib above
-#  9) Create one var with objects for each lib above
-# 10) Create variables for all dynamic library objects
+# 1) Get all source files that may be compiled to create the shared lib
+# 2) Get all source files from above without root directory
+# 3) Get complete dynamic library paths from all libraries
+# 4) Create library simple names, without directories or extension
+# 5) Create library flags, to be used with the linker
+# 6) Create library complete names, with directories, from the source
+# 7) Create one var with complete path sources for each lib above
+# 8) Create one var with objects for each lib above
+# 9) Create variables for all dynamic library objects
 #------------------------------------------------------------------[   ]
 ifndef NO_SHRLIBS
 #------------------------------------------------------------------[ 1 ]
@@ -1985,33 +1981,31 @@ shrall     := $(foreach l,$(liball),\
 #------------------------------------------------------------------[ 2 ]
 shrsrc     := $(call not-root,$(shrall))
 #------------------------------------------------------------------[ 3 ]
-shrpatall  := $(call expand-path,$(shr_in),$(liball),$(srcdir))
+shrpat     := $(call expand-path,$(shr_in),$(liball),$(srcdir))
 #------------------------------------------------------------------[ 4 ]
-shrpatsrc  := $(call not-root,$(shrpatall))
+shrname    := $(notdir $(basename $(shrpat)))
 #------------------------------------------------------------------[ 5 ]
-shrlibname := $(notdir $(basename $(shrpatsrc)))
+shrlink    := $(addprefix -l,$(shrname))
 #------------------------------------------------------------------[ 6 ]
-shrlink    := $(addprefix -l,$(shrlibname))
-#------------------------------------------------------------------[ 7 ]
 define shrlib-name
 $(foreach p,$(call not-root,$(basename $1)),\
     $(patsubst $(subst ./,,$(dir $p))%,\
        $(firstword $(libdir))/$(subst ./,,$(dir $p))lib%$(shrext),$p))
 endef
-shrlib     := $(call shrlib-name,$(shrpatall))
-#------------------------------------------------------------------[ 8 ]
-$(foreach p,$(shrpatall),\
+shrlib     := $(call shrlib-name,$(shrpat))
+#------------------------------------------------------------------[ 7 ]
+$(foreach p,$(shrpat),\
     $(eval $(call not-root,$(call shrlib-name,$p))_all := \
         $(foreach l,$(liball),\
             $(if $(strip $(findstring $p,$l)),$l)\
 )))
-#------------------------------------------------------------------[ 9 ]
+#------------------------------------------------------------------[ 8 ]
 $(foreach p,$(call not-root,$(shrlib)),\
     $(eval $p_obj := \
         $(addprefix $(objdir)/,$(addsuffix $(objext),\
             $(call not-root,$(basename $($p_all))))\
 )))
-#------------------------------------------------------------------[ 10 ]
+#------------------------------------------------------------------[ 9 ]
 shrobj     := $(sort $(foreach p,$(shrlib),$($p_obj)))
 #------------------------------------------------------------------[   ]
 endif # ifndef NO_SHRLIBS
@@ -2033,12 +2027,12 @@ $(foreach l,$(filter -l%,$(ldflags)),\
                 $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))\
 )))
 #------------------------------------------------------------------[ 2 ]
-syslibname := $(patsubst lib%,%,$(notdir $(basename $(syslib))))
+sysname    := $(patsubst lib%,%,$(notdir $(basename $(syslib))))
 #------------------------------------------------------------------[ 3 ]
-syslink    := $(addprefix -l,$(syslibname))
+syslink    := $(addprefix -l,$(sysname))
 #------------------------------------------------------------------[ 4 ]
 syslibdep  := $(addprefix $(depdir)/$(firstword $(libdir))/,\
-                  $(addsuffix $(sysext),$(syslibname)))
+                  $(addsuffix $(sysext),$(sysname)))
 
 # Local libraries
 # =================
@@ -2051,19 +2045,19 @@ loclib     := $(foreach l,$(filter -l%,$(ldflags)),\
                       $(lastword $(foreach e,$(libext),\
                           $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))))
 #------------------------------------------------------------------[ 2 ]
-loclibname := $(patsubst lib%,%,$(notdir $(basename $(loclib))))
+locname    := $(patsubst lib%,%,$(notdir $(basename $(loclib))))
 #------------------------------------------------------------------[ 3 ]
-loclink    := $(addprefix -l,$(loclibname))
+loclink    := $(addprefix -l,$(locname))
 
 # Dependency libraries
 # ==================
 # 1) Dependency library names, deduced from above
 # 2) Dependency library flags, to be used with the linker
 #------------------------------------------------------------------[ 1 ]
-deplibname := $(call rfilter-out,$(libname) $(syslibname) $(loclibname),\
+depname    := $(call rfilter-out,$(name) $(sysname) $(locname),\
                   $(patsubst -l%,%,$(filter -l%,$(ldflags))))
 #------------------------------------------------------------------[ 3 ]
-deplink    := $(addprefix -l,$(deplibname))
+deplink    := $(addprefix -l,$(depname))
 
 # General libraries
 # ===================
@@ -2076,10 +2070,9 @@ deplink    := $(addprefix -l,$(deplibname))
 #------------------------------------------------------------------[ 1 ]
 lib     := $(arlib) $(shrlib) $(syslib) $(loclib) $(deplib)
 #------------------------------------------------------------------[ 2 ]
-libpat  := $(arpatall) $(shrpatall)
+libpat  := $(arpat) $(shrpat)
 #------------------------------------------------------------------[ 3 ]
-libname := $(arlibname) $(shrlibname)
-libname += $(syslibname) $(loclibname) $(deplibname)
+libname := $(arname) $(shrname) $(sysname) $(locname) $(depname)
 #------------------------------------------------------------------[ 4 ]
 liblink := $(arlink) $(shrlink)
 liblink += $(syslink) $(loclink) $(deplink)
@@ -5808,9 +5801,8 @@ else
 	$(call prompt,"ar_in:        ",$(ar_in)               )
 	$(call prompt,"arall:        ",$(arall)               )
 	$(call prompt,"arsrc:        ",$(arsrc)               )
-	$(call prompt,"arpatall:     ",$(arpatall)            )
-	$(call prompt,"arpatsrc:     ",$(arpatsrc)            )
-	$(call prompt,"arlibname:    ",$(arlibname)           )
+	$(call prompt,"arpat:        ",$(arpat)               )
+	$(call prompt,"arname:       ",$(arname)              )
 	$(call prompt,"arlink:       ",$(arlink)              )
 	$(call prompt,"arlib:        ",$(arlib)               )
 	
@@ -5819,28 +5811,27 @@ else
 	$(call prompt,"shr_in:       ",$(shr_in)              )
 	$(call prompt,"shrall:       ",$(shrall)              )
 	$(call prompt,"shrsrc:       ",$(shrsrc)              )
-	$(call prompt,"shrpatall:    ",$(shrpatall)           )
-	$(call prompt,"shrpatsrc:    ",$(shrpatsrc)           )
-	$(call prompt,"shrlibname:   ",$(shrlibname)          )
+	$(call prompt,"shrpat:       ",$(shrpat)              )
+	$(call prompt,"shrname:      ",$(shrname)             )
 	$(call prompt,"shrlink:      ",$(shrlink)             )
 	$(call prompt,"shrlib:       ",$(shrlib)              )
 	
 	$(call echo,"${WHITE}\nSYSTEM LIBRARY          ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"syslib:       ",$(syslib)              )
-	$(call prompt,"syslibname:   ",$(syslibname)          )
+	$(call prompt,"sysname:      ",$(sysname)             )
 	$(call prompt,"syslink:      ",$(syslink)             )
 	
 	$(call echo,"${WHITE}\nLOCAL LIBRARY           ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"loclib:       ",$(loclib)              )
-	$(call prompt,"loclibname:   ",$(loclibname)          )
+	$(call prompt,"locname:      ",$(locname)             )
 	$(call prompt,"loclink:      ",$(loclink)             )
 	
 	$(call echo,"${WHITE}\nDEPENDENCY LIBRARY      ${RES}")
 	$(call echo,"----------------------------------------")
 	$(call prompt,"deplib:       ",$(deplib)              )
-	$(call prompt,"deplibname:   ",$(deplibname)          )
+	$(call prompt,"depname:      ",$(depname)             )
 	$(call prompt,"deplink:      ",$(deplink)             )
 	
 	$(call echo,"${WHITE}\nLIBRARY                 ${RES}")

@@ -8,9 +8,11 @@ compiler:
   - clang
   - gcc
 
-before_install:
-  - export FC="gfortran"
+env:
+  global:
+    - export FC="gfortran"
 
+before_install:
   # gcc/g++ 4.8.1, clang/clang++ 3.4 and gfortran 4.8
   - if [ "$TRAVIS_OS_NAME" = "linux" ];
     then

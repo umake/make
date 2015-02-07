@@ -9,7 +9,7 @@ compiler:
   - gcc
 
 before_install:
-  - export F77="gfortran" FC="gfortran"
+  - export FC="gfortran"
 
   # gcc/g++ 4.8.1, clang/clang++ 3.4 and gfortran 4.8
   - if [ "$TRAVIS_OS_NAME" = "linux" ];
@@ -23,16 +23,18 @@ install:
   - sudo apt-get install -qq bc
 
   # gfortran 4.8
-  - if [[ "$TRAVIS_OS_NAME" = "linux" ]];
+  - if [ "$TRAVIS_OS_NAME" = "linux" ];
     then
+      echo "Using gfortran for Fortran compilation"
       sudo apt-get install -qq gfortran-4.8;
       sudo update-alternatives
            --install /usr/bin/gfortran gfortran /usr/bin/gfortran-4.8 90;
     fi
 
   # gcc/g++ 4.8.1
-  - if [[ "$TRAVIS_OS_NAME" = "linux" ]] && [[ "$CXX" = "g++" ]];
+  - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CXX" = "g++" ];
     then
+      echo "Using gcc/g++ for C/C++ compilation"
       sudo apt-get install -qq g++-4.8;
       sudo update-alternatives 
            --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90;
@@ -40,15 +42,16 @@ install:
            --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90;
     fi
 
-  # clang/clang++ 3.4
-  # - if [[ "$TRAVIS_OS_NAME" = "linux" ]] &&  [[ "$CXX" == "clang++" ]]; 
-  #   then 
-  #     sudo apt-get install --allow-unauthenticated -qq clang-3.4;
-  #     sudo update-alternatives 
-  #          --install /usr/bin/clang clang /usr/bin/clang-3.4 90;
-  #     sudo update-alternatives 
-  #          --install /usr/bin/clang++ clang++ /usr/bin/clang++-3.4 90;
-  #   fi
+  clang/clang++ 3.4
+  - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ "$CXX" == "clang++" ]; 
+    then 
+      echo "Using clang/clang++ for C/C++ compilation"
+      # sudo apt-get install --allow-unauthenticated -qq clang-3.4;
+      # sudo update-alternatives 
+      #      --install /usr/bin/clang clang /usr/bin/clang-3.4 90;
+      # sudo update-alternatives 
+      #      --install /usr/bin/clang++ clang++ /usr/bin/clang++-3.4 90;
+    fi
 
 script:
   - ./test/tests.sh

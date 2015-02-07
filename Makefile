@@ -2020,6 +2020,8 @@ endif # ifndef NO_SHRLIBS
 # ==================
 # 1) System libraries used by the user
 # 2) System library names, deduced from above
+# 3) System library flags, to be used with the linker
+# 4) System library dependencies, for finding system libraries
 #------------------------------------------------------------------[ 1 ]
 syslib     := \
 $(foreach l,$(filter -l%,$(ldflags)),\
@@ -2033,6 +2035,8 @@ $(foreach l,$(filter -l%,$(ldflags)),\
 #------------------------------------------------------------------[ 2 ]
 syslibname := $(patsubst lib%,%,$(notdir $(basename $(syslib))))
 #------------------------------------------------------------------[ 3 ]
+syslink    := $(addprefix -l,$(syslibname))
+#------------------------------------------------------------------[ 4 ]
 syslibdep  := $(addprefix $(depdir)/$(firstword $(libdir))/,\
                   $(addsuffix $(sysext),$(syslibname)))
 
@@ -2040,6 +2044,7 @@ syslibdep  := $(addprefix $(depdir)/$(firstword $(libdir))/,\
 # =================
 # 1) Local libraries used by the user
 # 2) Local library names, deduced from above
+# 3) Local library flags, to be used with the linker
 #------------------------------------------------------------------[ 1 ]
 loclib     := $(foreach l,$(filter -l%,$(ldflags)),\
                   $(foreach d,$(call rsubdir,$(call cdr,$(libdir))),\
@@ -2047,25 +2052,38 @@ loclib     := $(foreach l,$(filter -l%,$(ldflags)),\
                           $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))))
 #------------------------------------------------------------------[ 2 ]
 loclibname := $(patsubst lib%,%,$(notdir $(basename $(loclib))))
+#------------------------------------------------------------------[ 3 ]
+loclink    := $(addprefix -l,$(loclibname))
 
 # Dependency libraries
 # ==================
 # 1) Dependency library names, deduced from above
+# 2) Dependency library flags, to be used with the linker
 #------------------------------------------------------------------[ 1 ]
 deplibname := $(call rfilter-out,$(libname) $(syslibname) $(loclibname),\
                   $(patsubst -l%,%,$(filter -l%,$(ldflags))))
+#------------------------------------------------------------------[ 3 ]
+deplink    := $(addprefix -l,$(deplibname))
 
 # General libraries
 # ===================
 # 1) lib     : All complete library names (path/libname.ext)
 # 2) libpat  : Save complete paths for libraries (non-wildcard-expanded)
 # 3) libname : All library names (name)
+# 3) liblink : All library flags (-lname)
 # 4) ldlibs  : Get all subdirectories of the library dirs and
 #              add them as paths to be searched for libraries
+#------------------------------------------------------------------[ 1 ]
 lib     := $(arlib) $(shrlib) $(syslib) $(loclib) $(deplib)
+#------------------------------------------------------------------[ 2 ]
 libpat  := $(arpatall) $(shrpatall)
+#------------------------------------------------------------------[ 3 ]
 libname := $(arlibname) $(shrlibname)
 libname += $(syslibname) $(loclibname) $(deplibname)
+#------------------------------------------------------------------[ 4 ]
+liblink := $(arlink) $(shrlink)
+liblink += $(syslink) $(loclink) $(deplink)
+#------------------------------------------------------------------[ 5 ]
 libsub   = $(if $(strip $(lib)),\
                $(foreach d,$(libdir),$(call rsubdir,$d)))
 ldlibs   = $(LDLIBS) $(addprefix -L$(space),$(sort $(libsub)))
@@ -2164,9 +2182,10 @@ $(foreach sep,/ .,$(foreach b,$(call not-root,$(binall)),$(or\
                           $(userobj) $(autoobj) $(mainobj))),\
     $(eval $b_lib  += $(foreach d,$(libdir),\
                           $(filter $d/$b$(sep)%,$(lib)))),\
-    $(eval $b_link += $(foreach n,$(arlink) $(shrlink),\
-                          $(if $(strip $(filter %$n,\
-                                   $(basename $($b_lib)))),$n))),\
+    $(eval $b_link += $(foreach l,$(arlink) $(shrlink),\
+                          $(if $(strip $(filter %$(subst -l,,$l),\
+                              $(filter $b$(sep)%,$(call not-root,\
+                                  $(basename $($b_lib)))))),$l))),\
 )))
 #------------------------------------------------------------------[ 3 ]
 define common-factory
@@ -2176,14 +2195,14 @@ comsrc  := $(call common-factory,src,$(usersrc) $(autosrc) $(mainsrc))
 comall  := $(call common-factory,all,$(userall) $(autoall) $(mainall))
 comobj  := $(call common-factory,obj,$(userobj) $(autoobj) $(mainobj))
 comlib  := $(call common-factory,lib,$(lib))
-comlink := $(call common-factory,link,$(libname))
+comlink := $(call common-factory,link,$(liblink))
 #------------------------------------------------------------------[ 4 ]
 $(foreach b,$(call not-root,$(binall)),$(or\
     $(eval $b_src     := $(comsrc)  $($b_src)  ),\
     $(eval $b_all     := $(comall)  $($b_all)  ),\
     $(eval $b_obj     := $(comobj)  $($b_obj)  ),\
     $(eval $b_lib     := $(comlib)  $($b_lib)  ),\
-    $(eval $b_link    := $(sort $(addprefix -l,$($b_link) $(comlink)))),\
+    $(eval $b_link    := $($b_link) $(comlink) ),\
     $(eval $b_has_c   := $(strip $(call has-c,$($b_src)))),\
     $(eval $b_has_f   := $(strip $(call has-f,$($b_src)))),\
     $(eval $b_has_cxx := $(strip $(call has-cxx,$($b_src)))),\

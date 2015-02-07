@@ -4448,7 +4448,7 @@ ifndef SILENT
 ifndef MORE
 
 define ERROR_SEPARATOR
-########################################################################
+$(shell printf '%*s\n' "$${COLUMNS:-$$(tput cols)}" '' | tr ' ' '#')
 endef
 
 define ERROR

@@ -46,12 +46,12 @@ install:
   - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ "$CXX" == "clang++" ]; 
     then 
       echo "Using clang/clang++ for C/C++ compilation"
+    fi
       # sudo apt-get install --allow-unauthenticated -qq clang-3.4;
       # sudo update-alternatives 
       #      --install /usr/bin/clang clang /usr/bin/clang-3.4 90;
       # sudo update-alternatives 
       #      --install /usr/bin/clang++ clang++ /usr/bin/clang++-3.4 90;
-    fi
 
 script:
   - ./test/tests.sh

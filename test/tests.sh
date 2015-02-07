@@ -14,6 +14,7 @@ function setup {
   cp Makefile test/tmp/Makefile
   cd test/tmp
   if ! [ -z "$CC" ];  then echo "CC  := ${CC}"  >> .compiler.mk; fi
+  if ! [ -z "$FC"  ]; then echo "FC  := ${CXX}" >> .compiler.mk; fi
   if ! [ -z "$CXX" ]; then echo "CXX := ${CXX}" >> .compiler.mk; fi
 }
 
@@ -23,6 +24,9 @@ function teardown {
 }
 
 echo "Using program \"$MAKE\""
+if ! [ -z "$CC" ];  then echo "CC  = \"$CC\" "; fi
+if ! [ -z "$FC"  ]; then echo "FC  = \"$FC\" "; fi
+if ! [ -z "$CXX" ]; then echo "CXX = \"$CXX\""; fi
 echo
 
 # Targets

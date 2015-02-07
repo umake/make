@@ -134,8 +134,10 @@
     [ ] Test internationalization (gettext).
 
 [Tests:Fortran]
-    [ ] Test single-file Fortran compilation.
-    [ ] Test multiple-file Fortran compilation.
+    [X] Test single-file Fortran compilation.
+    [X] Test multiple-file Fortran compilation.
+    [ ] Test Fortran static library generation.
+    [ ] Test Fortran shared library generation.
 
 [Tests:Assembly]
     [ ] Test single-file Assembly compilation.

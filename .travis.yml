@@ -24,7 +24,10 @@ install:
   - sudo apt-get install -qq bc
 
   # gfortran
-  - sudo apt-get install -qq gfortran
+  - sudo apt-get install -qq gfortran-4.8
+  - sudo update-alternatives
+         --install /usr/bin/gfortran gfortran /usr/bin/gfortran-4.8 90;
+  - export F77="gfortran" FC="gfortran"
 
   # g++4.8.1
   - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CXX" = "g++" ];

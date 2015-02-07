@@ -131,6 +131,12 @@ _assert_fail() {
     report="test #$tests_ran \"$2${3:+ <<< $3}\" failed:${_indent}$1"
     if [[ -n "$STOP" ]]; then
         [[ -n "$DEBUG" ]] && echo
+        
+        echo
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+        eval $2 <<< ${3:-} || true;
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
+        
         echo "$report"
         exit 1
     fi

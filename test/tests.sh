@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+export STOP=1
 . test/assert.sh
 . test/helper.sh
 

@@ -4601,12 +4601,13 @@ endef
 # Create a new file based on a model
 # @param $1 File to be created
 # @param $2 Model to be used in the creation (optional)
+# @param $3 Command to postprocess $1 content (with pipe)
 define touch
 $(if $(wildcard $1*),,\
     $(call phony-status,$(MSG_TOUCH)))
 $(if $(wildcard $1*),,\
     $(if $(strip $2),\
-        $(quiet) cat $2 > $1,\
+        $(quiet) cat $2 $(strip $3) > $1,\
         $(quiet) touch $1))
 $(if $(wildcard $1*),,\
     $(call phony-ok,$(MSG_TOUCH)))

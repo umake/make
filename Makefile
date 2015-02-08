@@ -1875,29 +1875,34 @@ srcdep  := $(patsubst %,$(depdir)/%$(depext),$(basename $(src)))
 
 # Header files
 # ==============
-# 1) userinc : Get all directories able to be included
-# 2) userinc : Remove empty directories in the leaves of userinc tree
-# 2) autoinc : Join automatically generated include files
-# 3) incall  : Get all subdirectories of the included dirs
-# 4) libs    : Add subidirectories as paths to be searched for headers
+# 1) *libs   : Get headers from external variables
+# 2) userinc : Get all directories able to be included
+# 3) userinc : Remove empty directories in the leaves of userinc tree
+# 4) autoinc : Join automatically generated include files
+# 5) incall  : Get all subdirectories of the included dirs
+# 6) *libs   : Add subidirectories as paths to be searched for headers
 #------------------------------------------------------------------[ 1 ]
+aslibs  := $(call rm-trailing-bar,$(ASLIBS))
+clibs   := $(call rm-trailing-bar,$(CLIBS))
+flibs   := $(call rm-trailing-bar,$(FLIBS))
+cxxlibs := $(call rm-trailing-bar,$(CXXLIBS))
+#------------------------------------------------------------------[ 2 ]
 userinc := $(call filter-ignored,\
                $(foreach i,$(incdir),$(call rsubdir,$i)))
-#------------------------------------------------------------------[ 2 ]
+#------------------------------------------------------------------[ 3 ]
 userinc := $(foreach i,$(sort $(userinc)),\
                $(if $(filter $i/%,$(userinc)),$i,\
                    $(if $(call not-empty,$(foreach e,$(incext),\
                             $(call rwildcard,$i,*$e))),$i)))
-#------------------------------------------------------------------[ 3 ]
-autoinc := $(yaccinc) $(lexinc) $(esqlinc)
 #------------------------------------------------------------------[ 4 ]
-incall  := $(sort $(call rm-trailing-bar,$(userinc)))
-incall  += $(autoinc)
+autoinc := $(yaccinc) $(lexinc) $(esqlinc)
 #------------------------------------------------------------------[ 5 ]
-aslibs  := $(ASLIBS)  $(patsubst %,-I%,$(incall))
-clibs   := $(CLIBS)   $(patsubst %,-I%,$(incall))
-flibs   := $(FLIBS)   $(patsubst %,-I%,$(incall))
-cxxlibs := $(CXXLIBS) $(patsubst %,-I%,$(incall))
+incall  := $(sort $(call rm-trailing-bar,$(userinc) $(autoinc)))
+#------------------------------------------------------------------[ 6 ]
+aslibs  += $(patsubst %,-I$(space)%,$(incall))
+clibs   += $(patsubst %,-I$(space)%,$(incall))
+flibs   += $(patsubst %,-I$(space)%,$(incall))
+cxxlibs += $(patsubst %,-I$(space)%,$(incall))
 
 # Type-specific library flags
 # =============================
@@ -2079,10 +2084,12 @@ liblink += $(syslink) $(loclink) $(deplink)
 #------------------------------------------------------------------[ 5 ]
 libsub   = $(if $(strip $(lib)),\
                $(foreach d,$(libdir),$(call rsubdir,$d)))
-ldlibs   = $(LDLIBS) $(addprefix -L$(space),$(sort $(libsub)))
-ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath$(comma)%, \
-               $(subst -L$(space),-L,$(LDLIBS))              \
-               $(addprefix -L,$(libsub))                     \
+ldlibs   = $(call rm-trailing-bar,$(LDLIBS))
+ldlibs  += $(patsubst %,-L$(space)%,$(sort $(libsub)))
+ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,\
+               $(subst -L$(space),-L,\
+                   $(call rm-trailing-bar,$(LDLIBS)))\
+               $(addprefix -L,$(libsub))\
            ))
 
 # Object files

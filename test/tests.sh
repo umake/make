@@ -62,6 +62,8 @@ echo
 echo -n "Testing Fortran "
 . test/fortran/test_single-file.sh
 . test/fortran/test_multiple-file.sh
+. test/fortran/test_static-lib.sh
+. test/fortran/test_shared-lib.sh
 echo
 assert_end "Fortran Tests"
 echo

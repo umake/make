@@ -3394,14 +3394,14 @@ $(foreach p,test bench,$(foreach e,$(cext),\
     $(eval $(call compile-c,$(objdir)/$($pdir),$($pdir),$e))))
 
 #======================================================================#
-# Function: compile-fortran                                            #
+# Function: compile-f                                                  #
 # @param  $1 Directory for object files                                #
 # @param  $2 Root source directory                                     #
 # @param  $3 Fortran extension                                         #
 # @return Target to compile all Fortran files with the given           #
 #         extension, looking in the right root directory               #
 #======================================================================#
-define compile-fortran
+define compile-f
 $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(call status,$$(MSG_F_COMPILE))
 	
@@ -3417,9 +3417,9 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(call ok,$$(MSG_F_COMPILE),$$@)
 endef
 $(foreach r,$(srcdir),$(foreach e,$(fext),\
-    $(eval $(call compile-fortran,$(objdir),$r,$e))))
+    $(eval $(call compile-f,$(objdir),$r,$e))))
 $(foreach p,test bench,$(foreach e,$(fext),\
-    $(eval $(call compile-fortran,$(objdir)/$($pdir),$($pdir),$e))))
+    $(eval $(call compile-f,$(objdir)/$($pdir),$($pdir),$e))))
 
 #======================================================================#
 # Function: compile-cpp                                                #
@@ -3473,13 +3473,13 @@ $(foreach s,$(foreach e,$(cext),$(filter %$e,$(shrall))),\
 ))
 
 #======================================================================#
-# Function: compile-shrlib-fortran                                     #
+# Function: compile-shrlib-f                                           #
 # @param  $1 File root directory                                       #
 # @param  $2 File basename without root dir                            #
 # @param  $3 File extension                                            #
 # @return Target to compile the Fortran library file                   #
 #======================================================================#
-define compile-shrlib-fortran
+define compile-shrlib-f
 $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(call status,$$(MSG_F_LIBCOMP))
 	
@@ -3495,7 +3495,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(call ok,$$(MSG_F_LIBCOMP),$$@)
 endef
 $(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
-    $(eval $(call compile-shrlib-fortran,$(strip \
+    $(eval $(call compile-shrlib-f,$(strip \
         $(call root,$s)/),$(call not-root,$(basename $s)),$(suffix $s))\
 ))
 

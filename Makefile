@@ -3514,8 +3514,8 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$2)
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) $$(shrflags) $$(cxxflags) \
-	                  -c $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) \
+	                  $$(shrflags) $$(cxxflags) -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
 endef

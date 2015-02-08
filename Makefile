@@ -3994,6 +3994,8 @@ mostlyclean:
 	$(call rm-if-empty,$(objdir),\
 	    $(srcobj) $(testobj) $(benchobj)\
 	    $(covdata) $(covtestdata) $(covbenchdata))
+	$(foreach d,$(call invert,$(sort $(dir $(fhead)))),\
+	    $(call rm-if-empty,$d,$(filter $d%,$(fhead)))$(newline))
 
 .PHONY: clean
 clean: mostlyclean
@@ -4426,7 +4428,7 @@ endef
 #======================================================================#
 define rm-if-empty
 	$(if $(strip $2),$(call srmdir,$2))
-	$(foreach d,$(strip $1),\
+	$(foreach d,$(strip $(call rm-trailing-bar,$1)),\
 	    $(if $(strip $(call rwildcard,$d,*)),\
 	        $(if $(strip $2),
 	            $(if $(strip $(MAINTEINER_CLEAN)),\

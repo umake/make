@@ -3363,6 +3363,7 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$$(call not-root,$1/$$*))
+	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) $$(cppflags) $$(cflags) $$(clibs) \
 	                 -c $$< -o $$@ $$(ERROR)
@@ -3373,6 +3374,34 @@ $(foreach r,$(srcdir),$(foreach e,$(cext),\
     $(eval $(call compile-c,$(objdir),$r,$e))))
 $(foreach p,test bench,$(foreach e,$(cext),\
     $(eval $(call compile-c,$(objdir)/$($pdir),$($pdir),$e))))
+
+#======================================================================#
+# Function: compile-fortran                                            #
+# @param  $1 Directory for object files                                #
+# @param  $2 Root source directory                                     #
+# @param  $3 Fortran extension                                         #
+# @return Target to compile all Fortran files with the given           #
+#         extension, looking in the right root directory               #
+#======================================================================#
+define compile-fortran
+$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
+	$$(call status,$$(MSG_F_COMPILE))
+	
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	$$(quiet) $$(call mksubdir,$$(incdir),$$@)
+	$$(quiet) $$(call fortran-depend,$$<,$$@,$$(call not-root,$3/$$*))
+	
+	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
+	$$(quiet) $$(FC) $$(cppflags) $$(fflags) $$(flibs) \
+	                 -J $$(firstword $$(incdir))/$$(dir $$*) \
+	                 -c $$< -o $$@ $$(ERROR)
+	
+	$$(call ok,$$(MSG_F_COMPILE),$$@)
+endef
+$(foreach r,$(srcdir),$(foreach e,$(fext),\
+    $(eval $(call compile-fortran,$(objdir),$r,$e))))
+$(foreach p,test bench,$(foreach e,$(fext),\
+    $(eval $(call compile-fortran,$(objdir)/$($pdir),$($pdir),$e))))
 
 #======================================================================#
 # Function: compile-cpp                                                #
@@ -3388,6 +3417,7 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$$(call not-root,$1/$$*))
+	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
 	                  -c $$< -o $$@ $$(ERROR)
@@ -3398,31 +3428,6 @@ $(foreach r,$(srcdir),$(foreach e,$(cxxext),\
     $(eval $(call compile-cpp,$(objdir),$r,$e))))
 $(foreach p,test bench,$(foreach e,$(cxxext),\
     $(eval $(call compile-cpp,$(objdir)/$($pdir),$($pdir),$e))))
-
-#======================================================================#
-# Function: compile-fortran                                            #
-# @param  $1 Directory for object files                                #
-# @param  $2 Root source directory                                     #
-# @param  $3 Fortran extension                                         #
-# @return Target to compile all Fortran files with the given           #
-#         extension, looking in the right root directory               #
-#======================================================================#
-define compile-fortran
-$1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
-	$$(call status,$$(MSG_F_COMPILE))
-	
-	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call fortran-depend,$$<,$$@,$$(call not-root,$3/$$*))
-	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) $$(cppflags) $$(fflags) $$(flibs) \
-	                 -c $$< -o $$@ $$(ERROR)
-	
-	$$(call ok,$$(MSG_F_COMPILE),$$@)
-endef
-$(foreach r,$(srcdir),$(foreach e,$(fext),\
-    $(eval $(call compile-fortran,$(objdir),$r,$e))))
-$(foreach p,test bench,$(foreach e,$(fext),\
-    $(eval $(call compile-fortran,$(objdir)/$($pdir),$($pdir),$e))))
 
 #======================================================================#
 # Function: compile-shrlib-c                                           #
@@ -3437,6 +3442,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$2)
+	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CC) $$(cppflags) $$(clibs) $$(shrflags) $$(cflags) \
 	                 -c $$< -o $$@ $$(ERROR)
@@ -3445,6 +3451,33 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 endef
 $(foreach s,$(foreach e,$(cext),$(filter %$e,$(shrall))),\
     $(eval $(call compile-shrlib-c,$(strip \
+        $(call root,$s)/),$(call not-root,$(basename $s)),$(suffix $s))\
+))
+
+#======================================================================#
+# Function: compile-shrlib-fortran                                     #
+# @param  $1 File root directory                                       #
+# @param  $2 File basename without root dir                            #
+# @param  $3 File extension                                            #
+# @return Target to compile the Fortran library file                   #
+#======================================================================#
+define compile-shrlib-fortran
+$$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
+	$$(call status,$$(MSG_F_LIBCOMP))
+	
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	$$(quiet) $$(call mksubdir,$$(incdir),$$@)
+	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
+	
+	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
+	$$(quiet) $$(FC) $$(cppflags) $$(flibs) $$(shrflags) $$(fflags) \
+	                 -J $$(firstword $$(incdir))/$$(dir $2) \
+	                 -c $$< -o $$@ $$(ERROR)
+	
+	$$(call ok,$$(MSG_F_LIBCOMP),$$@)
+endef
+$(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
+    $(eval $(call compile-shrlib-fortran,$(strip \
         $(call root,$s)/),$(call not-root,$(basename $s)),$(suffix $s))\
 ))
 
@@ -3461,6 +3494,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$2)
+	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
 	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) $$(shrflags) $$(cxxflags) \
 	                  -c $$< -o $$@ $$(ERROR)
@@ -3469,30 +3503,6 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 endef
 $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
     $(eval $(call compile-shrlib-cpp,$(strip \
-        $(call root,$s)/),$(call not-root,$(basename $s)),$(suffix $s))\
-))
-
-#======================================================================#
-# Function: compile-shrlib-fortran                                     #
-# @param  $1 File root directory                                       #
-# @param  $2 File basename without root dir                            #
-# @param  $3 File extension                                            #
-# @return Target to compile the Fortran library file                   #
-#======================================================================#
-define compile-shrlib-fortran
-$$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
-	$$(call status,$$(MSG_F_LIBCOMP))
-	
-	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
-	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) $$(cppflags) $$(flibs) $$(shrflags) $$(fflags) \
-	                 -c $$< -o $$@ $$(ERROR)
-	
-	$$(call ok,$$(MSG_F_LIBCOMP),$$@)
-endef
-$(foreach s,$(foreach E,$(fext),$(filter %$E,$(shrall))),\
-    $(eval $(call compile-shrlib-fortran,$(strip \
         $(call root,$s)/),$(call not-root,$(basename $s)),$(suffix $s))\
 ))
 
@@ -4310,6 +4320,7 @@ endef
 
 define fortran-depend
 $(FC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 \
+      -J $(firstword $(incdir))/$(dir $3) \
       $(cppflags) $(flibs) $(fflags) $1
 endef
 

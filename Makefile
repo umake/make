@@ -1881,6 +1881,8 @@ srcdep  := $(patsubst %,$(depdir)/%$(depext),$(basename $(src)))
 # 4) autoinc : Join automatically generated include files
 # 5) incall  : Get all subdirectories of the included dirs
 # 6) *libs   : Add subidirectories as paths to be searched for headers
+# 7) *head   : Get all language specific headers from include dirs
+# 8) headall : Get all headers from include dirs
 #------------------------------------------------------------------[ 1 ]
 aslibs  := $(call rm-trailing-bar,$(ASLIBS))
 clibs   := $(call rm-trailing-bar,$(CLIBS))
@@ -1903,6 +1905,15 @@ aslibs  += $(patsubst %,-I$(space)%,$(incall))
 clibs   += $(patsubst %,-I$(space)%,$(incall))
 flibs   += $(patsubst %,-I$(space)%,$(incall))
 cxxlibs += $(patsubst %,-I$(space)%,$(incall))
+#------------------------------------------------------------------[ 7 ]
+chead   := $(foreach d,$(incdir),$(foreach e,$(hext),\
+               $(call rwildcard,$d,*$e)))
+fhead   := $(foreach d,$(incdir),$(foreach e,$(hfext),\
+               $(call rwildcard,$d,*$e)))
+cxxhead := $(foreach d,$(incdir),$(foreach e,$(hxxext),\
+               $(call rwildcard,$d,*$e)))
+#------------------------------------------------------------------[ 8 ]
+headall := $(chead) $(fhead) $(cxxhead)
 
 # Type-specific library flags
 # =============================
@@ -5813,6 +5824,10 @@ else
 	$(call prompt,"userinc:      ",$(userinc)             )
 	$(call prompt,"autoinc:      ",$(autoinc)             )
 	$(call prompt,"incall:       ",$(incall)              )
+	$(call prompt,"chead:        ",$(chead)               )
+	$(call prompt,"fhead:        ",$(fhead)               )
+	$(call prompt,"cxxhead:      ",$(cxxhead)             )
+	$(call prompt,"headall:      ",$(headall)             )
 	
 	$(call echo,"${WHITE}\nSTATIC LIBRARY          ${RES}")
 	$(call echo,"----------------------------------------")

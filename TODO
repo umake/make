@@ -136,8 +136,8 @@
 [Tests:Fortran]
     [X] Test single-file Fortran compilation.
     [X] Test multiple-file Fortran compilation.
-    [ ] Test Fortran static library generation.
-    [ ] Test Fortran shared library generation.
+    [X] Test Fortran static library generation.
+    [X] Test Fortran shared library generation.
 
 [Tests:Assembly]
     [ ] Test single-file Assembly compilation.

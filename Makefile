@@ -3677,8 +3677,8 @@ endef
 $(foreach b,$(binall) $(testbin) $(benchbin) $(arlib) $(shrlib),\
     $(eval $(call analysis-lint-factory,$(strip \
         $(addprefix analysis_lint_,$(subst /,_,$b))),$b,$(strip \
-        $(call choose-comment,$($(call not-root,$b)_all)))\
-)))
+        $(call choose-comment,$($(call not-root,$b)_all))\
+))))
 
 #======================================================================#
 # Function: style-lint-factory                                         #
@@ -3698,8 +3698,8 @@ endef
 $(foreach b,$(binall) $(testbin) $(benchbin) $(arlib) $(shrlib),\
     $(eval $(call style-lint-factory,$(strip \
         $(addprefix style_lint_,$(subst /,_,$b))),$b,$(strip \
-        $(call choose-comment,$($(call not-root,$b)_all)))\
-)))
+        $(call choose-comment,$($(call not-root,$b)_all))\
+))))
 
 #======================================================================#
 # Function: coverage-factory                                           #

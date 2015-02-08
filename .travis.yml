@@ -10,7 +10,7 @@ compiler:
 
 env:
   global:
-    - export FC="gfortran"
+    - export FC=gfortran
 
 before_install:
   # gcc/g++ 4.8.1, clang/clang++ 3.4 and gfortran 4.8

@@ -1,3 +1,20 @@
+########################################################################
+# conf/googlebenchmark.mk                                              #
+# =========================                                            #
+#                                                                      #
+# Dependencies and compilation requirements for gbenchmark.            #
+# -------------------------------------------------------------------- #
+# MAINTEINER_NAME := Renato Cordeiro Ferreira                          #
+# MAINTEINER_MAIL := renato.cferreira@hotmail.com                      #
+# DESCRIPTION     := `gbenchmark` is a microbenchmark support library, #
+#                    which support unit-tests alike benchmarking. To   #
+#                    create the benchmark binary, just set `BENCHBIN`  #
+#                    with the name of the file that contains the main  #
+#                    function for the benchmarks.                      #
+#                    For further info about the library, access:       #
+#                    https://code.google.com/p/googletest/             #
+########################################################################
+
 # Dependencies
 # ==============
 GIT_DEPENDENCY  += \

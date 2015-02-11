@@ -1167,17 +1167,17 @@ endef
 
 define has-c
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
-                 $(if $(findstring $s,$(cext)),$s))),T)
+                 $(if $(filter $s,$(cext)),$s))),T)
 endef
 
 define has-f
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
-                 $(if $(findstring $s,$(fext)),$s))),T)
+                 $(if $(filter $s,$(fext)),$s))),T)
 endef
 
 define has-cxx
 $(if $(strip $(foreach s,$(sort $(suffix $1)),\
-                 $(if $(findstring $s,$(cxxext)),$s))),T)
+                 $(if $(filter $s,$(cxxext)),$s))),T)
 endef
 
 define has-c-main
@@ -1222,8 +1222,8 @@ endef
 
 define choose-compiler
 $(strip $(lastword \
-    $(if $(call has-c,$1),$(FC))\
-    $(if $(call has-f,$1),$(CC))\
+    $(if $(call has-c,$1),$(CC))\
+    $(if $(call has-f,$1),$(FC))\
     $(if $(call has-cxx,$1),$(CXX))))
 endef
 

@@ -100,7 +100,7 @@
     [X] Add Makeball for Google Mock and Google Test.
     [X] Add Makeball for SOCI database access library.
     [X] Add Makeball for OpenMP shared mem multiprocess programming.
-    [ ] Add Makeball for MPI distributed mem multiprocess programming.
+    [X] Add Makeball for MPI distributed mem multiprocess programming.
 
 [Tests]
     [X] Support continuous integration with Travis CI.

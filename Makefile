@@ -1681,6 +1681,32 @@ endef
 #------------------------------------------------------------------[ 3 ]
 covignore := $(sort $(COV_IGNORE))
 
+# Flag dependency files
+# =======================
+# 1) Internally defined vars for flags
+# 2) Make variable above a hash table
+# 3) Add dependency suffix and directory
+#------------------------------------------------------------------[ 1 ]
+flag_dependency := \
+    srcall  => CPPFLAGS CPPCOVFLAGS,\
+    binall  => LDFLAGS LDCOV LDLIBS,\
+    asmall  => ASFLAGS LDAS ASLIBS,\
+    call    => CFLAGS CALFLAGS CSLFLAGS CCOVFLAGS LDC CLIBS,\
+    fall    => FFLAGS FALFLAGS FSLFLAGS FCOVFLAGS LDF FLIBS,\
+    cxxall  => CXXFLAGS CXXALFLAGS CXXSLFLAGS CXXCOVFLAGS LDCXX CXXLIBS,\
+    arall   => ARFLAGS,\
+    shrall  => SHRFLAGS LDSHR,\
+    lexall  => LEXFLAGS LDLEX LEXLIBS,\
+    yaccall => YACCFLAGS LDYACC YACCLIBS,\
+    esqlall => ESQLFLAGS LDESQL ESQLLIBS
+#------------------------------------------------------------------[ 2 ]
+$(call hash-table.new,flag_dependency)
+#------------------------------------------------------------------[ 3 ]
+flagdep := $(call hash-table.values,flag_dependency)
+flagdep := $(foreach f,$(flagdep),$(if $(call not-empty,$($f)),$f))
+flagdep := $(addprefix $(depdir)/$(makedir)/,$(flagdep))
+flagdep := $(addsuffix $(sysext),$(flagdep))
+
 # External dependency files
 # ===========================
 # 1) git/web_dependency: Internally defined vars for dependencies
@@ -2441,10 +2467,10 @@ slintrun += $(addprefix style_lint_,$(subst /,_,$(shrlib)))
 
 # Source dependency files
 # =========================
-# 1) Get source, test and benchmark dependencies
+# 1) Get flag, source, test and benchmark dependencies
 # 2) Get program, external and system library dependencies
 # 3) Get phony target and submodule makefile dependencies
-depall := $(srcdep) $(testdep) $(benchdep) 
+depall := $(flagdep) $(srcdep) $(testdep) $(benchdep) 
 depall += $(progdep) $(externdep) $(syslibdep)
 depall += $(phonydep) $(makedep)
 
@@ -3061,6 +3087,27 @@ $1/./:
 	$$(call mkdir,$$@)
 endef
 $(foreach d,$(alldir),$(eval $(call root-factory,$d)))
+
+#======================================================================#
+# Function: flag-dependency                                            #
+# @param  $1 Source file (which has the dependency)                    #
+# @param  $2 Flag name (for targets)                                   #
+# @return Target to check a set of dependencies defined in $2          #
+#======================================================================#
+define flag-dependency
+$1: \
+    $$(if $$(call ne,$$(OLD_$2),$$($2)),\
+        $$(shell $$(RM) $$(depdir)/$$(makedir)/$2$$(sysext)))\
+    $$(depdir)/$$(makedir)/$2$$(sysext)
+
+$$(depdir)/$$(makedir)/$2$$(sysext): $$(depdir)/./
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	$$(call select,$$@)
+	$$(call cat,'override OLD_$2 := $$(strip $$($2))')
+endef
+$(foreach k,$(call hash-table.keys,flag_dependency),\
+    $(foreach f,$(flag_dependency.$k),$(if $(call not-empty,$($f)),\
+        $(eval $(call flag-dependency,$($k),$f)))))
 
 #======================================================================#
 # Function: program-dependency-target                                  #

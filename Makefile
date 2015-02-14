@@ -761,6 +761,29 @@ define increment
 $(call add,$1,1)
 endef
 
+# Lexical functions
+# ===================
+# 1) lc: Returns $1 with lowecase letters only
+# 2) uc: Returns $1 with uppercase letters only
+
+define lc
+$(strip $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,\
+        $(subst F,f,$(subst G,g,$(subst H,h,$(subst I,i,$(subst J,j,\
+        $(subst K,k,$(subst L,l,$(subst M,m,$(subst N,n,$(subst O,o,\
+        $(subst P,p,$(subst Q,q,$(subst R,r,$(subst S,s,$(subst T,t,\
+        $(subst U,u,$(subst V,v,$(subst W,w,$(subst X,x,$(subst Y,y,\
+        $(subst Z,z,$(strip $1))))))))))))))))))))))))))))
+endef
+
+define uc
+$(strip $(subst a,A,$(subst b,B,$(subst c,C,$(subst d,D,$(subst e,E,\
+        $(subst f,F,$(subst g,G,$(subst h,H,$(subst i,I,$(subst j,J,\
+        $(subst k,K,$(subst l,L,$(subst m,M,$(subst n,N,$(subst o,O,\
+        $(subst p,P,$(subst q,Q,$(subst r,R,$(subst s,S,$(subst t,T,\
+        $(subst u,U,$(subst v,V,$(subst w,W,$(subst x,X,$(subst y,Y,\
+        $(subst z,Z,$(strip $1))))))))))))))))))))))))))))
+endef
+
 # Lexical comparison functions
 # ==============================
 # 1) lexical-eq: Returns not empty if $1 is equal to $2
@@ -4610,13 +4633,6 @@ endef
 endif # ifndef SILENT
 
 ## TEXT ################################################################
-define uc
-$(shell echo $1 | tr "a-z" "A-Z")
-endef
-
-define lc
-$(shell echo $1 | tr "A-Z" "a-z")
-endef
 
 # Function: shstring
 # Transforms a text valid inside make in a valid for shell

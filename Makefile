@@ -508,7 +508,7 @@ endif # exists 'uname'
 # 2) Preprocess linker flags to add coverage linker options
 #------------------------------------------------------------------[   ]
 ifndef DEPLOY
-ifndef NO_COVERAGE
+ifdef COVERAGE
 #------------------------------------------------------------------[ 1 ]
 $(foreach p,CPP AS C F CXX,\
     $(eval override $pFLAGS := $(strip $($pCOVFLAGS) \
@@ -516,7 +516,7 @@ $(foreach p,CPP AS C F CXX,\
 #------------------------------------------------------------------[ 2 ]
 override LDFLAGS += $(LDCOV)
 #------------------------------------------------------------------[   ]
-endif # ifndef NO_COVERAGE
+endif # ifdef COVERAGE
 endif # ifndef DEPLOY
 
 #//////////////////////////////////////////////////////////////////////#
@@ -2481,7 +2481,7 @@ depall += $(phonydep) $(makedep)
 # 3) Alias to show reports, prefixing show_ and replacing / for _ above
 #------------------------------------------------------------------[   ]
 ifndef DEPLOY
-ifndef NO_COVERAGE
+ifdef COVERAGE
 #------------------------------------------------------------------[ 1 ]
 covdata      := $(foreach e,$(covext),$(addsuffix $e,\
                     $(basename $(srcobj))))
@@ -2504,7 +2504,7 @@ covshow      := $(addprefix show_,$(subst /,_,$(covrep)))
 covtestshow  := $(addprefix show_,$(subst /,_,$(covtestrep)))
 covbenchshow := $(addprefix show_,$(subst /,_,$(covbenchrep)))
 #------------------------------------------------------------------[   ]
-endif # ifndef NO_COVERAGE
+endif # ifdef COVERAGE
 endif # ifndef DEPLOY
 
 # Texinfo files
@@ -3779,7 +3779,7 @@ $(foreach b,$(binall) $(testbin) $(benchbin) $(arlib) $(shrlib),\
 # @return Target to generate coverage and show coverage statistics     #
 #======================================================================#
 ifndef DEPLOY
-ifndef NO_COVERAGE
+ifdef COVERAGE
 define coverage-factory
 $1: $2
 	$$(call status,$$(MSG_COV_COMPILE))
@@ -3819,7 +3819,7 @@ $(foreach b,$(testbin),\
 $(foreach b,$(benchbin),\
     $(eval $(call coverage-factory,$(strip \
         $(covdir)/$(call not-root,$(basename $b))$(repext)),$b,eval)))
-endif # ifndef NO_COVERAGE
+endif # ifdef COVERAGE
 endif # ifndef DEPLOY
 
 #======================================================================#

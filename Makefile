@@ -114,7 +114,7 @@ CXXSLFLAGS  :=
 # Coverage options
 CPPCOVFLAGS :=
 CCOVFLAGS   := --coverage
-FCOVFLAGS   :=
+FCOVFLAGS   := --coverage
 CXXCOVFLAGS := --coverage
 
 ########################################################################

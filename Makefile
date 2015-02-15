@@ -604,7 +604,8 @@ $(strip $(if $1,,T))
 endef
 
 define eq
-$(strip $(if $(filter $(subst $(space),,$1),$(subst $(space),,$2)),T))
+$(strip $(if $(or $(strip $1),$(strip $2)),\
+    $(if $(filter $(subst $(space),,$1),$(subst $(space),,$2)),T),T))
 endef
 
 define ne

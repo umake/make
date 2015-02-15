@@ -437,6 +437,14 @@ GIT             := git
 # Make
 MAKE            += -f $(firstword $(MAKEFILE_LIST)) $(MAKEFLAGS)
 
+########################################################################
+##                              SWITCHES                              ##
+########################################################################
+
+ifndef COVERAGE
+COVERAGE := $(if $(filter %coverage %clean,$(MAKECMDGOALS)),T)
+endif
+
 # Include configuration file if exists
 -include .version.mk
 -include .config.mk config.mk Config.mk
@@ -511,8 +519,8 @@ ifndef DEPLOY
 ifdef COVERAGE
 #------------------------------------------------------------------[ 1 ]
 $(foreach p,CPP AS C F CXX,\
-    $(eval override $pFLAGS := $(strip $($pCOVFLAGS) \
-                                       $(patsubst -O%,,$($pFLAGS) ))))
+    $(eval override $pFLAGS := $(strip \
+        $(patsubst -O%,,$($pFLAGS) $($pCOVFLAGS) ))))
 #------------------------------------------------------------------[ 2 ]
 override LDFLAGS += $(LDCOV)
 #------------------------------------------------------------------[   ]
@@ -1704,7 +1712,6 @@ flag_dependency := \
 $(call hash-table.new,flag_dependency)
 #------------------------------------------------------------------[ 3 ]
 flagdep := $(call hash-table.values,flag_dependency)
-flagdep := $(foreach f,$(flagdep),$(if $(call not-empty,$($f)),$f))
 flagdep := $(addprefix $(depdir)/$(makedir)/,$(flagdep))
 flagdep := $(addsuffix $(sysext),$(flagdep))
 
@@ -3097,7 +3104,7 @@ $(foreach d,$(alldir),$(eval $(call root-factory,$d)))
 #======================================================================#
 define flag-dependency
 $1: \
-    $$(if $$(call ne,$$(OLD_$2),$$($2)),\
+    $$(if $$(call ne,$$(strip $$(OLD_$2)),$$(strip $$($2))),\
         $$(shell $$(RM) $$(depdir)/$$(makedir)/$2$$(sysext)))\
     $$(depdir)/$$(makedir)/$2$$(sysext)
 
@@ -3107,8 +3114,10 @@ $$(depdir)/$$(makedir)/$2$$(sysext): $$(depdir)/./
 	$$(call cat,'override OLD_$2 := $$(strip $$($2))')
 endef
 $(foreach k,$(call hash-table.keys,flag_dependency),\
-    $(foreach f,$(flag_dependency.$k),$(if $(call not-empty,$($f)),\
-        $(eval $(call flag-dependency,$($k),$f)))))
+    $(foreach f,$(flag_dependency.$k),\
+        $(if $(call not-empty,$($k)),\
+            $(eval $(call flag-dependency,$($k),$f))\
+)))
 
 #======================================================================#
 # Function: program-dependency-target                                  #
@@ -3782,7 +3791,7 @@ $(foreach b,$(binall) $(testbin) $(benchbin) $(arlib) $(shrlib),\
 ifndef DEPLOY
 ifdef COVERAGE
 define coverage-factory
-$1: $2
+$1: $2 $$(call rwildcard,$$(addprefix *,$$(covext)),$$(objdir))
 	$$(call status,$$(MSG_COV_COMPILE))
 	
 	$$(call mksubdir,$$(covdir),$$@)

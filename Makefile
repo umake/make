@@ -1916,10 +1916,10 @@ libsrc  := $(call not-root,$(liball))
 mainsrc := $(call not-root,$(mainall))
 src     := $(call not-root,$(srcall))
 #------------------------------------------------------------------[ 8 ]
-asmall  := $(call rfilter,$(addprefix %,$(asmext)),$(src))
-call    := $(call rfilter,$(addprefix %,$(cext)),$(src))
-fall    := $(call rfilter,$(addprefix %,$(fext)),$(src))
-cxxall  := $(call rfilter,$(addprefix %,$(cxxext)),$(src))
+asmall  := $(call rfilter,$(addprefix %,$(asmext)),$(srcall))
+call    := $(call rfilter,$(addprefix %,$(cext)),$(srcall))
+fall    := $(call rfilter,$(addprefix %,$(fext)),$(srcall))
+cxxall  := $(call rfilter,$(addprefix %,$(cxxext)),$(srcall))
 #------------------------------------------------------------------[ 9 ]
 srcdep  := $(patsubst %,$(depdir)/%$(depext),$(basename $(src)))
 

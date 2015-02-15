@@ -4409,19 +4409,19 @@ endef
 # @param $3 Dependency file name
 
 define c-depend
-$(CC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 \
-      $(cppflags) $(clibs) $(cflags) $1
+$(CC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 $(cppflags) \
+      $(clibs) $(filter-out $(ccovflags),$(cflags)) $1
 endef
 
 define cpp-depend
-$(CXX) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 \
-       $(cppflags) $(cxxlibs) $(cxxflags) $1
+$(CXX) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 $(cppflags) \
+       $(cxxlibs) $(filter-out $(cxxcovflags),$(cxxflags)) $1
 endef
 
 define fortran-depend
 $(FC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 \
-      -J $(firstword $(incdir))/$(dir $3) \
-      $(cppflags) $(flibs) $(fflags) $1
+      -J $(firstword $(incdir))/$(dir $3) $(cppflags) \
+      $(flibs) $(filter-out $(fcovflags),$(fflags)) $1
 endef
 
 ## DIRECTORIES #########################################################

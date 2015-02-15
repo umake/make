@@ -1697,17 +1697,17 @@ covignore := $(sort $(COV_IGNORE))
 # 3) Add dependency suffix and directory
 #------------------------------------------------------------------[ 1 ]
 flag_dependency := \
-    srcall  => CPPFLAGS CPPCOVFLAGS,\
+    objall  => CPPFLAGS CPPCOVFLAGS,\
     binall  => LDFLAGS LDCOV LDLIBS,\
-    asmall  => ASFLAGS LDAS ASLIBS,\
-    call    => CFLAGS CALFLAGS CSLFLAGS CCOVFLAGS LDC CLIBS,\
-    fall    => FFLAGS FALFLAGS FSLFLAGS FCOVFLAGS LDF FLIBS,\
-    cxxall  => CXXFLAGS CXXALFLAGS CXXSLFLAGS CXXCOVFLAGS LDCXX CXXLIBS,\
-    arall   => ARFLAGS,\
-    shrall  => SHRFLAGS LDSHR,\
-    lexall  => LEXFLAGS LDLEX LEXLIBS,\
-    yaccall => YACCFLAGS LDYACC YACCLIBS,\
-    esqlall => ESQLFLAGS LDESQL ESQLLIBS
+    asmobj  => ASFLAGS LDAS ASLIBS,\
+    cobj    => CFLAGS CALFLAGS CSLFLAGS CCOVFLAGS LDC CLIBS,\
+    fobj    => FFLAGS FALFLAGS FSLFLAGS FCOVFLAGS LDF FLIBS,\
+    cxxobj  => CXXFLAGS CXXALFLAGS CXXSLFLAGS CXXCOVFLAGS LDCXX CXXLIBS,\
+    arobj   => ARFLAGS,\
+    shrobj  => SHRFLAGS LDSHR,\
+    lexobj  => LEXFLAGS LDLEX LEXLIBS,\
+    yaccobj => YACCFLAGS LDYACC YACCLIBS,\
+    esqlobj => ESQLFLAGS LDESQL ESQLLIBS
 #------------------------------------------------------------------[ 2 ]
 $(call hash-table.new,flag_dependency)
 #------------------------------------------------------------------[ 3 ]
@@ -2167,6 +2167,12 @@ ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,\
 # 3) Create object file from each library source file
 # 4) Create object file from each main file
 # 5) Join all object files from above
+define all-to-obj 
+$1 := $$(addsuffix $$(firstword $$(objext)),$$(basename $2))
+$1 := $$(addprefix $$(objdir)/,$$(call not-root,$$($1)))
+endef
+$(foreach p,asm c f cxx ar shr lex yacc esql,\
+    $(eval $(call all-to-obj,$pobj,$($pall))))
 #------------------------------------------------------------------[ 1 ]
 userobj := $(addsuffix $(firstword $(objext)),$(basename $(usersrc)))
 userobj := $(addprefix $(objdir)/,$(userobj))

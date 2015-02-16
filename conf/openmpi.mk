@@ -17,5 +17,5 @@
 # Compiler
 # ==========
 CC              := mpicc
-FC              := mpicxx
-CXX             := mpifort
+FC              := mpifort
+CXX             := mpicxx

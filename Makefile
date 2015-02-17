@@ -79,83 +79,93 @@ STD_NAMESPACE   :=
 ########################################################################
 
 # Preprocessor options
-CPPFLAGS    :=
+CPPFLAGS     :=
 
 # Assembly/C/C++/Fortran options
-ASFLAGS     := -f elf32
-CFLAGS      :=
-CXXFLAGS    := -std=c++11
-FFLAGS      := -ffree-form -cpp
+ASFLAGS      := -f elf32
+CFLAGS       :=
+CXXFLAGS     := -std=c++11
+FFLAGS       := -ffree-form -cpp
 
 # Library options
-ARFLAGS     := -rcv
-SHRFLAGS    := -fPIC
+ARFLAGS      := -rcv
+SHRFLAGS     := -fPIC
 
 # Program options
-LEXFLAGS    :=
-YACCFLAGS   :=
-ESQLFLAGS   :=
-COVFLAGS    := -abc
-FINDFLAGS   := -type d -print 2> /dev/null
-CTAGSFLAGS  :=
-ETAGSFLAGS  :=
-MAKEFLAGS   := --no-print-directory
+LEXFLAGS     :=
+YACCFLAGS    :=
+ESQLFLAGS    :=
+COVFLAGS     := -abc
+PROFFLAGS    :=
+FINDFLAGS    := -type d -print 2> /dev/null
+CTAGSFLAGS   :=
+ETAGSFLAGS   :=
+MAKEFLAGS    := --no-print-directory
 
 # Analysis lint options
-CALFLAGS    := --quiet --enable=style
-FALFLAGS    :=
-CXXALFLAGS  := --quiet --enable=style
+CALFLAGS     := --quiet --enable=style
+FALFLAGS     :=
+CXXALFLAGS   := --quiet --enable=style
 
 # Style l options
-CSLFLAGS    :=
-FSLFLAGS    :=
-CXXSLFLAGS  :=
+CSLFLAGS     :=
+FSLFLAGS     :=
+CXXSLFLAGS   :=
 
 # Coverage options
-CPPCOVFLAGS :=
-CCOVFLAGS   := --coverage
-FCOVFLAGS   := --coverage
-CXXCOVFLAGS := --coverage
+CPPCOVFLAGS  :=
+CCOVFLAGS    := --coverage
+FCOVFLAGS    := --coverage
+CXXCOVFLAGS  := --coverage
+
+# Profile options
+CPPPROFFLAGS :=
+CPROFFLAGS   := -pg
+FPROFFLAGS   := -pg
+CXXPROFFLAGS := -pg
 
 ########################################################################
 ##                             LINKER FLAGS                           ##
 ########################################################################
 
 # Assembly/C/C++/Fortran options
-LDFLAGS     :=
-LDC         :=
-LDF         := -lgfortran
-LDCXX       :=
+LDFLAGS      :=
+LDC          :=
+LDF          := -lgfortran
+LDCXX        :=
 
 # Library options
-LDSHR       := -shared
+LDSHR        := -shared
 
 # Program options
-LDLEX       := -lfl
-LDYACC      :=
-LDESQL      := -lecpg
+LDLEX        := -lfl
+LDYACC       :=
+LDESQL       := -lecpg
 
 # Coverage options
-LDCOV       := --coverage
+LDCOV        := --coverage
+
+# Profile options
+LDPROF       := -pg
 
 ########################################################################
 ##                               PATHS                                ##
 ########################################################################
 
 # Assembly/C/C++/Fortran paths for include dirs
-ASLIBS      :=
-CLIBS       :=
-CXXLIBS     :=
-FLIBS       :=
+ASLIBS       :=
+CLIBS        :=
+CXXLIBS      :=
+FLIBS        :=
 
 # Program paths for include dirs
-LEXLIBS     :=
-YACCLIBS    :=
-ESQLLIBS    := $(if $(strip $(shell which pg_config)),\
-                   $(shell pg_config --includedir))
+LEXLIBS      :=
+YACCLIBS     :=
+ESQLLIBS     := $(if $(strip $(shell which pg_config)),\
+                    $(shell pg_config --includedir))
 
 # Linker paths for library dirs
-LDLIBS      :=
+LDLIBS       :=
 
 ########################################################################
 ##                            DIRECTORIES                             ##
@@ -534,6 +544,23 @@ $(foreach p,CPP AS C F CXX,\
 override LDFLAGS += $(LDCOV)
 #------------------------------------------------------------------[   ]
 endif # ifdef COVERAGE
+endif # ifndef DEPLOY
+
+# Profile
+# ==========
+# Changes needed to deal with profile compilation.
+# 1) Preprocess compilation flags to add profile options
+# 2) Preprocess linker flags to add profile linker options
+#------------------------------------------------------------------[   ]
+ifndef DEPLOY
+ifdef PROFILE
+#------------------------------------------------------------------[ 1 ]
+$(foreach p,CPP AS C F CXX,\
+    $(eval override $pFLAGS := $(strip $($pFLAGS) $($pPROFFLAGS) )))
+#------------------------------------------------------------------[ 2 ]
+override LDFLAGS += $(LDPROF)
+#------------------------------------------------------------------[   ]
+endif # ifdef PROFILE
 endif # ifndef DEPLOY
 
 #//////////////////////////////////////////////////////////////////////#

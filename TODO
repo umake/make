@@ -83,26 +83,33 @@
     [X] Output benchmark coverage statistics (coverage + benchmarks).
     [X] Create variable to set project C++ namespace (for 'new' files).
     [X] Add deep directory search of binary name.
+    [X] Create management flags to update program version.
     [X] Support run of linting tools (for code style check).
     [X] Run linting tools for library sources.
     [X] Check if test/benchmark is recompiled when header is modified.
     [X] Add option to ignore files when calculating coverage statistics.
     [X] Force recompilation when flags are changed.
     [X] Allow running executable with make (to collect analysis data).
+    [X] Support run of profiling tools (with gprof).
     [ ] Support library with name different from directory's name.
     [ ] Support binary with name different from directory's name.
     [ ] Check for system dependency existence iff targets need rebuild. 
-    [ ] Support run of profiling tools (with gprof).
     [ ] Support compilation of CORBA with C++.
-    [ ] Create management flags to update program version.
     [ ] Test internationalization feature in non-trivial cases.
     [ ] Add option to automatically create a RPM package.
+    [ ] Support Haskell compilation, linkage and lib generation.
+    [ ] Support Go compilation, linkage and lib generation.
+    [ ] Support Rust compilation, linkage and lib generation.
 
 [Makeballs]
     [X] Add Makeball for Google Mock and Google Test.
     [X] Add Makeball for SOCI database access library.
     [X] Add Makeball for OpenMP shared mem multiprocess programming.
     [X] Add Makeball for MPI distributed mem multiprocess programming.
+    [ ] Add Makeball for OpenGL graphic library
+    [ ] Add Makeball for wxWidgets GUI library
+    [ ] Add Makeball for GTK+ GUI library
+    [ ] Add Makeball for QT GUI library
 
 [Tests]
     [X] Support continuous integration with Travis CI.

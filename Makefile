@@ -2519,9 +2519,9 @@ covbenchrep  := $(addprefix $(covdir)/,\
                     $(addsuffix $(firstword $(repext)),\
                         $(call not-root,$(basename $(benchbin)))))
 #------------------------------------------------------------------[ 3 ]
-covshow      := $(addprefix show_,$(subst /,_,$(covrep)))
-covtestshow  := $(addprefix show_,$(subst /,_,$(covtestrep)))
-covbenchshow := $(addprefix show_,$(subst /,_,$(covbenchrep)))
+covshow      := $(addprefix cov_,$(covrep))
+covtestshow  := $(addprefix cov_,$(covtestrep))
+covbenchshow := $(addprefix cov_,$(covbenchrep))
 #------------------------------------------------------------------[   ]
 endif # ifdef COVERAGE
 endif # ifndef DEPLOY
@@ -2792,13 +2792,13 @@ coverage_dependency := \
     COV => $(binall) $(testbin) $(benchbin)
 
 .PHONY: coverage
-coverage: coveragedep $(covshow)
+coverage: coveragedep run $(filter $(addprefix %,$(EXEC)),$(covshow))
 
 .PHONY: check-coverage test-coverage
-check-coverage test-coverage: coveragedep $(covtestshow)
+check-coverage test-coverage: coveragedep check $(covtestshow)
 
 .PHONY: eval-coverage benchmark-coverage
-eval-coverage benchmark-coverage: coveragedep $(covbenchshow)
+eval-coverage benchmark-coverage: coveragedep eval $(covbenchshow)
 
 ########################################################################
 ##                             STATISTICS                             ##
@@ -3840,13 +3840,12 @@ $1: $2 $$(call rwildcard,$$(addprefix *,$$(covext)),$$(objdir))
 	
 	$$(call ok,$$(MSG_COV_COMPILE))
 
-.PHONY: show_$$(subst /,_,$1)
-show_$$(subst /,_,$1): f=$1
-show_$$(subst /,_,$1): $3 $1
+.PHONY: cov_$1
+cov_$1: $1
 	$$(call phony-status,$$(MSG_COV))
-	$$(quiet) if [ -s $1 ]; \
+	$$(quiet) if [ -s $$< ]; \
 	          then \
-	              $$(COV) -l $1 $$(ERROR); \
+	              $$(COV) -l $$< $$(ERROR); \
 	              $$(call model-ok,$$(MSG_COV)); \
 	          else \
 	              $$(call model-ok,$$(MSG_COV_NONE)); \
@@ -3854,7 +3853,7 @@ show_$$(subst /,_,$1): $3 $1
 endef
 $(foreach b,$(binall),\
     $(eval $(call coverage-factory,$(strip \
-        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
+        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b,run)))
 $(foreach b,$(testbin),\
     $(eval $(call coverage-factory,$(strip \
         $(covdir)/$(call not-root,$(basename $b))$(repext)),$b,check)))
@@ -4298,7 +4297,7 @@ MSG_LIB_BAD_VER   = "${DEF}System library ${RED}$d${DEF}"\
 
 MSG_EXT_BUILD     = "${YELLOW}Building dependency ${DEF}$d${RES}"
 MSG_EXT_NO_MAKE   = "${DEF}No Makefile found for compilation${RES}"
-MSG_EXT_BUILD_ERR = "${DEF}Failed compiling ${DEF}$@${RES}"
+MSG_EXT_BUILD_ERR = "${DEF}Failed compiling ${DEF}$d${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\
@@ -4385,8 +4384,8 @@ MSG_ALINT_SUCCESS = "${YELLOW}All analysis lints runned successfully${RES}"
 MSG_SLINT         = "${BLUE}Running style lint for ${GREEN}$f${RES}"
 MSG_SLINT_SUCCESS = "${YELLOW}All style lints runned successfully${RES}"
 
-MSG_COV           = "${BLUE}Showing coverage analysis ${DEF}$f${RES}"
-MSG_COV_NONE      = "${PURPLE}No coverage analysis reported in $f${RES}"
+MSG_COV           = "${BLUE}Showing coverage analysis ${DEF}$<${RES}"
+MSG_COV_NONE      = "${PURPLE}No coverage analysis reported in $<${RES}"
 MSG_COV_COMPILE   = "${DEF}Generating coverage analysis ${WHITE}$@${RES}"
 
 MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"

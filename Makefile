@@ -2711,6 +2711,13 @@ run: $(filter $(addprefix %,$(EXEC)),$(binall))
 	
 	$(call phony-status,$(MSG_RUN))
 	$(quiet) $(call store-status,./$<) $(ERROR)
+	$(quiet) if [ -f gmon.out ]; \
+	         then \
+	             $(MV) gmon.out \
+	                   $(addprefix $(objdir)/,\
+	                       $(addsuffix $(firstword $(profext)),\
+	                           $(call not-root,$(basename $<))));\
+	         fi
 	$(call phony-ok,$(MSG_RUN))
 
 ########################################################################
@@ -3777,7 +3784,15 @@ $1/$2: $$($2_obj) | $1/./
 .PHONY: $3
 $3: $1/$2
 	$$(call phony-vstatus,$$(MSG_TEST))
-	@./$$< || $$(call model-test-error,$$(MSG_TEST_FAILURE))
+	$$(quiet) ./$$< || $$(call model-test-error,$$(MSG_TEST_FAILURE))
+	$$(quiet) if [ -f gmon.out ]; \
+	          then \
+	              $$(call mksubdir,$$(profdir),$$@);\
+	              $$(MV) gmon.out \
+	                     $$(addprefix $$(objdir)/,\
+	                         $$(addsuffix $$(profext),\
+	                             $$(call not-root,$$(basename $$<))));\
+	          fi
 	$$(call ok,$$(MSG_TEST))
 endef
 $(foreach t,$(testbin),$(eval\
@@ -3804,7 +3819,14 @@ $1/$2: $$($2_obj) | $1/./
 .PHONY: $3
 $3: $1/$2
 	$$(call phony-vstatus,$$(MSG_BENCH))
-	@./$$<
+	$$(quiet) ./$$<
+	$$(quiet) if [ -f gmon.out ]; \
+	          then \
+	              $$(MV) gmon.out \
+	                     $$(addprefix $$(objdir)/,\
+	                         $$(addsuffix $$(profext),\
+	                             $$(call not-root,$$(basename $$<))));\
+	          fi
 	$$(call ok,$$(MSG_BENCH))
 endef
 $(foreach t,$(benchbin),$(eval\

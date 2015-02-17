@@ -2519,9 +2519,9 @@ covbenchrep  := $(addprefix $(covdir)/,\
                     $(addsuffix $(firstword $(repext)),\
                         $(call not-root,$(basename $(benchbin)))))
 #------------------------------------------------------------------[ 3 ]
-covshow      := $(addprefix cov_,$(covrep))
-covtestshow  := $(addprefix cov_,$(covtestrep))
-covbenchshow := $(addprefix cov_,$(covbenchrep))
+covshow      := $(addprefix cov_,$(binall))
+covtestshow  := $(addprefix cov_,$(testbin))
+covbenchshow := $(addprefix cov_,$(benchbin))
 #------------------------------------------------------------------[   ]
 endif # ifdef COVERAGE
 endif # ifndef DEPLOY
@@ -3840,8 +3840,8 @@ $1: $2 $$(call rwildcard,$$(addprefix *,$$(covext)),$$(objdir))
 	
 	$$(call ok,$$(MSG_COV_COMPILE))
 
-.PHONY: cov_$1
-cov_$1: $1
+.PHONY: cov_$2
+cov_$2: $1
 	$$(call phony-status,$$(MSG_COV))
 	$$(quiet) if [ -s $$< ]; \
 	          then \

@@ -1660,6 +1660,11 @@ $(foreach s,$(benchdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 # foopat: incomplete paths WITH root directories
 # foolib: library names WITHOUT root directories
 
+# Auxiliar Files
+# ================
+# 1) Configuration files to store status of executed command
+statusfile := $(MAKECURRENTDIR)/.status.mk
+
 # Configuration Files
 # =====================
 # 1) Configuration files used to change the Makefile behavior
@@ -2614,6 +2619,23 @@ depend: builddep librarydep gitdep webdep
 
 .PHONY: nothing
 nothing:
+
+########################################################################
+##                                RUN                                 ##
+########################################################################
+
+.PHONY: run
+run: $(filter $(addprefix %,$(EXEC)),$(binall))
+	
+	$(if $(call is-empty,$(EXEC)),\
+		$(error EXEC not defined. Type 'make projecthelp' for info))
+	
+	$(if $(call is-empty,$<),\
+	    $(call phony-error,$(MSG_RUN_BAD_EXEC)))
+	
+	$(call phony-status,$(MSG_RUN))
+	$(quiet) $(call store-status,./$<) $(ERROR)
+	$(call phony-ok,$(MSG_RUN))
 
 ########################################################################
 ##                        REMOTE REPOSITORIES                         ##
@@ -4396,6 +4418,11 @@ MSG_CXX_NO_FILE   = "${DEF}No files for C++ executable ${GREEN}$@${RES}"
 MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
                     "${YELLOW}$@${RES}"
 
+MSG_RUN           = "${YELLOW}Running executable ${GREEN}$<${RES}"
+MSG_RUN_BAD_EXEC  = "${DEF}Executable ${GREEN}$(EXEC)${DEF}"\
+                    "is not produced by this Makefile${RES}"
+MSG_RUN_ERROR     = "${DEF}Failed running ${GREEN}$<${RES}"
+
 ########################################################################
 ##                            FUNCTIONS                               ##
 ########################################################################
@@ -4602,8 +4629,12 @@ endif # ifndef SILENT
 ifndef SILENT
 
 define model-error
-($(call println,"\r${RED}[ERROR]${RES}" $1 \
-                "${RED}(STATUS: $$?)${RES}") && exit 42)
+if [ ! -f $(statusfile) ] || [ -z $$(cat $(statusfile) 2>/dev/null) ];\
+then\
+    $(RM) $(statusfile);\
+    ($(call println,"\r${RED}[ERROR]${RES}" $1 \
+                    "${RED}(STATUS: $$?)${RES}") && exit 42);\
+fi
 endef
 
 define model-test-error
@@ -4623,6 +4654,21 @@ endef
 
 define model-test-error
 $(NO_OPERATION)
+endef
+
+endif # ifndef SILENT
+
+## STATUS PERSISTENCE ##################################################
+ifndef SILENT
+
+define store-status
+($1; echo $$? > $(statusfile))
+endef
+
+else # ifndef SILENT
+
+define store-status
+$1
 endef
 
 endif # ifndef SILENT
@@ -4670,21 +4716,21 @@ endif # if empty $(SILENT) and not empty $(quiet)
 ifndef SILENT
 
 define model-ok
-$(call println,"\r${GREEN}[OK]${RES}" $1 "     ")
+$(RM) $(statusfile); $(call println,"\r${GREEN}[OK]${RES}" $1 "     ")
 endef
 
 define phony-ok
-@if [ $$? ];\
+@if [ -n $$? ] && [ -n $$(cat $(statusfile) 2>/dev/null) ];\
     then $(call model-ok,$1);\
     else $(call model-error,$1);\
 fi;
 endef
 
 define ok
-@if [ -f $2 ];\
+@if [ -f $2 ] && [ -n $$(cat $(statusfile) 2>/dev/null) ];\
     then $(call model-ok,$1);\
     else $(call model-error,$1);\
-fi
+fi;
 endef
 
 else # ifndef SILENT
@@ -5692,6 +5738,7 @@ projecthelp:
 	@echo " * lint:             Runs analysis and style lints          "
 	@echo " * package-*:        As 'package', with many compressions   "
 	@echo " * package:          As 'dist', but also with src and data  "
+	@echo " * run:              Run EXEC executable from BIN           "
 	@echo " * standard:         Moves files to standard directories    "
 	@echo " * statistics:       Outputs file countage and LOC          "
 	@echo " * style-lint:       Runs style lint on binary sources      "
@@ -5744,6 +5791,7 @@ projecthelp:
 	@echo " * D:                Allows deletion of a C/C++ artifact    "
 	@echo " * U:                Allows uninitilization of the project  "
 	@echo " * V:                Allows printing the command line rules "
+	@echo " * EXEC:             Binary to be run, profiled or covered  "
 	@echo " * MORE:             With errors, use 'more' to read stderr "
 	@echo " * SILENT:           Outputs no messages in execution       "
 	@echo " * NO_GIT:           Disables git commands executed by make "

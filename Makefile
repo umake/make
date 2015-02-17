@@ -168,6 +168,22 @@ ESQLLIBS     := $(if $(strip $(shell which pg_config)),\
 LDLIBS       :=
 
 ########################################################################
+##                             RUNTIME                                ##
+########################################################################
+
+# Binaries
+EXECENV      :=
+EXECARGS     :=
+
+# Tests
+TESTENV      :=
+TESTARGS     :=
+
+# Benchmarks
+BENCHENV     :=
+BENCHARGS    :=
+
+########################################################################
 ##                            DIRECTORIES                             ##
 ########################################################################
 
@@ -2365,10 +2381,10 @@ endif
 #     8.1) binary-name_src, for not-root test binary's sources;
 #     8.2) binary-name_all, for complete path binary's sources;
 #     8.3) binary-name_obj, for test binary's specific objects;
+#     8.4) binary-name_lib, for test binary's specific libraries;
+#     8.5) binary-name_link, for test binary's specific linker flags;
 #  9) Check if test sources have test suffixes and a matching file
 # 10) testdep : Dependency files for tests
-# 11) testrun : Alias to execute tests, prefixing run_ and
-#               substituting / for _ in $(testbin)
 #------------------------------------------------------------------[ 1 ]
 $(foreach e,$(srcext),\
     $(eval testall += $(call rwildcard,$(testdir),*$e)))
@@ -2409,9 +2425,11 @@ comtestobj := $(call common-test-factory,obj,\
                   $(testobj) $(userobj) $(autoobj))
 #------------------------------------------------------------------[ 8 ]
 $(foreach t,$(call not-root,$(testbin)),$(or\
-    $(eval $t_src := $(comtestsrc) $($t_src)),\
-    $(eval $t_src := $(comtestall) $($t_all)),\
-    $(eval $t_obj := $(comtestobj) $($t_obj)),\
+    $(eval $t_src  := $(comtestsrc) $($t_src)),\
+    $(eval $t_src  := $(comtestall) $($t_all)),\
+    $(eval $t_obj  := $(comtestobj) $($t_obj)),\
+    $(eval $t_lib  := $(arlib) $(shrlib)),\
+    $(eval $t_link := $(arlink) $(shrlink)),\
 ))
 #------------------------------------------------------------------[ 9 ]
 ifneq (,$(comtestsrc))
@@ -2427,8 +2445,6 @@ endif
 #------------------------------------------------------------------[ 10 ]
 testdep := $(addprefix $(depdir)/$(testdir)/,\
                $(addsuffix $(depext),$(basename $(testsrc))))
-#------------------------------------------------------------------[ 11 ]
-testrun := $(addprefix run_,$(testbin))
 
 # Automated Benchmarks
 # ======================
@@ -2443,10 +2459,10 @@ testrun := $(addprefix run_,$(testbin))
 #     8.1) binary-name_src, for bench not-root test binary's sources;
 #     8.2) binary-name_all, for bench complete path binary's sources;
 #     8.3) binary-name_obj, for bench binary's specific objects;
+#     8.4) binary-name_lib, for bench binary's specific libraries;
+#     8.5) binary-name_link, for bench binary's specific linker flags;
 #  9) Check if bench sources have benchmark suffixes and a matching file
 # 10) benchdep : Dependency files for benchmarks
-# 11) benchrun : Alias to execute benchmarks, prefixing run_ and
-#                substituting / for _ in $(benchdep)
 #------------------------------------------------------------------[ 1 ]
 $(foreach e,$(srcext),\
     $(eval benchall += $(call rwildcard,$(benchdir),*$e)))
@@ -2487,9 +2503,11 @@ combenchobj := $(call common-bench-factory,obj,\
                   $(benchobj) $(userobj) $(autoobj))
 #------------------------------------------------------------------[ 8 ]
 $(foreach t,$(call not-root,$(benchbin)),$(or\
-    $(eval $t_src := $(combenchsrc) $($t_src)),\
-    $(eval $t_all := $(combenchsrc) $($t_all)),\
-    $(eval $t_obj := $(combenchobj) $($t_obj)),\
+    $(eval $t_src  := $(combenchsrc) $($t_src)),\
+    $(eval $t_all  := $(combenchsrc) $($t_all)),\
+    $(eval $t_obj  := $(combenchobj) $($t_obj)),\
+    $(eval $t_lib  := $(arlib) $(shrlib)),\
+    $(eval $t_link := $(arlink) $(shrlink)),\
 ))
 #------------------------------------------------------------------[ 9 ]
 ifneq (,$(combenchsrc))
@@ -2505,7 +2523,18 @@ endif
 #------------------------------------------------------------------[ 10 ]
 benchdep := $(addprefix $(depdir)/$(benchdir)/,\
                 $(addsuffix $(depext),$(basename $(benchsrc))))
-#------------------------------------------------------------------[ 11 ]
+
+# Binary execution
+# ==================
+# 2) srcrun   : Alias to execute tests, prefixing run_ in $(binall)
+# 2) testrun  : Alias to execute tests, prefixing run_ in $(testbin)
+# 3) benchrun : Alias to execute benchmarks, prefixing run_ 
+#               in $(benchbin)
+#------------------------------------------------------------------[ 1 ]
+srcrun   := $(addprefix run_,$(binall))
+#------------------------------------------------------------------[ 2 ]
+testrun  := $(addprefix run_,$(testbin))
+#------------------------------------------------------------------[ 3 ]
 benchrun := $(addprefix run_,$(benchbin))
 
 # Lint style check
@@ -2697,30 +2726,6 @@ depend: builddep librarydep gitdep webdep
 nothing:
 
 ########################################################################
-##                                RUN                                 ##
-########################################################################
-
-.PHONY: run
-run: $(filter $(addprefix %,$(EXEC)),$(binall))
-	
-	$(if $(call is-empty,$(EXEC)),\
-		$(error EXEC not defined. Type 'make projecthelp' for info))
-	
-	$(if $(call is-empty,$<),\
-	    $(call phony-error,$(MSG_RUN_BAD_EXEC)))
-	
-	$(call phony-status,$(MSG_RUN))
-	$(quiet) $(call store-status,./$<) $(ERROR)
-	$(quiet) if [ -f gmon.out ]; \
-	         then \
-	             $(MV) gmon.out \
-	                   $(addprefix $(objdir)/,\
-	                       $(addsuffix $(firstword $(profext)),\
-	                           $(call not-root,$(basename $<))));\
-	         fi
-	$(call phony-ok,$(MSG_RUN))
-
-########################################################################
 ##                        REMOTE REPOSITORIES                         ##
 ########################################################################
 
@@ -2827,16 +2832,33 @@ etags: $(incall) $(srcall)
 	$(call phony-ok,$(MSG_ETAGS))
 
 ########################################################################
-##                               TESTS                                ##
+##                                RUN                                 ##
 ########################################################################
 
+define search-run
+$(strip $(filter $(or $(addprefix %,$1),%),$2))
+endef
+
+.PHONY: run
+run: depend $(call search-run,$(EXEC),$(srcrun))
+	$(if $(call not-empty,$(srcrun) $(EXEC)),\
+	    $(if $(filter-out $<,$^),\
+	        $(call phony-ok,$(MSG_EXEC_SUCCESS)),\
+	        $(call phony-error,$(MSG_EXEC_NONE))))
+
 .PHONY: check test
-check test: all $(testrun)
-	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_TEST_SUCCESS)))
+check test: depend $(call search-run,$(TEST),$(testrun))
+	$(if $(call not-empty,$(testrun) $(TEST)),\
+	    $(if $(filter-out $<,$^),\
+	        $(call phony-ok,$(MSG_TEST_SUCCESS)),\
+	        $(call phony-error,$(MSG_TEST_NONE))))
 
 .PHONY: eval benchmark
-eval benchmark: all $(benchrun)
-	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_BENCH_SUCCESS)))
+eval benchmark: depend $(call search-run,$(BENCH),$(benchrun))
+	$(if $(call not-empty,$(benchrun) $(BENCH)),\
+	    $(if $(filter-out $<,$^),\
+	        $(call phony-ok,$(MSG_BENCH_SUCCESS)),\
+	        $(call phony-error,$(MSG_BENCH_NONE))))
 
 ########################################################################
 ##                                LINT                                ##
@@ -3781,75 +3803,6 @@ $(foreach l,$(arlib),\
     $(eval $(call link-arlib,$(call root,$l),$(call not-root,$l))))
 
 #======================================================================#
-# Function: test-factory                                               #
-# @param  $1 Unit test binary's directory name                         #
-# @param  $2 Unit test binary's name without root directory            #
-# @param  $3 Alias to execute tests, prefixing run_ and                #
-#            substituting / for _ in $(testbin)                        #
-# @return Target to generate binary file for the unit test             #
-#======================================================================#
-ifneq (,$(call rfilter,check% test%,$(MAKECMDGOALS)))
-define test-factory
-$1/$2: $$($2_obj) | $1/./
-	$$(call status,$$(MSG_TEST_COMPILE))
-	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(CXX) $$^ -o $$@ \
-	                  $$(ldflags) $$(arlink) $$(shrlink) $$(ldlibs)
-	$$(call ok,$$(MSG_TEST_COMPILE),$$@)
-
-.PHONY: $3
-$3: $1/$2
-	$$(call phony-vstatus,$$(MSG_TEST))
-	$$(quiet) ./$$< || $$(call model-test-error,$$(MSG_TEST_FAILURE))
-	$$(quiet) if [ -f gmon.out ]; \
-	          then \
-	              $$(call mksubdir,$$(profdir),$$@);\
-	              $$(MV) gmon.out \
-	                     $$(addprefix $$(objdir)/,\
-	                         $$(addsuffix $$(profext),\
-	                             $$(call not-root,$$(basename $$<))));\
-	          fi
-	$$(call ok,$$(MSG_TEST))
-endef
-$(foreach t,$(testbin),$(eval\
-    $(call test-factory,$(call root,$t),$(call not-root,$t),run_$t)))
-endif
-
-#======================================================================#
-# Function: benchmark-factory                                          #
-# @param  $1 Benchmark binary's directory name                         #
-# @param  $2 Benchmark binary's name without root directory            #
-# @param  $3 Alias to execute benchmarks, prefixing run_ and           #
-#            substituting / for _ in $(benchdep)                       #
-# @return Target to generate binary file for the benchmark             #
-#======================================================================#
-ifneq (,$(call rfilter,eval% benchmark%,$(MAKECMDGOALS)))
-define bench-factory
-$1/$2: $$($2_obj) | $1/./
-	$$(call status,$$(MSG_BENCH_COMPILE))
-	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(CXX) $$^ -o $$@ \
-	                  $$(ldflags) $$(arlink) $$(shrlink) $$(ldlibs)
-	$$(call ok,$$(MSG_BENCH_COMPILE),$$@)
-
-.PHONY: $3
-$3: $1/$2
-	$$(call phony-vstatus,$$(MSG_BENCH))
-	$$(quiet) ./$$<
-	$$(quiet) if [ -f gmon.out ]; \
-	          then \
-	              $$(MV) gmon.out \
-	                     $$(addprefix $$(objdir)/,\
-	                         $$(addsuffix $$(profext),\
-	                             $$(call not-root,$$(basename $$<))));\
-	          fi
-	$$(call ok,$$(MSG_BENCH))
-endef
-$(foreach t,$(benchbin),$(eval\
-    $(call bench-factory,$(call root,$t),$(call not-root,$t),run_$t)))
-endif
-
-#======================================================================#
 # Function: binary-factory                                             #
 # @param  $1 Binary root directory                                     #
 # @param  $2 Binary name witout root dir                               #
@@ -3873,12 +3826,42 @@ $1/$2: $$($2_lib) $$($2_obj) | $1/./
 
 $$($2_obj): $$($2_all) | $$(objdir)/./
 endef
-$(foreach b,$(binall),\
+$(foreach b,$(binall) $(testbin) $(benchbin),\
     $(eval $(call binary-factory,$(strip \
         $(call root,$b)),$(call not-root,$b),$(strip \
         $(call choose-comment,$($(call not-root,$b)_all))),$(strip \
         $(call choose-compiler,$($(call not-root,$b)_all)))\
 )))
+
+#======================================================================#
+# Function: run-factory                                                #
+# @param  $1 Binary root directory                                     #
+# @param  $2 Binary name witout root dir                               #
+# @param  $3 Comments to be used (C's, Fortran's or C++'s)             #
+# @param  $4 Compiler to be used (C's, Fortran's or C++'s)             #
+# @return Target to generate binaries and dependencies of its object   #
+#         files (to create objdir and automatic source)                #
+#======================================================================#
+define run-factory
+.PHONY: run_$1
+run_$1: $1
+	$$(call phony-status,$$(MSG_$2_RUN))
+	
+	$$(quiet) $$(call store-status,$$($2ENV) ./$$< $$($2ARGS)) \
+	          $$(ERROR) && $$(call model-error,$$(MSG_$2_FAILURE))
+	$$(quiet) if [ -f gmon.out ]; \
+	          then \
+	              $$(MV) gmon.out \
+	                     $$(addprefix $$(objdir)/,\
+	                         $$(addsuffix $$(profext),\
+	                             $$(call not-root,$$(basename $$<))));\
+	          fi
+	
+	$$(call phony-ok,$$(MSG_$2_RUN))
+endef
+$(foreach b,$(binall),$(eval $(call run-factory,$b,EXEC)))
+$(foreach b,$(testbin),$(eval $(call run-factory,$b,TEST)))
+$(foreach b,$(benchbin),$(eval $(call run-factory,$b,BENCH)))
 
 #======================================================================#
 # Function: analysis-lint-factory                                      #
@@ -4526,16 +4509,23 @@ MSG_YACC_NONE     = "${PURPLE}No auto-generated parsers${RES}"
 MSG_ESQL          = "${PURPLE}Generating embedded SQL ${BLUE}$@${RES}"
 MSG_ESQL_NONE     = "${PURPLE}No auto-generated embedded SQL${RES}"
 
-MSG_TEST          = "${BLUE}Testing ${WHITE}$(notdir $<)${RES}"
-MSG_TEST_COMPILE  = "${DEF}Generating test executable"\
-                    "${GREEN}$(notdir $(strip $@))${RES}"
-MSG_TEST_FAILURE  = "${CYAN}Test '$(notdir $<)' did not passed${RES}"
-MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
+MSG_EXEC_RUN      = "${BLUE}Running executable ${GREEN}$<${RES}"
+MSG_EXEC_ERROR    = "${DEF}Failed running executable ${GREEN}$<${RES}"
+MSG_EXEC_SUCCESS  = "${YELLOW}All executables runned successfully${RES}"
+MSG_EXEC_NONE     = "${DEF}Binary ${GREEN}$(EXEC)${DEF} is not"\
+                   "produced by this Makefile${RES}"
 
-MSG_BENCH         = "${BLUE}Running benchmark ${WHITE}$(notdir $<)${RES}"
-MSG_BENCH_COMPILE = "${DEF}Generating benchmark executable"\
-                    "${GREEN}$(notdir $(strip $@))${RES}"
+MSG_TEST_RUN      = "${BLUE}Running test ${GREEN}$<${RES}"
+MSG_TEST_ERROR    = "${DEF}Failed running test ${GREEN}$<${RES}"
+MSG_TEST_SUCCESS  = "${YELLOW}All tests passed successfully${RES}"
+MSG_TEST_NONE     = "${DEF}Test ${GREEN}$(TEST)${DEF} is not"\
+                   "produced by this Makefile${RES}"
+
+MSG_BENCH_RUN     = "${BLUE}Running benchmark ${GREEN}$<${RES}"
+MSG_BENCH_ERROR   = "${DEF}Failed running benchmark ${GREEN}$<${RES}"
 MSG_BENCH_SUCCESS = "${YELLOW}All benchmarks runned successfully${RES}"
+MSG_BENCH_NONE    = "${DEF}Benchmark ${GREEN}$(BENCH)${DEF} is not"\
+                   "produced by this Makefile${RES}"
 
 MSG_ALINT         = "${BLUE}Running analysis lint for ${GREEN}$f${RES}"
 MSG_ALINT_SUCCESS = "${YELLOW}All analysis lints runned successfully${RES}"
@@ -4583,11 +4573,6 @@ MSG_CXX_SHRLIB    = "${RED}Generating C++ shared library $@${RES}"
 MSG_CXX_NO_FILE   = "${DEF}No files for C++ executable ${GREEN}$@${RES}"
 MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
                     "${YELLOW}$@${RES}"
-
-MSG_RUN           = "${YELLOW}Running executable ${GREEN}$<${RES}"
-MSG_RUN_BAD_EXEC  = "${DEF}Executable ${GREEN}$(EXEC)${DEF}"\
-                    "is not produced by this Makefile${RES}"
-MSG_RUN_ERROR     = "${DEF}Failed running ${GREEN}$<${RES}"
 
 ########################################################################
 ##                            FUNCTIONS                               ##
@@ -4803,9 +4788,13 @@ then\
 fi
 endef
 
-define model-test-error
-($(call println,"\r${RED}[FAILURE]${RES}" $1"." \
-                "${RED}Aborting status: $$?${RES}") &&  exit 42)
+define model-failure
+if [ ! -f $(statusfile) ] || [ -z $$(cat $(statusfile) 2>/dev/null) ];\
+then\
+    $(RM) $(statusfile);\
+    ($(call println,"\r${RED}[FAILURE]${RES}" $1"." \
+                    "${RED}Aborting status: $$?${RES}") &&  exit 42);\
+fi
 endef
 
 define phony-error
@@ -4818,7 +4807,7 @@ define model-error
 $(NO_OPERATION)
 endef
 
-define model-test-error
+define model-failure
 $(NO_OPERATION)
 endef
 
@@ -5959,6 +5948,11 @@ projecthelp:
 	@echo "---------------------                                       "
 	@echo " * COVERAGE:         Enable compilation with coverage       "
 	@echo " * PROFILE:          Enable compilation with profile        "
+	@echo "                                                            "
+	@echo "Runtime options:                                            "
+	@echo "------------------                                          "
+	@echo " * *ENV:             EXEC/TEST/BENCH binary environment     "
+	@echo " * *ARGS:            EXEC/TEST/BENCH binary arguments       "
 	@echo "                                                            "
 	@echo "Special flags:                                              "
 	@echo "---------------                                             "

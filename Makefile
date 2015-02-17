@@ -1663,7 +1663,7 @@ endif
 
 # Get all dependency prefixes for targets
 targets := \
-    build remote upgrade init tags lint coverage \
+    build remote upgrade init tags lint coverage profile \
     translation docs doxy dist dpkg install
 
 # Get all existent programs
@@ -2882,6 +2882,22 @@ check-coverage test-coverage: coveragedep check $(covtestshow)
 
 .PHONY: eval-coverage benchmark-coverage
 eval-coverage benchmark-coverage: coveragedep eval $(covbenchshow)
+
+########################################################################
+##                              PROFILE                               ##
+########################################################################
+
+profile_dependency := \
+    PROF => $(binall) $(testbin) $(benchbin)
+
+.PHONY: profile
+profile: profiledep run $(filter $(addprefix %,$(EXEC)),$(profshow))
+
+.PHONY: check-profile test-profile
+check-profile test-profile: profiledep check $(proftestshow)
+
+.PHONY: eval-profile benchmark-profile
+eval-profile benchmark-profile: profiledep eval $(profbenchshow)
 
 ########################################################################
 ##                             STATISTICS                             ##

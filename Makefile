@@ -4259,7 +4259,8 @@ $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
 mostlyclean:
 	$(call rm-if-empty,$(objdir),\
 	    $(srcobj) $(testobj) $(benchobj)\
-	    $(covdata) $(covtestdata) $(covbenchdata))
+	    $(covdata) $(covtestdata) $(covbenchdata)\
+	    $(profdata) $(proftestdata) $(profbenchdata))
 	$(foreach d,$(call invert,$(sort $(dir $(fhead)))),\
 	    $(call rm-if-empty,$d,$(filter $d%,$(fhead)))$(newline))
 
@@ -4275,7 +4276,10 @@ distclean: clean
 	$(call rm-if-empty,$(distdir))
 	$(call rm-if-empty,$(firstword $(libdir)),\
 	    $(filter $(firstword $(libdir))/%,$(lib)))
-	$(call rm-if-empty,$(covdir),$(covrep) $(covtestrep) $(covbenchrep))
+	$(call rm-if-empty,$(covdir),\
+	    $(covrep) $(covtestrep) $(covbenchrep))
+	$(call rm-if-empty,$(profdir),\
+	    $(profrep) $(proftestrep) $(profbenchrep))
 
 ifdef ENABLE_NLS
 .PHONY: translationclean

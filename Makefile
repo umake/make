@@ -319,6 +319,11 @@ SYSEXT  := .dep
 
 # Coverage extensions
 COVEXT  := .gcno .gcda
+
+# Profile extensions
+PROFEXT := .out
+
+# Report extension
 REPEXT  := .info
 
 # Binary extensions
@@ -1561,6 +1566,7 @@ depext  := $(strip $(sort $(DEPEXT)))
 extext  := $(strip $(sort $(EXTEXT)))
 sysext  := $(strip $(sort $(SYSEXT)))
 covext  := $(strip $(sort $(COVEXT)))
+profext := $(strip $(sort $(PROFEXT)))
 repext  := $(strip $(sort $(REPEXT)))
 objext  := $(strip $(sort $(OBJEXT)))
 binext  := $(strip $(sort $(BINEXT)))
@@ -1587,8 +1593,8 @@ docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 allext := $(strip \
     $(incext) $(srcext) $(asmext) $(libext) $(lexext) $(lexxext)   \
     $(yaccext) $(yaxxext) $(esqlext) $(depext) $(extext) $(sysext) \
-    $(covext) $(repext) $(objext) $(binext) $(srpext) $(dataext)   \
-    $(potext) $(poext) $(moext) $(docext) \
+    $(covext) $(profext) $(repext) $(objext) $(binext) $(srpext)   \
+    $(dataext) $(potext) $(poext) $(moext) $(docext)               \
 )
 $(foreach e,$(allext),$(if $(filter .%,$e),,\
    $(error "'$e' is not a valid extension (MUST start with dot)")))

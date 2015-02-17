@@ -2397,7 +2397,7 @@ endif
 testdep := $(addprefix $(depdir)/$(testdir)/,\
                $(addsuffix $(depext),$(basename $(testsrc))))
 #------------------------------------------------------------------[ 11 ]
-testrun := $(addprefix run_,$(subst /,_,$(testbin)))
+testrun := $(addprefix run_,$(testbin))
 
 # Automated Benchmarks
 # ======================
@@ -2475,7 +2475,7 @@ endif
 benchdep := $(addprefix $(depdir)/$(benchdir)/,\
                 $(addsuffix $(depext),$(basename $(benchsrc))))
 #------------------------------------------------------------------[ 11 ]
-benchrun := $(addprefix run_,$(subst /,_,$(benchbin)))
+benchrun := $(addprefix run_,$(benchbin))
 
 # Lint style check
 # ==================
@@ -3701,7 +3701,7 @@ $(foreach l,$(arlib),\
 #            substituting / for _ in $(testbin)                        #
 # @return Target to generate binary file for the unit test             #
 #======================================================================#
-ifneq (,$(call rfilter,check test %-coverage,$(MAKECMDGOALS)))
+ifneq (,$(call rfilter,check% test%,$(MAKECMDGOALS)))
 define test-factory
 $1/$2: $$($2_obj) | $1/./
 	$$(call status,$$(MSG_TEST_COMPILE))
@@ -3717,9 +3717,7 @@ $3: $1/$2
 	$$(call ok,$$(MSG_TEST))
 endef
 $(foreach t,$(testbin),$(eval\
-    $(call test-factory,$(call root,$t),$(call not-root,$t),\
-    run_$(subst /,_,$t)\
-)))
+    $(call test-factory,$(call root,$t),$(call not-root,$t),run_$t)))
 endif
 
 #======================================================================#
@@ -3730,7 +3728,7 @@ endif
 #            substituting / for _ in $(benchdep)                       #
 # @return Target to generate binary file for the benchmark             #
 #======================================================================#
-ifneq (,$(call rfilter,eval benchmark %-coverage,$(MAKECMDGOALS)))
+ifneq (,$(call rfilter,eval% benchmark%,$(MAKECMDGOALS)))
 define bench-factory
 $1/$2: $$($2_obj) | $1/./
 	$$(call status,$$(MSG_BENCH_COMPILE))
@@ -3746,9 +3744,7 @@ $3: $1/$2
 	$$(call ok,$$(MSG_BENCH))
 endef
 $(foreach t,$(benchbin),$(eval\
-    $(call bench-factory,$(call root,$t),$(call not-root,$t),\
-    run_$(subst /,_,$t)\
-)))
+    $(call bench-factory,$(call root,$t),$(call not-root,$t),run_$t)))
 endif
 
 #======================================================================#

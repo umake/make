@@ -88,6 +88,7 @@
     [X] Check if test/benchmark is recompiled when header is modified.
     [X] Add option to ignore files when calculating coverage statistics.
     [X] Force recompilation when flags are changed.
+    [X] Allow running executable with make (to collect analysis data).
     [ ] Support library with name different from directory's name.
     [ ] Support binary with name different from directory's name.
     [ ] Check for system dependency existence iff targets need rebuild. 

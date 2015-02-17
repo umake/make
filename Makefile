@@ -1745,7 +1745,7 @@ covignore := $(sort $(COV_IGNORE))
 # 3) Add dependency suffix and directory
 #------------------------------------------------------------------[ 1 ]
 flag_dependency := \
-    objall  => CPPFLAGS CPPCOVFLAGS,\
+    srcobj  => CPPFLAGS CPPCOVFLAGS,\
     binall  => LDFLAGS LDCOV LDLIBS,\
     asmobj  => ASFLAGS LDAS ASLIBS,\
     cobj    => CFLAGS CALFLAGS CSLFLAGS CCOVFLAGS LDC CLIBS,\

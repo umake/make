@@ -3947,14 +3947,59 @@ cov_$2: $1
 endef
 $(foreach b,$(binall),\
     $(eval $(call coverage-factory,$(strip \
-        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b,run)))
+        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
 $(foreach b,$(testbin),\
     $(eval $(call coverage-factory,$(strip \
-        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b,check)))
+        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
 $(foreach b,$(benchbin),\
     $(eval $(call coverage-factory,$(strip \
-        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b,eval)))
+        $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
 endif # ifdef COVERAGE
+endif # ifndef DEPLOY
+
+#======================================================================#
+# Function: profile-factory                                            #
+# @param  $1 Report file                                               #
+# @param  $1 Binary file                                               #
+# @param  $3 Phony target to show profile statistics for $2            #
+# @return Target to generate profile and show profile statistics       #
+#======================================================================#
+ifndef DEPLOY
+ifdef PROFILE
+define profile-factory
+$1: $2
+	$$(call status,$$(MSG_PROF_COMPILE))
+	
+	$$(call mksubdir,$$(profdir),$$@)
+	$$(quiet) $$(PROF) $$< \
+	                   $$(addprefix $$(objdir)/,\
+	                       $$(addsuffix $$(profext),\
+	                           $$(call not-root,$$(basename $$<)))) \
+	                   > $$@ $$(ERROR)
+	
+	$$(call ok,$$(MSG_PROF_COMPILE))
+
+.PHONY: prof_$2
+prof_$2: $1
+	$$(call phony-status,$$(MSG_PROF))
+	$$(quiet) if [ -s $$< ]; \
+	          then \
+	              cat $$< $$(ERROR); \
+	              $$(call model-ok,$$(MSG_PROF)); \
+	          else \
+	              $$(call model-ok,$$(MSG_PROF_NONE)); \
+	          fi
+endef
+$(foreach b,$(binall),\
+    $(eval $(call profile-factory,$(strip \
+        $(profdir)/$(call not-root,$(basename $b))$(repext)),$b)))
+$(foreach b,$(testbin),\
+    $(eval $(call profile-factory,$(strip \
+        $(profdir)/$(call not-root,$(basename $b))$(repext)),$b)))
+$(foreach b,$(benchbin),\
+    $(eval $(call profile-factory,$(strip \
+        $(profdir)/$(call not-root,$(basename $b))$(repext)),$b)))
+endif # ifdef PROFILE
 endif # ifndef DEPLOY
 
 #======================================================================#
@@ -4481,6 +4526,10 @@ MSG_SLINT_SUCCESS = "${YELLOW}All style lints runned successfully${RES}"
 MSG_COV           = "${BLUE}Showing coverage analysis ${DEF}$<${RES}"
 MSG_COV_NONE      = "${PURPLE}No coverage analysis reported in $<${RES}"
 MSG_COV_COMPILE   = "${DEF}Generating coverage analysis ${WHITE}$@${RES}"
+
+MSG_PROF          = "${BLUE}Showing profile analysis ${DEF}$<${RES}"
+MSG_PROF_NONE     = "${PURPLE}No profile analysis reported in $<${RES}"
+MSG_PROF_COMPILE  = "${DEF}Generating profile analysis ${WHITE}$@${RES}"
 
 MSG_MAKETAR       = "${RED}Generating tar file ${BLUE}$@${RES}"
 MSG_MAKEZIP       = "${RED}Generating zip file ${BLUE}$@${RES}"

@@ -33,3 +33,7 @@ LDLIBS          += -L external/gtest/make/ -L external/gmock/make/
 # =======
 CXXFLAGS        += -pthread
 LDFLAGS         += -pthread -lgmock -lgtest
+
+# Runtime
+# ========
+TESTENV         += GTEST_COLOR=yes

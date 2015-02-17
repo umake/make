@@ -464,6 +464,10 @@ ifndef COVERAGE
 COVERAGE := $(if $(filter %coverage %clean,$(MAKECMDGOALS)),T)
 endif
 
+ifndef PROFILE
+PROFILE := $(if $(filter %profile %clean,$(MAKECMDGOALS)),T)
+endif
+
 # Include configuration file if exists
 -include .version.mk
 -include .config.mk config.mk Config.mk
@@ -2563,6 +2567,39 @@ covtestshow  := $(addprefix cov_,$(testbin))
 covbenchshow := $(addprefix cov_,$(benchbin))
 #------------------------------------------------------------------[   ]
 endif # ifdef COVERAGE
+endif # ifndef DEPLOY
+
+# Coverage analysis
+# ===================
+# 1) Data files used to generate profile information
+# 2) Report files with profile information
+# 3) Alias to show reports, prefixing show_ and replacing / for _ above
+#------------------------------------------------------------------[   ]
+ifndef DEPLOY
+ifdef PROFILE
+#------------------------------------------------------------------[ 1 ]
+profdata      := $(foreach e,$(profext),$(addsuffix $e,\
+                    $(basename $(srcobj))))
+proftestdata  := $(foreach e,$(profext),$(addsuffix $e,\
+                    $(basename $(testobj))))
+profbenchdata := $(foreach e,$(profext),$(addsuffix $e,\
+                    $(basename $(benchobj))))
+#------------------------------------------------------------------[ 2 ]
+profrep       := $(addprefix $(profdir)/,\
+                    $(addsuffix $(firstword $(repext)),\
+                        $(call not-root,$(basename $(binall)))))
+proftestrep   := $(addprefix $(profdir)/,\
+                    $(addsuffix $(firstword $(repext)),\
+                        $(call not-root,$(basename $(testbin)))))
+profbenchrep  := $(addprefix $(profdir)/,\
+                    $(addsuffix $(firstword $(repext)),\
+                        $(call not-root,$(basename $(benchbin)))))
+#------------------------------------------------------------------[ 3 ]
+profshow      := $(addprefix prof_,$(binall))
+proftestshow  := $(addprefix prof_,$(testbin))
+profbenchshow := $(addprefix prof_,$(benchbin))
+#------------------------------------------------------------------[   ]
+endif # ifdef PROFILE
 endif # ifndef DEPLOY
 
 # Texinfo files

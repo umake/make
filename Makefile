@@ -1761,8 +1761,8 @@ covignore := $(sort $(COV_IGNORE))
 # 3) Add dependency suffix and directory
 #------------------------------------------------------------------[ 1 ]
 flag_dependency := \
-    srcobj  => CPPFLAGS CPPCOVFLAGS,\
-    binall  => LDFLAGS LDCOV LDLIBS,\
+    execobj => CPPFLAGS CPPCOVFLAGS,\
+    execbin => LDFLAGS LDCOV LDLIBS,\
     asmobj  => ASFLAGS LDAS ASLIBS,\
     cobj    => CFLAGS CALFLAGS CSLFLAGS CCOVFLAGS LDC CLIBS,\
     fobj    => FFLAGS FALFLAGS FSLFLAGS FCOVFLAGS LDF FLIBS,\
@@ -1937,17 +1937,17 @@ esqlinc   := $(if $(strip $(esqlall)),$(strip $(ESQLLIBS)))
 # 4) mainall : Save complete paths for files with 'main'/'program'
 # 5) userall : Remove library and main src from user-generated src
 # 5) autoall : Remove library and main src from auto-generated src
-# 6) srcall  : Join all sources with complete path
+# 6) execall : Join all sources with complete path
 # 7) usersrc : Remove root directory names from usersrc
 # 7) autosrc : Remove root directory names from autoall
 # 7) libsrc  : Remove root directory names from liball
 # 7) mainsrc : Remove root directory names from mainall
-# 7) src     : Remove root directory names from srcall
-# 8) asmall  : Assembly files from srcall
-# 8) call    : C files from srcall
-# 8) fall    : Fortran files from srcall
-# 8) cxxall  : C++ files from srcall
-# 9) srcdep  : Dependency files for source files
+# 7) src     : Remove root directory names from execall
+# 8) asmall  : Assembly files from execall
+# 8) call    : C files from execall
+# 8) fall    : Fortran files from execall
+# 8) cxxall  : C++ files from execall
+# 9) execdep : Dependency files for Makefile-created executables
 #------------------------------------------------------------------[ 1 ]
 ifneq ($(srcdir),.)
 userall := $(sort $(call filter-ignored,\
@@ -1979,20 +1979,20 @@ mainall := $(foreach s,$(userall) $(autoall),$(if $(call has-main,$s),$s))
 userall := $(call rfilter-out,$(liball) $(mainall),$(userall))
 autoall := $(call rfilter-out,$(liball) $(mainall),$(autoall))
 #------------------------------------------------------------------[ 6 ]
-srcall  := $(userall) $(autoall) $(liball) $(mainall)
+execall := $(userall) $(autoall) $(liball) $(mainall)
 #------------------------------------------------------------------[ 7 ]
 usersrc := $(call not-root,$(userall))
 autosrc := $(call not-root,$(autoall))
 libsrc  := $(call not-root,$(liball))
 mainsrc := $(call not-root,$(mainall))
-src     := $(call not-root,$(srcall))
+execsrc := $(call not-root,$(execall))
 #------------------------------------------------------------------[ 8 ]
-asmall  := $(call rfilter,$(addprefix %,$(asmext)),$(srcall))
-call    := $(call rfilter,$(addprefix %,$(cext)),$(srcall))
-fall    := $(call rfilter,$(addprefix %,$(fext)),$(srcall))
-cxxall  := $(call rfilter,$(addprefix %,$(cxxext)),$(srcall))
+asmall  := $(call rfilter,$(addprefix %,$(asmext)),$(execall))
+call    := $(call rfilter,$(addprefix %,$(cext)),$(execall))
+fall    := $(call rfilter,$(addprefix %,$(fext)),$(execall))
+cxxall  := $(call rfilter,$(addprefix %,$(cxxext)),$(execall))
 #------------------------------------------------------------------[ 9 ]
-srcdep  := $(patsubst %,$(depdir)/%$(depext),$(basename $(src)))
+execdep := $(patsubst %,$(depdir)/%$(depext),$(basename $(execsrc)))
 
 # Header files
 # ==============
@@ -2000,7 +2000,7 @@ srcdep  := $(patsubst %,$(depdir)/%$(depext),$(basename $(src)))
 # 2) userinc : Get all directories able to be included
 # 3) userinc : Remove empty directories in the leaves of userinc tree
 # 4) autoinc : Join automatically generated include files
-# 5) incall  : Get all subdirectories of the included dirs
+# 5) execinc : Get all subdirectories of the included dirs
 # 6) *libs   : Add subidirectories as paths to be searched for headers
 # 7) *head   : Get all language specific headers from include dirs
 # 8) headall : Get all headers from include dirs
@@ -2020,12 +2020,12 @@ userinc := $(foreach i,$(sort $(userinc)),\
 #------------------------------------------------------------------[ 4 ]
 autoinc := $(yaccinc) $(lexinc) $(esqlinc)
 #------------------------------------------------------------------[ 5 ]
-incall  := $(sort $(call rm-trailing-bar,$(userinc) $(autoinc)))
+execinc := $(sort $(call rm-trailing-bar,$(userinc) $(autoinc)))
 #------------------------------------------------------------------[ 6 ]
-aslibs  += $(patsubst %,-I$(space)%,$(incall))
-clibs   += $(patsubst %,-I$(space)%,$(incall))
-flibs   += $(patsubst %,-I$(space)%,$(incall))
-cxxlibs += $(patsubst %,-I$(space)%,$(incall))
+aslibs  += $(patsubst %,-I$(space)%,$(execinc))
+clibs   += $(patsubst %,-I$(space)%,$(execinc))
+flibs   += $(patsubst %,-I$(space)%,$(execinc))
+cxxlibs += $(patsubst %,-I$(space)%,$(execinc))
 #------------------------------------------------------------------[ 7 ]
 chead   := $(foreach d,$(incdir),$(foreach e,$(hext),\
                $(call rwildcard,$d,*$e)))
@@ -2250,7 +2250,7 @@ libobj  := $(addprefix $(objdir)/,$(libobj))
 mainobj := $(addsuffix $(firstword $(objext)),$(basename $(mainsrc)))
 mainobj := $(addprefix $(objdir)/,$(mainobj))
 #------------------------------------------------------------------[ 5 ]
-srcobj  := $(userobj) $(autoobj) $(libobj) $(mainobj)
+execobj := $(userobj) $(autoobj) $(libobj) $(mainobj)
 
 # Internationalization
 # ======================
@@ -2297,7 +2297,7 @@ endif
 #------------------------------------------------------------------[ 1 ]
 define binary-name
 $1 := $$(call rm-trailing-bar,$$(basename $2))
-$1 := $$(call expand-path,$$($1),$$(basename $$(src)),$$(srcdir))
+$1 := $$(call expand-path,$$($1),$$(basename $$(execsrc)),$$(srcdir))
 $1 := $$(addprefix $$(strip $3)/,$$($1))
 $1 := $$(if $$(strip $$(binext)),$$(addsuffix $$(binext),$$($1)),$$($1))
 $1 := $$(call filter-ignored,$$($1))
@@ -2307,11 +2307,11 @@ $(eval $(call binary-name,sbin,$(SBIN),$(sbindir)))
 $(eval $(call binary-name,libexec,$(LIBEXEC),$(execdir)))
 
 $(if $(strip $(bin) $(sbin) $(libexec)),\
-    $(eval binall := $(bin) $(sbin) $(libexec)),\
-    $(if $(strip $(mainall)),$(eval binall := $(bindir)/a.out))\
+    $(eval execbin := $(bin) $(sbin) $(libexec)),\
+    $(if $(strip $(mainall)),$(eval execbin := $(bindir)/a.out))\
 )
 #------------------------------------------------------------------[ 2 ]
-$(foreach sep,/ .,$(foreach b,$(call not-root,$(binall)),$(or\
+$(foreach sep,/ .,$(foreach b,$(call not-root,$(execbin)),$(or\
     $(eval $b_src  += $(filter $b$(sep)%,\
                           $(usersrc) $(autosrc) $(mainsrc))),\
     $(eval $b_all  += $(sort $(call rfilter,$(addprefix %,$($b_src)),\
@@ -2327,7 +2327,7 @@ $(foreach sep,/ .,$(foreach b,$(call not-root,$(binall)),$(or\
 )))
 #------------------------------------------------------------------[ 3 ]
 define common-factory
-$(call rfilter-out,$(foreach b,$(call not-root,$(binall)),$($b_$1)),$2)
+$(call rfilter-out,$(foreach b,$(call not-root,$(execbin)),$($b_$1)),$2)
 endef
 comsrc  := $(call common-factory,src,$(usersrc) $(autosrc) $(mainsrc))
 comall  := $(call common-factory,all,$(userall) $(autoall) $(mainall))
@@ -2335,7 +2335,7 @@ comobj  := $(call common-factory,obj,$(userobj) $(autoobj) $(mainobj))
 comlib  := $(call common-factory,lib,$(lib))
 comlink := $(call common-factory,link,$(liblink))
 #------------------------------------------------------------------[ 4 ]
-$(foreach b,$(call not-root,$(binall)),$(or\
+$(foreach b,$(call not-root,$(execbin)),$(or\
     $(eval $b_src     := $(comsrc)  $($b_src)  ),\
     $(eval $b_all     := $(comall)  $($b_all)  ),\
     $(eval $b_obj     := $(comobj)  $($b_obj)  ),\
@@ -2360,7 +2360,7 @@ i_libexec := $(addprefix $(i_libexecdir)/,$(call not-root,$(libexec)))
 ifdef ENABLE_NLS
 #------------------------------------------------------------------[ 1 ]
 intltl    := \
-$(foreach b,$(binall),\
+$(foreach b,$(execbin),\
     $(localedir)/$(call not-root,$b)$(firstword $(potext)))
 intltl    := $(strip $(intltl))
 #------------------------------------------------------------------[ 2 ]
@@ -2438,7 +2438,7 @@ $(foreach s,$(comtestsrc),\
     $(if $(filter-out %$(testsuf),$(basename $s)),\
         $(error "Test $(testdir)/$s have no suffix $(testsuf)")))
 $(foreach s,$(comtestsrc),\
-    $(if $(filter $(subst $(testsuf).,.,$s)%,$(src)),,\
+    $(if $(filter $(subst $(testsuf).,.,$s)%,$(execsrc)),,\
         $(error "Test $(testdir)/$s has no matching source file")))
 endif
 endif
@@ -2516,7 +2516,7 @@ $(foreach s,$(combenchsrc),\
     $(if $(filter-out %$(benchsuf),$(basename $s)),\
         $(error "Benchmark $(benchdir)/$s have no suffix $(benchsuf)")))
 $(foreach s,$(combenchsrc),\
-    $(if $(filter $(subst $(benchsuf).,.,$s)%,$(src)),,\
+    $(if $(filter $(subst $(benchsuf).,.,$s)%,$(execsrc)),,\
         $(error "Benchmark $(benchdir)/$s has no matching source file")))
 endif
 endif
@@ -2526,12 +2526,12 @@ benchdep := $(addprefix $(depdir)/$(benchdir)/,\
 
 # Binary execution
 # ==================
-# 2) srcrun   : Alias to execute tests, prefixing run_ in $(binall)
+# 2) execrun  : Alias to execute tests, prefixing run_ in $(execbin)
 # 2) testrun  : Alias to execute tests, prefixing run_ in $(testbin)
 # 3) benchrun : Alias to execute benchmarks, prefixing run_ 
 #               in $(benchbin)
 #------------------------------------------------------------------[ 1 ]
-srcrun   := $(addprefix run_,$(binall))
+execrun   := $(addprefix run_,$(execbin))
 #------------------------------------------------------------------[ 2 ]
 testrun  := $(addprefix run_,$(testbin))
 #------------------------------------------------------------------[ 3 ]
@@ -2544,13 +2544,13 @@ benchrun := $(addprefix run_,$(benchbin))
 # 2) slintrun : Alias to execute style lint, prefixing style_lint_
 #               and substituting / for _ in $(benchdep)
 #------------------------------------------------------------------[ 1 ]
-alintrun := $(addprefix analysis_lint_,$(subst /,_,$(binall)))
+alintrun := $(addprefix analysis_lint_,$(subst /,_,$(execbin)))
 alintrun += $(addprefix analysis_lint_,$(subst /,_,$(testbin)))
 alintrun += $(addprefix analysis_lint_,$(subst /,_,$(benchbin)))
 alintrun += $(addprefix analysis_lint_,$(subst /,_,$(arlib)))
 alintrun += $(addprefix analysis_lint_,$(subst /,_,$(shrlib)))
 #------------------------------------------------------------------[ 2 ]
-slintrun := $(addprefix style_lint_,$(subst /,_,$(binall)))
+slintrun := $(addprefix style_lint_,$(subst /,_,$(execbin)))
 slintrun += $(addprefix style_lint_,$(subst /,_,$(testbin)))
 slintrun += $(addprefix style_lint_,$(subst /,_,$(benchbin)))
 slintrun += $(addprefix style_lint_,$(subst /,_,$(arlib)))
@@ -2561,7 +2561,7 @@ slintrun += $(addprefix style_lint_,$(subst /,_,$(shrlib)))
 # 1) Get flag, source, test and benchmark dependencies
 # 2) Get program, external and system library dependencies
 # 3) Get phony target and submodule makefile dependencies
-depall := $(flagdep) $(srcdep) $(testdep) $(benchdep) 
+depall := $(flagdep) $(execdep) $(testdep) $(benchdep)
 depall += $(progdep) $(externdep) $(syslibdep)
 depall += $(phonydep) $(makedep)
 
@@ -2575,7 +2575,7 @@ ifndef DEPLOY
 ifdef COVERAGE
 #------------------------------------------------------------------[ 1 ]
 covdata      := $(foreach e,$(covext),$(addsuffix $e,\
-                    $(basename $(srcobj))))
+                    $(basename $(execobj))))
 covtestdata  := $(foreach e,$(covext),$(addsuffix $e,\
                     $(basename $(testobj))))
 covbenchdata := $(foreach e,$(covext),$(addsuffix $e,\
@@ -2583,7 +2583,7 @@ covbenchdata := $(foreach e,$(covext),$(addsuffix $e,\
 #------------------------------------------------------------------[ 2 ]
 covrep       := $(addprefix $(covdir)/,\
                     $(addsuffix $(firstword $(repext)),\
-                        $(call not-root,$(basename $(binall)))))
+                        $(call not-root,$(basename $(execbin)))))
 covtestrep   := $(addprefix $(covdir)/,\
                     $(addsuffix $(firstword $(repext)),\
                         $(call not-root,$(basename $(testbin)))))
@@ -2591,7 +2591,7 @@ covbenchrep  := $(addprefix $(covdir)/,\
                     $(addsuffix $(firstword $(repext)),\
                         $(call not-root,$(basename $(benchbin)))))
 #------------------------------------------------------------------[ 3 ]
-covshow      := $(addprefix cov_,$(binall))
+covshow      := $(addprefix cov_,$(execbin))
 covtestshow  := $(addprefix cov_,$(testbin))
 covbenchshow := $(addprefix cov_,$(benchbin))
 #------------------------------------------------------------------[   ]
@@ -2608,7 +2608,7 @@ ifndef DEPLOY
 ifdef PROFILE
 #------------------------------------------------------------------[ 1 ]
 profdata      := $(foreach e,$(profext),$(addsuffix $e,\
-                    $(basename $(srcobj))))
+                    $(basename $(execobj))))
 proftestdata  := $(foreach e,$(profext),$(addsuffix $e,\
                     $(basename $(testobj))))
 profbenchdata := $(foreach e,$(profext),$(addsuffix $e,\
@@ -2616,7 +2616,7 @@ profbenchdata := $(foreach e,$(profext),$(addsuffix $e,\
 #------------------------------------------------------------------[ 2 ]
 profrep       := $(addprefix $(profdir)/,\
                     $(addsuffix $(firstword $(repext)),\
-                        $(call not-root,$(basename $(binall)))))
+                        $(call not-root,$(basename $(execbin)))))
 proftestrep   := $(addprefix $(profdir)/,\
                     $(addsuffix $(firstword $(repext)),\
                         $(call not-root,$(basename $(testbin)))))
@@ -2624,7 +2624,7 @@ profbenchrep  := $(addprefix $(profdir)/,\
                     $(addsuffix $(firstword $(repext)),\
                         $(call not-root,$(basename $(benchbin)))))
 #------------------------------------------------------------------[ 3 ]
-profshow      := $(addprefix prof_,$(binall))
+profshow      := $(addprefix prof_,$(execbin))
 proftestshow  := $(addprefix prof_,$(testbin))
 profbenchshow := $(addprefix prof_,$(benchbin))
 #------------------------------------------------------------------[   ]
@@ -2717,7 +2717,7 @@ build_dependency := \
     ESQL     => $(cesql)
 
 .PHONY: all
-all: depend $(binall) $(lib)
+all: depend $(execbin) $(lib)
 
 .PHONY: depend
 depend: builddep librarydep gitdep webdep
@@ -2821,12 +2821,12 @@ tags_dependency := \
 .PHONY: TAGS
 TAGS: tagsdep ctags etags
 
-ctags: $(incall) $(srcall)
+ctags: $(execinc) $(execall)
 	$(call phony-status,$(MSG_CTAGS))
 	$(quiet) $(CTAGS) $(ctagsflags) $^ -o $@ $(ERROR)
 	$(call phony-ok,$(MSG_CTAGS))
 
-etags: $(incall) $(srcall)
+etags: $(execinc) $(execall)
 	$(call phony-status,$(MSG_ETAGS))
 	$(quiet) $(ETAGS) $(etagsflags) $^ -o $@ $(ERROR)
 	$(call phony-ok,$(MSG_ETAGS))
@@ -2840,8 +2840,8 @@ $(strip $(filter $(or $(addprefix %,$1),%),$2))
 endef
 
 .PHONY: run
-run: depend $(call search-run,$(EXEC),$(srcrun))
-	$(if $(call not-empty,$(srcrun) $(EXEC)),\
+run: depend $(call search-run,$(EXEC),$(execrun))
+	$(if $(call not-empty,$(execrun) $(EXEC)),\
 	    $(if $(filter-out $<,$^),\
 	        $(call phony-ok,$(MSG_EXEC_SUCCESS)),\
 	        $(call phony-error,$(MSG_EXEC_NONE))))
@@ -2894,7 +2894,7 @@ lint: analysis-lint style-lint
 ########################################################################
 
 coverage_dependency := \
-    COV => $(binall) $(testbin) $(benchbin)
+    COV => $(execbin) $(testbin) $(benchbin)
 
 .PHONY: coverage
 coverage: coveragedep run $(filter $(addprefix %,$(EXEC)),$(covshow))
@@ -2910,7 +2910,7 @@ eval-coverage benchmark-coverage: coveragedep eval $(covbenchshow)
 ########################################################################
 
 profile_dependency := \
-    PROF => $(binall) $(testbin) $(benchbin)
+    PROF => $(execbin) $(testbin) $(benchbin)
 
 .PHONY: profile
 profile: profiledep run $(filter $(addprefix %,$(EXEC)),$(profshow))
@@ -3826,7 +3826,7 @@ $1/$2: $$($2_lib) $$($2_obj) | $1/./
 
 $$($2_obj): $$($2_all) | $$(objdir)/./
 endef
-$(foreach b,$(binall) $(testbin) $(benchbin),\
+$(foreach b,$(execbin) $(testbin) $(benchbin),\
     $(eval $(call binary-factory,$(strip \
         $(call root,$b)),$(call not-root,$b),$(strip \
         $(call choose-comment,$($(call not-root,$b)_all))),$(strip \
@@ -3859,14 +3859,14 @@ run_$1: $1
 	
 	$$(call phony-ok,$$(MSG_$2_RUN))
 endef
-$(foreach b,$(binall),$(eval $(call run-factory,$b,EXEC)))
+$(foreach b,$(execbin),$(eval $(call run-factory,$b,EXEC)))
 $(foreach b,$(testbin),$(eval $(call run-factory,$b,TEST)))
 $(foreach b,$(benchbin),$(eval $(call run-factory,$b,BENCH)))
 
 #======================================================================#
 # Function: analysis-lint-factory                                      #
 # @param  $1 Alias to execute analysis lint, prefixing analysis_lint_  #
-#            and replacing / for _ in $(binall)/$(testbin)/$(benchbin) #
+#            and replacing / for _ in $(exec/test/benchbin)            #
 # @param  $2 Analysis lint binary's name without root directory        #
 # @param  $3 Lint tool to be used (C's, Fortran's or C++'s)            #
 # @return Target to generate binary file for the analysis lint         #
@@ -3879,7 +3879,7 @@ $1: $$($$(call not-root,$2)_all)
 	                      $$($$(call lc,$3)alflags) $$^ $$(ERROR)
 	$$(call phony-ok,$$(MSG_ALINT))
 endef
-$(foreach b,$(binall) $(testbin) $(benchbin) $(arlib) $(shrlib),\
+$(foreach b,$(execbin) $(testbin) $(benchbin) $(arlib) $(shrlib),\
     $(eval $(call analysis-lint-factory,$(strip \
         $(addprefix analysis_lint_,$(subst /,_,$b))),$b,$(strip \
         $(call choose-comment,$($(call not-root,$b)_all))\
@@ -3888,7 +3888,7 @@ $(foreach b,$(binall) $(testbin) $(benchbin) $(arlib) $(shrlib),\
 #======================================================================#
 # Function: style-lint-factory                                         #
 # @param  $1 Alias to execute style lint, prefixing style_lint_ and    #
-#            replacing / for _ in $(binall)/$(testbin)/$(benchbin)     #
+#            replacing / for _ in $(exec/test/benchbin)                #
 # @param  $2 Style lint binary's name without root directory           #
 # @param  $3 Lint tool to be used (C's, Fortran's or C++'s)            #
 # @return Target to generate binary file for the style lint            #
@@ -3900,7 +3900,7 @@ $1: $$($$(call not-root,$2)_all)
 	$$(quiet) $$($3SLINT) $$($$(call lc,$3)slflags) $$^ $$(ERROR)
 	$$(call phony-ok,$$(MSG_SLINT))
 endef
-$(foreach b,$(binall) $(testbin) $(benchbin) $(arlib) $(shrlib),\
+$(foreach b,$(execbin) $(testbin) $(benchbin) $(arlib) $(shrlib),\
     $(eval $(call style-lint-factory,$(strip \
         $(addprefix style_lint_,$(subst /,_,$b))),$b,$(strip \
         $(call choose-comment,$($(call not-root,$b)_all))\
@@ -3944,7 +3944,7 @@ cov_$2: $1
 	              $$(call model-ok,$$(MSG_COV_NONE)); \
 	          fi
 endef
-$(foreach b,$(binall),\
+$(foreach b,$(execbin),\
     $(eval $(call coverage-factory,$(strip \
         $(covdir)/$(call not-root,$(basename $b))$(repext)),$b)))
 $(foreach b,$(testbin),\
@@ -3989,7 +3989,7 @@ prof_$2: $1
 	              $$(call model-ok,$$(MSG_PROF_NONE)); \
 	          fi
 endef
-$(foreach b,$(binall),\
+$(foreach b,$(execbin),\
     $(eval $(call profile-factory,$(strip \
         $(profdir)/$(call not-root,$(basename $b))$(repext)),$b)))
 $(foreach b,$(testbin),\
@@ -4020,7 +4020,7 @@ $1/$2$$(firstword $$(potext)): $$($2_all) | $1/./
 	          -d $2 -k_ -kN_ -s $$^ -o $$@
 	$$(call ok,$$(MSG_INTL_TEMPLATE),$$@)
 endef
-$(foreach b,$(binall),$(eval\
+$(foreach b,$(execbin),$(eval\
     $(call intl-template-factory,$(strip\
         $(localedir)),$(call not-root,$(basename $b)))))
 endif
@@ -4167,7 +4167,7 @@ define packsyst-factory
         $$(strip $$(foreach f,$$(dirs),$$(or \
             $$(strip $$(call rwildcard,$$f,*)),\
             $$(strip $$(wildcard $$f*))) )))
-%.$1: distdep $$(binall)
+%.$1: distdep $$(execbin)
 	$$(call mkdir,$$(dir $$@))
 	$$(quiet) $$(MKDIR) $$(packdir)
 	$$(quiet) $$(CP) $$(clndirs) $$(packdir)
@@ -4241,7 +4241,7 @@ $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
 .PHONY: mostlyclean
 mostlyclean:
 	$(call rm-if-empty,$(objdir),\
-	    $(srcobj) $(testobj) $(benchobj)\
+	    $(execobj) $(testobj) $(benchobj)\
 	    $(covdata) $(covtestdata) $(covbenchdata)\
 	    $(profdata) $(proftestdata) $(profbenchdata))
 	$(foreach d,$(call invert,$(sort $(dir $(fhead)))),\
@@ -4336,8 +4336,8 @@ uninitialize:
 else
 uninitialize:
 	@$(MAKE) mainteiner-clean D=1
-	$(call rm-if-empty,$(srcdir),$(srcall))
-	$(call rm-if-empty,$(incdir),$(incall))
+	$(call rm-if-empty,$(srcdir),$(execall))
+	$(call rm-if-empty,$(incdir),$(execinc))
 	$(call rm-if-empty,$(docdir),$(texiall))
 	$(call rm-if-exists,Config.mk)
 	$(call rm-if-exists,config.mk)
@@ -5273,18 +5273,18 @@ ifdef NMS_HEADER
 	$(eval NMSH       := $(subst ::,/,$(NMS_HEADER)))
 	$(eval NMSH       := $(if $(strip $(IN)),$(IN)/)$(NMSH))
 	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
-	                         $(sort $(dir $(incall))))))
+	                         $(sort $(dir $(execinc))))))
 	$(eval NMSH       := $(call rm-trailing-bar,$(NMSH)))
 	
 	@# NMSH_NAME: File name for the Namespace header
 	$(eval NMSH_NAME  := $(notdir $(basename $(NMSH))))
 	
 	@# NMSH_FILES: Files to be put in the Namespace Header
-	$(eval NMSH_FILES := $(filter $(NMSH)/%,$(incall)))
+	$(eval NMSH_FILES := $(filter $(NMSH)/%,$(execinc)))
 	$(eval NMSH_FILES := $(call not-root,\
 	    $(filter-out $(NMSH)/$(NMSH_NAME).%,\
 	        $(foreach f,$(NMSH_FILES),\
-	            $(firstword $(filter %$f,$(incall)))\
+	            $(firstword $(filter %$f,$(execinc)))\
 	))))
 	
 	$(call invalid-ext,$(INC_EXT),$(hxxext))
@@ -5310,18 +5310,18 @@ ifdef LIB_HEADER
 	$(eval LIBH       := $(subst ::,/,$(LIB_HEADER)))
 	$(eval LIBH       := $(if $(strip $(IN)),$(IN)/)$(LIBH))
 	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
-	                         $(sort $(dir $(incall))))))
+	                         $(sort $(dir $(execinc))))))
 	$(eval LIBH       := $(call rm-trailing-bar,$(LIBH)))
 	
 	@# LIBH_NAME: File name for the Library header
 	$(eval LIBH_NAME  := $(notdir $(basename $(LIBH))))
 	
 	@# LIBH_FILES: Files to be put in the Library header
-	$(eval LIBH_FILES := $(filter $(LIBH)/%,$(incall)))
+	$(eval LIBH_FILES := $(filter $(LIBH)/%,$(execinc)))
 	$(eval LIBH_FILES := $(call not-root,\
 	    $(filter-out $(LIBH)/$(LIBH_NAME).%,\
 	        $(foreach f,$(LIBH_FILES),\
-	            $(firstword $(filter %$f,$(incall)))\
+	            $(firstword $(filter %$f,$(execinc)))\
 	))))
 	
 	$(call invalid-ext,$(INC_EXT),$(tlext))
@@ -5656,7 +5656,7 @@ ifdef NMS_HEADER
 	$(eval NMSH       := $(subst ::,/,$(NMS_HEADER)))
 	$(eval NMSH       := $(if $(strip $(IN)),$(IN)/)$(NMSH))
 	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
-	                         $(sort $(dir $(incall))))))
+	                         $(sort $(dir $(execinc))))))
 	$(eval NMSH       := $(call rm-trailing-bar,$(NMSH)))
 	
 	@# NMSH_NAME: Namespace include files
@@ -5672,7 +5672,7 @@ ifdef LIB_HEADER
 	$(eval LIBH       := $(subst ::,/,$(LIB_HEADER)))
 	$(eval LIBH       := $(if $(strip $(IN)),$(IN)/)$(LIBH))
 	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
-	                         $(sort $(dir $(incall))))))
+	                         $(sort $(dir $(execinc))))))
 	$(eval LIBH       := $(call rm-trailing-bar,$(LIBH)))
 	
 	@# LIBH_NAME: Namespace include files
@@ -6114,14 +6114,14 @@ else
 	$(call prompt,"libsrc:        ",$(libsrc)              )
 	$(call prompt,"mainall:       ",$(mainall)             )
 	$(call prompt,"mainsrc:       ",$(mainsrc)             )
-	$(call prompt,"srcall:        ",$(srcall)              )
-	$(call prompt,"src:           ",$(src)                 )
+	$(call prompt,"execall:       ",$(execall)             )
+	$(call prompt,"execsrc:       ",$(execsrc)             )
 	
 	$(call echo,"${WHITE}\nHEADERS                  ${RES}")
 	$(call echo,"-----------------------------------------")
 	$(call prompt,"userinc:       ",$(userinc)             )
 	$(call prompt,"autoinc:       ",$(autoinc)             )
-	$(call prompt,"incall:        ",$(incall)              )
+	$(call prompt,"execinc:       ",$(execinc)             )
 	$(call prompt,"chead:         ",$(chead)               )
 	$(call prompt,"fhead:         ",$(fhead)               )
 	$(call prompt,"cxxhead:       ",$(cxxhead)             )
@@ -6215,11 +6215,11 @@ else
 	$(call prompt,"autoobj:       ",$(autoobj)             )
 	$(call prompt,"libobj:        ",$(libobj)              )
 	$(call prompt,"mainobj:       ",$(mainobj)             )
-	$(call prompt,"srcobj:        ",$(srcobj)              )
+	$(call prompt,"execobj:       ",$(execobj)             )
 	
 	$(call echo,"${WHITE}\nDEPENDENCY               ${RES}")
 	$(call echo,"-----------------------------------------")
-	$(call prompt,"srcdep:        ",$(srcdep)              )
+	$(call prompt,"execdep:       ",$(execdep)             )
 	$(call prompt,"testdep:       ",$(testdep)             )
 	$(call prompt,"benchdep:      ",$(benchdep)            )
 	$(call prompt,"progdep:       ",$(progdep)             )
@@ -6233,7 +6233,7 @@ else
 	$(call prompt,"bin:           ",$(bin)                 )
 	$(call prompt,"sbin:          ",$(sbin)                )
 	$(call prompt,"libexec:       ",$(libexec)             )
-	$(call prompt,"binall:        ",$(binall)              )
+	$(call prompt,"execbin:       ",$(execbin)             )
 	
 	$(call echo,"${WHITE}\nINSTALLATION             ${RES}")
 	$(call echo,"-----------------------------------------")

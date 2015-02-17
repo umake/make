@@ -3306,18 +3306,22 @@ $$(depdir)/$$(firstword $$(extdir))/$1$$(sysext): $$(externreq)
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(if $$(call cdr,$3),$$(strip \
-	              (cd $$d && $$(call cdr,$3)) $$(ERROR)         \
-	              || $$(call model-error,$$(MSG_EXT_BUILD_ERR)) \
+	              $$(call store-status,cd $$d && $$(call cdr,$3)) \
+	              $$(ERROR)                                       \
+	              && $$(call model-error,$$(MSG_EXT_BUILD_ERR))   \
 	          ),$$(strip \
 	              if [ -f $$d/[Mm]akefile ]; \
 	              then \
-	                  cd $$d && $$(MAKE) -f [Mm]akefile $$(ERROR)       \
-	                  || $$(call model-error,$$(MSG_EXT_BUILD_ERR));    \
+	                  cd $$d \
+	                  && $$(call store-status,$$(MAKE) -f [Mm]akefile)  \
+	                     $$(ERROR)                                      \
+	                  && $$(call model-error,$$(MSG_EXT_BUILD_ERR));    \
 	              elif [ -f $$d/$$(makedir)/[Mm]akefile ]; \
 	              then \
 	                  cd $$d/$$(makedir)                                \
-	                  && $$(MAKE) -f [Mm]akefile $$(ERROR)              \
-	                  || $$(call model-error,$$(MSG_EXT_BUILD_ERR));    \
+	                  && $$(call store-status,$$(MAKE) -f [Mm]akefile)  \
+	                     $$(ERROR)                                      \
+	                  && $$(call model-error,$$(MSG_EXT_BUILD_ERR));    \
 	              else \
 	                  $$(call println,"$$(MSG_EXT_NO_MAKE)",$$(ERROR)); \
 	              fi \
@@ -4809,7 +4813,8 @@ endif
 
 define git-cmd-factory
 model-git-$1 = \
-    $(GIT_$2) $$1 $$(ERROR) || $$(call model-error,"Error on $1")
+    $$(call store-status,$(GIT_$2) $$1) $$(ERROR) \
+    && $$(call model-error,"Error on $1")
 phony-git-$1 = \
     $$(quiet) $$(call model-git-$1,$$1)
 endef

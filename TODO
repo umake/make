@@ -91,6 +91,7 @@
     [X] Force recompilation when flags are changed.
     [X] Allow running executable with make (to collect analysis data).
     [X] Support run of profiling tools (with gprof).
+    [X] Refactor 'run', 'check/test' and 'eval/benchmark' to reuse code.
     [ ] Support library with name different from directory's name.
     [ ] Support binary with name different from directory's name.
     [ ] Check for system dependency existence iff targets need rebuild. 

@@ -172,16 +172,16 @@ LDLIBS       :=
 ########################################################################
 
 # Binaries
-EXECENV      :=
-EXECARGS     :=
+EXEC_ENV     :=
+EXEC_ARGS    :=
 
 # Tests
-TESTENV      :=
-TESTARGS     :=
+TEST_ENV     :=
+TEST_ARGS    :=
 
 # Benchmarks
-BENCHENV     :=
-BENCHARGS    :=
+BENC_HENV    :=
+BENC_HARGS   :=
 
 ########################################################################
 ##                            DIRECTORIES                             ##
@@ -3847,7 +3847,7 @@ define run-factory
 run_$1: $1
 	$$(call phony-status,$$(MSG_$2_RUN))
 	
-	$$(quiet) $$(call store-status,$$($2ENV) ./$$< $$($2ARGS)) \
+	$$(quiet) $$(call store-status,$$($2_ENV) ./$$< $$($2_ARGS)) \
 	          $$(ERROR) && $$(call model-error,$$(MSG_$2_FAILURE))
 	$$(quiet) if [ -f gmon.out ]; \
 	          then \
@@ -5951,8 +5951,8 @@ projecthelp:
 	@echo "                                                            "
 	@echo "Runtime options:                                            "
 	@echo "------------------                                          "
-	@echo " * *ENV:             EXEC/TEST/BENCH binary environment     "
-	@echo " * *ARGS:            EXEC/TEST/BENCH binary arguments       "
+	@echo " * *_ENV:            EXEC/TEST/BENCH binary environment     "
+	@echo " * *_ARGS:           EXEC/TEST/BENCH binary arguments       "
 	@echo "                                                            "
 	@echo "Special flags:                                              "
 	@echo "---------------                                             "

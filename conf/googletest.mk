@@ -36,4 +36,4 @@ LDFLAGS         += -pthread -lgmock -lgtest
 
 # Runtime
 # ========
-TESTENV         += GTEST_COLOR=yes
+TEST_ENV        += GTEST_COLOR=yes

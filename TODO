@@ -92,6 +92,10 @@
     [X] Allow running executable with make (to collect analysis data).
     [X] Support run of profiling tools (with gprof).
     [X] Refactor 'run', 'check/test' and 'eval/benchmark' to reuse code.
+    [ ] Allow binary-specific compilation, linkage and path flags 
+    [ ] Support variant-binaries made from executables with other flags.
+    [ ] Add DEBUG compilation option to enable debug flags.
+    [ ] Add UNICODE compilation option to enable unicode support.
     [ ] Support library with name different from directory's name.
     [ ] Support binary with name different from directory's name.
     [ ] Check for system dependency existence iff targets need rebuild. 

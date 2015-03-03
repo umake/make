@@ -92,6 +92,7 @@
     [X] Allow running executable with make (to collect analysis data).
     [X] Support run of profiling tools (with gprof).
     [X] Refactor 'run', 'check/test' and 'eval/benchmark' to reuse code.
+    [X] Add directory and extension to deal with images in 'standard'.
     [ ] Limit style-lint output by number of lines and file/binary.
     [ ] Allow binary-specific compilation, linkage and path flags 
     [ ] Support variant-binaries made from executables with other flags.
@@ -112,7 +113,7 @@
     [X] Add Makeball for SOCI database access library.
     [X] Add Makeball for OpenMP shared mem multiprocess programming.
     [X] Add Makeball for MPI distributed mem multiprocess programming.
-    [ ] Add Makeball for OpenGL graphic library
+    [X] Add Makeball for OpenGL graphic library
     [ ] Add Makeball for wxWidgets GUI library
     [ ] Add Makeball for GTK+ GUI library
     [ ] Add Makeball for QT GUI library

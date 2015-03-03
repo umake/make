@@ -370,6 +370,17 @@ SRPEXT  := .ahk .applescript .bat .bash .cmd .coffee .erb .hta \
            .itcl .js .lua .m .php .pl .pm .py .pyc .pyo .r .rb \
            .scpt .scptd .sh .tcl .vbs
 
+# Image extensions
+IMGEXT  := .ai .ani .anim .apng .art .bmp .bpg .bsave .cal .cdf .cdr   \
+           .cgm .ciff .cin .cpc .cpt .cur .djvu .dng .dpx .dxf .ecw    \
+           .emf .eps .eva .exr .fits .flic .fpx .gerber .gif .hdri     \
+           .hevc .hvif .icer .icns .ico .ics .iges .ilbm .jbig .jbig2  \
+           .jng .jp2 .jpeg .jpeg .jpeg-hdr .logluv .miff .mng .nrrd    \
+           .pam .pbm .pcx .pdf .pgf .pgm .pgml .pict .pictor .png      \
+           .pnm .ppm .ps .psb .psd .psp .qtvr .ras .rbe .sgi .svg .swf \
+           .tga .tiff .tiff .vml .wbmp .webp .wmf .xaml .xar .xbm .xcf \
+           .xpm .xr .xwd
+
 # Data extensions
 DATAEXT := .asc .bak .bin .bk .cfg .conf .cnf .css .csv .dat \
            .diff .dsk .htm .html .json .log .ltsv .raw .sql \
@@ -1630,6 +1641,7 @@ objext  := $(strip $(sort $(OBJEXT)))
 binext  := $(strip $(sort $(BINEXT)))
 
 srpext  := $(strip $(sort $(SRPEXT)))
+imgext  := $(strip $(sort $(IMGEXT)))
 dataext := $(strip $(sort $(DATAEXT)))
 
 potext  := $(strip $(sort $(POTEXT)))
@@ -1652,7 +1664,7 @@ allext := $(strip \
     $(incext) $(srcext) $(asmext) $(libext) $(lexext) $(lexxext)   \
     $(yaccext) $(yaxxext) $(esqlext) $(depext) $(extext) $(sysext) \
     $(covext) $(profext) $(repext) $(objext) $(binext) $(srpext)   \
-    $(dataext) $(potext) $(poext) $(moext) $(docext)               \
+    $(imgext) $(dataext) $(potext) $(poext) $(moext) $(docext)     \
 )
 $(foreach e,$(allext),$(if $(filter .%,$e),,\
    $(error "'$e' is not a valid extension (MUST start with dot)")))
@@ -2808,6 +2820,7 @@ standard: init
 	$(call mv,$(libext), $(libdir),   "library")
 	$(call mv,$(docext), $(docdir),   "document")
 	$(call mv,$(srpext), $(srpdir),   "script")
+	$(call mv,$(imgext), $(imgdir),   "image")
 	$(call mv,$(dataext),$(datadir),  "data")
 	$(call mv,$(potext), $(localedir),"portable object template")
 	$(call mv,$(poext),  $(localedir),"portable object")
@@ -6085,6 +6098,7 @@ else
 	$(call prompt,"sysext:        ",$(sysext)              )
 	$(call prompt,"docext:        ",$(docext)              )
 	$(call prompt,"srpext:        ",$(srpext)              )
+	$(call prompt,"imgext:        ",$(imgext)              )
 	$(call prompt,"dataext:       ",$(dataext)             )
 	
 	$(call echo,"${WHITE}\nLEXER                    ${RES}")

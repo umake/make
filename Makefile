@@ -199,6 +199,7 @@ COVDIR    := coverage
 LIBDIR    := lib
 EXTDIR    := external
 SRPDIR    := script
+IMGDIR    := img
 BINDIR    := bin
 SBINDIR   := sbin
 EXECDIR   := libexec
@@ -214,8 +215,8 @@ LOCALEDIR := locale
 else
 $(foreach var,\
     SRCDIR DEPDIR INCDIR OBJDIR COVDIR LIBDIR EXTDIR SRPDIR \
-    BINDIR SBINDIR DISTDIR CONFDIR PROFDIR DATADIR MAKEDIR \
-    TESTDIR BENCHDIR LOCALEDIR,\
+    IMGDIR BINDIR SBINDIR DISTDIR CONFDIR PROFDIR DATADIR \
+    MAKEDIR TESTDIR BENCHDIR LOCALEDIR,\
     $(eval $(var) := .)\
 )
 endif
@@ -1549,6 +1550,7 @@ override covdir    := $(call rm-trailing-bar,$(COVDIR))
 override libdir    := $(call rm-trailing-bar,$(LIBDIR))
 override extdir    := $(call rm-trailing-bar,$(EXTDIR))
 override srpdir    := $(call rm-trailing-bar,$(SRPDIR))
+override imgdir    := $(call rm-trailing-bar,$(IMGDIR))
 override bindir    := $(call rm-trailing-bar,$(BINDIR))
 override sbindir   := $(call rm-trailing-bar,$(SBINDIR))
 override execdir   := $(call rm-trailing-bar,$(EXECDIR))
@@ -1563,10 +1565,10 @@ override localedir := $(call rm-trailing-bar,$(LOCALEDIR))
 
 # All directories
 alldir := $(strip\
-    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)        \
-    $(libdir) $(extdir) $(srpdir) $(bindir) $(sbindir) $(execdir)      \
-    $(distdir) $(profdir) $(confdir) $(datadir) $(makedir) $(testdir)  \
-    $(benchdir) $(localedir) \
+    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)       \
+    $(libdir) $(extdir) $(srpdir) $(imgdir) $(bindir) $(sbindir)      \
+    $(execdir) $(distdir) $(profdir) $(confdir) $(datadir) $(makedir) \
+    $(testdir) $(benchdir) $(localedir) \
 )
 
 # Check if directory variable is non-empty

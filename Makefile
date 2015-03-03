@@ -484,10 +484,6 @@ ifndef PROFILE
 PROFILE := $(if $(filter %profile %clean,$(MAKECMDGOALS)),T)
 endif
 
-# Include configuration file if exists
--include .version.mk
--include .config.mk config.mk Config.mk
-
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
 #                     PLATFORM SPECIFIC DEFINITIONS                    #
@@ -540,6 +536,16 @@ endif
 -include $(PLAT_KERNEL).$(PLAT_ARCH).$(PLAT_VERSION).mk
 
 endif # exists 'uname'
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                          CONFIGURATION FILES                         #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
+# Include configuration file if exists
+-include .version.mk
+-include .config.mk config.mk Config.mk
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#

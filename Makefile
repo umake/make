@@ -585,7 +585,7 @@ endif # ifdef COVERAGE
 endif # ifndef DEPLOY
 
 # Profile
-# ==========
+# =========
 # Changes needed to deal with profile compilation.
 # 1) Preprocess compilation flags to add profile options
 # 2) Preprocess linker flags to add profile linker options
@@ -600,6 +600,17 @@ override LDFLAGS += $(LDPROF)
 #------------------------------------------------------------------[   ]
 endif # ifdef PROFILE
 endif # ifndef DEPLOY
+
+# Deploy
+# ========
+# Changes needed to deal with deploy compilation.
+# 1) Preprocess compilation flags to add deploy proprocessor options
+#------------------------------------------------------------------[   ]
+ifdef DEPLOY
+#------------------------------------------------------------------[ 1 ]
+override CPPFLAGS += -DNDEBUG
+#------------------------------------------------------------------[   ]
+endif # ifdef DEPLOY
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#

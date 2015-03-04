@@ -1332,8 +1332,8 @@ endef
 
 define choose-comment
 $(strip $(lastword \
-    $(if $(call has-c,$1),F)\
-    $(if $(call has-f,$1),C)\
+    $(if $(call has-c,$1),C)\
+    $(if $(call has-f,$1),F)\
     $(if $(call has-cxx,$1),CXX)))
 endef
 

@@ -5957,6 +5957,7 @@ projecthelp:
 	@echo "---------------                                             "
 	@echo " * debug:            Output 'dump' content in 'make.debug'  "
 	@echo " * dump:             Output main variables of this Makefile "
+	@echo " * coffee:           Best debug tool against sleepy hours   "
 	@echo " * nothing:          Self-explicative, huh?                 "
 	@echo "                                                            "
 	@echo "Cleaning targets:                                           "
@@ -6030,6 +6031,57 @@ projecthelp:
 	@echo " * MINOR_RELEASE:    Project minor release                  "
 	@echo " * PATCH_RELEASE:    Project patch release                  "
 	@echo "                                                            "
+
+.PHONY: coffee
+ifndef YES
+coffee:
+	@echo '                                                            '
+	@echo '                                     _________              '
+	@echo '       .--.---------.--------.      /¨¨¨¨¨\   \             '
+	@echo '      /  /          |        /     /\\     \   \            '
+	@echo '     |--|-----------|        /    / //      \   \           '
+	@echo '      \  \         /|       /    / //________\___\          '
+	@echo '       \  \       / |       /   / //|         |             '
+	@echo '        \--\-----/  |      /    \//=|      :  |             '
+	@echo '          ::  :     |      |        |      :  |             '
+	@echo '        \__|_____/  |      |        |      :  |             '
+	@echo '   ||¨¨¨¨¨ (     )  |¨¨¨¨¨¨\        |      :  |             '
+	@echo '   || |¨(¨(       ) |       \       |      :  |             '
+	@echo '   ||_|(~~(~~~~~~~~)|  :[ ] \       |      :  |   \¨¨¨¨//   '
+	@echo '        ( (       ) |  :[ ]  \      |      :  |   \¨¨¨¨//   '
+	@echo '         (_(_____)__|________\      |      :  |   \¨¨¨¨//   '
+	@echo '        /  |                  \     |_________|   \¨¨¨¨//   '
+	@echo '       /___|___________________\    \_________/    \__//    '
+	@echo '                                                            '
+	@echo '           .------------------------------------.           '
+	@echo '           |  Do you want some coffee? [YES=1]  |           '
+	@echo '           '------------------------------------'           '
+	@echo '                                                            '
+else
+coffee:
+	@echo '                                                            '
+	@echo '                                                            '
+	@echo '                                                            '
+	@echo '                          ^^^^^^^^^                         '
+	@echo '                         ^^^^^^^^^                          '
+	@echo '                        ^^^^^^^^^                           '
+	@echo '                         ^^^^^^^^                           '
+	@echo '                          ^^^^^^^^^                         '
+	@echo '                         ^^^^^^^^^                          '
+	@echo '                ........^^^^^^^^^.......                    '
+	@echo '               /       ^^^^^^^^^        \-----.             '
+	@echo '              |\        ^^^^^^^^^       /-----|             '
+	@echo '               \¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨/ ... |             '
+	@echo '                \                      /  |_| |             '
+	@echo '                 \                    /_______|             '
+	@echo '                  \                  /                      '
+	@echo '                   \________________/                       '
+	@echo '                                                            '
+	@echo '           .------------------------------------.           '
+	@echo '           |           Enjoy your cup!          |           '
+	@echo '           '------------------------------------'           '
+	@echo '                                                            '
+endif
 
 ########################################################################
 ##                            DEBUGGING                               ##

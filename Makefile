@@ -3851,8 +3851,7 @@ $1/$2: $$($2_lib) $$($2_obj) | $1/./
 	    $$(call phony-error,$$(MSG_$3_NO_FILE)))
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $4 $$($2_obj) -o $$@ \
-	             $$(ldflags) $$($2_link) $$(ldlibs) $$(ERROR)
+	$$(quiet) $4 $$($2_obj) -o $$@ $$($2_link) $$(ldlibs) $$(ERROR)
 	
 	$$(call ok,$$(MSG_$3_LINKAGE),$$@)
 

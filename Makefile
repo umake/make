@@ -3289,7 +3289,7 @@ $1: \
         $$(shell $$(RM) $$(depdir)/$$(makedir)/$2$$(sysext)))\
     $$(depdir)/$$(makedir)/$2$$(sysext)
 
-$$(depdir)/$$(makedir)/$2$$(sysext): $$(depdir)/./
+$$(depdir)/$$(makedir)/$2$$(sysext): | $$(depdir)/./
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(call select,$$@)
 	$$(call cat,'override OLD_$2 := $$(strip $$($2))')

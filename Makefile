@@ -545,7 +545,7 @@ endif
 
 # Include additional platform specific changes
 -include $(PLAT_KERNEL).$(PLAT_ARCH).mk
--include $(PLAT_KERNEL).$(PLAT_ARCH).$(PLAT_VERSION).mk
+-include $(PLAT_KERNEL).$(PLAT_ARCH).$(PLAT_RELEASE).mk
 
 endif # exists 'uname'
 

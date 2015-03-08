@@ -2322,9 +2322,6 @@ endif
 #    4.3) binary-name_obj, for binary's specific objects;
 #    4.4) binary-name_lib, for binary's specific libraries;
 #    4.5) binary-name_link, for binary's specific linker flags;
-#    4.6) binary-name_has_c, to test if the binary has C files;
-#    4.7) binary-name_has_f, to test if the binary has Fortran files;
-#    4.8) binary-name_has_cxx, to test if the binary has C++ files;
 #------------------------------------------------------------------[ 1 ]
 define binary-name
 $1 := $$(call rm-trailing-bar,$$(basename $2))
@@ -2372,9 +2369,6 @@ $(foreach b,$(call not-root,$(execbin)),$(or\
     $(eval $b_obj     := $(comobj)  $($b_obj)  ),\
     $(eval $b_lib     := $(comlib)  $($b_lib)  ),\
     $(eval $b_link    := $($b_link) $(comlink) ),\
-    $(eval $b_has_c   := $(strip $(call has-c,$($b_src)))),\
-    $(eval $b_has_f   := $(strip $(call has-f,$($b_src)))),\
-    $(eval $b_has_cxx := $(strip $(call has-cxx,$($b_src)))),\
 ))
 
 # Binary installation

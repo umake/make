@@ -2212,7 +2212,7 @@ locname    := $(patsubst lib%,%,$(notdir $(basename $(loclib))))
 loclink    := $(addprefix -l,$(locname))
 
 # Dependency libraries
-# ==================
+# ======================
 # 1) Dependency library names, deduced from above
 # 2) Dependency library flags, to be used with the linker
 #------------------------------------------------------------------[ 1 ]
@@ -2355,7 +2355,8 @@ comsrc  := $(call common-factory,src,$(usersrc) $(autosrc) $(mainsrc))
 comall  := $(call common-factory,all,$(userall) $(autoall) $(mainall))
 comobj  := $(call common-factory,obj,$(userobj) $(autoobj) $(mainobj))
 comlib  := $(call common-factory,lib,$(lib))
-comlink := $(call common-factory,link,$(liblink))
+comlink := $(call common-factory,link,$(liblink)) \
+           $(filter-out -l%,$(ldflags))
 #------------------------------------------------------------------[ 4 ]
 $(foreach b,$(call not-root,$(execbin)),$(or\
     $(eval $b_src     := $(comsrc)  $($b_src)  ),\
@@ -2448,7 +2449,7 @@ $(foreach t,$(call not-root,$(testbin)),$(or\
     $(eval $t_src  := $(comtestall) $($t_all)),\
     $(eval $t_obj  := $(comtestobj) $($t_obj)),\
     $(eval $t_lib  := $(arlib) $(shrlib)),\
-    $(eval $t_link := $(arlink) $(shrlink)),\
+    $(eval $t_link := $(liblink) $(filter-out -l%,$(ldflags))),\
 ))
 #------------------------------------------------------------------[ 9 ]
 ifneq (,$(comtestsrc))
@@ -2526,7 +2527,7 @@ $(foreach t,$(call not-root,$(benchbin)),$(or\
     $(eval $t_all  := $(combenchsrc) $($t_all)),\
     $(eval $t_obj  := $(combenchobj) $($t_obj)),\
     $(eval $t_lib  := $(arlib) $(shrlib)),\
-    $(eval $t_link := $(arlink) $(shrlink)),\
+    $(eval $t_link := $(liblink) $(filter-out -l%,$(ldflags))),\
 ))
 #------------------------------------------------------------------[ 9 ]
 ifneq (,$(combenchsrc))

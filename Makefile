@@ -1789,11 +1789,9 @@ covignore := $(sort $(COV_IGNORE))
 # =======================
 # 1) Internally defined vars for flags
 # 2) Make variable above a hash table
-# 3) Add dependency suffix and directory
 #------------------------------------------------------------------[ 1 ]
 flag_dependency := \
-    execobj => CPPFLAGS CPPCOVFLAGS,\
-    execbin => LDFLAGS LDCOV LDLIBS,\
+    execobj => CPPFLAGS CPPCOVFLAGS LDFLAGS LDCOV LDLIBS,\
     asmobj  => ASFLAGS LDAS ASLIBS,\
     cobj    => CFLAGS CALFLAGS CSLFLAGS CCOVFLAGS LDC CLIBS,\
     fobj    => FFLAGS FALFLAGS FSLFLAGS FCOVFLAGS LDF FLIBS,\
@@ -1805,10 +1803,6 @@ flag_dependency := \
     esqlobj => ESQLFLAGS LDESQL ESQLLIBS
 #------------------------------------------------------------------[ 2 ]
 $(call hash-table.new,flag_dependency)
-#------------------------------------------------------------------[ 3 ]
-flagdep := $(call hash-table.values,flag_dependency)
-flagdep := $(addprefix $(depdir)/$(makedir)/,$(flagdep))
-flagdep := $(addsuffix $(sysext),$(flagdep))
 
 # External dependency files
 # ===========================
@@ -2549,6 +2543,13 @@ endif
 benchdep := $(addprefix $(depdir)/$(benchdir)/,\
                 $(addsuffix $(depext),$(basename $(benchsrc))))
 
+# Binary dependencies
+# =====================
+# 1) bindep : Dependency files for binary flags
+#------------------------------------------------------------------[ 1 ]
+bindep := $(addprefix $(depdir)/,$(addsuffix $(sysext),\
+              $(basename $(execbin) $(testbin) $(benchbin))))
+
 # Binary execution
 # ==================
 # 2) execrun  : Alias to execute tests, prefixing run_ in $(execbin)
@@ -2586,7 +2587,7 @@ slintrun += $(addprefix style_lint_,$(subst /,_,$(shrlib)))
 # 1) Get flag, source, test and benchmark dependencies
 # 2) Get program, external and system library dependencies
 # 3) Get phony target and submodule makefile dependencies
-depall := $(flagdep) $(execdep) $(testdep) $(benchdep)
+depall := $(bindep) $(execdep) $(testdep) $(benchdep)
 depall += $(progdep) $(externdep) $(syslibdep)
 depall += $(phonydep) $(makedep)
 
@@ -3272,27 +3273,47 @@ endef
 $(foreach d,$(alldir),$(eval $(call root-factory,$d)))
 
 #======================================================================#
-# Function: flag-dependency                                            #
-# @param  $1 Source file (which has the dependency)                    #
-# @param  $2 Flag name (for targets)                                   #
-# @return Target to check a set of dependencies defined in $2          #
+# Function: binary-dependency                                          #
+# @param  $1 Dependency name (for targets)                             #
+# @param  $2 Dependency nick (hash key)                                #
+# @return Target to store the flags from $1/$2                         #
 #======================================================================#
-define flag-dependency
-$1: \
-    $$(if $$(call ne,$$(strip $$(OLD_$2)),$$(strip $$($2))),\
-        $$(shell $$(RM) $$(depdir)/$$(makedir)/$2$$(sysext)))\
-    $$(depdir)/$$(makedir)/$2$$(sysext)
+define binary-dependency
+ifdef $2_flags
+$$(call hash-table.new,$2_flags)
+endif
 
-$$(depdir)/$$(makedir)/$2$$(sysext): | $$(depdir)/./
+ifdef old_$2_flags
+$$(call hash-table.new,old_$2_flags)
+endif
+
+$1/$2: \
+    $$(foreach k,$$(call hash-table.keys,flag_dependency),\
+        $$(if $$(call not-empty,$$(call rfilter,$$($$k),$$($2_obj))),\
+            $$(foreach f,$$(flag_dependency.$$k),\
+                $$(if $$(call ne,$$(old_$2_flags.$$f),\
+                        $$(or $$(strip $$($2_flags.$$f)),$$($$f))),\
+                    $$(shell $$(RM) $$(depdir)/$1/$2$$(sysext)),\
+    ))))\
+    $$(depdir)/$1/$2$$(sysext)
+
+$$(depdir)/$1/$2$$(sysext): | $$(depdir)/./
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(call select,$$@)
-	$$(call cat,'override OLD_$2 := $$(strip $$($2))')
+	$$(call cat,'override old_$2_flags := \')
+	$$(foreach k,$$(call hash-table.keys,flag_dependency),\
+	    $$(if $$(call not-empty,$$(call rfilter,$$($$k),$$($2_obj))),\
+	        $$(foreach f,$$(flag_dependency.$$k),\
+            $$(if $$(call not-empty,$$($2_flags.$$f)),\
+	                $$(call cat,'    $$f => $$($2_flags.$$f) \')\
+	                $$(newline),\
+	                $$(if $$(call not-empty,$$($$f)),\
+	                    $$(call cat,'    $$f => $$($$f) \')\
+	                    $$(newline))\
+	))))
 endef
-$(foreach k,$(call hash-table.keys,flag_dependency),\
-    $(foreach f,$(flag_dependency.$k),\
-        $(if $(call not-empty,$($k)),\
-            $(eval $(call flag-dependency,$($k),$f))\
-)))
+$(foreach b,$(execbin) $(testbin) $(benchbin),\
+    $(eval $(call binary-dependency,$(call root,$b),$(call not-root,$b))))
 
 #======================================================================#
 # Function: program-dependency-target                                  #
@@ -3827,6 +3848,22 @@ $1/$2: $$($2_obj) | $1/./
 endef
 $(foreach l,$(arlib),\
     $(eval $(call link-arlib,$(call root,$l),$(call not-root,$l))))
+
+#======================================================================#
+# Function: binary-flags                                               #
+# @param  $1 Binary root directory                                     #
+# @param  $2 Binary name witout root dir                               #
+# @param  $3 Flag value (came from keys of $2_flags hash)              #
+# @param  $4 Flag value (came from values of $2_flags hash)            #
+# @return Target to define $3 with values $4 to executable $1/$2       #
+#======================================================================#
+define binary-flags
+$1/$2: $3 := $4
+endef
+$(foreach b,$(execbin) $(testbin) $(benchbin),\
+    $(foreach k,$(call hash-table.keys,$(call not-root,$b)_flags),\
+        $(eval $(call binary-flags,$(call root,$b),$(call not-root,$b),\
+            $k,$($(call not-root,$b)_flags.$k)))))
 
 #======================================================================#
 # Function: binary-factory                                             #

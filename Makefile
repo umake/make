@@ -3289,12 +3289,30 @@ endef
 $(foreach d,$(alldir),$(eval $(call root-factory,$d)))
 
 #======================================================================#
-# Function: binary-dependency                                          #
+# Function: object-dependency                                          #
+# @param  $1 Source file (which has the dependency)                    #
+# @param  $2 Flag name (for targets)                                   #
+# @return Target to check a set of dependencies defined in $2          #
+#======================================================================#
+define object-dependency
+$1: $$(depdir)/$$(basename $1)$$(sysext)
+
+$$(depdir)/$$(basename $1)$$(sysext): | $$(depdir)/./
+	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	$$(call select,$$@)
+	$$(call cat,'$$(call not-root,$$(EXEC))')
+endef
+$(foreach s,$(sort \
+    $(foreach k,$(call hash-table.keys,flag_dependency),$($k))),\
+        $(eval $(call object-dependency,$s)))
+
+#======================================================================#
+# Function: compilation-dependency                                     #
 # @param  $1 Dependency name (for targets)                             #
 # @param  $2 Dependency nick (hash key)                                #
 # @return Target to store the flags from $1/$2                         #
 #======================================================================#
-define binary-dependency
+define compilation-dependency
 ifdef $2_flags
 $$(call hash-table.new,$2_flags)
 endif
@@ -3303,33 +3321,88 @@ ifdef old_$2_flags
 $$(call hash-table.new,old_$2_flags)
 endif
 
+ifndef COMPILE
 $1/$2: \
+    $$(if $$(call not-empty,\
+        $$(shell ls $$(depdir)/$1/$2$$(sysext) 2>/dev/null)),\
     $$(foreach k,$$(call hash-table.keys,flag_dependency),\
         $$(if $$(call not-empty,$$(call rfilter,$$($$k),$$($2_obj))),\
             $$(foreach f,$$(flag_dependency.$$k),\
                 $$(if $$(call ne,$$(old_$2_flags.$$f),\
                         $$(or $$(strip $$($2_flags.$$f)),$$($$f))),\
-                    $$(shell $$(RM) $$(depdir)/$1/$2$$(sysext)),\
-    ))))\
+                    $$(shell $$(RM) $$(depdir)/$1/$2$$(sysext))\
+                    $$(shell $$(RM) $$(addprefix $$(depdir)/,\
+                        $$(addsuffix $$(sysext),$$(basename $$($$k)))))\
+                    $$(shell $$(RM) $1/$2)\
+    )))))
+endif # ifndef COMPILE
+
+ifdef COMPILE
+$1/$2: EXEC=$1/$2
+$1/$2: \
     $$(depdir)/$1/$2$$(sysext)
 
 $$(depdir)/$1/$2$$(sysext): | $$(depdir)/./
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
+	
+	@# Force recompilation of shared files with different flags
+	$$(quiet) for o in $$(basename $$($2_obj));\
+	          do \
+	              if [ -f $$(depdir)/$$$$o$$(sysext) ]; \
+	              then \
+	                  EXEC=`cat $$(depdir)/$$$$o$$(sysext)`;\
+	                  FILES=`$$(MAKE) dump VAR=flags_$$$${EXEC}_$2 \
+	                        | sed -e 's/^[^ ]\+:[^ ]*[ ]*//'`; \
+	                  if [ -n "`echo $$$$FILES | sed -e s/Empty//`" ];\
+	                      then $$(RM) $$$$FILES;\
+	                  fi;\
+	              fi; \
+	          done
+	
+	@# Update binaries compiled with other set of flags
+	@# $$(quiet) $$(foreach d,$$(bindir) $$(libdir),\
+	@#              if ls $$d/* &>/dev/null; then touch $$d/*; fi;)
+	
+	@# Create flags used in compilation of this binary
 	$$(call select,$$@)
 	$$(call cat,'override old_$2_flags := \')
 	$$(foreach k,$$(call hash-table.keys,flag_dependency),\
 	    $$(if $$(call not-empty,$$(call rfilter,$$($$k),$$($2_obj))),\
 	        $$(foreach f,$$(flag_dependency.$$k),\
-            $$(if $$(call not-empty,$$($2_flags.$$f)),\
+	            $$(if $$(call not-empty,$$($2_flags.$$f)),\
 	                $$(call cat,'    $$f => $$($2_flags.$$f) \')\
 	                $$(newline),\
 	                $$(if $$(call not-empty,$$($$f)),\
 	                    $$(call cat,'    $$f => $$($$f) \')\
 	                    $$(newline))\
 	))))
+endif # ifdef COMPILE
 endef
 $(foreach b,$(execbin) $(testbin) $(benchbin),\
-    $(eval $(call binary-dependency,$(call root,$b),$(call not-root,$b))))
+    $(eval $(call compilation-dependency,$(strip \
+        $(call root,$b)),$(call not-root,$b))))
+
+#======================================================================#
+# Function: flag-dependency                                            #
+# @param  $1 Dependency name (for targets)                             #
+# @param  $2 Dependency nick (hash key)                                #
+# @return Target to store the flags from $1/$2                         #
+#======================================================================#
+define flag-dependency
+ifneq ($1,$2)
+flags_$1_$2 := \
+$$(foreach o,$$(call intersection,$$($1_obj),$$($2_obj)),\
+    $$(foreach k,$$(call hash-table.keys,flag_dependency),\
+        $$(if $$(and $$(call not-empty,$$($$k)),$$(filter $$o,$$($$k))),\
+            $$(foreach f,$$(flag_dependency.$$k),\
+                $$(if $$(call ne,$$($1_flags.$$f),$$($2_flags.$$f)),\
+                    $$(depdir)/$$(basename $$o)$$(sysext)\
+)))))
+endif
+endef
+$(foreach b1,$(call not-root,$(execbin) $(testbin) $(benchbin)),\
+    $(foreach b2,$(call not-root,$(execbin) $(testbin) $(benchbin)),\
+        $(eval $(call flag-dependency,$(b1),$(b2)))))
 
 #======================================================================#
 # Function: program-dependency-target                                  #
@@ -3891,7 +3964,11 @@ $(foreach b,$(execbin) $(testbin) $(benchbin),\
 #         files (to create objdir and automatic source)                #
 #======================================================================#
 define binary-factory
-$1/$2: $$($2_lib) $$($2_obj) | $1/./
+ifndef COMPILE
+$1/$2:
+	$$(quiet) $$(MAKE) $$@ COMPILE=1
+else
+$1/$2: $$(depdir)/$1/$2$$(sysext) $$($2_lib) $$($2_obj) | $1/./
 	$$(call status,$$(MSG_$3_LINKAGE))
 	
 	$$(if $$(strip $$($2_all)),,\
@@ -3901,6 +3978,7 @@ $1/$2: $$($2_lib) $$($2_obj) | $1/./
 	$$(quiet) $4 $$($2_obj) -o $$@ $$($2_link) $$(ldlibs) $$(ERROR)
 	
 	$$(call ok,$$(MSG_$3_LINKAGE),$$@)
+endif
 
 $$($2_obj): $$($2_all) | $$(objdir)/./
 endef
@@ -6140,6 +6218,18 @@ define prompt
 @$(call printf,"%b%b\n","${YELLOW}"$1"${RES}" \
                         "$(or $(strip $2),${RED}Empty${RES})")
 endef
+
+.PHONY: is-empty
+is-empty:
+ifdef VAR ####
+	@$(if $(call is-empty,$($(VAR))),true,false) $(NO_ERROR)
+endif
+
+.PHONY: not-empty
+not-empty:
+ifdef VAR ####
+	@$(if $(call not-empty,$($(VAR))),true,false) $(NO_ERROR)
+endif
 
 .PHONY: debug
 debug:

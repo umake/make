@@ -705,6 +705,18 @@ define ne
 $(strip $(call not,$(call eq,$1,$2)))
 endef
 
+# Set functions
+# ===============
+# 1) union:        Returns union of 2 lists
+# 2) intersection: Returns intersection of 2 lists
+define union
+$1 $(foreach e,$2,$(if $(filter $e,$1),,$e))
+endef
+
+define intersection
+$(foreach e,$1,$(filter $e,$2))
+endef
+
 # List manipulation functions
 # =============================
 # 1) car:    Gets first element of a list

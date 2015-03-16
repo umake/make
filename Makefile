@@ -2235,24 +2235,27 @@ deplink    := $(addprefix -l,$(depname))
 
 # General libraries
 # ===================
-# 1) lib     : All complete library names (path/libname.ext)
-# 2) libpat  : Save complete paths for libraries (non-wildcard-expanded)
-# 3) libname : All library names (name)
-# 3) liblink : All library flags (-lname)
-# 4) ldlibs  : Get all subdirectories of the library dirs and
+# 1) execlib : All user-defined library names (path/libname.ext)
+# 2) lib     : All complete library names (path/libname.ext)
+# 3) libpat  : Save complete paths for libraries (non-wildcard-expanded)
+# 4) libname : All library names (name)
+# 5) liblink : All library flags (-lname)
+# 6) ldlibs  : Get all subdirectories of the library dirs and
 #              add them as paths to be searched for libraries
 #------------------------------------------------------------------[ 1 ]
-lib     := $(arlib) $(shrlib) $(syslib) $(loclib) $(deplib)
+execlib := $(arlib) $(shrlib)# $(syslib) $(loclib) $(deplib)
 #------------------------------------------------------------------[ 2 ]
-libpat  := $(arpat) $(shrpat)
+lib     := $(arlib) $(shrlib) $(syslib) $(loclib) $(deplib)
 #------------------------------------------------------------------[ 3 ]
-libname := $(arname) $(shrname) $(sysname) $(locname) $(depname)
+libpat  := $(arpat) $(shrpat)
 #------------------------------------------------------------------[ 4 ]
-liblink := $(arlink) $(shrlink)
-liblink += $(syslink) $(loclink) $(deplink)
+libname := $(arname) $(shrname) $(sysname) $(locname) $(depname)
 #------------------------------------------------------------------[ 5 ]
-libsub   = $(if $(strip $(lib)),\
+liblink := $(arlink) $(shrlink) $(syslink) $(loclink) $(deplink)
+#------------------------------------------------------------------[ 6 ]
+libsub   = $(if $(strip $(execlib)),\
                $(foreach d,$(libdir),$(call rsubdir,$d)))
+#------------------------------------------------------------------[ 7 ]
 ldlibs   = $(call rm-trailing-bar,$(LDLIBS))
 ldlibs  += $(patsubst %,-L$(space)%,$(sort $(libsub)))
 ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,\
@@ -2353,7 +2356,7 @@ $(foreach sep,/ .,$(foreach b,$(call not-root,$(execbin)),$(or\
     $(eval $b_obj  += $(filter $(objdir)/$b$(sep)%,\
                           $(userobj) $(autoobj) $(mainobj))),\
     $(eval $b_lib  += $(foreach d,$(libdir),\
-                          $(filter $d/$b$(sep)%,$(lib)))),\
+                          $(filter $d/$b$(sep)%,$(execlib)))),\
     $(eval $b_link += $(foreach l,$(arlink) $(shrlink),\
                           $(if $(strip $(filter %$(subst -l,,$l),\
                               $(filter $b$(sep)%,$(call not-root,\
@@ -2756,7 +2759,7 @@ build_dependency := \
     ESQL     => $(cesql)
 
 .PHONY: all
-all: depend $(execbin) $(lib)
+all: depend $(execbin) $(execlib)
 
 .PHONY: depend
 depend: builddep librarydep gitdep webdep
@@ -4299,12 +4302,12 @@ define dist-factory
 .PHONY: package-$1
 package-$1: dirs := Makefile $$(make_configs) $$(wildcard .git*)
 package-$1: dirs += $$(srcdir) $$(incdir) $$(datadir) $$(docdir)
-package-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir)
+package-$1: dirs += $$(if $$(strip $$(execlib)),$$(libdir)) $$(bindir)
 package-$1: distdep $$(distdir)/$$(project)-$$(version)_src.$1
 
 .PHONY: dist-$1
 dist-$1: dirs := Makefile $$(make_configs)
-dist-$1: dirs += $$(if $$(strip $$(lib)),$$(libdir)) $$(bindir)
+dist-$1: dirs += $$(if $$(strip $$(execlib)),$$(libdir)) $$(bindir)
 dist-$1: distdep $$(distdir)/$$(project)-$$(version).$1
 endef
 $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
@@ -4332,8 +4335,7 @@ clean: mostlyclean
 distclean: clean
 	$(call rm-if-empty,$(depdir),$(depall))
 	$(call rm-if-empty,$(distdir))
-	$(call rm-if-empty,$(firstword $(libdir)),\
-	    $(filter $(firstword $(libdir))/%,$(lib)))
+	$(call rm-if-empty,$(firstword $(libdir)),$(execlib))
 	$(call rm-if-empty,$(covdir),\
 	    $(covrep) $(covtestrep) $(covbenchrep))
 	$(call rm-if-empty,$(profdir),\
@@ -6299,6 +6301,7 @@ else
 	$(call prompt,"libpat:        ",$(libpat)              )
 	$(call prompt,"libname:       ",$(libname)             )
 	$(call prompt,"liblink:       ",$(liblink)             )
+	$(call prompt,"execlib:       ",$(execlib)             )
 	$(call prompt,"lib:           ",$(lib)                 )
 	
 	$(call echo,"${WHITE}\nTEST                     ${RES}")

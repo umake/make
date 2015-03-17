@@ -496,6 +496,8 @@ ifndef PROFILE
 PROFILE := $(if $(filter %profile %clean,$(MAKECMDGOALS)),T)
 endif
 
+export COVERAGE PROFILE
+
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
 #                     PLATFORM SPECIFIC DEFINITIONS                    #

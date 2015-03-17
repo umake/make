@@ -2007,7 +2007,6 @@ esqlinc   := $(if $(strip $(esqlall)),$(strip $(ESQLLIBS)))
 # 8) call    : C files from execall
 # 8) fall    : Fortran files from execall
 # 8) cxxall  : C++ files from execall
-# 9) execdep : Dependency files for Makefile-created executables
 #------------------------------------------------------------------[ 1 ]
 ifneq ($(srcdir),.)
 userall := $(sort $(call filter-ignored,\
@@ -2051,8 +2050,6 @@ asmall  := $(call rfilter,$(addprefix %,$(asmext)),$(execall))
 call    := $(call rfilter,$(addprefix %,$(cext)),$(execall))
 fall    := $(call rfilter,$(addprefix %,$(fext)),$(execall))
 cxxall  := $(call rfilter,$(addprefix %,$(cxxext)),$(execall))
-#------------------------------------------------------------------[ 9 ]
-execdep := $(patsubst %,$(depdir)/%$(depext),$(basename $(execsrc)))
 
 # Header files
 # ==============
@@ -2582,12 +2579,16 @@ endif
 benchdep := $(addprefix $(depdir)/$(benchdir)/,\
                 $(addsuffix $(depext),$(basename $(benchsrc))))
 
-# Binary dependencies
-# =====================
+# Executable dependencies
+# =========================
 # 1) bindep : Dependency files for binary flags
+# 2) libdep : Dependency files for library flags
 #------------------------------------------------------------------[ 1 ]
 bindep := $(addprefix $(depdir)/,$(addsuffix $(sysext),\
               $(basename $(execbin) $(testbin) $(benchbin))))
+#------------------------------------------------------------------[ 2 ]
+libdep := $(addprefix $(depdir)/,$(addsuffix $(sysext),\
+              $(basename $(execlib))))
 
 # Binary execution
 # ==================
@@ -2626,7 +2627,7 @@ slintrun += $(addprefix style_lint_,$(subst /,_,$(shrlib)))
 # 1) Get flag, source, test and benchmark dependencies
 # 2) Get program, external and system library dependencies
 # 3) Get phony target and submodule makefile dependencies
-depall := $(bindep) $(execdep) $(testdep) $(benchdep)
+depall := $(bindep) $(libdep) $(testdep) $(benchdep)
 depall += $(progdep) $(externdep) $(syslibdep)
 depall += $(phonydep) $(makedep)
 
@@ -6464,7 +6465,8 @@ else
 	
 	$(call echo,"${WHITE}\nDEPENDENCY               ${RES}")
 	$(call echo,"-----------------------------------------")
-	$(call prompt,"execdep:       ",$(execdep)             )
+	$(call prompt,"bindep:        ",$(bindep)              )
+	$(call prompt,"libdep:        ",$(libdep)              )
 	$(call prompt,"testdep:       ",$(testdep)             )
 	$(call prompt,"benchdep:      ",$(benchdep)            )
 	$(call prompt,"progdep:       ",$(progdep)             )

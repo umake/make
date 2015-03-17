@@ -1287,6 +1287,27 @@ $(strip $(foreach w,$1,\
     $(call abs-basename,$w).$(firstword $(call suffix-list,$w))))
 endef
 
+# Path + Suffix manipulation functions
+# =====================================
+# 1) corename: Extracts root dir and last suffix from file name
+# 2) rawname: Extracts path and all suffixes from file name
+
+define corename_impl
+$(call not-root,$(basename $1))
+endef
+
+define corename
+$(strip $(foreach w,$1,$(call corename_impl,$w)))
+endef
+
+define rawname_impl
+$(notdir $(call abs-basename,$1))
+endef
+
+define rawname
+$(strip $(foreach w,$1,$(call rawname_impl,$w)))
+endef
+
 # File identification functions
 # ===============================
 # 1) has-c: Figures out if there are C files in $1

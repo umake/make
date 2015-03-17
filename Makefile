@@ -3965,6 +3965,7 @@ $(foreach b,$(execbin) $(testbin) $(benchbin),\
 #======================================================================#
 define binary-factory
 ifndef COMPILE
+.PHONY: $1/$2
 $1/$2:
 	$$(quiet) $$(MAKE) $$@ COMPILE=1
 else

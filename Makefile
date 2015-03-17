@@ -2139,18 +2139,18 @@ endef
 arlib     := $(call arlib-name,$(arpat))
 #------------------------------------------------------------------[ 7 ]
 $(foreach p,$(arpat),\
-    $(eval $(call not-root,$(call arlib-name,$p))_all := \
+    $(eval $(call corename,$(call arlib-name,$p))_all := \
         $(foreach l,$(liball),\
             $(if $(strip $(findstring $p,$l)),$l)\
 )))
 #------------------------------------------------------------------[ 8 ]
-$(foreach p,$(call not-root,$(arlib)),\
+$(foreach p,$(call corename,$(arlib)),\
     $(eval $p_obj := \
         $(addprefix $(objdir)/,$(addsuffix $(objext),\
-            $(call not-root,$(basename $($p_all))))\
+            $(call corename,$(basename $($p_all))))\
 )))
 #------------------------------------------------------------------[ 9 ]
-arobj     := $(sort $(foreach p,$(arlib),$($p_obj)))
+arobj     := $(sort $(foreach p,$(call corename,$(arlib)),$($p_obj)))
 #------------------------------------------------------------------[   ]
 endif # ifndef NO_ARLIBS
 
@@ -2189,18 +2189,18 @@ endef
 shrlib     := $(call shrlib-name,$(shrpat))
 #------------------------------------------------------------------[ 7 ]
 $(foreach p,$(shrpat),\
-    $(eval $(call not-root,$(call shrlib-name,$p))_all := \
+    $(eval $(call corename,$(call shrlib-name,$p))_all := \
         $(foreach l,$(liball),\
             $(if $(strip $(findstring $p,$l)),$l)\
 )))
 #------------------------------------------------------------------[ 8 ]
-$(foreach p,$(call not-root,$(shrlib)),\
+$(foreach p,$(call corename,$(shrlib)),\
     $(eval $p_obj := \
         $(addprefix $(objdir)/,$(addsuffix $(objext),\
             $(call not-root,$(basename $($p_all))))\
 )))
 #------------------------------------------------------------------[ 9 ]
-shrobj     := $(sort $(foreach p,$(shrlib),$($p_obj)))
+shrobj     := $(sort $(foreach p,$(call corename,$(shrlib)),$($p_obj)))
 #------------------------------------------------------------------[   ]
 endif # ifndef NO_SHRLIBS
 
@@ -2368,7 +2368,7 @@ $(if $(strip $(bin) $(sbin) $(libexec)),\
     $(if $(strip $(mainall)),$(eval execbin := $(bindir)/a.out))\
 )
 #------------------------------------------------------------------[ 2 ]
-$(foreach sep,/ .,$(foreach b,$(call not-root,$(execbin)),$(or\
+$(foreach sep,/ .,$(foreach b,$(call corename,$(execbin)),$(or\
     $(eval $b_src  += $(filter $b$(sep)%,\
                           $(usersrc) $(autosrc) $(mainsrc))),\
     $(eval $b_all  += $(sort $(call rfilter,$(addprefix %,$($b_src)),\
@@ -2384,7 +2384,7 @@ $(foreach sep,/ .,$(foreach b,$(call not-root,$(execbin)),$(or\
 )))
 #------------------------------------------------------------------[ 3 ]
 define common-factory
-$(call rfilter-out,$(foreach b,$(call not-root,$(execbin)),$($b_$1)),$2)
+$(call rfilter-out,$(foreach b,$(call corename,$(execbin)),$($b_$1)),$2)
 endef
 comsrc  := $(call common-factory,src,$(usersrc) $(autosrc) $(mainsrc))
 comall  := $(call common-factory,all,$(userall) $(autoall) $(mainall))
@@ -2393,7 +2393,7 @@ comlib  := $(call common-factory,lib,$(lib))
 comlink := $(call common-factory,link,$(liblink)) \
            $(filter-out -l%,$(ldflags))
 #------------------------------------------------------------------[ 4 ]
-$(foreach b,$(call not-root,$(execbin)),$(or\
+$(foreach b,$(call corename,$(execbin)),$(or\
     $(eval $b_src     := $(comsrc)  $($b_src)  ),\
     $(eval $b_all     := $(comall)  $($b_all)  ),\
     $(eval $b_obj     := $(comobj)  $($b_obj)  ),\
@@ -2460,7 +2460,7 @@ testbin := $(if $(strip $(binext)),\
                $(addsuffix $(binext),$(testbin)),$(testbin))
 testbin := $(call filter-ignored,$(testbin))
 #------------------------------------------------------------------[ 6 ]
-$(foreach t,$(call not-root,$(testbin)),$(or\
+$(foreach t,$(call corename,$(testbin)),$(or\
     $(eval $t_src := $(filter $(call not-root,$t)%,\
                          $(testsrc)) $(usersrc) $(autosrc)),\
     $(eval $t_all += $(sort $(call rfilter,$(addprefix %,$($t_src)),\
@@ -2470,7 +2470,7 @@ $(foreach t,$(call not-root,$(testbin)),$(or\
 ))
 #------------------------------------------------------------------[ 7 ]
 define common-test-factory
-$(call rfilter-out,$(foreach t,$(call not-root,$(testbin)),$($t_$1)),$2)
+$(call rfilter-out,$(foreach t,$(call corename,$(testbin)),$($t_$1)),$2)
 endef
 comtestsrc := $(call common-test-factory,src,\
                   $(testsrc) $(usersrc) $(autosrc))
@@ -2479,9 +2479,9 @@ comtestall := $(call common-test-factory,all,\
 comtestobj := $(call common-test-factory,obj,\
                   $(testobj) $(userobj) $(autoobj))
 #------------------------------------------------------------------[ 8 ]
-$(foreach t,$(call not-root,$(testbin)),$(or\
+$(foreach t,$(call corename,$(testbin)),$(or\
     $(eval $t_src  := $(comtestsrc) $($t_src)),\
-    $(eval $t_src  := $(comtestall) $($t_all)),\
+    $(eval $t_all  := $(comtestall) $($t_all)),\
     $(eval $t_obj  := $(comtestobj) $($t_obj)),\
     $(eval $t_lib  := $(arlib) $(shrlib)),\
     $(eval $t_link := $(liblink) $(filter-out -l%,$(ldflags))),\
@@ -2538,7 +2538,7 @@ benchbin := $(if $(strip $(binext)),\
                $(addsuffix $(binext),$(benchbin)),$(benchbin))
 benchbin := $(call filter-ignored,$(benchbin))
 #------------------------------------------------------------------[ 6 ]
-$(foreach t,$(call not-root,$(benchbin)),$(or\
+$(foreach t,$(call corename,$(benchbin)),$(or\
     $(eval $t_src := $(filter $(call not-root,$t)%,\
                          $(benchsrc)) $(usersrc) $(autosrc)),\
     $(eval $t_all += $(sort $(call rfilter,$(addprefix %,$($t_src)),\
@@ -2548,7 +2548,7 @@ $(foreach t,$(call not-root,$(benchbin)),$(or\
 ))
 #------------------------------------------------------------------[ 7 ]
 define common-bench-factory
-$(call rfilter-out,$(foreach t,$(call not-root,$(benchbin)),$($t_$1)),$2)
+$(call rfilter-out,$(foreach t,$(call corename,$(benchbin)),$($t_$1)),$2)
 endef
 combenchsrc := $(call common-bench-factory,src,\
                   $(benchsrc) $(usersrc) $(autosrc))
@@ -2557,7 +2557,7 @@ combenchall := $(call common-bench-factory,all,\
 combenchobj := $(call common-bench-factory,obj,\
                   $(benchobj) $(userobj) $(autoobj))
 #------------------------------------------------------------------[ 8 ]
-$(foreach t,$(call not-root,$(benchbin)),$(or\
+$(foreach t,$(call corename,$(benchbin)),$(or\
     $(eval $t_src  := $(combenchsrc) $($t_src)),\
     $(eval $t_all  := $(combenchsrc) $($t_all)),\
     $(eval $t_obj  := $(combenchobj) $($t_obj)),\
@@ -3346,7 +3346,7 @@ $$(call hash-table.new,old_$2_flags)
 endif
 
 ifndef COMPILE
-$1/$2: \
+$1/$2$3: \
     $$(if $$(call not-empty,\
         $$(shell ls $$(depdir)/$1/$2$$(sysext) 2>/dev/null)),\
     $$(foreach k,$$(call hash-table.keys,flag_dependency),\
@@ -3362,8 +3362,8 @@ $1/$2: \
 endif # ifndef COMPILE
 
 ifdef COMPILE
-$1/$2: EXEC=$1/$2
-$1/$2: \
+$1/$2$3: EXEC=$1/$2$3
+$1/$2$3: \
     $$(depdir)/$1/$2$$(sysext)
 
 $$(depdir)/$1/$2$$(sysext): | $$(depdir)/./
@@ -3402,9 +3402,24 @@ $$(depdir)/$1/$2$$(sysext): | $$(depdir)/./
 	))))
 endif # ifdef COMPILE
 endef
-$(foreach b,$(execbin) $(testbin) $(benchbin),\
+$(foreach b,$(execbin) $(testbin) $(benchbin) $(execlib),\
     $(eval $(call compilation-dependency,$(strip \
-        $(call root,$b)),$(call not-root,$b))))
+        $(call root,$b)),$(call corename,$b),$(suffix $b))))
+
+#======================================================================#
+# Function: compilation-flags                                          #
+# @param  $1 Executable                                                #
+# @param  $2 Flag value (came from keys of $(corename,$1)_flags hash)  #
+# @param  $3 Flag value (came from values of the above hash)           #
+# @return Target to define $2 with values $3 to executable $1          #
+#======================================================================#
+define compilation-flags
+$1: $2 := $3
+endef
+$(foreach b,$(execbin) $(testbin) $(benchbin) $(execlib),\
+    $(foreach k,$(call hash-table.keys,$(call corename,$b)_flags),\
+        $(eval $(call compilation-flags,\
+            $b,$k,$($(call corename,$b)_flags.$k)))))
 
 #======================================================================#
 # Function: flag-dependency                                            #
@@ -3424,8 +3439,10 @@ $$(foreach o,$$(call intersection,$$($1_obj),$$($2_obj)),\
 )))))
 endif
 endef
-$(foreach b1,$(call not-root,$(execbin) $(testbin) $(benchbin)),\
-    $(foreach b2,$(call not-root,$(execbin) $(testbin) $(benchbin)),\
+$(foreach b1,$(call corename,\
+                 $(execbin) $(testbin) $(benchbin) $(execlib)),\
+    $(foreach b2,$(call corename,\
+                     $(execbin) $(testbin) $(benchbin) $(execlib)),\
         $(eval $(call flag-dependency,$(b1),$(b2)))))
 
 #======================================================================#
@@ -3926,19 +3943,26 @@ $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
 # @return Target to create a shared library from objects               #
 #======================================================================#
 define link-shrlib
-$1/$2: $$($2_obj) | $1/./
-	$$(call status,$$(MSG_$3_SHRLIB))
+ifndef COMPILE
+.PHONY: $1/$2$3
+$1/$2$3:
+	$$(quiet) $$(MAKE) $$@ COMPILE=1
+else
+$1/$2$3: $$($2_obj) | $1/./
+	$$(call status,$$(MSG_$4_SHRLIB))
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $4 $$^ -o $$@ $$(ldflags) $$(ldshr) $$(ldlibs) $$(ERROR)
+	$$(quiet) $5 $$($2_obj) -o $$@ \
+	             $$(ldflags) $$(ldshr) $$(ldlibs) $$(ERROR)
 	
-	$$(call ok,$$(MSG_$3_SHRLIB))
+	$$(call ok,$$(MSG_$4_SHRLIB))
+endif
 endef
 $(foreach l,$(shrlib),\
     $(eval $(call link-shrlib,$(strip \
-        $(call root,$l)),$(call not-root,$l),$(strip \
-        $(call choose-comment,$($(call not-root,$l)_all))),$(strip \
-        $(call choose-compiler,$($(call not-root,$l)_all)))\
+        $(call root,$l)),$(call corename,$l),$(suffix $l),$(strip \
+        $(call choose-comment,$($(call corename,$l)_all))),$(strip \
+        $(call choose-compiler,$($(call corename,$l)_all)))\
 )))
 
 #======================================================================#
@@ -3950,33 +3974,24 @@ $(foreach l,$(shrlib),\
 # @return Target to create a static library from objects               #
 #======================================================================#
 define link-arlib
-$1/$2: $$($2_obj) | $1/./
+ifndef COMPILE
+.PHONY: $1/$2$3
+$1/$2$3:
+	$$(quiet) $$(MAKE) $$@ COMPILE=1
+else
+$1/$2$3: $$($2_obj) | $1/./
 	$$(call status,$$(MSG_ARLIB))
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(AR) $$(arflags) $$@ $$^ $$(NO_OUTPUT) $$(NO_ERROR)
+	$$(quiet) $$(AR) $$(arflags) $$@ $$($2_obj) \
+	                 $$(NO_OUTPUT) $$(NO_ERROR)
 	$$(quiet) $$(RANLIB) $$@
 	
 	$$(call ok,$$(MSG_ARLIB),$$@)
+endif
 endef
-$(foreach l,$(arlib),\
-    $(eval $(call link-arlib,$(call root,$l),$(call not-root,$l))))
-
-#======================================================================#
-# Function: binary-flags                                               #
-# @param  $1 Binary root directory                                     #
-# @param  $2 Binary name witout root dir                               #
-# @param  $3 Flag value (came from keys of $2_flags hash)              #
-# @param  $4 Flag value (came from values of $2_flags hash)            #
-# @return Target to define $3 with values $4 to executable $1/$2       #
-#======================================================================#
-define binary-flags
-$1/$2: $3 := $4
-endef
-$(foreach b,$(execbin) $(testbin) $(benchbin),\
-    $(foreach k,$(call hash-table.keys,$(call not-root,$b)_flags),\
-        $(eval $(call binary-flags,$(call root,$b),$(call not-root,$b),\
-            $k,$($(call not-root,$b)_flags.$k)))))
+$(foreach l,$(arlib),$(eval $(call link-arlib,$(strip \
+    $(call root,$l)),$(call corename,$l),$(suffix $l))))
 
 #======================================================================#
 # Function: binary-factory                                             #
@@ -3989,29 +4004,29 @@ $(foreach b,$(execbin) $(testbin) $(benchbin),\
 #======================================================================#
 define binary-factory
 ifndef COMPILE
-.PHONY: $1/$2
-$1/$2:
+.PHONY: $1/$2$3
+$1/$2$3:
 	$$(quiet) $$(MAKE) $$@ COMPILE=1
 else
-$1/$2: $$(depdir)/$1/$2$$(sysext) $$($2_lib) $$($2_obj) | $1/./
-	$$(call status,$$(MSG_$3_LINKAGE))
+$1/$2$3: $$($2_lib) $$($2_obj) | $1/./
+	$$(call status,$$(MSG_$4_LINKAGE))
 	
 	$$(if $$(strip $$($2_all)),,\
 	    $$(call phony-error,$$(MSG_$3_NO_FILE)))
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $4 $$($2_obj) -o $$@ $$($2_link) $$(ldlibs) $$(ERROR)
+	$$(quiet) $5 $$($2_obj) -o $$@ $$($2_link) $$(ldlibs) $$(ERROR)
 	
-	$$(call ok,$$(MSG_$3_LINKAGE),$$@)
+	$$(call ok,$$(MSG_$4_LINKAGE),$$@)
 endif
 
 $$($2_obj): $$($2_all) | $$(objdir)/./
 endef
 $(foreach b,$(execbin) $(testbin) $(benchbin),\
     $(eval $(call binary-factory,$(strip \
-        $(call root,$b)),$(call not-root,$b),$(strip \
-        $(call choose-comment,$($(call not-root,$b)_all))),$(strip \
-        $(call choose-compiler,$($(call not-root,$b)_all)))\
+        $(call root,$b)),$(call corename,$b),$(suffix $l),$(strip \
+        $(call choose-comment,$($(call corename,$b)_all))),$(strip \
+        $(call choose-compiler,$($(call corename,$b)_all)))\
 )))
 
 #======================================================================#
@@ -4054,7 +4069,7 @@ $(foreach b,$(benchbin),$(eval $(call run-factory,$b,BENCH)))
 #======================================================================#
 define analysis-lint-factory
 $1: f=$2
-$1: $$($$(call not-root,$2)_all)
+$1: $$($$(call corename,$2)_all)
 	$$(call phony-status,$$(MSG_ALINT))
 	$$(quiet) $$($3ALINT) $$($$(call lc,$3)libs) \
 	                      $$($$(call lc,$3)alflags) $$^ $$(ERROR)
@@ -4063,7 +4078,7 @@ endef
 $(foreach b,$(execbin) $(testbin) $(benchbin) $(arlib) $(shrlib),\
     $(eval $(call analysis-lint-factory,$(strip \
         $(addprefix analysis_lint_,$(subst /,_,$b))),$b,$(strip \
-        $(call choose-comment,$($(call not-root,$b)_all))\
+        $(call choose-comment,$($(call corename,$b)_all))\
 ))))
 
 #======================================================================#
@@ -4076,7 +4091,7 @@ $(foreach b,$(execbin) $(testbin) $(benchbin) $(arlib) $(shrlib),\
 #======================================================================#
 define style-lint-factory
 $1: f=$2
-$1: $$($$(call not-root,$2)_all)
+$1: $$($$(call corename,$2)_all)
 	$$(call phony-status,$$(MSG_SLINT))
 	$$(quiet) $$($3SLINT) $$($$(call lc,$3)slflags) $$^ $$(ERROR)
 	$$(call phony-ok,$$(MSG_SLINT))
@@ -4084,7 +4099,7 @@ endef
 $(foreach b,$(execbin) $(testbin) $(benchbin) $(arlib) $(shrlib),\
     $(eval $(call style-lint-factory,$(strip \
         $(addprefix style_lint_,$(subst /,_,$b))),$b,$(strip \
-        $(call choose-comment,$($(call not-root,$b)_all))\
+        $(call choose-comment,$($(call corename,$b)_all))\
 ))))
 
 #======================================================================#
@@ -4202,8 +4217,7 @@ $1/$2$$(firstword $$(potext)): $$($2_all) | $1/./
 	$$(call ok,$$(MSG_INTL_TEMPLATE),$$@)
 endef
 $(foreach b,$(execbin),$(eval\
-    $(call intl-template-factory,$(strip\
-        $(localedir)),$(call not-root,$(basename $b)))))
+    $(call intl-template-factory,$(localedir),$(call corename,$b))))
 endif
 
 #======================================================================#

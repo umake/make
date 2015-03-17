@@ -3943,12 +3943,10 @@ $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
 # @return Target to create a shared library from objects               #
 #======================================================================#
 define link-shrlib
+$1/$2$3: $$($2_obj) | $1/./
 ifndef COMPILE
-.PHONY: $1/$2$3
-$1/$2$3:
 	$$(quiet) $$(MAKE) $$@ COMPILE=1
 else
-$1/$2$3: $$($2_obj) | $1/./
 	$$(call status,$$(MSG_$4_SHRLIB))
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
@@ -3974,12 +3972,10 @@ $(foreach l,$(shrlib),\
 # @return Target to create a static library from objects               #
 #======================================================================#
 define link-arlib
+$1/$2$3: $$($2_obj) | $1/./
 ifndef COMPILE
-.PHONY: $1/$2$3
-$1/$2$3:
 	$$(quiet) $$(MAKE) $$@ COMPILE=1
 else
-$1/$2$3: $$($2_obj) | $1/./
 	$$(call status,$$(MSG_ARLIB))
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
@@ -4003,12 +3999,10 @@ $(foreach l,$(arlib),$(eval $(call link-arlib,$(strip \
 #         files (to create objdir and automatic source)                #
 #======================================================================#
 define binary-factory
+$1/$2$3: $$($2_lib) $$($2_obj) | $1/./
 ifndef COMPILE
-.PHONY: $1/$2$3
-$1/$2$3:
 	$$(quiet) $$(MAKE) $$@ COMPILE=1
 else
-$1/$2$3: $$($2_lib) $$($2_obj) | $1/./
 	$$(call status,$$(MSG_$4_LINKAGE))
 	
 	$$(if $$(strip $$($2_all)),,\

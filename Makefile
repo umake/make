@@ -4016,8 +4016,6 @@ $1/$2$3: $$(depdir)/$1/$2$$(sysext) $$($2_lib) $$($2_obj) | $1/./
 	
 	$$(call ok,$$(MSG_$4_LINKAGE),$$@)
 endif
-
-$$($2_obj): $$($2_all) | $$(objdir)/./
 endef
 $(foreach b,$(execbin) $(testbin) $(benchbin),\
     $(eval $(call binary-factory,$(strip \

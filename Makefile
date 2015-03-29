@@ -3984,6 +3984,9 @@ else
 $1/$2$3: $$(depdir)/$1/$2$$(sysext) $$($2_obj) | $1/./
 	$$(call status,$$(MSG_$4_SHRLIB))
 	
+	@# Synchronize execs previously compiled with other set of flags
+	$$(quiet) $$(call exec-sync)
+	
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $5 $$($2_obj) -o $$@ \
 	             $$(ldflags) $$(ldshr) $$(ldlibs) $$(ERROR)
@@ -4014,6 +4017,9 @@ $1/$2$3:
 else
 $1/$2$3: $$(depdir)/$1/$2$$(sysext) $$($2_obj) | $1/./
 	$$(call status,$$(MSG_ARLIB))
+	
+	@# Synchronize execs previously compiled with other set of flags
+	$$(quiet) $$(call exec-sync)
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(AR) $$(arflags) $$@ $$($2_obj) \
@@ -4046,6 +4052,9 @@ $1/$2$3: $$(depdir)/$1/$2$$(sysext) $$($2_lib) $$($2_obj) | $1/./
 	
 	$$(if $$(strip $$($2_all)),,\
 	    $$(call phony-error,$$(MSG_$3_NO_FILE)))
+	
+	@# Synchronize execs previously compiled with other set of flags
+	$$(quiet) $$(call exec-sync)
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $5 $$($2_obj) -o $$@ $$($2_link) $$(ldlibs) $$(ERROR)
@@ -4831,6 +4840,16 @@ define fortran-depend
 $(FC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 \
       -J $(firstword $(incdir))/$(dir $3) $(cppflags) \
       $(flibs) $(filter-out $(fcovflags),$(fflags)) $1
+endef
+
+## SYNCHRONIZATION #####################################################
+# Functions: exec-sync
+# Synchronze executables (bin/lib) previously compiled with other set
+# of flags (to avoid their recompilation in a 2nd run of make)
+
+define exec-sync
+$(foreach d,$(bindir) $(libdir),\
+    $(foreach f,$(call rwildcard,$d,*),touch $f;))
 endef
 
 ## DIRECTORIES #########################################################

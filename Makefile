@@ -3440,7 +3440,9 @@ $$(depdir)/$1/$2$$(sysext): | $$(depdir)/./
 	
 	@# Update binaries compiled with other set of flags
 	$$(quiet) $$(foreach d,$$(bindir) $$(libdir),\
-	             if ls $$d/* &>/dev/null; then touch $$d/*; fi;)
+	              $$(foreach f,$$(call rwildcard,$$d,*),\
+	                  touch $$f;\
+	          ))
 	
 	@# Create flags for compilation of this dependency's binary
 	$$(call select,$$@)

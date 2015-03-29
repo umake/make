@@ -3387,7 +3387,7 @@ endif # ifndef COMPILE
 #======================================================================#
 ifdef COMPILE
 define object-dependency
-$$(objdir)/$2$$(firstword $$(objext)): $$(depdir)/$$(objdir)/$2$$(sysext)
+$$(objdir)/$2$$(objext): $$(depdir)/$$(objdir)/$2$$(sysext)
 
 $$(depdir)/$$(objdir)/$2$$(sysext): $1/$2$3 | $$(depdir)/./
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)

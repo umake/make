@@ -3362,7 +3362,11 @@ $$(strip $$(foreach s,$$(call intersection,$$($1_all),$$($2_all)),\
     $$(foreach k,$$(call hash-table.keys,flag_dependency),\
         $$(if $$(and $$(call not-empty,$$($$k)),$$(filter $$s,$$($$k))),\
             $$(foreach f,$$(flag_dependency.$$k),\
-                $$(if $$(call ne,$$($1_flags.$$f),$$($2_flags.$$f)),\
+                $$(if $$(call ne,\
+                        $$(if $$(call eq,$$(origin $$f),command line),\
+                            $$($$f),$$(or $$($1_flags.$$f),$$($$f))),\
+                        $$(if $$(call eq,$$(origin $$f),command line),\
+                            $$($$f),$$(or $$($2_flags.$$f),$$($$f)))),\
                     $$(addprefix $$(depdir)/$$(objdir)/,\
                         $$(addsuffix $$(sysext),$$(call corename,$$s))\
 )))))))
@@ -3410,7 +3414,8 @@ $1/$2$3: \
         $$(if $$(call not-empty,$$(call rfilter,$$($$k),$$($2_all))),\
             $$(foreach f,$$(flag_dependency.$$k),\
                 $$(if $$(call ne,$$(old_$2_flags.$$f),\
-                          $$(or $$(strip $$($2_flags.$$f)),$$($$f))),\
+                      $$(if $$(call eq,$$(origin $$f),command line),\
+                          $$($$f),$$(or $$($2_flags.$$f),$$($$f)))),\
                     $$(shell $$(RM) $$(depdir)/$1/$2$$(sysext))\
                     $$(shell $$(RM) \
                         $$(addprefix $$(depdir)/$$(objdir)/,\
@@ -3438,25 +3443,22 @@ $$(depdir)/$1/$2$$(sysext): | $$(depdir)/./
 	                  $$(RM) $$f;\
 	          ))
 	
-	@# Update binaries compiled with other set of flags
-	$$(quiet) $$(foreach d,$$(bindir) $$(libdir),\
-	              $$(foreach f,$$(call rwildcard,$$d,*),\
-	                  touch $$f;\
-	          ))
-	
 	@# Create flags for compilation of this dependency's binary
 	$$(call select,$$@)
 	$$(call cat,'override old_$2_flags := \')
 	$$(foreach k,$$(call hash-table.keys,flag_dependency),\
 	    $$(if $$(call not-empty,$$(call rfilter,$$($$k),$$($2_all))),\
 	        $$(foreach f,$$(flag_dependency.$$k),\
+	            $$(if $$(call eq,$$(origin $$f),command line),\
+	                $$(call cat,'    $$f => $$($$f) \')\
+	                $$(newline),\
 	            $$(if $$(call not-empty,$$($2_flags.$$f)),\
 	                $$(call cat,'    $$f => $$($2_flags.$$f) \')\
 	                $$(newline),\
-	                $$(if $$(call not-empty,$$($$f)),\
-	                    $$(call cat,'    $$f => $$($$f) \')\
-	                    $$(newline))\
-	))))
+	            $$(if $$(call not-empty,$$($$f)),\
+	                $$(call cat,'    $$f => $$($$f) \')\
+	                $$(newline))\
+	)))))
 endif # ifdef COMPILE
 endef
 $(foreach b,$(execbin) $(testbin) $(benchbin) $(execlib),\

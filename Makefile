@@ -4622,7 +4622,7 @@ MSG_UNINIT_ALT    = "${DEF}Run ${BLUE}'make uninitialize U=1'${RES}"
 
 MSG_MOVE          = "${YELLOW}Populating ${BLUE}$(firstword $2)"\
                     "${YELLOW}with $(strip $3) files${RES}"
-MSG_NO_MOVE       = "${PURPLE}No $(strip $3) files to put in"\
+MSG_NO_MOVE       = "${PURPLE}No $(strip $3) files found to put in"\
                     "$(firstword $2)${RES}"
 
 MSG_WEB_CLONE     = "${YELLOW}Downloading web dependency ${DEF}$2${RES}"

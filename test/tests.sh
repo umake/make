@@ -12,8 +12,8 @@ fi
 function setup {
   rm -rf test/tmp
   mkdir test/tmp
-  cp Makefile test/tmp/Makefile
   cd test/tmp
+  ln -s ../../Makefile .
   if ! [ -z "$CC" ];  then echo "CC  := ${CC}"  >> .compiler.mk; fi
   if ! [ -z "$FC"  ]; then echo "FC  := ${FC}"  >> .compiler.mk; fi
   if ! [ -z "$CXX" ]; then echo "CXX := ${CXX}" >> .compiler.mk; fi
@@ -38,32 +38,17 @@ echo
 assert_end Targets
 echo
 
-# C Tests
-echo -n "Testing C "
-. test/c/test_single-file.sh
-. test/c/test_multiple-file.sh
-. test/c/test_static-lib.sh
-. test/c/test_shared-lib.sh
-echo
-assert_end "C Tests"
-echo
+for LANG in C C++ Fortran;
+do
+    lang=`echo $LANG | tr '[:upper:]' '[:lower:]'`
 
-# C++ Tests
-echo -n "Testing C++ "
-. test/c++/test_single-file.sh
-. test/c++/test_multiple-file.sh
-. test/c++/test_static-lib.sh
-. test/c++/test_shared-lib.sh
-echo
-assert_end "C++ Tests"
-echo
-
-# Fortran Tests
-echo -n "Testing Fortran "
-. test/fortran/test_single-file.sh
-. test/fortran/test_multiple-file.sh
-. test/fortran/test_static-lib.sh
-. test/fortran/test_shared-lib.sh
-echo
-assert_end "Fortran Tests"
-echo
+    echo -n "Testing $LANG "
+    . test/$lang/test_single-file.sh
+    . test/$lang/test_multiple-file.sh
+    . test/$lang/test_static-lib.sh
+    . test/$lang/test_shared-lib.sh
+    . test/$lang/test_shared-file.sh
+    echo
+    assert_end "$LANG"
+    echo
+done

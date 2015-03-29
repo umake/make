@@ -1826,16 +1826,16 @@ covignore := $(sort $(COV_IGNORE))
 # 2) Make variable above a hash table
 #------------------------------------------------------------------[ 1 ]
 flag_dependency := \
-    execobj => CPPFLAGS CPPCOVFLAGS LDFLAGS LDCOV LDLIBS,\
-    asmobj  => ASFLAGS LDAS ASLIBS,\
-    cobj    => CFLAGS CALFLAGS CSLFLAGS CCOVFLAGS LDC CLIBS,\
-    fobj    => FFLAGS FALFLAGS FSLFLAGS FCOVFLAGS LDF FLIBS,\
-    cxxobj  => CXXFLAGS CXXALFLAGS CXXSLFLAGS CXXCOVFLAGS LDCXX CXXLIBS,\
-    arobj   => ARFLAGS,\
-    shrobj  => SHRFLAGS LDSHR,\
-    lexobj  => LEXFLAGS LDLEX LEXLIBS,\
-    yaccobj => YACCFLAGS LDYACC YACCLIBS,\
-    esqlobj => ESQLFLAGS LDESQL ESQLLIBS
+    execall => CPPFLAGS CPPCOVFLAGS LDFLAGS LDCOV LDLIBS,\
+    asmall  => ASFLAGS LDAS ASLIBS,\
+    call    => CFLAGS CALFLAGS CSLFLAGS CCOVFLAGS LDC CLIBS,\
+    fall    => FFLAGS FALFLAGS FSLFLAGS FCOVFLAGS LDF FLIBS,\
+    cxxall  => CXXFLAGS CXXALFLAGS CXXSLFLAGS CXXCOVFLAGS LDCXX CXXLIBS,\
+    arall   => ARFLAGS,\
+    shrall  => SHRFLAGS LDSHR,\
+    lexall  => LEXFLAGS LDLEX LEXLIBS,\
+    yaccall => YACCFLAGS LDYACC YACCLIBS,\
+    esqlall => ESQLFLAGS LDESQL ESQLLIBS
 #------------------------------------------------------------------[ 2 ]
 $(call hash-table.new,flag_dependency)
 
@@ -2007,6 +2007,7 @@ esqlinc   := $(if $(strip $(esqlall)),$(strip $(ESQLLIBS)))
 # 8) call    : C files from execall
 # 8) fall    : Fortran files from execall
 # 8) cxxall  : C++ files from execall
+# 9) execdep : Dependency files for executables
 #------------------------------------------------------------------[ 1 ]
 ifneq ($(srcdir),.)
 userall := $(sort $(call filter-ignored,\
@@ -2050,6 +2051,9 @@ asmall  := $(call rfilter,$(addprefix %,$(asmext)),$(execall))
 call    := $(call rfilter,$(addprefix %,$(cext)),$(execall))
 fall    := $(call rfilter,$(addprefix %,$(fext)),$(execall))
 cxxall  := $(call rfilter,$(addprefix %,$(cxxext)),$(execall))
+#------------------------------------------------------------------[ 10 ]
+execdep := $(addprefix $(depdir)/,\
+               $(addsuffix $(depext),$(basename $(execsrc))))
 
 # Header files
 # ==============
@@ -2351,6 +2355,7 @@ endif
 #    4.3) binary-name_obj, for binary's specific objects;
 #    4.4) binary-name_lib, for binary's specific libraries;
 #    4.5) binary-name_link, for binary's specific linker flags;
+#    4.6) binary-name_comall, for complete path binary's shared sources
 #------------------------------------------------------------------[ 1 ]
 define binary-name
 $1 := $$(call rm-trailing-bar,$$(basename $2))
@@ -2399,6 +2404,7 @@ $(foreach b,$(call corename,$(execbin)),$(or\
     $(eval $b_obj     := $(comobj)  $($b_obj)  ),\
     $(eval $b_lib     := $(comlib)  $($b_lib)  ),\
     $(eval $b_link    := $($b_link) $(comlink) ),\
+    $(eval $b_comall  := $(comall)             ),\
 ))
 
 # Binary installation
@@ -2438,6 +2444,7 @@ endif
 #     8.3) binary-name_obj, for test binary's specific objects;
 #     8.4) binary-name_lib, for test binary's specific libraries;
 #     8.5) binary-name_link, for test binary's specific linker flags;
+#     8.6) binary-name_comall, for complete path binary's shared sources;
 #  9) Check if test sources have test suffixes and a matching file
 # 10) testdep : Dependency files for tests
 #------------------------------------------------------------------[ 1 ]
@@ -2480,11 +2487,12 @@ comtestobj := $(call common-test-factory,obj,\
                   $(testobj) $(userobj) $(autoobj))
 #------------------------------------------------------------------[ 8 ]
 $(foreach t,$(call corename,$(testbin)),$(or\
-    $(eval $t_src  := $(comtestsrc) $($t_src)),\
-    $(eval $t_all  := $(comtestall) $($t_all)),\
-    $(eval $t_obj  := $(comtestobj) $($t_obj)),\
-    $(eval $t_lib  := $(arlib) $(shrlib)),\
-    $(eval $t_link := $(liblink) $(filter-out -l%,$(ldflags))),\
+    $(eval $t_src    := $(comtestsrc) $($t_src)),\
+    $(eval $t_all    := $(comtestall) $($t_all)),\
+    $(eval $t_obj    := $(comtestobj) $($t_obj)),\
+    $(eval $t_lib    := $(arlib) $(shrlib)),\
+    $(eval $t_link   := $(liblink) $(filter-out -l%,$(ldflags))),\
+    $(eval $t_comall := $(comtestall)),\
 ))
 #------------------------------------------------------------------[ 9 ]
 ifneq (,$(comtestsrc))
@@ -2516,6 +2524,8 @@ testdep := $(addprefix $(depdir)/$(testdir)/,\
 #     8.3) binary-name_obj, for bench binary's specific objects;
 #     8.4) binary-name_lib, for bench binary's specific libraries;
 #     8.5) binary-name_link, for bench binary's specific linker flags;
+#     8.5) binary-name_comall, for bench complete path binary's 
+#                              shared sources;
 #  9) Check if bench sources have benchmark suffixes and a matching file
 # 10) benchdep : Dependency files for benchmarks
 #------------------------------------------------------------------[ 1 ]
@@ -2558,11 +2568,12 @@ combenchobj := $(call common-bench-factory,obj,\
                   $(benchobj) $(userobj) $(autoobj))
 #------------------------------------------------------------------[ 8 ]
 $(foreach t,$(call corename,$(benchbin)),$(or\
-    $(eval $t_src  := $(combenchsrc) $($t_src)),\
-    $(eval $t_all  := $(combenchsrc) $($t_all)),\
-    $(eval $t_obj  := $(combenchobj) $($t_obj)),\
-    $(eval $t_lib  := $(arlib) $(shrlib)),\
-    $(eval $t_link := $(liblink) $(filter-out -l%,$(ldflags))),\
+    $(eval $t_src    := $(combenchsrc) $($t_src)),\
+    $(eval $t_all    := $(combenchall) $($t_all)),\
+    $(eval $t_obj    := $(combenchobj) $($t_obj)),\
+    $(eval $t_lib    := $(arlib) $(shrlib)),\
+    $(eval $t_link   := $(liblink) $(filter-out -l%,$(ldflags))),\
+    $(eval $t_comall := $(combenchall)),\
 ))
 #------------------------------------------------------------------[ 9 ]
 ifneq (,$(combenchsrc))
@@ -2581,12 +2592,16 @@ benchdep := $(addprefix $(depdir)/$(benchdir)/,\
 
 # Executable dependencies
 # =========================
-# 1) bindep : Dependency files for binary flags
-# 2) libdep : Dependency files for library flags
+# 1) objdep : Dependency files for object binaries
+# 2) bindep : Dependency files for binary flags
+# 3) libdep : Dependency files for library flags
 #------------------------------------------------------------------[ 1 ]
+objdep := $(addprefix $(depdir)/,$(addsuffix $(sysext),\
+              $(basename $(execobj) $(testobj) $(benchobj))))
+#------------------------------------------------------------------[ 2 ]
 bindep := $(addprefix $(depdir)/,$(addsuffix $(sysext),\
               $(basename $(execbin) $(testbin) $(benchbin))))
-#------------------------------------------------------------------[ 2 ]
+#------------------------------------------------------------------[ 3 ]
 libdep := $(addprefix $(depdir)/,$(addsuffix $(sysext),\
               $(basename $(execlib))))
 
@@ -2624,10 +2639,12 @@ slintrun += $(addprefix style_lint_,$(subst /,_,$(shrlib)))
 
 # Source dependency files
 # =========================
-# 1) Get flag, source, test and benchmark dependencies
-# 2) Get program, external and system library dependencies
-# 3) Get phony target and submodule makefile dependencies
-depall := $(bindep) $(libdep) $(testdep) $(benchdep)
+# 1) Get source, test and benchmark dependencies
+# 2) Get object, binary and library dependencies
+# 3) Get program, external and system library dependencies
+# 4) Get phony target and submodule makefile dependencies
+depall := $(execdep) $(testdep) $(benchdep)
+depall += $(bindep) $(libdep)
 depall += $(progdep) $(externdep) $(syslibdep)
 depall += $(phonydep) $(makedep)
 
@@ -3313,22 +3330,71 @@ endef
 $(foreach d,$(alldir),$(eval $(call root-factory,$d)))
 
 #======================================================================#
+# Function: compilation-hash-dependency                                #
+# @param  $1 Dependency name (for targets)                             #
+# @param  $2 Dependency nick (hash key)                                #
+# @return Target to store the flags from $1/$2                         #
+#======================================================================#
+define compilation-hash-dependency
+ifdef $2_flags
+$$(call hash-table.new,$2_flags)
+endif
+
+ifdef old_$2_flags
+$$(call hash-table.new,old_$2_flags)
+endif
+endef
+$(foreach b,$(execbin) $(testbin) $(benchbin) $(execlib),\
+    $(eval $(call compilation-hash-dependency,$(strip \
+        $(call root,$b)),$(call corename,$b),$(suffix $b))))
+
+#======================================================================#
+# Function: flag-dependency                                            #
+# @param  $1 Dependency name (for targets)                             #
+# @param  $2 Dependency nick (hash key)                                #
+# @return Target to store the flags from $1/$2                         #
+#======================================================================#
+ifndef COMPILE
+define flag-dependency
+ifneq ($1,$2)
+export flags_$1_$2 := \
+$$(strip $$(foreach s,$$(call intersection,$$($1_all),$$($2_all)),\
+    $$(foreach k,$$(call hash-table.keys,flag_dependency),\
+        $$(if $$(and $$(call not-empty,$$($$k)),$$(filter $$s,$$($$k))),\
+            $$(foreach f,$$(flag_dependency.$$k),\
+                $$(if $$(call ne,$$($1_flags.$$f),$$($2_flags.$$f)),\
+                    $$(addprefix $$(depdir)/$$(objdir)/,\
+                        $$(addsuffix $$(sysext),$$(call corename,$$s))\
+)))))))
+endif
+endef
+$(foreach b1,$(call corename,\
+                 $(execbin) $(testbin) $(benchbin) $(execlib)),\
+    $(foreach b2,$(call corename,\
+                     $(execbin) $(testbin) $(benchbin) $(execlib)),\
+        $(eval $(call flag-dependency,$(b1),$(b2)))))
+endif # ifndef COMPILE
+
+#======================================================================#
 # Function: object-dependency                                          #
 # @param  $1 Source file (which has the dependency)                    #
 # @param  $2 Flag name (for targets)                                   #
 # @return Target to check a set of dependencies defined in $2          #
 #======================================================================#
+ifdef COMPILE
 define object-dependency
-$1: $$(depdir)/$$(basename $1)$$(sysext)
+$$(objdir)/$2$$(firstword $$(objext)): $$(depdir)/$$(objdir)/$2$$(sysext)
 
-$$(depdir)/$$(basename $1)$$(sysext): | $$(depdir)/./
+$$(depdir)/$$(objdir)/$2$$(sysext): $1/$2$3 | $$(depdir)/./
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(call select,$$@)
-	$$(call cat,'$$(call not-root,$$(EXEC))')
+	$$(call cat,'override $2_exec := $$(call corename,$$(EXEC))')
 endef
 $(foreach s,$(sort \
     $(foreach k,$(call hash-table.keys,flag_dependency),$($k))),\
-        $(eval $(call object-dependency,$s)))
+        $(eval $(call object-dependency,\
+            $(call root,$s),$(call corename,$s),$(suffix $s))))
+endif # ifdef COMPILE
 
 #======================================================================#
 # Function: compilation-dependency                                     #
@@ -3337,61 +3403,50 @@ $(foreach s,$(sort \
 # @return Target to store the flags from $1/$2                         #
 #======================================================================#
 define compilation-dependency
-ifdef $2_flags
-$$(call hash-table.new,$2_flags)
-endif
-
-ifdef old_$2_flags
-$$(call hash-table.new,old_$2_flags)
-endif
-
 ifndef COMPILE
+ifdef $$(call not-empty,$$(wildcard $$(depdir)/$1/$2$$(sysext)))
 $1/$2$3: \
-    $$(if $$(call not-empty,\
-        $$(shell ls $$(depdir)/$1/$2$$(sysext) 2>/dev/null)),\
     $$(foreach k,$$(call hash-table.keys,flag_dependency),\
-        $$(if $$(call not-empty,$$(call rfilter,$$($$k),$$($2_obj))),\
+        $$(if $$(call not-empty,$$(call rfilter,$$($$k),$$($2_all))),\
             $$(foreach f,$$(flag_dependency.$$k),\
                 $$(if $$(call ne,$$(old_$2_flags.$$f),\
-                        $$(or $$(strip $$($2_flags.$$f)),$$($$f))),\
+                          $$(or $$(strip $$($2_flags.$$f)),$$($$f))),\
                     $$(shell $$(RM) $$(depdir)/$1/$2$$(sysext))\
-                    $$(shell $$(RM) $$(addprefix $$(depdir)/,\
-                        $$(addsuffix $$(sysext),$$(basename $$($$k)))))\
-                    $$(shell $$(RM) $1/$2)\
-    )))))
+                    $$(shell $$(RM) \
+                        $$(addprefix $$(depdir)/$$(objdir)/,\
+                            $$(addsuffix $$(sysext),\
+                                $$(call corename,$$($$k)\
+                    ))))\
+    ))))
+endif
 endif # ifndef COMPILE
 
 ifdef COMPILE
 $1/$2$3: EXEC=$1/$2$3
-$1/$2$3: \
-    $$(depdir)/$1/$2$$(sysext)
+$1/$2$3: $$(depdir)/$1/$2$$(sysext)
+
+$$(depdir)/$1/$2$$(sysext): \
+    $$(if $$(filter $1/$2$3,$$(MAKECMDGOALS)),$$($2_comall))
 
 $$(depdir)/$1/$2$$(sysext): | $$(depdir)/./
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	
 	@# Force recompilation of shared files with different flags
-	$$(quiet) for o in $$(basename $$($2_obj));\
-	          do \
-	              if [ -f $$(depdir)/$$$$o$$(sysext) ]; \
-	              then \
-	                  EXEC=`cat $$(depdir)/$$$$o$$(sysext)`;\
-	                  FILES=`$$(MAKE) dump VAR=flags_$$$${EXEC}_$2 \
-	                        | sed -e 's/^[^ ]\+:[^ ]*[ ]*//'`; \
-	                  if [ -n "`echo $$$$FILES | sed -e s/Empty//`" ];\
-	                      then $$(RM) $$$$FILES;\
-	                  fi;\
-	              fi; \
-	          done
+	$$(quiet) $$(foreach s,$$(call corename,$$($2_all)),\
+	              $$(eval -include $$(depdir)/$$(objdir)/$$s$$(sysext))\
+	              $$(foreach f,$$(flags_$$($$s_exec)_$2),\
+	                  $$(RM) $$f;\
+	          ))
 	
 	@# Update binaries compiled with other set of flags
-	@# $$(quiet) $$(foreach d,$$(bindir) $$(libdir),\
-	@#              if ls $$d/* &>/dev/null; then touch $$d/*; fi;)
+	$$(quiet) $$(foreach d,$$(bindir) $$(libdir),\
+	             if ls $$d/* &>/dev/null; then touch $$d/*; fi;)
 	
-	@# Create flags used in compilation of this binary
+	@# Create flags for compilation of this dependency's binary
 	$$(call select,$$@)
 	$$(call cat,'override old_$2_flags := \')
 	$$(foreach k,$$(call hash-table.keys,flag_dependency),\
-	    $$(if $$(call not-empty,$$(call rfilter,$$($$k),$$($2_obj))),\
+	    $$(if $$(call not-empty,$$(call rfilter,$$($$k),$$($2_all))),\
 	        $$(foreach f,$$(flag_dependency.$$k),\
 	            $$(if $$(call not-empty,$$($2_flags.$$f)),\
 	                $$(call cat,'    $$f => $$($2_flags.$$f) \')\
@@ -3420,30 +3475,6 @@ $(foreach b,$(execbin) $(testbin) $(benchbin) $(execlib),\
     $(foreach k,$(call hash-table.keys,$(call corename,$b)_flags),\
         $(eval $(call compilation-flags,\
             $b,$k,$($(call corename,$b)_flags.$k)))))
-
-#======================================================================#
-# Function: flag-dependency                                            #
-# @param  $1 Dependency name (for targets)                             #
-# @param  $2 Dependency nick (hash key)                                #
-# @return Target to store the flags from $1/$2                         #
-#======================================================================#
-define flag-dependency
-ifneq ($1,$2)
-flags_$1_$2 := \
-$$(foreach o,$$(call intersection,$$($1_obj),$$($2_obj)),\
-    $$(foreach k,$$(call hash-table.keys,flag_dependency),\
-        $$(if $$(and $$(call not-empty,$$($$k)),$$(filter $$o,$$($$k))),\
-            $$(foreach f,$$(flag_dependency.$$k),\
-                $$(if $$(call ne,$$($1_flags.$$f),$$($2_flags.$$f)),\
-                    $$(depdir)/$$(basename $$o)$$(sysext)\
-)))))
-endif
-endef
-$(foreach b1,$(call corename,\
-                 $(execbin) $(testbin) $(benchbin) $(execlib)),\
-    $(foreach b2,$(call corename,\
-                     $(execbin) $(testbin) $(benchbin) $(execlib)),\
-        $(eval $(call flag-dependency,$(b1),$(b2)))))
 
 #======================================================================#
 # Function: program-dependency-target                                  #
@@ -3944,6 +3975,7 @@ $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
 #======================================================================#
 define link-shrlib
 ifndef COMPILE
+.PHONY: $1/$2$3
 $1/$2$3:
 	$$(quiet) $$(MAKE) $$@ COMPILE=1
 else
@@ -3974,6 +4006,7 @@ $(foreach l,$(shrlib),\
 #======================================================================#
 define link-arlib
 ifndef COMPILE
+.PHONY: $1/$2$3
 $1/$2$3:
 	$$(quiet) $$(MAKE) $$@ COMPILE=1
 else
@@ -4002,6 +4035,7 @@ $(foreach l,$(arlib),$(eval $(call link-arlib,$(strip \
 #======================================================================#
 define binary-factory
 ifndef COMPILE
+.PHONY: $1/$2$3
 $1/$2$3:
 	$$(quiet) $$(MAKE) $$@ COMPILE=1
 else
@@ -5102,10 +5136,8 @@ endef
 # Function: cat
 # Add a text in the end of a ostream
 define cat
-$(if $(or $(call is-empty,$(ostream)),\
-          $(call not,$(wildcard $(ostream)*))),\
-    $(quiet) $(call printf,"%b\n",$1,\
-                           $(if $(strip $(ostream)),>> $(ostream))))
+$(quiet) $(call printf,"%b\n",$1,\
+                       $(if $(strip $(ostream)),>> $(ostream)))
 endef
 
 # Function: touch

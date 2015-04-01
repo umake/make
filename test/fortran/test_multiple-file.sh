@@ -17,5 +17,5 @@ test "if \"$MAKE\" builds the project with multiple files" \
   "cp ../resources/mathlib.f ." \
   "$MAKE standard" \
   "$MAKE" \
-  "./bin/a.out < ./data/simple_calc.dat" \
+  "./bin/simple_calc < ./data/simple_calc.dat" \
   should_output " 4\n 2\n27\n 2\n 1"

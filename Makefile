@@ -2368,10 +2368,11 @@ $(eval $(call binary-name,bin,$(BIN),$(bindir)))
 $(eval $(call binary-name,sbin,$(SBIN),$(sbindir)))
 $(eval $(call binary-name,libexec,$(LIBEXEC),$(execdir)))
 
-$(if $(strip $(bin) $(sbin) $(libexec)),\
-    $(eval execbin := $(bin) $(sbin) $(libexec)),\
-    $(if $(strip $(mainall)),$(eval execbin := $(bindir)/a.out))\
-)
+execbin := \
+$(strip $(sort \
+    $(bin) $(sbin) $(libexec) \
+    $(patsubst %,$(bindir)/%$(binext),$(call corename,$(mainall))) \
+))
 #------------------------------------------------------------------[ 2 ]
 $(foreach sep,/ .,$(foreach b,$(call corename,$(execbin)),$(or\
     $(eval $b_src  += $(filter $b$(sep)%,\

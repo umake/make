@@ -95,6 +95,7 @@
     [X] Add directory and extension to deal with images in 'standard'.
     [X] Allow binary-specific compilation, linkage and path flags 
     [X] Recompile shared files with different executable-flags.
+    [X] Allow compilation without configuring BIN, SBIN or LIBEXEC.
     [ ] Limit style-lint output by number of lines and file/binary.
     [ ] Support variant-binaries made from executables with other flags.
     [ ] Add DEBUG compilation option to enable debug flags.

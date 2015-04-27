@@ -557,6 +557,10 @@ endif # exists 'uname'
 #----------------------------------------------------------------------#
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
+MAKEBALLDIR := \
+    $(addsuffix $(firstword $(CONFDIR)),\
+        $(dir $(abspath $(firstword $(MAKEFILE_LIST)))))
+
 # Include configuration file if exists
 -include .version.mk
 -include .config.mk config.mk Config.mk

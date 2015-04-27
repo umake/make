@@ -1459,6 +1459,30 @@ define hash-table.values
 $(strip $(foreach k,$(call hash-table.keys,$1),$($1.$k)))
 endef
 
+# Section list
+# ==============
+# 1) extract-section:        Extracts sublist of $2 started by label $1:
+# 2) extract-section-or-all: Returns above or $2 if section is not found
+
+define extract-section_impl
+$(if $(call not-empty,$2),\
+    $(if $(filter %:,$(call car,$2)),\
+        $(if $(call eq,$1,$(patsubst %:,%,$(call car,$2))),\
+            $(call extract-section_impl,$1,$(call cdr,$2),T),\
+            $(call extract-section_impl,$1,$(call cdr,$2))),\
+        $(if $(call not-empty,$3),$(call car,$2)) \
+        $(call extract-section_impl,$1,$(call cdr,$2),$3)\
+))
+endef
+
+define extract-section
+$(strip $(call extract-section_impl,$(strip $1),$(strip $2)))
+endef
+
+define extract-section-or-all
+$(or $(call extract-section,$1,$2),$2)
+endef
+
 ########################################################################
 ##                       USER INPUT VALIDATION                        ##
 ########################################################################

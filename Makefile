@@ -5349,8 +5349,6 @@ endif # ifndef NO_GIT
 define web-clone
 	$(call phony-status,$(MSG_WEB_CLONE))
 	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
-	$(quiet) $(call model-git-add,$2)
-	$(quiet) $(call model-git-commit,"Add web dependency $2")
 	$(call phony-ok,$(MSG_WEB_CLONE))
 endef
 
@@ -6082,7 +6080,8 @@ gitignore:
 	@$(foreach d,$(sbindir),echo $d/; )
 	@$(foreach d,$(execdir),echo $d/; )
 	@$(foreach d,$(distdir),echo $d/; )
-	@echo $(firstword $(libdir))
+	@$(foreach d,$(extdir),echo $d/; )
+	@echo $(addsuffix /,$(firstword $(libdir)))
 	@echo ""
 	@echo "# Objects, Libraries and Binaries"
 	@echo "#=================================="

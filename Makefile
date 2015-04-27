@@ -5416,8 +5416,8 @@ define web-submodule-add
 	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
 	$(quiet) $(if $(strip $3),\
 	             $(call store-status,cd $(dir $2) && $3) $(ERROR) \
-	             && $(call model-error,$(MSG_EXT_EXTR_ERR)))
-	$(quiet) touch $2
+	             && $(call model-error,$(MSG_EXT_EXTR_ERR),$2))
+	$(quiet) if [ -d $2 ]; then touch $2; fi
 	$(call phony-ok,$(MSG_WEB_SUB_ADD))
 endef
 

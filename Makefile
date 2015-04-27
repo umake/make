@@ -3669,7 +3669,7 @@ endef
 $(foreach d,$(call hash-table.keys,git_dependency),$(eval\
     $(call extern-dependency,$d,git-submodule-add,$(git_dependency.$d))))
 $(foreach d,$(call hash-table.keys,web_dependency),$(eval\
-    $(call extern-dependency,$d,web-clone,$(web_dependency.$d))))
+    $(call extern-dependency,$d,web-submodule-add,$(web_dependency.$d))))
 
 #======================================================================#
 # Function: phony-target-dependency                                    #
@@ -4533,7 +4533,7 @@ externalclean:
 	        $(call git-submodule-rm,$(extdir)/$d)$(newline)))
 	$(foreach d,$(call invert,$(call hash-table.keys,web_dependency)),\
 	    $(if $(wildcard $(extdir)/$d),\
-	        $(call rmdir,$(extdir)/$d)$(newline)))
+	        $(call web-submodule-rm,$(extdir)/$d)$(newline)))
 	$(call rm-if-empty,$(extdir),$(call rwildcard,*,$(externreq)))
 
 .PHONY: realclean
@@ -4626,7 +4626,12 @@ MSG_MOVE          = "${YELLOW}Populating ${BLUE}$(firstword $2)"\
 MSG_NO_MOVE       = "${PURPLE}No $(strip $3) files found to put in"\
                     "$(firstword $2)${RES}"
 
-MSG_WEB_CLONE     = "${YELLOW}Downloading web dependency ${DEF}$2${RES}"
+MSG_WEB_CLONE     = "${YELLOW}[$(firstword $(CURL))]${BLUE}" \
+                    "Downloading web dependency ${DEF}$2${RES}"
+MSG_WEB_SUB_ADD   = "${YELLOW}[$(firstword $(CURL))]${BLUE}" \
+                    "Adding web dependency ${DEF}$(strip $2)${RES}"
+MSG_GIT_SUB_RM    = "${YELLOW}[$(firstword $(CURL))]${BLUE}" \
+                    "Removing web dependency ${DEF}$(strip $1)${RES}"
 
 MSG_GIT_INIT      = "${YELLOW}[$(GIT)]"\
                     "${BLUE}Initializing empty repository${RES}"
@@ -5350,6 +5355,20 @@ define web-clone
 	$(call phony-status,$(MSG_WEB_CLONE))
 	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_WEB_CLONE))
+endef
+
+define web-submodule-add
+	$(call phony-status,$(MSG_WEB_SUB_ADD))
+	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
+	$(quiet) cd $(dir $2) && $(strip $3)
+	$(quiet) touch $2
+	$(call phony-ok,$(MSG_WEB_SUB_ADD))
+endef
+
+define web-submodule-rm
+	$(call phony-status,$(MSG_WEB_SUB_RM))
+	$(quiet) $(call srmdir,$1)
+	$(call phony-ok,$(MSG_WEB_SUB_RM))
 endef
 
 ########################################################################

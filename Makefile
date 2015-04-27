@@ -5073,22 +5073,34 @@ endif # ifndef SILENT
 ## ERROR MAKEFILE ######################################################
 ifndef SILENT
 
-define model-error
-if [ ! -f $(statusfile) ] || [ -z $$(cat $(statusfile) 2>/dev/null) ];\
-then\
-    $(RM) $(statusfile);\
-    ($(call println,"\r${RED}[ERROR]${RES}" $1 \
-                    "${RED}(STATUS: $$?)${RES}") && exit 42);\
+define model-error_impl
+($(call println,"\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $3)${RES}")\
+&& $(if $(strip $2),$(RMDIR) $2,:) && exit 42)
+endef
+
+define model-failure_impl
+($(call println,"\r${RED}[FAILURE]${RES}" $1"." \
+                  "${RED}Aborting status: $$?${RES}") \
+&& $(if $(strip $2),$(RMDIR) $2,:) && exit 42)
+endef
+
+define statusfile-factory
+define model-statusfile-$1
+if [ ! -f $$(statusfile) ]; \
+    then $$(call model-$1_impl,$$1,$$2,$$$$?);\
+elif [ $$$$(cat $$(statusfile) 2>/dev/null) -ne 0 ];\
+    then $$(call model-$1_impl,$$1,$$2,$$$$(cat $$(statusfile)));\
 fi
+endef
+endef
+$(foreach e,error failure,$(eval $(call statusfile-factory,$e)))
+
+define model-error
+$(call model-statusfile-error,$1,$2)
 endef
 
 define model-failure
-if [ ! -f $(statusfile) ] || [ -z $$(cat $(statusfile) 2>/dev/null) ];\
-then\
-    $(RM) $(statusfile);\
-    ($(call println,"\r${RED}[FAILURE]${RES}" $1"." \
-                    "${RED}Aborting status: $$?${RES}") &&  exit 42);\
-fi
+$(call model-statusfile-failure,$1,$2)
 endef
 
 define phony-error

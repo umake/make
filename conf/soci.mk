@@ -18,6 +18,9 @@
 #                    http://soci.sourceforge.net/doc.html              #
 ########################################################################
 
+ifndef SOCI_MK
+override SOCI_MK := T
+
 # Dependencies
 # ==============
 GIT_DEPENDENCY  += \
@@ -34,3 +37,5 @@ LDLIBS          += -L external/soci/build/lib/
 # Flags
 # =======
 LDFLAGS         += -lsoci_core -lsoci_postgresql
+
+endif # ifndef SOCI_MK

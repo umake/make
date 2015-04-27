@@ -17,6 +17,10 @@
 #                    https://www.opengl.org/                           #
 ########################################################################
 
+ifndef OPENGL_MK
+override OPENGL_MK := T
+
+########################################################################
 ifeq ($(PLAT_KERNEL),Linux)
 
 # Flags
@@ -24,9 +28,7 @@ ifeq ($(PLAT_KERNEL),Linux)
 LDFLAGS         += -lGL -lGLU -lglut
 
 endif # ifeq ($(PLAT_KERNEL),Linux)
-
 ########################################################################
-
 ifeq ($(PLAT_KERNEL),Darwin)
 
 # Flags
@@ -34,3 +36,6 @@ ifeq ($(PLAT_KERNEL),Darwin)
 LDFLAGS         += -framework OpenGL -framework GLUT
 
 endif # ifeq ($(PLAT_KERNEL),Darwin)
+########################################################################
+
+endif # ifndef OPENGL_MK

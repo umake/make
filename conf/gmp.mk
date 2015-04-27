@@ -17,6 +17,9 @@
 #                    https://gmplib.org/manual/index.html              #
 ########################################################################
 
+ifndef GMP_MK
+override GMP_MK := T
+
 ifdef $(call not,$(call exists-lib,gmp))
 
 # Dependencies
@@ -42,3 +45,4 @@ endif # ifdef $(call exists-lib,gmp)
 LDFLAGS         += -lgmp
 LDCXX           += -lgmpxx
 
+endif # ifndef GMP_MK

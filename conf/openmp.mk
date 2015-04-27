@@ -15,8 +15,13 @@
 #                    http://openmp.org/wp/                             #
 ########################################################################
 
+ifndef OPENMP_MK
+override OPENMP_MK := T
+
 # Flags
 # =======
 CFLAGS          += -fopenmp
 CXXFLAGS        += -fopenmp
 LDFLAGS         += -fopenmp
+
+endif # ifndef OPENMP_MK

@@ -15,6 +15,9 @@
 #                    http://en.wikipedia.org/wiki/POSIX_Threads        #
 ########################################################################
 
+ifndef PTHREAD_MK
+override PTHREAD_MK := T
+
 # Flags
 # =======
 ASFLAGS         += -pthread
@@ -25,3 +28,5 @@ CXXFLAGS        += -pthread
 # Linker flags
 # ==============
 LDFLAGS         += -pthread
+
+endif # ifndef PTHREAD_MK

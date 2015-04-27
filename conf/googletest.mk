@@ -15,6 +15,9 @@
 #                    https://code.google.com/p/googletest/             #
 ########################################################################
 
+ifndef GOOGLE_TEST_MK
+override GOOGLE_TEST_MK := T
+
 # Dependencies
 # ==============
 GIT_DEPENDENCY  += \
@@ -37,3 +40,5 @@ LDFLAGS         += -pthread -lgmock -lgtest
 # Runtime
 # ========
 TEST_ENV        += GTEST_COLOR=yes
+
+endif # ifndef GOOGLE_TEST_MK

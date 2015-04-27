@@ -15,6 +15,9 @@
 #                    https://code.google.com/p/googletest/             #
 ########################################################################
 
+ifndef GOOGLE_BENCHMARK_MK
+override GOOGLE_BENCHMARK_MK := T
+
 # Dependencies
 # ==============
 GIT_DEPENDENCY  += \
@@ -29,3 +32,5 @@ LDLIBS          += -L external/gbenchmark/build/src
 # Flags
 # =======
 LDFLAGS         += -lbenchmark
+
+endif # ifndef GOOGLE_BENCHMARK_MK

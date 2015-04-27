@@ -14,8 +14,13 @@
 #                    http://www.open-mpi.org/                          #
 ########################################################################
 
+ifndef OPENMPI_MK
+override OPENMPI_MK := T
+
 # Compiler
 # ==========
 CC              := mpicc
 FC              := mpifort
 CXX             := mpicxx
+
+endif # ifndef OPENMPI_MK

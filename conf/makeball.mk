@@ -18,6 +18,9 @@
 #                    https://github.com/renatocf/make                  #
 ########################################################################
 
+ifndef MAKEBALL_MK
+override MAKEBALL_MK := T
+
 # Dependencies
 # ==============
 GIT_DEPENDENCY  += # List of git dependencies in the format
@@ -56,3 +59,4 @@ LDESQL          += # Embedded SQL linker flags
 ARFLAGS         += # Static library flags
 SOFLAGS         += # Shared library flags
 
+endif # ifndef MAKEBALL_MK

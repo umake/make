@@ -3656,21 +3656,23 @@ $(foreach d,git web,\
 #======================================================================#
 define extern-dependency
 $$(extdir)/$1: | $$(extdir)/./
-	$$(call $2,$$(call car,$3),$$@)
+	$$(call $2,$$(call car,$3),$$@,$$(call extract-section,extract,$3))
 
 $$(depdir)/$$(firstword $$(extdir))/$1$$(sysext): d=$$(extdir)/$1
-$$(depdir)/$$(firstword $$(extdir))/$1$$(sysext): $$(externreq)
+$$(depdir)/$$(firstword $$(extdir))/$1$$(sysext): | $$(externreq)
+$$(depdir)/$$(firstword $$(extdir))/$1$$(sysext): $$(extdir)/$1
 	$$(call status,$$(MSG_EXT_BUILD))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(if $$(call cdr,$3),$$(strip \
-	              $$(call store-status,cd $$d && $$(call cdr,$3)) \
-	              $$(ERROR)                                       \
-	              && $$(call model-error,$$(MSG_EXT_BUILD_ERR))   \
+	              $$(call store-status,                                 \
+	                  cd $$d && $$(call extract-section-or-all,         \
+	                                build,$$(call cdr,$3))) $$(ERROR)   \
+	              && $$(call model-error,$$(MSG_EXT_BUILD_ERR))         \
 	          ),$$(strip \
 	              if [ -f $$d/[Mm]akefile ]; \
 	              then \
-	                  cd $$d \
+	                  cd $$d                                            \
 	                  && $$(call store-status,$$(MAKE) -f [Mm]akefile)  \
 	                     $$(ERROR)                                      \
 	                  && $$(call model-error,$$(MSG_EXT_BUILD_ERR));    \

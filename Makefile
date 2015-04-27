@@ -1379,6 +1379,21 @@ $(strip $(lastword \
     $(if $(call has-cxx,$1),$(CXX))))
 endef
 
+# System search functions
+# =========================
+# 1) find-lib: Find libraries with $1 in its name
+# 2) exists-lib: Find if exists libraries with $1 in its name
+
+define find-lib
+$(if $(strip $1),\
+    $(sort $(call not-extra-suffix,\
+        $(shell ldconfig -p | grep $1 | cut -d' ' -f1 ))))
+endef
+
+define exists-lib
+$(call not-empty,$(call find-lib,$1))
+endef
+
 # Auxiliar recursive functions
 # ==============================
 # 1) rsubdir:     For listing all subdirectories of a given dir

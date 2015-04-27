@@ -4720,9 +4720,10 @@ MSG_LIB_BAD_VER   = "${DEF}System library ${RED}$d${DEF}"\
                     "has not the required version"\
                     "($(library_version.$d))${RES}"
 
-MSG_EXT_BUILD     = "${YELLOW}Building dependency ${DEF}$d${RES}"
 MSG_EXT_NO_MAKE   = "${DEF}No Makefile found for compilation${RES}"
-MSG_EXT_BUILD_ERR = "${DEF}Failed compiling ${DEF}$d${RES}"
+MSG_EXT_EXTR_ERR  = "${DEF}Failed extracting ${WHITE}$2${RES}"
+MSG_EXT_BUILD     = "${YELLOW}Building dependency ${WHITE}$d${RES}"
+MSG_EXT_BUILD_ERR = "${DEF}Failed compiling ${WHITE}$d${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
 MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\
@@ -5401,7 +5402,9 @@ endef
 define web-submodule-add
 	$(call phony-status,$(MSG_WEB_SUB_ADD))
 	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
-	$(quiet) cd $(dir $2) && $(strip $3)
+	$(quiet) $(if $(strip $3),\
+	             $(call store-status,cd $(dir $2) && $3) $(ERROR) \
+	             && $(call model-error,$(MSG_EXT_EXTR_ERR)))
 	$(quiet) touch $2
 	$(call phony-ok,$(MSG_WEB_SUB_ADD))
 endef

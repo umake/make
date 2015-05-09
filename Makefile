@@ -2844,7 +2844,7 @@ build_dependency := \
     ESQL     => $(cesql)
 
 .PHONY: all
-all: depend $(execbin) $(execlib)
+all: depend $(or $(execbin),$(execlib))
 
 .PHONY: depend
 depend: builddep librarydep gitdep webdep

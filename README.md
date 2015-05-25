@@ -3,6 +3,8 @@ All-in-One Makefile
 
 [![Build Status](https://travis-ci.org/renatocf/make.svg?branch=master)]
                 (https://travis-ci.org/renatocf/make)
+[![License](https://img.shields.io/badge/license-GPLv2-blue.svg)]
+           (https://github.com/renatocf/make/blob/master/LICENSE)
 
 A single Makefile to compile all your projects: in C, C++, Assembly
 and Fortran.

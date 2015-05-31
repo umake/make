@@ -3071,7 +3071,7 @@ statistics:
 	@echo "Fortran      : $(call statistic-count,$(fall))              "
 	@echo "Assembly     : $(call statistic-count,$(asmall))            "
 	@echo "Libraries    : $(call statistic-count,$(liball))            "
-	@echo "Headers      : $(call statistic-count,$(userinc))           "
+	@echo "Headers      : $(call statistic-count,$(headall))           "
 	@echo "Lexers       : $(call statistic-count,$(alllexer))          "
 	@echo "Parsers      : $(call statistic-count,$(allparser))         "
 	@echo "Embedded SQL : $(call statistic-count,$(cesql))             "
@@ -3079,7 +3079,7 @@ statistics:
 	@echo "-----------------------------------                         "
 	@echo "Total        :"\
           "$(call statistic-count,$(userall) $(liball) $(mainall)      \
-           $(userinc) $(alllexer) $(allparser) $(cesql) $(testall))    "
+           $(headall) $(alllexer) $(allparser) $(cesql) $(testall))    "
 	@echo "                                                            "
 
 ########################################################################

@@ -21,10 +21,10 @@ override GOOGLE_TEST_MK := T
 # Dependencies
 # ==============
 GIT_DEPENDENCY  += \
-    gmock => http://git.chromium.org/external/googlemock.git\
+    gmock => https://chromium.googlesource.com/external/googlemock.git\
              cd make && make -s gmock.a GTEST_DIR=../../gtest\
                      && mv gmock.a libgmock.a,\
-    gtest => http://git.chromium.org/external/googletest.git\
+    gtest => https://chromium.googlesource.com/external/googletest.git\
              cd make && make -s gtest.a && mv gtest.a libgtest.a\
 
 # Paths

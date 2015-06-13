@@ -4132,7 +4132,7 @@ run_$1: $1
 	$$(call phony-status,$$(MSG_$2_RUN))
 	
 	$$(quiet) $$(call store-status,$$($2_ENV) ./$$< $$($2_ARGS)) \
-	          $$(ERROR) && $$(call model-error,$$(MSG_$2_FAILURE))
+	          $$(ERROR) && $$(call model-error,$$(MSG_$2_ERROR))
 	$$(quiet) if [ -f gmon.out ]; \
 	          then \
 	              $$(MV) gmon.out \

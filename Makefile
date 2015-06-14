@@ -2920,6 +2920,10 @@ init: initdep
 	       "Add git configuration files")
 	$(call git-add-commit,.version.mk,\
 	       "Add versioning control file .version.mk")
+	
+	$(if $(wildcard $(confdir)/*),\
+	    $(call git-add-commit,$(confdir),\
+	           "Add link to Makeball directory"))
 
 .PHONY: standard
 standard: init

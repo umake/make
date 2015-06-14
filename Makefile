@@ -2510,6 +2510,13 @@ testbin := $(addprefix $(strip $(bindir)/$(testdir))/,$(testbin))
 testbin := $(if $(strip $(binext)),\
                $(addsuffix $(binext),$(testbin)),$(testbin))
 testbin := $(call filter-ignored,$(testbin))
+
+testbin := \
+$(strip $(sort \
+    $(testbin) \
+    $(patsubst %,$(bindir)/$(testdir)/%$(binext),$(call corename,\
+        $(foreach s,$(testall),$(if $(call has-main,$s),$s)))) \
+))
 #------------------------------------------------------------------[ 6 ]
 $(foreach t,$(call corename,$(testbin)),$(or\
     $(eval $t_src := $(filter $(call not-root,$t)%,\
@@ -2591,6 +2598,13 @@ benchbin := $(addprefix $(strip $(bindir)/$(benchdir))/,$(benchbin))
 benchbin := $(if $(strip $(binext)),\
                $(addsuffix $(binext),$(benchbin)),$(benchbin))
 benchbin := $(call filter-ignored,$(benchbin))
+
+benchbin := \
+$(strip $(sort \
+    $(benchbin) \
+    $(patsubst %,$(bindir)/$(benchdir)/%$(binext),$(call corename,\
+        $(foreach s,$(benchall),$(if $(call has-main,$s),$s)))) \
+))
 #------------------------------------------------------------------[ 6 ]
 $(foreach t,$(call corename,$(benchbin)),$(or\
     $(eval $t_src := $(filter $(call not-root,$t)%,\

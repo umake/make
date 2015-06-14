@@ -2483,8 +2483,8 @@ endif
 #  6) Store test binary-specific files from source and objects
 #  7) Store common source and objects filtering the above ones
 #  8) Create variables:
-#     8.1) binary-name_src, for not-root test binary's sources;
-#     8.2) binary-name_all, for complete path binary's sources;
+#     8.1) binary-name_src, for test not-root binary's sources;
+#     8.2) binary-name_all, for test complete path binary's sources;
 #     8.3) binary-name_obj, for test binary's specific objects;
 #     8.4) binary-name_lib, for test binary's specific libraries;
 #     8.5) binary-name_link, for test binary's specific linker flags;
@@ -2563,7 +2563,7 @@ testdep := $(addprefix $(depdir)/$(testdir)/,\
 #  6) Store bench binary-specific files from source and objects
 #  7) Store common source and objects filtering the above ones
 #  8) Create variables:
-#     8.1) binary-name_src, for bench not-root test binary's sources;
+#     8.1) binary-name_src, for bench not-root binary's sources;
 #     8.2) binary-name_all, for bench complete path binary's sources;
 #     8.3) binary-name_obj, for bench binary's specific objects;
 #     8.4) binary-name_lib, for bench binary's specific libraries;

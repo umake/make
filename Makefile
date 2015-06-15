@@ -510,7 +510,7 @@ export COVERAGE PROFILE
 
 ifdef $(call is-empty,$(shell which uname 2>/dev/null)) # exists 'uname'
 
-$(warning "Platform-specific support unavaiable: 'uname' required")
+$(warning "Platform-specific support unavaialable: 'uname' required")
 
 else # exists 'uname'
 
@@ -2389,7 +2389,7 @@ endif
 
 # Binaries
 # ==========
-# 1) Define all binary names (with extensions if avaiable)
+# 1) Define all binary names (with extensions if avaialable)
 # 2) Store binary-specific files from source, objects and libs
 # 3) Store common source, objects and libs filtering the above ones
 # 4) Create variables:
@@ -2479,7 +2479,7 @@ endif
 #  2) testall : Filter out ignored files from above
 #  3) testsrc : Remove root directory names from dir paths
 #  4) testobj : Create object file from each complete source
-#  5) testbin : Define all binary names (with extensions if avaiable)
+#  5) testbin : Define all binary names (with extensions if avaialable)
 #  6) Store test binary-specific files from source and objects
 #  7) Store common source and objects filtering the above ones
 #  8) Create variables:
@@ -2566,7 +2566,7 @@ testdep := $(addprefix $(depdir)/$(testdir)/,\
 #  2) benchall : Filter out ignored files from above
 #  3) benchsrc : Remove root directory names from dir paths
 #  4) benchobj : Create object file from each complete source
-#  5) benchbin : Define all binary names (with extensions if avaiable)
+#  5) benchbin : Define all binary names (with extensions if avaialable)
 #  6) Store bench binary-specific files from source and objects
 #  7) Store common source and objects filtering the above ones
 #  8) Create variables:
@@ -3324,7 +3324,7 @@ install-info:
 
 .PHONY: installcheck
 installcheck:
-	$(call phony-ok,"No installation test avaiable")
+	$(call phony-ok,"No installation test avaialable")
 
 ########################################################################
 ##                          UNINSTALLATION                            ##
@@ -3553,7 +3553,7 @@ define program-dependency-target
 $$(call hash-table.new,$2)
 
 # Verifies if programs of $1dep are the same. If they changed, deletes 
-# old program dependency file and checks if the new is avaiable.
+# old program dependency file and checks if the new is avaialable.
 .PHONY: $1dep
 $1dep: \
     $$(foreach k,$$(call hash-table.keys,$2),$$(if \
@@ -4726,7 +4726,7 @@ MSG_MAKE_CREATE   = "${PURPLE}Creating file ${DEF}$2"\
 
 MSG_PRG_SEARCH    = "${DEF}Searching for $d dependency"\
                     "${GREEN}$($d)${RES}"
-MSG_PRG_ALL       = "${YELLOW}All $n dependencies avaiable${RES}"
+MSG_PRG_ALL       = "${YELLOW}All $n dependencies avaialable${RES}"
 MSG_PRG_UNDEFINED = "${DEF}Undefined variable ${GREEN}$d${RES}"
 MSG_PRG_NOT_FOUND = "${DEF}Dependency ${GREEN}$($d)${DEF}"\
                     "not found${RES}"
@@ -6222,7 +6222,7 @@ projecthelp:
 	@echo " * deploy:           Deploys changes in BRANCH to REMOTE    "
 	@echo " * dist-*:           As 'dist', with many compressions      "
 	@echo " * dist:             Creates .tar.gz with bins and libs     "
-	@echo " * docs:             Generates docs in all formats avaiable "
+	@echo " * docs:             Generates all avaialable doc formats   "
 	@echo " * doxy:             Creates Doxygen docs                   "
 	@echo " * dpkg:             Creates the project's debian package   "
 	@echo " * eval:             Same as 'benchmark'                    "
@@ -6231,7 +6231,7 @@ projecthelp:
 	@echo " * install-*:        Installs one info/html/dvi/pdf/ps docs "
 	@echo " * install-docs:     Installs documentation in all formats  "
 	@echo " * install:          Installs executables and libraries     "
-	@echo " * installcheck:     Runs installation tests (if avaiable)  "
+	@echo " * installcheck:     Runs installation tests (if avaialable)"
 	@echo " * lint:             Runs analysis and style lints          "
 	@echo " * package-*:        As 'package', with many compressions   "
 	@echo " * package:          As 'dist', but also with src and data  "

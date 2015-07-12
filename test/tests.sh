@@ -25,10 +25,11 @@ function teardown {
 }
 
 echo
+
+echo "Using program \"$SHELL\""
 bash --version
 echo
 
-echo
 echo "Using program \"$MAKE\""
 if ! [ -z "$CC" ];  then echo "CC  = \"$CC\" "; fi
 if ! [ -z "$FC"  ]; then echo "FC  = \"$FC\" "; fi

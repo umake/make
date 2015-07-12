@@ -88,7 +88,7 @@ CXXFLAGS     := -std=c++11
 FFLAGS       := -ffree-form -cpp
 
 # Library options
-ARFLAGS      := -rcv
+ARFLAGS      := -rc
 SHRFLAGS     := -fPIC
 
 # Program options
@@ -3779,7 +3779,7 @@ $$(firstword $$(srcdir))/$1.yy.$2: $3
 	$$(call status,$$(MSG_LEX))
 	
 	$$(quiet) $$(MV) $$< $$(firstword $$(incdir))/$1-yy/
-	$$(quiet) cd $$(firstword $$(incdir))/$1-yy/ \
+	$$(quiet) $$(call faketty) cd $$(firstword $$(incdir))/$1-yy/ \
 	          && $4 $$(lexflags) $$(notdir $$<) $$(ERROR)
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/$$(notdir $$<) $$<
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/*.$2 $$@ $$(ERROR)
@@ -3816,7 +3816,7 @@ $$(firstword $$(srcdir))/$1.tab.$2: $3 $$(lexall)
 	$$(call status,$$(MSG_YACC))
 	
 	$$(quiet) $$(MV) $$< $$(firstword $$(incdir))/$1-tab/
-	$$(quiet) cd $$(firstword $$(incdir))/$1-tab/ \
+	$$(quiet) $$(call faketty) cd $$(firstword $$(incdir))/$1-tab/ \
 	          && $4 $$(yaccflags) $$(notdir $$<) $$(ERROR)
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/$$(notdir $$<) $$<
 	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/*.$2 $$@ $$(ERROR)
@@ -3845,7 +3845,8 @@ $(foreach s,$(cxxparser),$(eval\
 define esql-factory
 $$(firstword $$(srcdir))/$1.$2: $3
 	$$(call status,$$(MSG_ESQL))
-	$$(quiet) $$(ESQL) $$(esqlflags) -c $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(call faketty) \
+	          $$(ESQL) $$(esqlflags) -c $$< -o $$@ $$(ERROR)
 	$$(call ok,$$(MSG_ESQL),$$@)
 endef
 $(foreach s,$(cesql),$(eval\
@@ -3867,7 +3868,8 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(AS) $$(cppflags) $$(asflags) $$(aslibs) \
+	$$(quiet) $$(call faketty) \
+	          $$(AS) $$(cppflags) $$(asflags) $$(aslibs) \
 	                 $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_ASM_COMPILE),$$@)
@@ -3892,7 +3894,8 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(quiet) $$(call c-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CC) $$(cppflags) $$(cflags) $$(clibs) \
+	$$(quiet) $$(call faketty) \
+	          $$(CC) $$(cppflags) $$(cflags) $$(clibs) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_COMPILE),$$@)
@@ -3919,7 +3922,8 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$$(call not-root,$3/$$*))
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) $$(cppflags) $$(fflags) $$(flibs) \
+	$$(quiet) $$(call faketty) \
+	          $$(FC) $$(cppflags) $$(fflags) $$(flibs) \
 	                 -J $$(firstword $$(incdir))/$$(dir $$*) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
@@ -3946,7 +3950,8 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
+	$$(quiet) $$(call faketty) \
+	          $$(CXX) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
 	                  -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_COMPILE),$$@)
@@ -3971,7 +3976,8 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(quiet) $$(call c-depend,$$<,$$@,$2)
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CC) $$(cppflags) $$(clibs) $$(shrflags) $$(cflags) \
+	$$(quiet) $$(call faketty) \
+	          $$(CC) $$(cppflags) $$(clibs) $$(shrflags) $$(cflags) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_LIBCOMP),$$@)
@@ -3997,7 +4003,8 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) $$(cppflags) $$(flibs) $$(shrflags) $$(fflags) \
+	$$(quiet) $$(call faketty) \
+	          $$(FC) $$(cppflags) $$(flibs) $$(shrflags) $$(fflags) \
 	                 -J $$(firstword $$(incdir))/$$(dir $2) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
@@ -4023,7 +4030,8 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$2)
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) \
+	$$(quiet) $$(call faketty) \
+	          $$(CXX) $$(cppflags) $$(cxxlibs) \
 	                  $$(shrflags) $$(cxxflags) -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
@@ -4054,7 +4062,8 @@ $1/$2$3: $$(depdir)/$1/$2$$(sysext) $$($2_obj) | $1/./
 	$$(quiet) $$(call exec-sync)
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $5 $$($2_obj) -o $$@ \
+	$$(quiet) $$(call faketty) \
+	          $5 $$($2_obj) -o $$@ \
 	             $$(ldflags) $$(ldshr) $$(ldlibs) $$(ERROR)
 	
 	$$(call ok,$$(MSG_$4_SHRLIB))
@@ -4088,9 +4097,9 @@ $1/$2$3: $$(depdir)/$1/$2$$(sysext) $$($2_obj) | $1/./
 	$$(quiet) $$(call exec-sync)
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(AR) $$(arflags) $$@ $$($2_obj) \
-	                 $$(NO_OUTPUT) $$(NO_ERROR)
-	$$(quiet) $$(RANLIB) $$@
+	$$(quiet) $$(call faketty) \
+	          $$(AR) $$(arflags) $$@ $$($2_obj) $$(ERROR)
+	$$(quiet) $$(call faketty) $$(RANLIB) $$@
 	
 	$$(call ok,$$(MSG_ARLIB),$$@)
 endif
@@ -4123,7 +4132,8 @@ $1/$2$3: $$(depdir)/$1/$2$$(sysext) $$($2_lib) $$($2_obj) | $1/./
 	$$(quiet) $$(call exec-sync)
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $5 $$($2_obj) -o $$@ $$($2_link) $$(ldlibs) $$(ERROR)
+	$$(quiet) $$(call faketty) \
+	          $5 $$($2_obj) -o $$@ $$($2_link) $$(ldlibs) $$(ERROR)
 	
 	$$(call ok,$$(MSG_$4_LINKAGE),$$@)
 endif
@@ -4149,8 +4159,9 @@ define run-factory
 run_$1: $1
 	$$(call phony-status,$$(MSG_$2_RUN))
 	
-	$$(quiet) $$(call store-status,$$($2_ENV) ./$$< $$($2_ARGS)) \
-	          $$(ERROR) && $$(call model-error,$$(MSG_$2_ERROR))
+	$$(quiet) $$(call store-status,\
+	          $$($2_ENV) $$(call faketty) ./$$< $$($2_ARGS)) $$(ERROR) \
+	          && $$(call model-error,$$(MSG_$2_ERROR))
 	$$(quiet) if [ -f gmon.out ]; \
 	          then \
 	              $$(MV) gmon.out \
@@ -4177,7 +4188,8 @@ define analysis-lint-factory
 $1: f=$2
 $1: $$($$(call corename,$2)_all)
 	$$(call phony-status,$$(MSG_ALINT))
-	$$(quiet) $$($3ALINT) $$($$(call lc,$3)libs) \
+	$$(quiet) $$(call faketty) \
+	          $$($3ALINT) $$($$(call lc,$3)libs) \
 	                      $$($$(call lc,$3)alflags) $$^ $$(ERROR)
 	$$(call phony-ok,$$(MSG_ALINT))
 endef
@@ -4199,7 +4211,8 @@ define style-lint-factory
 $1: f=$2
 $1: $$($$(call corename,$2)_all)
 	$$(call phony-status,$$(MSG_SLINT))
-	$$(quiet) $$($3SLINT) $$($$(call lc,$3)slflags) $$^ $$(ERROR)
+	$$(quiet) $$(call faketty) \
+	          $$($3SLINT) $$($$(call lc,$3)slflags) $$^ $$(ERROR)
 	$$(call phony-ok,$$(MSG_SLINT))
 endef
 $(foreach b,$(execbin) $(testbin) $(benchbin) $(arlib) $(shrlib),\
@@ -4222,10 +4235,12 @@ $1: $2 $$(call rwildcard,$$(addprefix *,$$(covext)),$$(objdir))
 	$$(call status,$$(MSG_COV_COMPILE))
 	
 	$$(call mksubdir,$$(covdir),$$@)
-	$$(quiet) $$(COV) -q -b $$(covdir) --capture -o $$@ \
+	$$(quiet) $$(call faketty) \
+	          $$(COV) -q -b $$(covdir) --capture -o $$@ \
 	                  -d $$(objdir) -d $$(firstword $$(libdir)) $$(ERROR)
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
+	              $$(call faketty) \
 	              $$(COV) -q -o $$@                               \
 	                      -r $$@ '$$(extdir)/*' '/usr/*'          \
 	                             '$$(testdir)/*' '$$(benchdir)/*' \
@@ -4240,7 +4255,7 @@ cov_$2: $1
 	$$(call phony-status,$$(MSG_COV))
 	$$(quiet) if [ -s $$< ]; \
 	          then \
-	              $$(COV) -l $$< $$(ERROR); \
+	              $$(call faketty) $$(COV) -l $$< $$(ERROR); \
 	              $$(call model-ok,$$(MSG_COV)); \
 	          else \
 	              $$(call model-ok,$$(MSG_COV_NONE)); \
@@ -4272,7 +4287,8 @@ $1: $2
 	$$(call status,$$(MSG_PROF_COMPILE))
 	
 	$$(call mksubdir,$$(profdir),$$@)
-	$$(quiet) $$(PROF) $$< \
+	$$(quiet) $$(call faketty) \
+	          $$(PROF) $$< \
 	                   $$(addprefix $$(objdir)/,\
 	                       $$(addsuffix $$(profext),\
 	                           $$(call not-root,$$(basename $$<)))) \
@@ -4314,7 +4330,7 @@ define intl-template-factory
 $1/$2$$(firstword $$(potext)): $$($2_all) | $1/./
 	$$(call status,$$(MSG_INTL_TEMPLATE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(XGETTEXT)\
+	$$(quiet) $$(call faketty) $$(XGETTEXT)\
 	          --copyright-holder=$$(call shstring,$$(copyright))\
 	          --msgid-bugs-address=$$(call shstring,$$(mainteiner_mail))\
 	          --package-name=$$(call shstring,$$(project))\
@@ -4337,7 +4353,8 @@ define intl-translate-factory
 $1/%/$2$$(firstword $$(poext)): $1/$2$$(firstword $$(potext))
 	$$(call phony-status,$$(MSG_INTL_PORTABLE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(if $$(strip $$(wildcard $$@)),\
+	$$(quiet) $$(call faketty) \
+	          $$(if $$(strip $$(wildcard $$@)),\
 	              $$(MSGMERGE) $$@ $$< -o $$@ $$(ERROR),\
 	              $$(MSGINIT)  -l $$* -i $$< -o $$@ $$(ERROR))
 	$$(call phony-ok,$$(MSG_INTL_PORTABLE),$$@)
@@ -4345,7 +4362,7 @@ $1/%/$2$$(firstword $$(poext)): $1/$2$$(firstword $$(potext))
 $1/%/LC_MESSAGES/$2$$(firstword $$(moext)): $1/%/$2$$(firstword $$(poext))
 	$$(call status,$$(MSG_INTL_MACHINE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(MSGFMT) $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(call faketty) $$(MSGFMT) $$< -o $$@ $$(ERROR)
 	$$(call ok,$$(MSG_INTL_MACHINE),$$@)
 endef
 $(foreach t,$(intltl),$(eval\
@@ -4371,7 +4388,7 @@ $$(docdir)/$1/%$2: $$(filter $$(docdir)/$$*%,$$(texiall)) \
                    | $$(docdir)/$1/
 	$$(call status,$$(MSG_TEXI_FILE))
 	$$(call mksubdir,$$(docdir)/$1,$$<)
-	$$(quiet) $3 $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(call faketty) $3 $$< -o $$@ $$(ERROR)
 	$$(call srm,$$(notdir $$(basename $$@)).*)
 	$$(call ok,$$(MSG_TEXI_FILE),$$@)
 
@@ -4474,7 +4491,7 @@ define packsyst-factory
 	$$(quiet) $$(CP) $$(clndirs) $$(packdir)
 	
 	$$(call vstatus,$$(MSG_MAKE$2))
-	$$(quiet) $3 $$@ $$(packdep)
+	$$(quiet) $$(call faketty) $3 $$@ $$(packdep)
 	$$(call ok,$$(MSG_MAKE$2),$$@)
 	
 	$$(quiet) $$(RMDIR) $$(packdir)
@@ -4493,7 +4510,7 @@ $(eval $(call packsyst-factory,zip,ZIP,$(ZIP)))
 define compression-factory
 %.$1: %.$2
 	$$(call status,$$(MSG_MAKE$3))
-	$$(quiet) $4 $$< $$(ERROR)
+	$$(quiet) $$(call faketty) $4 $$< $$(ERROR)
 	$$(call ok,$$(MSG_MAKE$3),$$@)
 endef
 $(eval $(call compression-factory,tar.gz,tar,TGZ,$(GZIP)))
@@ -5068,6 +5085,11 @@ endif # ifndef SILENT
 ## ERROR SHELL #########################################################
 ifndef SILENT
 ifndef MORE
+
+define faketty
+function faketty { script -eqc "$$(printf "'%s' " "$$@")" /dev/null \
+                 | sed -e 's/\r$$//' -e '$${/^$$/d;}'; }; faketty
+endef
 
 define ERROR_SEPARATOR
 $(shell printf '%*s\n' "$${COLUMNS:-$$(tput cols)}" '' | tr ' ' '#')

@@ -5,8 +5,8 @@ export STOP=1
 . test/helper.sh
 
 if which gmake 1>/dev/null 2>/dev/null;
-    then export MAKE=gmake;
-    else export MAKE=make;
+    then export MAKE=$(which gmake);
+    else export MAKE=$(which make);
 fi
 
 function setup {
@@ -24,16 +24,18 @@ function teardown {
   rm -rf test/tmp
 }
 
-echo
+# Programs
+printf "\nUsing make \"$MAKE\" (v%s)\n" \
+    `$MAKE --version | sed -e 's/[^0-9]\+\([0-9.]\+\).*/\1/g' | sed -n '/[0-9.]\+/{p;q;}'`
 
-echo "Using program \"$SHELL\""
-bash --version
-echo
+printf "\nUsing shell \"$SHELL\" (v%s)\n" \
+    `$SHELL --version | sed -e 's/[^0-9]\+\([0-9.]\+\).*/\1/g' | sed -n '/[0-9.]\+/{p;q;}'`
 
-echo "Using program \"$MAKE\""
+# Compilers
 if ! [ -z "$CC" ];  then echo "CC  = \"$CC\" "; fi
 if ! [ -z "$FC"  ]; then echo "FC  = \"$FC\" "; fi
 if ! [ -z "$CXX" ]; then echo "CXX = \"$CXX\""; fi
+
 echo
 
 # Targets

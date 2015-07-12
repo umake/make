@@ -5087,8 +5087,8 @@ ifndef SILENT
 ifndef MORE
 
 define faketty
-function faketty { script -eqc "$$(printf "'%s' " "$$@")" /dev/null \
-                 | sed -e 's/\r$$//' -e '$${/^$$/d;}'; }; faketty
+faketty () { script -eqc "$$(printf "'%s' " "$$@")" /dev/null \
+           | sed -e 's/\r$$//' -e '$${/^$$/d;}'; }; faketty
 endef
 
 define ERROR_SEPARATOR

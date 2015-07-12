@@ -4159,9 +4159,9 @@ define run-factory
 run_$1: $1
 	$$(call phony-status,$$(MSG_$2_RUN))
 	
-	$$(quiet) $$(call store-status,\
-	          $$($2_ENV) $$(call faketty) ./$$< $$($2_ARGS)) $$(ERROR) \
-	          && $$(call model-error,$$(MSG_$2_ERROR))
+	$$(quiet) $$(call store-status, \
+	              $$(call faketty,$$($2_ENV)) ./$$< $$($2_ARGS)) \
+	          $$(ERROR) && $$(call model-error,$$(MSG_$2_ERROR))
 	$$(quiet) if [ -f gmon.out ]; \
 	          then \
 	              $$(MV) gmon.out \
@@ -5088,7 +5088,7 @@ ifndef MORE
 
 define faketty
 faketty () { script -eqc "$$(printf "'%s' " "$$@")" /dev/null \
-           | sed -e '$${/^\r$$/d;}'; }; faketty
+           | sed -e '$${/^\r$$/d;}'; }; $1 faketty
 endef
 
 define SEPARATOR

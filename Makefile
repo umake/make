@@ -412,8 +412,8 @@ RANLIB          := ranlib
 
 # Installation
 INSTALL         := install
-INSTALL_DATA    := $(INSTALL)
-INSTALL_PROGRAM := $(INSTALL) -m 644
+INSTALL_DATA    := $(install)
+INSTALL_PROGRAM := $(install) -m 644
 
 # File manipulation
 CP              := cp -a
@@ -1383,6 +1383,15 @@ $(strip $(lastword \
     $(if $(call has-cxx,$1),$(CXX))))
 endef
 
+# Terminal functions
+# ===================
+# 1) Function to make programs act as in a TTY
+
+define faketty
+function faketty { script -eqc "$$(printf "'%s' " "$$@")" /dev/null \
+                 | sed -e 's/\r$$//' -e '$${/^$$/d;}'; }; faketty
+endef
+
 # System search functions
 # =========================
 # 1) find-lib: Find libraries with $1 in its name
@@ -1404,7 +1413,7 @@ endef
 # 2) rwildcard:   For wildcard deep-search in the directory tree
 # 3) rfilter:     For filtering a list of text from another list
 # 4) rfilter-out: For filtering out a list of text from another list
-rsubdir     = $(strip $(foreach d,$1,$(shell $(FIND) $d $(FINDFLAGS))))
+rsubdir     = $(strip $(foreach d,$1,$(shell $(find) $d $(FINDFLAGS))))
 rwildcard   = $(strip $(if $(strip $(wildcard $1/*)),\
                   $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)),\
                   $(if $(wildcard $1*),$(filter $(subst *,%,$2),$1))))
@@ -1546,7 +1555,7 @@ plat_version := $(strip $(PLAT_VERSION))
 # =========================
 ifndef ENABLE_NLS
 ENABLE_NLS := $(strip $(and $(foreach s,$(sysincdir),\
-                  $(foreach i,$(NLSREQINC),$(wildcard $s$i))),$(strip \
+                  $(foreach i,$(nlsreqinc),$(wildcard $s$i))),$(strip \
                   $(or $(strip $(filter translation,$(MAKECMDGOALS))),\
                        $(sort $(patsubst %,T,$(strip $(call rwildcard,\
                            $(localedir),$(addprefix *,$(potext))))))\
@@ -1786,10 +1795,88 @@ endif
 .SUFFIXES:
 .SUFFIXES: $(allext)
 
-# Get all dependency prefixes for targets
-targets := \
-    build remote upgrade init tags lint coverage profile \
-    translation docs doxy dist dpkg install
+# Programs
+# =========
+
+ar              := $(call faketty) $(AR)
+as              := $(call faketty) $(AS)
+cc              := $(call faketty) $(CC)
+fc              := $(call faketty) $(FC)
+cxx             := $(call faketty) $(CXX)
+ranlib          := $(call faketty) $(RANLIB)
+
+install         := $(INSTALL)
+install_data    := $(INSTALL_DATA)
+install_program := $(INSTALL_PROGRAM)
+
+cp              := $(CP)
+mv              := $(MV)
+rm              := $(RM)
+tar             := $(TAR)
+zip             := $(ZIP)
+gzip            := $(GZIP)
+bzip2           := $(BZIP2)
+mkdir           := $(MKDIR)
+rmdir           := $(RMDIR)
+find            := $(FIND)
+
+lex             := $(LEX)
+lexcxx          := $(LEXCXX)
+yacc            := $(YACC)
+yacccxx         := $(YACCCXX)
+
+calint          := $(CALINT)
+falint          := $(FALINT)
+cxxalint        := $(CXXALINT)
+
+cslint          := $(CSLINT)
+fslint          := $(FSLINT)
+cxxslint        := $(CXXSLINT)
+
+cov             := $(COV)
+
+prof            := $(PROF)
+
+esql            := $(ESQL)
+
+ctags           := $(CTAGS)
+etags           := $(ETAGS)
+
+doxygen         := $(DOXYGEN)
+makeinfo        := $(MAKEINFO)
+install_info    := $(INSTALL_INFO)
+texi2html       := $(TEXI2HTML)
+texi2dvi        := $(TEXI2DVI)
+texi2pdf        := $(TEXI2PDF)
+texi2ps         := $(TEXI2PS)
+
+xgettext        := $(XGETTEXT)
+msginit         := $(MSGINIT)
+msgmerge        := $(MSGMERGE)
+msgfmt          := $(MSGFMT)
+nlsreqinc       := $(NLSREQINC)
+
+debuild         := $(DEBUILD)
+dch             := $(DCH)
+
+curl            := $(call faketty) $(CURL)
+git             := $(call faketty) $(GIT)
+
+# Native Language Support
+XGETTEXT        := xgettext
+MSGINIT         := msginit --no-translator
+MSGMERGE        := msgmerge
+MSGFMT          := msgfmt -c
+NLSREQINC       := libintl.h
+
+# Packages (Debian)
+DEBUILD         := debuild -us -uc
+DCH              = dch --create -v $(deb_version) \
+                       --package $(deb_project)
+
+# Remote
+CURL            := curl -o
+GIT             := git
 
 # Get all existent programs
 programs := \
@@ -1799,6 +1886,11 @@ programs := \
     CTAGS ETAGS DOXYGEN MAKEINFO INSTALL_INFO TEXI2HTML TEXI2DVI      \
     TEXI2PDF TEXI2PS  XGETTEXT MSGINIT MSGMERGE MSGFMT DCH DEBUILD    \
     CURL GIT
+
+# Get all dependency prefixes for targets
+targets := \
+    build remote upgrade init tags lint coverage profile \
+    translation docs doxy dist dpkg install
 
 phony_targets := $(targets) library git web
 
@@ -2918,9 +3010,9 @@ init: initdep
 	        $(call touch,$(makedep))$(newline)\
 	        $(call git-submodule-add,$(MAKEGITREMOTE),$(makedir))))
 	
-	$(call mkdir,$(srcdir))
-	$(call mkdir,$(incdir))
-	$(call mkdir,$(docdir))
+	$(call vmkdir,$(srcdir))
+	$(call vmkdir,$(incdir))
+	$(call vmkdir,$(docdir))
 	
 	$(call make-create,config,Config.mk)
 	$(call make-create,version,.version.mk)
@@ -2941,20 +3033,20 @@ init: initdep
 
 .PHONY: standard
 standard: init
-	$(call mv,$(objext), $(objdir),   "object")
-	$(call mv,$(libext), $(libdir),   "library")
-	$(call mv,$(docext), $(docdir),   "document")
-	$(call mv,$(srpext), $(srpdir),   "script")
-	$(call mv,$(imgext), $(imgdir),   "image")
-	$(call mv,$(dataext),$(datadir),  "data")
-	$(call mv,$(potext), $(localedir),"portable object template")
-	$(call mv,$(poext),  $(localedir),"portable object")
-	$(call mv,$(moext),  $(localedir),"machine object")
-	$(call mv,$(incext), $(incdir),   "header")
-	$(call mv,$(srcext), $(srcdir),   "source")
-	$(call mv,$(esqlext),$(srcdir),   "embedded SQL")
-	$(call mv,$(lexext)  $(lexxext),$(srcdir),"lexer")
-	$(call mv,$(yaccext) $(yaxxext),$(srcdir),"parser")
+	$(call vmv,$(objext), $(objdir),   "object")
+	$(call vmv,$(libext), $(libdir),   "library")
+	$(call vmv,$(docext), $(docdir),   "document")
+	$(call vmv,$(srpext), $(srpdir),   "script")
+	$(call vmv,$(imgext), $(imgdir),   "image")
+	$(call vmv,$(dataext),$(datadir),  "data")
+	$(call vmv,$(potext), $(localedir),"portable object template")
+	$(call vmv,$(poext),  $(localedir),"portable object")
+	$(call vmv,$(moext),  $(localedir),"machine object")
+	$(call vmv,$(incext), $(incdir),   "header")
+	$(call vmv,$(srcext), $(srcdir),   "source")
+	$(call vmv,$(esqlext),$(srcdir),   "embedded SQL")
+	$(call vmv,$(lexext)  $(lexxext),$(srcdir),"lexer")
+	$(call vmv,$(yaccext) $(yaxxext),$(srcdir),"parser")
 
 ########################################################################
 ##                               TAGS                                 ##
@@ -2969,12 +3061,12 @@ TAGS: tagsdep ctags etags
 
 ctags: $(execinc) $(execall)
 	$(call phony-status,$(MSG_CTAGS))
-	$(quiet) $(CTAGS) $(ctagsflags) $^ -o $@ $(ERROR)
+	$(quiet) $(ctags) $(ctagsflags) $^ -o $@ $(ERROR)
 	$(call phony-ok,$(MSG_CTAGS))
 
 etags: $(execinc) $(execall)
 	$(call phony-status,$(MSG_ETAGS))
-	$(quiet) $(ETAGS) $(etagsflags) $^ -o $@ $(ERROR)
+	$(quiet) $(etags) $(etagsflags) $^ -o $@ $(ERROR)
 	$(call phony-ok,$(MSG_ETAGS))
 
 ########################################################################
@@ -3134,13 +3226,13 @@ ifdef $(call not-empty,$(doxyfile))
 .PHONY: doxy
 doxy: docsdep $(docdir)/$(doxyfile).mk
 	$(call phony-status,$(MSG_DOXY_DOCS))
-	$(quiet) $(DOXYGEN) $(word 2,2,$^) $(NO_OUTPUT) $(NO_ERROR)
+	$(quiet) $(doxygen) $(word 2,2,$^) $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_DOXY_DOCS))
 
 $(docdir)/$(doxyfile).mk: | $(firstword $(docdir))/./ $(docdir)/doxygen
 $(docdir)/$(doxyfile).mk: $(doxyfile)
 	$(call status,$(MSG_DOXY_MAKE))
-	$(quiet) $(CP) $< $@
+	$(quiet) $(cp) $< $@
 	
 	@echo "                                                      " >> $@
 	@echo "######################################################" >> $@
@@ -3162,11 +3254,11 @@ $(docdir)/$(doxyfile).mk: $(doxyfile)
 
 $(doxyfile):
 	$(call status,$(MSG_DOXY_FILE))
-	$(quiet) $(DOXYGEN) -g $@ $(NO_OUTPUT)
+	$(quiet) $(doxygen) -g $@ $(NO_OUTPUT)
 	$(call ok,$(MSG_DOXY_FILE),$@)
 
 $(docdir)/doxygen:
-	$(call mkdir,$(docdir)/doxygen)
+	$(call vmkdir,$(docdir)/doxygen)
 
 endif # ifdef $(not-empty,$(doxyfile))
 
@@ -3203,7 +3295,7 @@ dpkg: dpkgdep package-tar.gz $(deball)
 	
 	@# Step 1: Rename the upstream tarball
 	$(call phony-status,$(MSG_DEB_STEP1))
-	$(quiet) $(MV) $(distdir)/$(project)-$(version)_src.tar.gz \
+	$(quiet) $(mv) $(distdir)/$(project)-$(version)_src.tar.gz \
 	               $(distdir)/$(deb_project)_$(deb_version).orig.tar.gz \
 	               $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP1))
@@ -3213,27 +3305,27 @@ dpkg: dpkgdep package-tar.gz $(deball)
 	$(quiet) cd $(distdir) \
 	         && tar xf $(deb_project)_$(deb_version).orig.tar.gz $(ERROR)
 	$(call srmdir,$(distdir)/$(deb_project)-$(version))
-	$(quiet) $(MV) $(distdir)/$(project)-$(version)_src \
+	$(quiet) $(mv) $(distdir)/$(project)-$(version)_src \
 	               $(distdir)/$(deb_project)-$(version) $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP2))
 	
 	@# Step 3: Add the Debian packaging files
 	$(call phony-status,$(MSG_DEB_STEP3))
-	$(quiet) $(CP) $(debdir) \
+	$(quiet) $(cp) $(debdir) \
 	         $(distdir)/$(deb_project)-$(version) $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP3))
 	
 	@# Step 4: Install the package
 	$(call phony-status,$(MSG_DEB_STEP4))
 	$(quiet) cd $(distdir)/$(deb_project)-$(version) \
-	         && $(DEBUILD) $(ERROR)
+	         && $(debuild) $(ERROR)
 	$(call phony-ok,$(MSG_DEB_STEP4))
 
 # Executes iff one of the make goals is 'dpkg'
 ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,dpkg)))
 
 $(debdir)/changelog: | $(firstword $(debdir))/./
-	$(quiet) $(DCH)
+	$(quiet) $(dch)
 
 $(debdir)/compat: | $(firstword $(debdir))/./
 	$(call touch,$@)
@@ -3301,7 +3393,7 @@ install_dependency := \
 
 .PHONY: install-strip
 install-strip: installdep
-	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
+	$(MAKE) INSTALL_PROGRAM='$(install_program) -s' install
 
 .PHONY: install
 install: installdep $(i_lib) $(i_bin) $(i_sbin) $(i_libexec) \
@@ -3314,10 +3406,10 @@ install-docs: install-pdf install-ps
 .PHONY: install-info
 install-info:
 	$(if $(strip $(texiinfo)),$(foreach f,$(texiinfo),\
-        $(INSTALL_DATA) $f $(i_infodir)/$(notdir $f);\
-        if $(SHELL) -c '$(INSTALL_INFO) --version' $(NO_OUTPUT) 2>&1; \
+        $(install_data) $f $(i_infodir)/$(notdir $f);\
+        if $(SHELL) -c '$(install_info) --version' $(NO_OUTPUT) 2>&1; \
         then \
-            $(INSTALL_INFO) --dir-file="$(i_infodir)/dir" \
+            $(install_info) --dir-file="$(i_infodir)/dir" \
             "$(i_infodir)/$(notdir $f)"; \
         else true; fi;\
     ))
@@ -3346,7 +3438,7 @@ $(if $(strip $(i_$1)),\
             $(i_$1)\
         ),\
         $(if $(strip $(foreach f,$(i_$1),$(wildcard $f))),\
-            $(call rm,$(i_$1)))\
+            $(call vrm,$(i_$1)))\
 ))
 endef
 
@@ -3387,7 +3479,7 @@ endif
 #======================================================================#
 define root-factory
 $1/./:
-	$$(call mkdir,$$@)
+	$$(call vmkdir,$$@)
 endef
 $(foreach d,$(alldir),$(eval $(call root-factory,$d)))
 
@@ -3478,8 +3570,8 @@ $1/$2$3: \
                 $$(if $$(call ne,$$(old_$2_flags.$$f),\
                       $$(if $$(call eq,$$(origin $$f),command line),\
                           $$($$f),$$(or $$($2_flags.$$f),$$($$f)))),\
-                    $$(shell $$(RM) $$(depdir)/$1/$2$$(sysext))\
-                    $$(shell $$(RM) \
+                    $$(shell $$(rm) $$(depdir)/$1/$2$$(sysext))\
+                    $$(shell $$(rm) \
                         $$(addprefix $$(depdir)/$$(objdir)/,\
                             $$(addsuffix $$(sysext),\
                                 $$(call corename,$$($$k)\
@@ -3502,7 +3594,7 @@ $$(depdir)/$1/$2$$(sysext): | $$(depdir)/./
 	$$(quiet) $$(foreach s,$$(call corename,$$($2_all)),\
 	              $$(eval -include $$(depdir)/$$(objdir)/$$s$$(sysext))\
 	              $$(foreach f,$$(flags_$$($$s_exec)_$2),\
-	                  $$(RM) $$f;\
+	                  $$(rm) $$f;\
 	          ))
 	
 	@# Create flags for compilation of this dependency's binary
@@ -3558,7 +3650,7 @@ $$(call hash-table.new,$2)
 $1dep: \
     $$(foreach k,$$(call hash-table.keys,$2),$$(if \
         $$(and $$(strip $$(OLD_$$k)),$$(call ne,$$(OLD_$$k),$$($$k))),\
-            $$(shell $$(RM) \
+            $$(shell $$(rm) \
                 $$(addprefix $$(depdir)/$$(firstword $$(bindir))/,\
                     $$(addsuffix $$(sysext),$$k) \
             )) \
@@ -3612,7 +3704,7 @@ define library-dependency-target
 $1dep: \
     $$(foreach l,$$(old_syslib),\
         $$(if $$(findstring $$l,$$(syslib)),,\
-            $$(shell $$(RM) \
+            $$(shell $$(rm) \
                 $$(addprefix $$(depdir)/$$(firstword $$(libdir))/,\
                     $$(addsuffix $$(sysext),\
                         $$(patsubst lib%,%,$$(notdir $$(basename $$l)))\
@@ -3674,7 +3766,7 @@ define extern-dependency-target
 $1dep: \
     $$(foreach d,$$(old_externdep),\
         $$(if $$(findstring $$l,$$(externdep)),,\
-            $$(shell $$(RM) \
+            $$(shell $$(rm) \
                 $$(addprefix $$(depdir)/$$(firstword $$(extdir))/,\
                     $$(addsuffix $$(extext),$$l)\
             ))\
@@ -3778,26 +3870,26 @@ $$(firstword $$(srcdir))/$1.yy.$2: \
 $$(firstword $$(srcdir))/$1.yy.$2: $3
 	$$(call status,$$(MSG_LEX))
 	
-	$$(quiet) $$(MV) $$< $$(firstword $$(incdir))/$1-yy/
+	$$(quiet) $$(mv) $$< $$(firstword $$(incdir))/$1-yy/
 	$$(quiet) cd $$(firstword $$(incdir))/$1-yy/ \
 	          && $4 $$(lexflags) $$(notdir $$<) $$(ERROR)
-	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/$$(notdir $$<) $$<
-	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-yy/*.$2 $$@ $$(ERROR)
+	$$(quiet) $$(mv) $$(firstword $$(incdir))/$1-yy/$$(notdir $$<) $$<
+	$$(quiet) $$(mv) $$(firstword $$(incdir))/$1-yy/*.$2 $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_LEX),$$@)
 
 ifdef $$(is-empty,$$(wildcard $$(firstword $$(incdir))/$1-yy))
 $$(firstword $$(incdir))/$1-yy/:
-	$$(call mkdir,$$@)
+	$$(call vmkdir,$$@)
 endif
 endef
 $(foreach s,$(clexer),$(eval\
     $(call scanner-factory,$(call not-root,$(basename $s)),c,$s,\
-    $(LEX))\
+    $(lex))\
 ))
 $(foreach s,$(cxxlexer),$(eval\
     $(call scanner-factory,$(call not-root,$(basename $s)),cc,$s,\
-    $(LEXCXX))\
+    $(lexcxx))\
 ))
 
 #======================================================================#
@@ -3815,26 +3907,26 @@ $$(firstword $$(srcdir))/$1.tab.$2: \
 $$(firstword $$(srcdir))/$1.tab.$2: $3 $$(lexall)
 	$$(call status,$$(MSG_YACC))
 	
-	$$(quiet) $$(MV) $$< $$(firstword $$(incdir))/$1-tab/
+	$$(quiet) $$(mv) $$< $$(firstword $$(incdir))/$1-tab/
 	$$(quiet) cd $$(firstword $$(incdir))/$1-tab/ \
 	          && $4 $$(yaccflags) $$(notdir $$<) $$(ERROR)
-	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/$$(notdir $$<) $$<
-	$$(quiet) $$(MV) $$(firstword $$(incdir))/$1-tab/*.$2 $$@ $$(ERROR)
+	$$(quiet) $$(mv) $$(firstword $$(incdir))/$1-tab/$$(notdir $$<) $$<
+	$$(quiet) $$(mv) $$(firstword $$(incdir))/$1-tab/*.$2 $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_YACC),$$@)
 
 ifdef $$(call is-empty,$$(wildcard $$(firstword $$(incdir))/$1-tab))
 $$(firstword $$(incdir))/$1-tab/:
-	$$(call mkdir,$$@)
+	$$(call vmkdir,$$@)
 endif
 endef
 $(foreach s,$(cparser),$(eval\
     $(call parser-factory,$(call not-root,$(basename $s)),c,$s,\
-    $(YACC))\
+    $(yacc))\
 ))
 $(foreach s,$(cxxparser),$(eval\
     $(call parser-factory,$(call not-root,$(basename $s)),cc,$s,\
-    $(YACCCXX))\
+    $(yacccxx))\
 ))
 
 #======================================================================#
@@ -3845,7 +3937,7 @@ $(foreach s,$(cxxparser),$(eval\
 define esql-factory
 $$(firstword $$(srcdir))/$1.$2: $3
 	$$(call status,$$(MSG_ESQL))
-	$$(quiet) $$(ESQL) $$(esqlflags) -c $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(esql) $$(esqlflags) -c $$< -o $$@ $$(ERROR)
 	$$(call ok,$$(MSG_ESQL),$$@)
 endef
 $(foreach s,$(cesql),$(eval\
@@ -3867,7 +3959,7 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call c-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(AS) $$(cppflags) $$(asflags) $$(aslibs) \
+	$$(quiet) $$(as) $$(cppflags) $$(asflags) $$(aslibs) \
 	                 $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_ASM_COMPILE),$$@)
@@ -3892,7 +3984,7 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(quiet) $$(call c-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CC) $$(cppflags) $$(cflags) $$(clibs) \
+	$$(quiet) $$(cc) $$(cppflags) $$(cflags) $$(clibs) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_COMPILE),$$@)
@@ -3919,7 +4011,7 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$$(call not-root,$3/$$*))
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) $$(cppflags) $$(fflags) $$(flibs) \
+	$$(quiet) $$(fc) $$(cppflags) $$(fflags) $$(flibs) \
 	                 -J $$(firstword $$(incdir))/$$(dir $$*) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
@@ -3946,7 +4038,7 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
+	$$(quiet) $$(cxx) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
 	                  -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_COMPILE),$$@)
@@ -3971,7 +4063,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(quiet) $$(call c-depend,$$<,$$@,$2)
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CC) $$(cppflags) $$(clibs) $$(shrflags) $$(cflags) \
+	$$(quiet) $$(cc) $$(cppflags) $$(clibs) $$(shrflags) $$(cflags) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_LIBCOMP),$$@)
@@ -3997,7 +4089,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(FC) $$(cppflags) $$(flibs) $$(shrflags) $$(fflags) \
+	$$(quiet) $$(fc) $$(cppflags) $$(flibs) $$(shrflags) $$(fflags) \
 	                 -J $$(firstword $$(incdir))/$$(dir $2) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
@@ -4023,7 +4115,7 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(quiet) $$(call cpp-depend,$$<,$$@,$2)
 	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
-	$$(quiet) $$(CXX) $$(cppflags) $$(cxxlibs) \
+	$$(quiet) $$(cxx) $$(cppflags) $$(cxxlibs) \
 	                  $$(shrflags) $$(cxxflags) -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
@@ -4088,9 +4180,9 @@ $1/$2$3: $$(depdir)/$1/$2$$(sysext) $$($2_obj) | $1/./
 	$$(quiet) $$(call exec-sync)
 	
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(AR) $$(arflags) $$@ $$($2_obj) \
+	$$(quiet) $$(ar) $$(arflags) $$@ $$($2_obj) \
 	                 $$(NO_OUTPUT) $$(NO_ERROR)
-	$$(quiet) $$(RANLIB) $$@
+	$$(quiet) $$(ranlib) $$@
 	
 	$$(call ok,$$(MSG_ARLIB),$$@)
 endif
@@ -4149,11 +4241,12 @@ define run-factory
 run_$1: $1
 	$$(call phony-status,$$(MSG_$2_RUN))
 	
-	$$(quiet) $$(call store-status,$$($2_ENV) ./$$< $$($2_ARGS)) \
+	$$(quiet) $$(call store-status,\
+	              $$($2_ENV) $$(call faketty) ./$$< $$($2_ARGS)) \
 	          $$(ERROR) && $$(call model-error,$$(MSG_$2_ERROR))
 	$$(quiet) if [ -f gmon.out ]; \
 	          then \
-	              $$(MV) gmon.out \
+	              $$(mv) gmon.out \
 	                     $$(addprefix $$(objdir)/,\
 	                         $$(addsuffix $$(profext),\
 	                             $$(call not-root,$$(basename $$<))));\
@@ -4177,14 +4270,14 @@ define analysis-lint-factory
 $1: f=$2
 $1: $$($$(call corename,$2)_all)
 	$$(call phony-status,$$(MSG_ALINT))
-	$$(quiet) $$($3ALINT) $$($$(call lc,$3)libs) \
+	$$(quiet) $$($3alint) $$($$(call lc,$3)libs) \
 	                      $$($$(call lc,$3)alflags) $$^ $$(ERROR)
 	$$(call phony-ok,$$(MSG_ALINT))
 endef
 $(foreach b,$(execbin) $(testbin) $(benchbin) $(arlib) $(shrlib),\
     $(eval $(call analysis-lint-factory,$(strip \
         $(addprefix analysis_lint_,$(subst /,_,$b))),$b,$(strip \
-        $(call choose-comment,$($(call corename,$b)_all))\
+        $(call lc,$(call choose-comment,$($(call corename,$b)_all)))\
 ))))
 
 #======================================================================#
@@ -4199,13 +4292,13 @@ define style-lint-factory
 $1: f=$2
 $1: $$($$(call corename,$2)_all)
 	$$(call phony-status,$$(MSG_SLINT))
-	$$(quiet) $$($3SLINT) $$($$(call lc,$3)slflags) $$^ $$(ERROR)
+	$$(quiet) $$($3slint) $$($$(call lc,$3)slflags) $$^ $$(ERROR)
 	$$(call phony-ok,$$(MSG_SLINT))
 endef
 $(foreach b,$(execbin) $(testbin) $(benchbin) $(arlib) $(shrlib),\
     $(eval $(call style-lint-factory,$(strip \
         $(addprefix style_lint_,$(subst /,_,$b))),$b,$(strip \
-        $(call choose-comment,$($(call corename,$b)_all))\
+        $(call lc,$(call choose-comment,$($(call corename,$b)_all)))\
 ))))
 
 #======================================================================#
@@ -4222,11 +4315,11 @@ $1: $2 $$(call rwildcard,$$(addprefix *,$$(covext)),$$(objdir))
 	$$(call status,$$(MSG_COV_COMPILE))
 	
 	$$(call mksubdir,$$(covdir),$$@)
-	$$(quiet) $$(COV) -q -b $$(covdir) --capture -o $$@ \
+	$$(quiet) $$(cov) -q -b $$(covdir) --capture -o $$@ \
 	                  -d $$(objdir) -d $$(firstword $$(libdir)) $$(ERROR)
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
-	              $$(COV) -q -o $$@                               \
+	              $$(cov) -q -o $$@                               \
 	                      -r $$@ '$$(extdir)/*' '/usr/*'          \
 	                             '$$(testdir)/*' '$$(benchdir)/*' \
 	                             $$(patsubst %,'%',$$(covignore)) \
@@ -4240,7 +4333,7 @@ cov_$2: $1
 	$$(call phony-status,$$(MSG_COV))
 	$$(quiet) if [ -s $$< ]; \
 	          then \
-	              $$(COV) -l $$< $$(ERROR); \
+	              $$(cov) -l $$< $$(ERROR); \
 	              $$(call model-ok,$$(MSG_COV)); \
 	          else \
 	              $$(call model-ok,$$(MSG_COV_NONE)); \
@@ -4272,7 +4365,7 @@ $1: $2
 	$$(call status,$$(MSG_PROF_COMPILE))
 	
 	$$(call mksubdir,$$(profdir),$$@)
-	$$(quiet) $$(PROF) $$< \
+	$$(quiet) $$(prof) $$< \
 	                   $$(addprefix $$(objdir)/,\
 	                       $$(addsuffix $$(profext),\
 	                           $$(call not-root,$$(basename $$<)))) \
@@ -4314,7 +4407,7 @@ define intl-template-factory
 $1/$2$$(firstword $$(potext)): $$($2_all) | $1/./
 	$$(call status,$$(MSG_INTL_TEMPLATE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(XGETTEXT)\
+	$$(quiet) $$(xgettext)\
 	          --copyright-holder=$$(call shstring,$$(copyright))\
 	          --msgid-bugs-address=$$(call shstring,$$(mainteiner_mail))\
 	          --package-name=$$(call shstring,$$(project))\
@@ -4338,14 +4431,14 @@ $1/%/$2$$(firstword $$(poext)): $1/$2$$(firstword $$(potext))
 	$$(call phony-status,$$(MSG_INTL_PORTABLE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(if $$(strip $$(wildcard $$@)),\
-	              $$(MSGMERGE) $$@ $$< -o $$@ $$(ERROR),\
-	              $$(MSGINIT)  -l $$* -i $$< -o $$@ $$(ERROR))
+	              $$(msgmerge) $$@ $$< -o $$@ $$(ERROR),\
+	              $$(msginit)  -l $$* -i $$< -o $$@ $$(ERROR))
 	$$(call phony-ok,$$(MSG_INTL_PORTABLE),$$@)
 
 $1/%/LC_MESSAGES/$2$$(firstword $$(moext)): $1/%/$2$$(firstword $$(poext))
 	$$(call status,$$(MSG_INTL_MACHINE))
 	$$(quiet) $$(call mksubdir,$1,$$@)
-	$$(quiet) $$(MSGFMT) $$< -o $$@ $$(ERROR)
+	$$(quiet) $$(msgfmt) $$< -o $$@ $$(ERROR)
 	$$(call ok,$$(MSG_INTL_MACHINE),$$@)
 endef
 $(foreach t,$(intltl),$(eval\
@@ -4376,13 +4469,13 @@ $$(docdir)/$1/%$2: $$(filter $$(docdir)/$$*%,$$(texiall)) \
 	$$(call ok,$$(MSG_TEXI_FILE),$$@)
 
 $$(docdir)/$1/:
-	$$(quiet) $$(call mkdir,$$@)
+	$$(quiet) $$(call vmkdir,$$@)
 endef
-$(eval $(call texinfo-factory,info,$(firstword $(infoext)),$(MAKEINFO)))
-$(eval $(call texinfo-factory,html,$(firstword $(htmlext)),$(TEXI2HTML)))
-$(eval $(call texinfo-factory,dvi,$(firstword $(dviext)),$(TEXI2DVI)))
-$(eval $(call texinfo-factory,pdf,$(firstword $(pdfext)),$(TEXI2PDF)))
-$(eval $(call texinfo-factory,ps,$(firstword $(psext)),$(TEXI2PS)))
+$(eval $(call texinfo-factory,info,$(firstword $(infoext)),$(makeinfo)))
+$(eval $(call texinfo-factory,html,$(firstword $(htmlext)),$(texi2html)))
+$(eval $(call texinfo-factory,dvi,$(firstword $(dviext)),$(texi2dvi)))
+$(eval $(call texinfo-factory,pdf,$(firstword $(pdfext)),$(texi2pdf)))
+$(eval $(call texinfo-factory,ps,$(firstword $(psext)),$(texi2ps)))
 
 #======================================================================#
 # Function: install-texinfo-factory                                    #
@@ -4394,10 +4487,10 @@ $(eval $(call texinfo-factory,ps,$(firstword $(psext)),$(TEXI2PS)))
 define install-texinfo-factory
 .PHONY: install-$1
 install-$1:
-	$$(if $$(strip $$(texi$1)),$$(call mkdir,$$(i_$1dir)))
+	$$(if $$(strip $$(texi$1)),$$(call vmkdir,$$(i_$1dir)))
 	$$(if $$(strip $$(texi$1)),$$(foreach f,$$(texi$1),\
 	    $$(call phony-status,$$(MSG_INSTALL_DOC));\
-	    $$(INSTALL_DATA) $$f $$(i_$1dir)/$$(notdir $$f);\
+	    $$(install_data) $$f $$(i_$1dir)/$$(notdir $$f);\
 	    $$(call phony-ok,$$(MSG_INSTALL_DOC));\
 	))
 
@@ -4417,7 +4510,7 @@ $(foreach type,html dvi pdf ps,\
 #======================================================================#
 define installdirs
 $1:
-	$$(call mkdir,$$@)
+	$$(call vmkdir,$$@)
 endef
 $(foreach d,$(i_libdir) $(i_bindir) $(i_sbindir) $(i_libexecdir),\
     $(eval $(call installdirs,$d)))
@@ -4432,7 +4525,7 @@ define install-data
 $1/$$(call not-root,$2): | $1/./
 	$$(call phony-status,$$(MSG_INSTALL_DAT))
 	$$(call mksubdir,$1,$2)
-	$$(quiet) $$(INSTALL_DATA) $2 $$@
+	$$(quiet) $$(install_data) $2 $$@
 	$$(call phony-ok,$$(MSG_INSTALL_DAT))
 endef
 $(foreach t,lib,$(foreach b,$($t),\
@@ -4448,7 +4541,7 @@ define install-program
 $1/$$(call not-root,$2): | $1/./
 	$$(call phony-status,$$(MSG_INSTALL_BIN))
 	$$(call mksubdir,$1,$2)
-	$$(quiet) $$(INSTALL_PROGRAM) $2 $$@
+	$$(quiet) $$(install_program) $2 $$@
 	$$(call phony-ok,$$(MSG_INSTALL_BIN))
 endef
 $(foreach t,bin sbin libexec,$(foreach b,$($t),\
@@ -4469,18 +4562,18 @@ define packsyst-factory
             $$(strip $$(call rwildcard,$$f,*)),\
             $$(strip $$(wildcard $$f*))) )))
 %.$1: distdep $$(execbin)
-	$$(call mkdir,$$(dir $$@))
-	$$(quiet) $$(MKDIR) $$(packdir)
-	$$(quiet) $$(CP) $$(clndirs) $$(packdir)
+	$$(call vmkdir,$$(dir $$@))
+	$$(quiet) $$(mkdir) $$(packdir)
+	$$(quiet) $$(cp) $$(clndirs) $$(packdir)
 	
 	$$(call vstatus,$$(MSG_MAKE$2))
 	$$(quiet) $3 $$@ $$(packdep)
 	$$(call ok,$$(MSG_MAKE$2),$$@)
 	
-	$$(quiet) $$(RMDIR) $$(packdir)
+	$$(quiet) $$(rmdir) $$(packdir)
 endef
-$(eval $(call packsyst-factory,tar,TAR,$(TAR)))
-$(eval $(call packsyst-factory,zip,ZIP,$(ZIP)))
+$(eval $(call packsyst-factory,tar,TAR,$(tar)))
+$(eval $(call packsyst-factory,zip,ZIP,$(zip)))
 
 #======================================================================#
 # Function: compression-factory                                        #
@@ -4496,8 +4589,8 @@ define compression-factory
 	$$(quiet) $4 $$< $$(ERROR)
 	$$(call ok,$$(MSG_MAKE$3),$$@)
 endef
-$(eval $(call compression-factory,tar.gz,tar,TGZ,$(GZIP)))
-$(eval $(call compression-factory,tar.bz2,tar,TBZ2,$(BZIP2)))
+$(eval $(call compression-factory,tar.gz,tar,TGZ,$(gzip)))
+$(eval $(call compression-factory,tar.bz2,tar,TBZ2,$(bzip2)))
 
 #======================================================================#
 # Function: compression-shortcut                                       #
@@ -4509,7 +4602,7 @@ $(eval $(call compression-factory,tar.bz2,tar,TBZ2,$(BZIP2)))
 define compression-shortcut
 %.$1: %.$2
 	$$(call status,$$(MSG_MAKE$3))
-	$$(quiet) $$(CP) $$< $$@ $$(ERROR)
+	$$(quiet) $$(cp) $$< $$@ $$(ERROR)
 	$$(call ok,$$(MSG_MAKE$3),$$@)
 endef
 $(eval $(call compression-shortcut,tgz,tar.gz,TGZ))
@@ -4925,10 +5018,10 @@ $(foreach d,$(bindir) $(libdir),\
 endef
 
 ## DIRECTORIES #########################################################
-define mkdir
+define vmkdir
 $(if $(shell if ! [ -d $(strip $(patsubst .,,$1)) ]; then echo 1; fi),\
 	$(if $(strip $(patsubst .,,$1)), $(call phony-status,$(MSG_MKDIR)) )
-	$(if $(strip $(patsubst .,,$1)), $(quiet) $(MKDIR) $1              )
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(mkdir) $1              )
 	$(if $(strip $(patsubst .,,$1)), $(call phony-ok,$(MSG_MKDIR))     )
 )
 endef
@@ -4936,18 +5029,18 @@ endef
 # Create a subdirectory tree in the first element of a list of roots
 define mksubdir
 $(if $(strip $(patsubst .,,$1)),\
-	$(quiet) $(MKDIR) $(firstword $1)/$(strip $(call not-root,$(dir $2))))
+	$(quiet) $(mkdir) $(firstword $1)/$(strip $(call not-root,$(dir $2))))
 endef
 
-define mv
+define vmv
 $(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
     $(if $(strip $(wildcard $(firstword $2/*))),,\
-        $(call mkdir,$(firstword $2))\
+        $(call vmkdir,$(firstword $2))\
 ))
 $(call phony-status,$(MSG_MOVE))
 $(strip $(foreach e,$(strip $1),\
     $(if $(strip $(wildcard *$e)),\
-        $(quiet) $(MV) $(wildcard *$e) $(firstword $2);\
+        $(quiet) $(mv) $(wildcard *$e) $(firstword $2);\
     )\
 ))
 $(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
@@ -4964,24 +5057,24 @@ endef
 
 ## REMOTION ############################################################
 define srm
-	$(quiet) $(RM) $1 $(NO_ERROR);
+	$(quiet) $(rm) $1 $(NO_ERROR);
 endef
 
 define srmdir
-	$(if $(strip $(patsubst .,,$1)), $(quiet) $(RMDIR) $1;)
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(rmdir) $1;)
 endef
 
-define rm
+define vrm
 $(if $(strip $(patsubst .,,$1)),\
 	$(call phony-status,$(MSG_RM))
-	$(quiet) $(RM) $1;
+	$(quiet) $(rm) $1;
 	$(call phony-ok,$(MSG_RM))
 )
 endef
 
-define rmdir
+define vrmdir
 	$(if $(strip $(patsubst .,,$1)), $(call phony-status,$(MSG_RMDIR)) )
-	$(if $(strip $(patsubst .,,$1)), $(quiet) $(RMDIR) $1;             )
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(rmdir) $1;             )
 	$(if $(strip $(patsubst .,,$1)), $(call phony-ok,$(MSG_RMDIR))     )
 endef
 
@@ -5012,17 +5105,17 @@ define rm-if-empty
 	    $(if $(strip $(call rwildcard,$d,*)),\
 	        $(if $(strip $2),
 	            $(if $(strip $(MAINTEINER_CLEAN)),\
-	                $(call rmdir,$d),\
+	                $(call vrmdir,$d),\
 	                $(if $(strip \
 	                  $(call rfilter-out,$(call rsubdir,$d),\
 	                  $(call rfilter-out,$2,$(call rwildcard,$d,*)))),\
 	                    $(call phony-ok,$(MSG_RM_NOT_EMPTY)),\
-	                    $(call rmdir,$d)\
+	                    $(call vrmdir,$d)\
 	            )),\
-	            $(call rmdir,$d)\
+	            $(call vrmdir,$d)\
 	        ),\
 	        $(if $(wildcard $d),\
-	            $(call rmdir,$d),\
+	            $(call vrmdir,$d),\
 	            $(call phony-ok,$(MSG_RM_EMPTY))\
 	        )\
 	))
@@ -5035,7 +5128,7 @@ endef
 #======================================================================#
 define rm-if-exists
 $(if $(wildcard $1),\
-    $(call rm,$1),$(if $(strip $2),$(call phony-ok,$(strip $2))))
+    $(call vrm,$1),$(if $(strip $2),$(call phony-ok,$(strip $2))))
 endef
 
 ## PRINT FUNCTIONS #####################################################
@@ -5097,13 +5190,13 @@ ifndef SILENT
 
 define model-error_impl
 ($(call println,"\r${RED}[ERROR]${RES}" $1 "${RED}(STATUS: $3)${RES}")\
-&& $(if $(strip $2),$(RMDIR) $2,:) && exit 42)
+&& $(if $(strip $2),$(rmdir) $2,:) && exit 42)
 endef
 
 define model-failure_impl
 ($(call println,"\r${RED}[FAILURE]${RES}" $1"." \
                   "${RED}Aborting status: $$?${RES}") \
-&& $(if $(strip $2),$(RMDIR) $2,:) && exit 42)
+&& $(if $(strip $2),$(rmdir) $2,:) && exit 42)
 endef
 
 define statusfile-factory
@@ -5176,11 +5269,11 @@ define phony-vstatus
 endef
 
 define status
-	@$(RM) $@ && $(call model-status,$1)
+	@$(rm) $@ && $(call model-status,$1)
 endef
 
 define vstatus
-	@$(RM) $@ && $(call model-vstatus,$1)
+	@$(rm) $@ && $(call model-vstatus,$1)
 endef
 
 else # if empty $(SILENT) and not empty $(quiet)
@@ -5199,7 +5292,7 @@ endif # if empty $(SILENT) and not empty $(quiet)
 ifndef SILENT
 
 define model-ok
-$(RM) $(statusfile); $(call println,"\r${GREEN}[OK]${RES}" $1 "     ")
+$(rm) $(statusfile); $(call println,"\r${GREEN}[OK]${RES}" $1 "     ")
 endef
 
 define phony-ok
@@ -5266,21 +5359,21 @@ ifndef NO_GIT
 
 git_version          := $(subst git version,,$(shell git --version))
 
-GIT_ADD              := $(GIT) add -f
-GIT_CLONE            := $(GIT) clone -q --recursive
-GIT_COMMIT           := $(GIT) commit -q -m
-GIT_DIFF             := $(GIT) diff --quiet
-GIT_INIT             := $(GIT) init -q  
-GIT_LS_FILES         := $(GIT) ls-files --error-unmatch 2>/dev/null 1>&2
-GIT_PULL             := $(GIT) pull -q  
-GIT_PUSH             := $(GIT) push -q  
-GIT_REMOTE           := $(GIT) remote
+GIT_ADD              := $(git) add -f
+GIT_CLONE            := $(git) clone -q --recursive
+GIT_COMMIT           := $(git) commit -q -m
+GIT_DIFF             := $(git) diff --quiet
+GIT_INIT             := $(git) init -q  
+GIT_LS_FILES         := $(git) ls-files --error-unmatch 2>/dev/null 1>&2
+GIT_PULL             := $(git) pull -q  
+GIT_PUSH             := $(git) push -q  
+GIT_REMOTE           := $(git) remote
 GIT_REMOTE_ADD       := $(GIT_REMOTE) add
-GIT_RM               := $(GIT) rm -q
-GIT_SUBMODULE        := $(GIT) submodule -q
+GIT_RM               := $(git) rm -q
+GIT_SUBMODULE        := $(git) submodule -q
 GIT_SUBMODULE_ADD    := $(GIT_SUBMODULE) add -f
 GIT_SUBMODULE_INIT   := $(GIT_SUBMODULE) init
-GIT_TAG              := $(GIT) tag
+GIT_TAG              := $(git) tag
 
 ifdef $(call version-gt,$(git_version),1.8.3)
 GIT_SUBMODULE_DEINIT := $(GIT_SUBMODULE) deinit -f
@@ -5379,17 +5472,17 @@ define git-submodule-rm
 	             $(call model-git-submodule-deinit,$(notdir $1));    \
 	             $(call model-git-rm,--cached $(notdir $1));         \
 	             $(call model-git-commit,"Remove $(notdir $1)");     \
-	             $(RMDIR) $1 $(ERROR);                               \
+	             $(rmdir) $1 $(ERROR);                               \
 	             cd $(MAKECURRENTDIR);                               \
 	             $(call model-git-add,$(dir $1));                    \
 	             $(call model-git-commit,"Remove sub-submodule $1"); \
-	             $(RMDIR) .git/modules/$(notdir $1) $(ERROR);        \
+	             $(rmdir) .git/modules/$(notdir $1) $(ERROR);        \
 	         else \
 	             $(call model-git-submodule-deinit,$1);              \
 	             $(call model-git-rm,--cached $1);                   \
 	             $(call model-git-commit,"Remove submodule $1");     \
-	             $(RMDIR) $1 $(ERROR);                               \
-	             $(RMDIR) .git/modules/$1 $(ERROR);                  \
+	             $(rmdir) $1 $(ERROR);                               \
+	             $(rmdir) .git/modules/$1 $(ERROR);                  \
 	         fi 
 	$(call phony-ok,$(MSG_GIT_SUB_RM))
 endef
@@ -5429,13 +5522,13 @@ endif # ifndef NO_GIT
 ## WEB DEPENDENCIES ####################################################
 define web-clone
 	$(call phony-status,$(MSG_WEB_CLONE))
-	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
+	$(quiet) $(curl) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
 	$(call phony-ok,$(MSG_WEB_CLONE))
 endef
 
 define web-submodule-add
 	$(call phony-status,$(MSG_WEB_SUB_ADD))
-	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
+	$(quiet) $(curl) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
 	$(quiet) $(if $(strip $3),\
 	             $(call store-status,cd $(dir $2) && $3) $(ERROR) \
 	             && $(call model-error,$(MSG_EXT_EXTR_ERR),$2))
@@ -5603,8 +5696,8 @@ $(if $(strip \
 .PHONY: new
 new: | $(call root,$(incbase))/./ $(call root,$(srcbase))/./
 ifdef NAMESPACE
-	$(call mkdir,$(incbase)/$(subst ::,/,$(NAMESPACE)))
-	$(call mkdir,$(srcbase)/$(subst ::,/,$(NAMESPACE)))
+	$(call vmkdir,$(incbase)/$(subst ::,/,$(NAMESPACE)))
+	$(call vmkdir,$(srcbase)/$(subst ::,/,$(NAMESPACE)))
 endif
 ifdef NMS_HEADER
 	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
@@ -5641,7 +5734,7 @@ ifdef NMS_HEADER
 	$(call select,stdout)
 endif
 ifdef LIBRARY
-	$(call mkdir,$(incbase)/$(subst ::,/,$(LIBRARY)))
+	$(call vmkdir,$(incbase)/$(subst ::,/,$(LIBRARY)))
 endif
 ifdef LIB_HEADER
 	$(if $(INC_EXT),,$(eval override INC_EXT := .tcc))
@@ -5754,7 +5847,7 @@ ifdef C_MODULE
 	$(call cat,''                                                      )
 	$(call cat,'#endif'                                                )
 	
-	$(call mkdir,$(srcbase)/$(C_MODULE))
+	$(call vmkdir,$(srcbase)/$(C_MODULE))
 	
 	$(call select,stdout)
 endif
@@ -5795,7 +5888,7 @@ ifdef CXX_MODULE
 	$(call cat,''                                                      )
 	$(call cat,'#endif'                                                )
 	
-	$(call mkdir,$(srcbase)/$(CXX_MODULE))
+	$(call vmkdir,$(srcbase)/$(CXX_MODULE))
 	
 	$(call select,stdout)
 endif
@@ -5914,7 +6007,7 @@ ifdef NLS_HEADER
 	$(call cat,'#ifdef ENABLE_NLS'                                     )
 	$(call cat,''                                                      )
 	$(call cat,'/* I18n libraries */'                                  )
-	$(foreach l,$(NLSREQINC),$(call cat,'#include <$l>')$(newline))
+	$(foreach l,$(nlsreqinc),$(call cat,'#include <$l>')$(newline))
 	$(call cat,''                                                      )
 	$(call cat,'/* I18n macros */'                                     )
 	$(call cat,'#define _(String) gettext (String)'                    )
@@ -5978,7 +6071,7 @@ endif
 # $2 Extensions allowed for the basename above
 define delete-file
 $(if $(strip $(firstword $(foreach e,$2,$(wildcard $1$e)))),\
-    $(call rm,$(firstword $(foreach e,$2,$(wildcard $1$e)))))
+    $(call vrm,$(firstword $(foreach e,$2,$(wildcard $1$e)))))
 endef
 
 .PHONY: delete

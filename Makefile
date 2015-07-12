@@ -1859,8 +1859,8 @@ nlsreqinc       := $(NLSREQINC)
 debuild         := $(DEBUILD)
 dch             := $(DCH)
 
-curl            := $(call faketty) $(CURL)
-git             := $(call faketty) $(GIT)
+curl            := $(CURL)
+git             := $(GIT)
 
 # Native Language Support
 XGETTEXT        := xgettext

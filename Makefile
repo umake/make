@@ -5088,17 +5088,17 @@ ifndef MORE
 
 define faketty
 faketty () { script -eqc "$$(printf "'%s' " "$$@")" /dev/null \
-           | sed -e 's/\r$$//' -e '$${/^$$/d;}'; }; faketty
+           | sed -e '$${/^\r$$/d;}'; }; faketty
 endef
 
-define ERROR_SEPARATOR
+define SEPARATOR
 $(shell printf '%*s\n' "$${COLUMNS:-$$(tput cols)}" '' | tr ' ' '#')
 endef
 
 define ERROR
-2>&1 | sed -e '1 s/^/\'$$'\n''$(ERROR_SEPARATOR)\'$$'\n/' \
-           -e '1 s/^\$$//g' -e '1 s/#\$$/#/' \
-           -e '$$ s/$$/\'$$'\n''$(ERROR_SEPARATOR)/' \
+2>&1 | sed -e '1 s/^/\'$$'\n''\'$$'\r''$(SEPARATOR)\'$$'\n''\'$$'\r/' \
+           -e '1 s/^\$$\$$//g' -e '1 s/#\$$\$$/#/' \
+           -e '$$ s/$$/\'$$'\n''$(SEPARATOR)/' \
            -e '$$ s/\$$\(.*\)#/\1#/g'
 endef
 #| sed '1 s/^/> stderr:\n/'                 # '> stderr:' in 1st line

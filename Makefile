@@ -5088,7 +5088,7 @@ ifndef MORE
 
 define faketty
 faketty () { script -eqc "$$(printf "'%s' " "$$@")" /dev/null \
-           | sed -e '$${/^\'$$'\r*$$/d;}'; }; $1 faketty
+           ; }; $1 faketty
 endef
 
 define SEPARATOR

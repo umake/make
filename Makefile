@@ -5096,11 +5096,12 @@ $(shell printf '%*s\n' "$${COLUMNS:-$$(tput cols)}" '' | tr ' ' '#')
 endef
 
 define ERROR
-2>&1 | sed -e '1 s/^/\'$$'\n''\'$$'\r''$(SEPARATOR)\'$$'\na''\'$$'\rb/' \
+2>&1
+endef
+#| sed -e '1 s/^/\'$$'\n''\'$$'\r''$(SEPARATOR)\'$$'\na''\'$$'\rb/' \
            -e '1 s/^\$$//g' -e '1 s/#\$$/#/' \
            -e '$$ s/$$/\'$$'\n''\'$$'\r''$(SEPARATOR)/' \
            -e '$$ s/\$$\(.*\)#/\1#/g'
-endef
 #| sed '1 s/^/> stderr:\n/'                 # '> stderr:' in 1st line
 #| sed 's/^/> /'                            # Put '> ' before each line
 #| sed ''/"> error"/s//`printf "${ERR}"`/'' # Gray color with above

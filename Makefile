@@ -5096,7 +5096,7 @@ $(shell printf '%*s\n' "$${COLUMNS:-$$(tput cols)}" '' | tr ' ' '#')
 endef
 
 define ERROR
-2>&1 | sed -e '1 s/^/\'$$'\n''\'$$'\r''$(SEPARATOR)\'$$'\n/' \
+2>&1 | sed -e '1 s/^/\'$$'\n''\r$(SEPARATOR)\'$$'\n/' \
            -e '1 s/^\$$//g' -e '1 s/#\$$/#/' \
            -e '$$ s/$$/\'$$'\n''$(SEPARATOR)/' \
            -e '$$ s/\$$\(.*\)#/\1#/g'

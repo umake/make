@@ -547,6 +547,9 @@ SHRFLAGS    := -fno-common
 LDSHR       := -dynamiclib -undefined dynamic_lookup
 
 SCRIPTFLAGS := $(empty)
+define SCRIPTQUOTE
+"
+endef
 endif
 
 # Include additional platform specific changes
@@ -5091,7 +5094,8 @@ ifndef SILENT
 ifndef MORE
 
 define faketty
-faketty () { $(SCRIPT) /dev/null $(SCRIPTFLAGS) "$$(printf "%s " "$$@")" \
+faketty () { $(SCRIPT) /dev/null $(SCRIPTFLAGS) \
+             $(SCRIPTQUOTE) "$$(printf "%q " "$$@")" $(SCRIPTQUOTE) \
            | sed -e '$${/^\r*$$/d;}'; }; $1 faketty
 endef
 
@@ -5100,9 +5104,9 @@ $(shell printf '%*s\n' "$${COLUMNS:-$$(tput cols)}" '' | tr ' ' '#')
 endef
 
 define ERROR
-2>&1 | sed -e '1 s/^/\'$$'\n''\r$(SEPARATOR)\'$$'\n''\r/' \
+2>&1 | sed -e '1 s/^/\'$$'\n''\'$$'\r$(SEPARATOR)\'$$'\n''\'$$'\r/' \
            -e '1 s/^\$$//g' -e '1 s/#\$$/#/' \
-           -e '$$ s/$$/\'$$'\n''\r$(SEPARATOR)/' \
+           -e '$$ s/$$/\'$$'\n''\'$$'\r$(SEPARATOR)/' \
            -e '$$ s/\$$\(.*\)#/\1#/g'
 endef
 #| sed '1 s/^/> stderr:\n/'                 # '> stderr:' in 1st line

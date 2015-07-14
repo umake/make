@@ -5095,7 +5095,7 @@ ifndef MORE
 
 define faketty
 faketty () { $(SCRIPT) /dev/null $(SCRIPTFLAGS) \
-             $(SCRIPTQUOTE) "$$(printf "%q " "$$@")" $(SCRIPTQUOTE) \
+             $(SCRIPTQUOTE) "$$(printf "%s " "$$@")" $(SCRIPTQUOTE) \
            | sed -e '$${/^\r*$$/d;}'; }; $1 faketty
 endef
 

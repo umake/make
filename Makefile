@@ -98,6 +98,7 @@ ESQLFLAGS    :=
 COVFLAGS     := -abc
 PROFFLAGS    :=
 FINDFLAGS    := -type d -print 2> /dev/null
+SCRIPTFLAGS  := -ec
 CTAGSFLAGS   :=
 ETAGSFLAGS   :=
 MAKEFLAGS    := --no-print-directory
@@ -426,6 +427,7 @@ BZIP2           := bzip2
 MKDIR           := mkdir -p
 RMDIR           := rm -rf
 FIND            := find
+SCRIPT          := script -q
 
 # Parser and Lexer
 LEX             := flex
@@ -540,9 +542,11 @@ PLAT_VERSION  ?= $(uname_V)
 # =========================
 
 ifeq ($(PLAT_KERNEL),Darwin) # OSX Family
-SHREXT   := .dylib
-SHRFLAGS := -fno-common
-LDSHR    := -dynamiclib -undefined dynamic_lookup
+SHREXT      := .dylib
+SHRFLAGS    := -fno-common
+LDSHR       := -dynamiclib -undefined dynamic_lookup
+
+SCRIPTFLAGS := $(empty)
 endif
 
 # Include additional platform specific changes
@@ -5087,7 +5091,7 @@ ifndef SILENT
 ifndef MORE
 
 define faketty
-faketty () { script -eqc "$$(printf "'%s' " "$$@")" /dev/null \
+faketty () { $(SCRIPT) /dev/null $(SCRIPTFLAGS) "$$(printf "%s " "$$@")" \
            | sed -e '$${/^\r*$$/d;}'; }; $1 faketty
 endef
 

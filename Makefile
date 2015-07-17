@@ -5093,10 +5093,18 @@ endif # ifndef SILENT
 ifndef SILENT
 ifndef MORE
 
-define faketty
+define define-faketty
 faketty () { $(SCRIPT) /dev/null $(SCRIPTFLAGS) \
              $(SCRIPTQUOTE)"$$(printf "%s " "$$@")"$(SCRIPTQUOTE) \
-           | sed -e '$${/^\r*$$/d;}'; }; $1 faketty
+           | sed -e '$${/^\r*$$/d;}'; }
+endef
+
+define apply-faketty
+faketty
+endef
+
+define faketty
+$(call define-faketty); $(call apply-faketty)
 endef
 
 define SEPARATOR

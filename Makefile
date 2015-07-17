@@ -1868,7 +1868,7 @@ define filter-ignored
 $(call rfilter-out,$(ignore),$1)
 endef
 #------------------------------------------------------------------[ 3 ]
-covignore := $(sort $(COV_IGNORE))
+covignore := $(sort $(COVIGNORE))
 
 # Flag dependency files
 # =======================
@@ -4251,9 +4251,9 @@ $1: $2 $$(call rwildcard,$$(addprefix *,$$(covext)),$$(objdir))
 
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
-	              $$(foreach p,$$(patsubst %,'%/*',\
-	                  $$(covignore) $$(sysincdir) \
-	                  $$(extdir) $$(testdir) $$(benchdir)),\
+	              $$(foreach p,$$(patsubst %,'%',$$(covignore) \
+	                  $$(addsuffix /*,$$(sysincdir) $$(extdir) \
+	                                  $$(testdir) $$(benchdir))),\
 	                      $$(COV) $$(covflags) -o $$@ -r $$@ $$p;) \
 	          fi
 	

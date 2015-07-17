@@ -95,7 +95,7 @@ SHRFLAGS     := -fPIC
 LEXFLAGS     :=
 YACCFLAGS    :=
 ESQLFLAGS    :=
-COVFLAGS     := -abc
+COVFLAGS     := -q
 PROFFLAGS    :=
 FINDFLAGS    := -type d -print 2> /dev/null
 SCRIPTFLAGS  := -ec
@@ -4244,16 +4244,17 @@ $1: $2 $$(call rwildcard,$$(addprefix *,$$(covext)),$$(objdir))
 	
 	$$(call mksubdir,$$(covdir),$$@)
 	$$(quiet) $$(call faketty) \
-	          $$(COV) -q -b $$(covdir) --capture -o $$@ \
-	                  -d $$(objdir) -d $$(firstword $$(libdir)) $$(ERROR)
+	          $$(COV) $$(covflags) -o $$@ -c \
+	                  -b $$(firstword $$(covdir)) \
+	                  -d $$(firstword $$(objdir)) \
+	                  -d $$(firstword $$(libdir)) $$(ERROR)
+
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
-	              $$(call faketty) \
-	              $$(COV) -q -o $$@                               \
-	                      -r $$@ '$$(extdir)/*' '/usr/*'          \
-	                             '$$(testdir)/*' '$$(benchdir)/*' \
-	                             $$(patsubst %,'%',$$(covignore)) \
-	                      $$(ERROR);                              \
+	              $$(foreach p,$$(patsubst %,'%/*',\
+	                  $$(covignore) $$(sysincdir) \
+	                  $$(extdir) $$(testdir) $$(benchdir)),\
+	                      $$(COV) $$(covflags) -o $$@ -r $$@ $$p;) \
 	          fi
 	
 	$$(call ok,$$(MSG_COV_COMPILE))

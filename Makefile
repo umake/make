@@ -4168,8 +4168,10 @@ run_$1: $1
 	
 	$$(quiet) $$(call store-status, \
 	              $$(call define-faketty);\
-	              $$($2_ENV) $$(call apply-faketty) ./$$< $$($2_ARGS)) \
-	          $$(ERROR) && $$(call model-error,$$(MSG_$2_ERROR))
+	              $$($2_ENV) $$(call apply-faketty) \
+	              $$($2_CMD) ./$$< $$($2_ARGS)) $$(ERROR) \
+	          && $$(call model-error,$$(MSG_$2_ERROR))
+	
 	$$(quiet) if [ -f gmon.out ]; \
 	          then \
 	              $$(MV) gmon.out \
@@ -6334,6 +6336,7 @@ projecthelp:
 	@echo "Runtime options:                                            "
 	@echo "------------------                                          "
 	@echo " * *_ENV:            EXEC/TEST/BENCH binary environment     "
+	@echo " * *_CMD:            EXEC/TEST/BENCH wrapper commands       "
 	@echo " * *_ARGS:           EXEC/TEST/BENCH binary arguments       "
 	@echo "                                                            "
 	@echo "Special flags:                                              "

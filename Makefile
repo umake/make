@@ -2113,8 +2113,8 @@ execdep := $(addprefix $(depdir)/,\
 # 4) autoinc : Join automatically generated include files
 # 5) execinc : Get all subdirectories of the included dirs
 # 6) *libs   : Add subidirectories as paths to be searched for headers
-# 7) *head   : Get all language specific headers from include dirs
-# 8) headall : Get all headers from include dirs
+# 7) *inc    : Get all language specific headers from include dirs
+# 8) incall  : Get all headers from include dirs
 #------------------------------------------------------------------[ 1 ]
 aslibs  := $(call rm-trailing-bar,$(ASLIBS))
 clibs   := $(call rm-trailing-bar,$(CLIBS))
@@ -2138,14 +2138,14 @@ clibs   += $(patsubst %,-I$(space)%,$(execinc))
 flibs   += $(patsubst %,-I$(space)%,$(execinc))
 cxxlibs += $(patsubst %,-I$(space)%,$(execinc))
 #------------------------------------------------------------------[ 7 ]
-chead   := $(foreach d,$(incdir),$(foreach e,$(hext),\
+cinc    := $(foreach d,$(incdir),$(foreach e,$(hext),\
                $(call rwildcard,$d,*$e)))
-fhead   := $(foreach d,$(incdir),$(foreach e,$(hfext),\
+finc    := $(foreach d,$(incdir),$(foreach e,$(hfext),\
                $(call rwildcard,$d,*$e)))
-cxxhead := $(foreach d,$(incdir),$(foreach e,$(hxxext),\
+cxxinc  := $(foreach d,$(incdir),$(foreach e,$(hxxext),\
                $(call rwildcard,$d,*$e)))
 #------------------------------------------------------------------[ 8 ]
-headall := $(chead) $(fhead) $(cxxhead)
+incall  := $(cinc) $(finc) $(cxxinc)
 
 # Type-specific library flags
 # =============================
@@ -3096,7 +3096,7 @@ statistics:
 	@echo "Fortran      : $(call statistic-count,$(fall))              "
 	@echo "Assembly     : $(call statistic-count,$(asmall))            "
 	@echo "Libraries    : $(call statistic-count,$(liball))            "
-	@echo "Headers      : $(call statistic-count,$(headall))           "
+	@echo "Headers      : $(call statistic-count,$(incall))            "
 	@echo "Lexers       : $(call statistic-count,$(alllexer))          "
 	@echo "Parsers      : $(call statistic-count,$(allparser))         "
 	@echo "Embedded SQL : $(call statistic-count,$(cesql))             "
@@ -3104,7 +3104,7 @@ statistics:
 	@echo "-----------------------------------                         "
 	@echo "Total        :"\
           "$(call statistic-count,$(userall) $(liball) $(mainall)      \
-           $(headall) $(alllexer) $(allparser) $(cesql) $(testall))    "
+           $(incall) $(alllexer) $(allparser) $(cesql) $(testall))     "
 	@echo "                                                            "
 
 ########################################################################
@@ -4573,8 +4573,8 @@ mostlyclean:
 	    $(execobj) $(testobj) $(benchobj)\
 	    $(covdata) $(covtestdata) $(covbenchdata)\
 	    $(profdata) $(proftestdata) $(profbenchdata))
-	$(foreach d,$(call invert,$(sort $(dir $(fhead)))),\
-	    $(call rm-if-empty,$d,$(filter $d%,$(fhead)))$(newline))
+	$(foreach d,$(call invert,$(sort $(dir $(finc)))),\
+	    $(call rm-if-empty,$d,$(filter $d%,$(finc)))$(newline))
 
 .PHONY: clean
 clean: mostlyclean
@@ -6571,10 +6571,10 @@ else
 	$(call prompt,"userinc:       ",$(userinc)             )
 	$(call prompt,"autoinc:       ",$(autoinc)             )
 	$(call prompt,"execinc:       ",$(execinc)             )
-	$(call prompt,"chead:         ",$(chead)               )
-	$(call prompt,"fhead:         ",$(fhead)               )
-	$(call prompt,"cxxhead:       ",$(cxxhead)             )
-	$(call prompt,"headall:       ",$(headall)             )
+	$(call prompt,"cinc:          ",$(cinc)                )
+	$(call prompt,"finc:          ",$(finc)                )
+	$(call prompt,"cxxinc:        ",$(cxxinc)              )
+	$(call prompt,"incall:        ",$(incall)              )
 	
 	$(call echo,"${WHITE}\nSTATIC LIBRARY           ${RES}")
 	$(call echo,"-----------------------------------------")

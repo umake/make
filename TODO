@@ -96,6 +96,9 @@
     [X] Allow binary-specific compilation, linkage and path flags 
     [X] Recompile shared files with different executable-flags.
     [X] Allow compilation without configuring BIN, SBIN or LIBEXEC.
+    [X] Force tty output in programs with tty/non-tty behaviors.
+    [X] Add option to run programs with wrapper command.
+    [ ] Check dependency download on Linux, Darwin and BSD.
     [ ] Limit style-lint output by number of lines and file/binary.
     [ ] Support variant-binaries made from executables with other flags.
     [ ] Add DEBUG compilation option to enable debug flags.

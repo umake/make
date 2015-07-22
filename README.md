@@ -12,7 +12,7 @@ A single Makefile to compile all your projects: in C, C++, Assembly
 and Fortran.
 
 Tired of installing tools to compile your projects? (Automake, CMake
-and Ant). Do you want to go back to the old days, when all you needed 
+and Ant). Seeking to go back to the old days, when all you needed 
 was typing `make`? Here is the solution! A single generalized Makefile 
 which aims to compile and mix almost everything related to C, C++, 
 Assembly and Fortran projects - with support to many executables, static
@@ -40,9 +40,9 @@ magic. And the best: everything within the own Make language - no
 extra parsers, neither extra programs. Just one single Makefile.
 
 In order to make your very first compilation, just create a .c, .cpp,
-.asm or .f (or any of the many source extensions avaiable) and set the 
-variable `BIN` whith its name in Config.mk. Then  *voilà*: it will
-compile everything perfectly (at least as perfect as your program...)
+.asm or .f (or any of the many source extensions avaiable) and *voilà*:
+it will compile everything perfectly (at least as perfect as your
+program...)
 
 #### Single-directory projects ####
 
@@ -56,11 +56,11 @@ files in our default directory structure. Improve your organization
 To keep a copy of this project as a submodule, just clone it in your
 working directory:
 
-    git clone git@github.com:renatocf/make.git
+    git clone https://github.com/renatocf/make.git
 
 Then, create a symbolic link:
 
-    ln -s make/Makefile .
+    ln -s make/Makefile
 
 `make init` will automatically add it as a submodule.
 
@@ -87,7 +87,7 @@ include conf/makeball_2.mk
 If you cloned `make` to be used as a git submodule, all Makeballs are 
 already avaiable for you! Just create a symbolic link:
 
-    ln -s make/conf/ .
+    ln -s make/conf/
 
 And include them as above.
 

@@ -1,13 +1,16 @@
 environment:
   matrix:
-  - ARCH: "i686"
-  - ARCH: "x86_64"
+  - WIN_SHELL: C:\cygwin\bin\bash
+    WIN_MAKE: C:\cygwin\bin\make
+    SHELL: /cygdrive/c/cygwin/bin/bash
+    MAKE: /cygdrive/c/cygwin/bin/make
 
 init:
-# Carriage returns are bad
+  # Carriage returns are bad
   - git config --global core.autocrlf input
 
 build: off
 
 test_script:
-  - bash test/tests.sh
+  - '%WIN_SHELL% test/tests.sh'
+

@@ -1,0 +1,11 @@
+environment:
+  matrix:
+  - ARCH: "i686"
+  - ARCH: "x86_64"
+
+init:
+# Carriage returns are bad
+  - git config --global core.autocrlf input
+
+test_script:
+  - bash test/tests.sh

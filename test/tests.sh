@@ -4,10 +4,7 @@ export STOP=1
 . test/assert.sh
 . test/helper.sh
 
-if which gmake 1>/dev/null 2>/dev/null;
-    then export MAKE=$(which gmake);
-    else export MAKE=$(which make);
-fi
+export MAKE=${MAKE:-$(which make)};
 
 function setup {
   rm -rf test/tmp

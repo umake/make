@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function test() {
+test() {
   echo -n .
   setup
   assert_type=ls
@@ -26,10 +26,10 @@ function test() {
   teardown
 }
 
-function should_output() {
+should_output() {
   eval assert "'"$1"'" "'"$2"'"
 }
 
-function should_raise() {
+should_raise() {
   eval assert_raises "'"$1"'" "'"$2"'"
 }

@@ -7,5 +7,7 @@ init:
 # Carriage returns are bad
   - git config --global core.autocrlf input
 
+build: off
+
 test_script:
   - bash test/tests.sh

@@ -4,6 +4,9 @@ environment:
     WIN_MAKE: C:\cygwin\bin\make
     SHELL: /cygdrive/c/cygwin/bin/bash
     MAKE: /cygdrive/c/cygwin/bin/make
+    CC:  /cygdrive/c/cygwin/bin/gcc
+    CXX: /cygdrive/c/cygwin/bin/g++
+    FC:  /cygdrive/c/cygwin/bin/gfortran
 
 init:
   # Carriage returns are bad

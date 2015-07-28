@@ -392,7 +392,12 @@ POTEXT  := .pot
 POEXT   := .po
 MOEXT   := .mo
 
-# Suffixex
+# Prefixes
+LIBPREF  := lib cyg
+ARPREF   := lib
+SHRPREF  := lib
+
+# Suffixes
 TESTSUF  := Test
 BENCHSUF := Bench
 
@@ -1697,6 +1702,26 @@ override sysbindir  := $(call rm-trailing-bar,$(wildcard $(SYSBINDIR)))
 override syssbindir := $(call rm-trailing-bar,$(wildcard $(SYSSBINDIR)))
 override sysexecdir := $(call rm-trailing-bar,$(wildcard $(SYSEXECDIR)))
 
+# Prefixes
+# ==========
+libpref := $(strip $(sort $(LIBPREF)))
+
+arpref  := $(strip $(sort $(ARPREF)))
+ifneq ($(words $(arpref)),1)
+    $(error Just one prefix allowed for static libraries!)
+endif
+ifdef $(call is-empty,$(findstring $(arpref),$(libpref)))
+    $(error Static library prefix must be a valid library prefix)
+endif
+
+shrpref  := $(strip $(sort $(SHRPREF)))
+ifneq ($(words $(shrpref)),1)
+    $(error Just one prefix allowed for dynamic libraries!)
+endif
+ifdef $(call is-empty,$(findstring $(shrpref),$(libpref)))
+    $(error Shared library prefix must be a valid library prefix)
+endif
+
 # Suffixes
 # ==========
 testsuf  := $(strip $(sort $(TESTSUF)))
@@ -1818,8 +1843,11 @@ phony_targets := $(targets) library git web
 $(foreach e,.zip .tar .tgz .tbz2 .tar.gz .tar.bz2,\
     $(eval vpath %.$e $(distdir)))
 
-# Binaries, libraries and source extensions
-$(foreach e,$(libext),$(eval vpath lib%$e $(libdir)))
+# Library extensions
+$(foreach p,$(libpref),$(foreach e,$(libext),\
+    $(eval vpath $p%$e $(libdir))))
+
+# Binaries and source extensions
 $(foreach s,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 $(foreach s,$(benchdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
@@ -2187,8 +2215,8 @@ arlink    := $(addprefix -l,$(arname))
 #------------------------------------------------------------------[ 6 ]
 define arlib-name
 $(foreach p,$(call not-root,$(basename $1)),\
-    $(patsubst $(subst ./,,$(dir $p))%,\
-       $(firstword $(libdir))/$(subst ./,,$(dir $p))lib%$(arext),$p))
+    $(patsubst $(subst ./,,$(dir $p))%,$(firstword \
+       $(libdir))/$(subst ./,,$(dir $p))$(arpref)%$(arext),$p))
 endef
 arlib     := $(call arlib-name,$(arpat))
 #------------------------------------------------------------------[ 7 ]
@@ -2237,8 +2265,8 @@ shrlink    := $(addprefix -l,$(shrname))
 #------------------------------------------------------------------[ 6 ]
 define shrlib-name
 $(foreach p,$(call not-root,$(basename $1)),\
-    $(patsubst $(subst ./,,$(dir $p))%,\
-       $(firstword $(libdir))/$(subst ./,,$(dir $p))lib%$(shrext),$p))
+    $(patsubst $(subst ./,,$(dir $p))%,$(firstword \
+       $(libdir))/$(subst ./,,$(dir $p))$(shrpref)%$(shrext),$p))
 endef
 shrlib     := $(call shrlib-name,$(shrpat))
 #------------------------------------------------------------------[ 7 ]
@@ -2271,11 +2299,13 @@ $(foreach l,$(filter -l%,$(ldflags)),\
         $(foreach d,$(syslibdir) \
                     $(foreach s,$(syslibdir),\
                         $(filter $s%,$(patsubst -L%,%,$(ldlibs)))),\
-            $(lastword $(foreach e,$(libext),\
-                $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))\
+            $(lastword $(foreach p,$(libpref),$(foreach e,$(libext),\
+                $(wildcard $d/$p$(patsubst -l%,%,$l)$e)\
+            )))\
 )))
 #------------------------------------------------------------------[ 2 ]
-sysname    := $(patsubst lib%,%,$(notdir $(basename $(syslib))))
+sysname    := $(foreach p,$(libpref),$(patsubst $p%,%,$(filter $p%,\
+                  $(notdir $(basename $(syslib))))))
 #------------------------------------------------------------------[ 3 ]
 syslink    := $(addprefix -l,$(sysname))
 #------------------------------------------------------------------[ 4 ]
@@ -2290,10 +2320,13 @@ syslibdep  := $(addprefix $(depdir)/$(firstword $(libdir))/,\
 #------------------------------------------------------------------[ 1 ]
 loclib     := $(foreach l,$(filter -l%,$(ldflags)),\
                   $(foreach d,$(call rsubdir,$(call cdr,$(libdir))),\
-                      $(lastword $(foreach e,$(libext),\
-                          $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))))
+                      $(lastword $(foreach p,$(libpref),\
+                          $(foreach e,$(libext),\
+                              $(wildcard $d/$p$(patsubst -l%,%,$l)$e)\
+               )))))
 #------------------------------------------------------------------[ 2 ]
-locname    := $(patsubst lib%,%,$(notdir $(basename $(loclib))))
+locname    := $(foreach p,$(libpref),$(patsubst $p%,%,$(filter $p%,\
+                  $(notdir $(basename $(loclib))))))
 #------------------------------------------------------------------[ 3 ]
 loclink    := $(addprefix -l,$(locname))
 
@@ -3622,8 +3655,10 @@ $1dep: \
             $$(shell $$(RM) \
                 $$(addprefix $$(depdir)/$$(firstword $$(libdir))/,\
                     $$(addsuffix $$(sysext),\
-                        $$(patsubst lib%,%,$$(notdir $$(basename $$l)))\
-            ))) \
+                        $$(foreach p,$$(libpref),\
+                            $$(patsubst $$p%,%,$$(filter $$p%,\
+                                $$(notdir $$(basename $$l))\
+            )))))) \
     )) \
     $$(if $$(strip $$(call hash-table.values,$2)),\
         $$(depdir)/$1$$(sysext))
@@ -3665,10 +3700,10 @@ $$(depdir)/$$(firstword $$(libdir))/$1$$(sysext): | $$(depdir)/./
 	
 	$$(call phony-ok,$$(MSG_LIB_SEARCH))
 endef
-$(foreach p,$(syslib),$(strip \
-    $(eval $(call library-dependency,$(patsubst lib%,%,\
-               $(notdir $(basename $(call not-extra-suffix,$p)))),$p,\
-               $(call not-extra-suffix,$p)))))
+$(foreach p,$(libpref),$(foreach l,$(filter $p%,$(syslib)),$(strip \
+    $(eval $(call library-dependency,$(patsubst $p%,%,\
+               $(notdir $(basename $(call not-extra-suffix,$l)))),$l,\
+               $(call not-extra-suffix,$l))))))
 
 #======================================================================#
 # Function: extern-dependency-target                                   #

@@ -557,6 +557,17 @@ define SCRIPTQUOTE
 endef
 endif
 
+ifeq ($(PLAT_OS),Cygwin) # Windows with Cygwin
+SHREXT      := .dll
+SHRPREF     := cyg
+SHRFLAGS    :=
+LDSHR        = -shared \
+               -Wl,--out-implib,$@$(arext) \
+               -Wl,--export-all-symbols \
+               -Wl,--enable-auto-import \
+               -Wl,--enable-auto-image-base
+endif
+
 # Include additional platform specific changes
 -include $(PLAT_KERNEL).$(PLAT_ARCH).mk
 -include $(PLAT_KERNEL).$(PLAT_ARCH).$(PLAT_RELEASE).mk
@@ -1616,7 +1627,7 @@ ldc        := $(LDC)
 ldf        := $(LDF)
 ldcxx      := $(LDCXX)
 
-ldshr      := $(LDSHR)
+ldshr       = $(LDSHR)
 
 ldlex      := $(LDLEX)
 ldyacc     := $(LDYACC)

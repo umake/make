@@ -19,6 +19,7 @@ install:
   - '%WIN_SETUP% -q -P bc,gcc-fortran'
 
 before_test:
+  - 'set PATH=%PATH:C:\MinGW\bin;=%'
   - 'set PATH=C:\cygwin\bin;%PATH%'
 
 test_script:

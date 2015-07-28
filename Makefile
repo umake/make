@@ -4088,7 +4088,8 @@ $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
 # @param  $1 Directory in which the lib may be put                     #
 # @param  $2 Subdirectories in which the lib may be put                #
 # @param  $3 File/dir basename that makes the name of the dir          #
-# @param  $4 Object dependencies of this static library                #
+# @param  $4 Comments to be used (C's, Fortran's or C++'s)             #
+# @param  $5 Compiler to be used (C's, Fortran's or C++'s)             #
 # @return Target to create a shared library from objects               #
 #======================================================================#
 define link-shrlib
@@ -4123,7 +4124,6 @@ $(foreach l,$(shrlib),\
 # @param  $1 Directory in which the lib may be put                     #
 # @param  $2 Subdirectories in which the lib may be put                #
 # @param  $3 File/dir basename that makes the name of the dir          #
-# @param  $4 Object dependencies of this static library                #
 # @return Target to create a static library from objects               #
 #======================================================================#
 define link-arlib

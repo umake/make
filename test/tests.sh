@@ -5,6 +5,7 @@
 ################################################################################
 
 # Programs
+OLD_PATH=$PATH
 export MAKE=${MAKE:-$(which make)};
 export SHELL=${SHELL:-$(which sh)};
 
@@ -32,12 +33,14 @@ function setup {
   mkdir test/tmp
   cd test/tmp
   ln -s ../../Makefile .
+  PATH=./lib:$PATH
   if ! [ -z "$CC" ];  then echo "CC  := ${CC}"  >> .compiler.mk; fi
   if ! [ -z "$FC"  ]; then echo "FC  := ${FC}"  >> .compiler.mk; fi
   if ! [ -z "$CXX" ]; then echo "CXX := ${CXX}" >> .compiler.mk; fi
 }
 
 function teardown {
+  PATH=$OLD_PATH
   cd ../..
   rm -rf test/tmp
 }

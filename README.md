@@ -3,6 +3,8 @@ All-in-One Makefile
 
 [![Build Status](https://travis-ci.org/renatocf/make.svg?branch=master)]
                 (https://travis-ci.org/renatocf/make)
+[![Build status](https://ci.appveyor.com/api/projects/status/github/renatocf/make?svg=true)]
+                (https://ci.appveyor.com/project/renatocf/make)
 [![Release](https://img.shields.io/github/tag/renatocf/make.svg)]
            (https://github.com/renatocf/make/releases/latest)
 [![License](https://img.shields.io/github/license/renatocf/make.svg)]

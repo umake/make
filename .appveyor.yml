@@ -18,6 +18,9 @@ build: off
 install:
   - '%WIN_SETUP% -q -P bc,gcc-fortran'
 
+before_test:
+  - 'set PATH=C:\cygwin\bin;%PATH%'
+
 test_script:
   - '%WIN_SHELL% test/tests.sh'
 

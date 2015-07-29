@@ -1,10 +1,11 @@
 environment:
   matrix:
   - WIN_SHELL: C:\cygwin\bin\bash
-    WIN_MAKE: C:\cygwin\bin\make
+    WIN_MAKE:  C:\cygwin\bin\make
     WIN_SETUP: C:\cygwin\setup-x86.exe
     SHELL: /cygdrive/c/cygwin/bin/bash
-    MAKE: /cygdrive/c/cygwin/bin/make
+    MAKE:  /cygdrive/c/cygwin/bin/make
+    SETUP: /cygdrive/c/cygwin/bin/setup-x86.exe
     CC:  /cygdrive/c/cygwin/bin/gcc
     CXX: /cygdrive/c/cygwin/bin/g++
     FC:  /cygdrive/c/cygwin/bin/gfortran

@@ -392,7 +392,12 @@ POTEXT  := .pot
 POEXT   := .po
 MOEXT   := .mo
 
-# Suffixex
+# Prefixes
+LIBPREF  := lib cyg
+ARPREF   := lib
+SHRPREF  := lib
+
+# Suffixes
 TESTSUF  := Test
 BENCHSUF := Bench
 
@@ -550,6 +555,17 @@ SCRIPTFLAGS := $(empty)
 define SCRIPTQUOTE
 "
 endef
+endif
+
+ifeq ($(PLAT_OS),Cygwin) # Windows with Cygwin
+SHREXT      := .dll
+SHRPREF     := cyg
+SHRFLAGS    :=
+LDSHR        = -shared \
+               -Wl,--out-implib,$@$(arext) \
+               -Wl,--export-all-symbols \
+               -Wl,--enable-auto-import \
+               -Wl,--enable-auto-image-base
 endif
 
 # Include additional platform specific changes
@@ -1611,7 +1627,7 @@ ldc        := $(LDC)
 ldf        := $(LDF)
 ldcxx      := $(LDCXX)
 
-ldshr      := $(LDSHR)
+ldshr       = $(LDSHR)
 
 ldlex      := $(LDLEX)
 ldyacc     := $(LDYACC)
@@ -1696,6 +1712,26 @@ override syslibdir  := $(call rm-trailing-bar,$(wildcard $(SYSLIBDIR)))
 override sysbindir  := $(call rm-trailing-bar,$(wildcard $(SYSBINDIR)))
 override syssbindir := $(call rm-trailing-bar,$(wildcard $(SYSSBINDIR)))
 override sysexecdir := $(call rm-trailing-bar,$(wildcard $(SYSEXECDIR)))
+
+# Prefixes
+# ==========
+libpref := $(strip $(sort $(LIBPREF)))
+
+arpref  := $(strip $(sort $(ARPREF)))
+ifneq ($(words $(arpref)),1)
+    $(error Just one prefix allowed for static libraries!)
+endif
+ifdef $(call is-empty,$(findstring $(arpref),$(libpref)))
+    $(error Static library prefix must be a valid library prefix)
+endif
+
+shrpref  := $(strip $(sort $(SHRPREF)))
+ifneq ($(words $(shrpref)),1)
+    $(error Just one prefix allowed for dynamic libraries!)
+endif
+ifdef $(call is-empty,$(findstring $(shrpref),$(libpref)))
+    $(error Shared library prefix must be a valid library prefix)
+endif
 
 # Suffixes
 # ==========
@@ -1818,8 +1854,11 @@ phony_targets := $(targets) library git web
 $(foreach e,.zip .tar .tgz .tbz2 .tar.gz .tar.bz2,\
     $(eval vpath %.$e $(distdir)))
 
-# Binaries, libraries and source extensions
-$(foreach e,$(libext),$(eval vpath lib%$e $(libdir)))
+# Library extensions
+$(foreach p,$(libpref),$(foreach e,$(libext),\
+    $(eval vpath $p%$e $(libdir))))
+
+# Binaries and source extensions
 $(foreach s,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 $(foreach s,$(benchdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
@@ -2187,8 +2226,8 @@ arlink    := $(addprefix -l,$(arname))
 #------------------------------------------------------------------[ 6 ]
 define arlib-name
 $(foreach p,$(call not-root,$(basename $1)),\
-    $(patsubst $(subst ./,,$(dir $p))%,\
-       $(firstword $(libdir))/$(subst ./,,$(dir $p))lib%$(arext),$p))
+    $(patsubst $(subst ./,,$(dir $p))%,$(firstword \
+       $(libdir))/$(subst ./,,$(dir $p))$(arpref)%$(arext),$p))
 endef
 arlib     := $(call arlib-name,$(arpat))
 #------------------------------------------------------------------[ 7 ]
@@ -2237,8 +2276,8 @@ shrlink    := $(addprefix -l,$(shrname))
 #------------------------------------------------------------------[ 6 ]
 define shrlib-name
 $(foreach p,$(call not-root,$(basename $1)),\
-    $(patsubst $(subst ./,,$(dir $p))%,\
-       $(firstword $(libdir))/$(subst ./,,$(dir $p))lib%$(shrext),$p))
+    $(patsubst $(subst ./,,$(dir $p))%,$(firstword \
+       $(libdir))/$(subst ./,,$(dir $p))$(shrpref)%$(shrext),$p))
 endef
 shrlib     := $(call shrlib-name,$(shrpat))
 #------------------------------------------------------------------[ 7 ]
@@ -2271,11 +2310,13 @@ $(foreach l,$(filter -l%,$(ldflags)),\
         $(foreach d,$(syslibdir) \
                     $(foreach s,$(syslibdir),\
                         $(filter $s%,$(patsubst -L%,%,$(ldlibs)))),\
-            $(lastword $(foreach e,$(libext),\
-                $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))\
+            $(lastword $(foreach p,$(libpref),$(foreach e,$(libext),\
+                $(wildcard $d/$p$(patsubst -l%,%,$l)$e)\
+            )))\
 )))
 #------------------------------------------------------------------[ 2 ]
-sysname    := $(patsubst lib%,%,$(notdir $(basename $(syslib))))
+sysname    := $(foreach p,$(libpref),$(patsubst $p%,%,$(filter $p%,\
+                  $(notdir $(basename $(syslib))))))
 #------------------------------------------------------------------[ 3 ]
 syslink    := $(addprefix -l,$(sysname))
 #------------------------------------------------------------------[ 4 ]
@@ -2290,10 +2331,13 @@ syslibdep  := $(addprefix $(depdir)/$(firstword $(libdir))/,\
 #------------------------------------------------------------------[ 1 ]
 loclib     := $(foreach l,$(filter -l%,$(ldflags)),\
                   $(foreach d,$(call rsubdir,$(call cdr,$(libdir))),\
-                      $(lastword $(foreach e,$(libext),\
-                          $(wildcard $d/lib$(patsubst -l%,%,$l)$e)))))
+                      $(lastword $(foreach p,$(libpref),\
+                          $(foreach e,$(libext),\
+                              $(wildcard $d/$p$(patsubst -l%,%,$l)$e)\
+               )))))
 #------------------------------------------------------------------[ 2 ]
-locname    := $(patsubst lib%,%,$(notdir $(basename $(loclib))))
+locname    := $(foreach p,$(libpref),$(patsubst $p%,%,$(filter $p%,\
+                  $(notdir $(basename $(loclib))))))
 #------------------------------------------------------------------[ 3 ]
 loclink    := $(addprefix -l,$(locname))
 
@@ -3622,8 +3666,10 @@ $1dep: \
             $$(shell $$(RM) \
                 $$(addprefix $$(depdir)/$$(firstword $$(libdir))/,\
                     $$(addsuffix $$(sysext),\
-                        $$(patsubst lib%,%,$$(notdir $$(basename $$l)))\
-            ))) \
+                        $$(foreach p,$$(libpref),\
+                            $$(patsubst $$p%,%,$$(filter $$p%,\
+                                $$(notdir $$(basename $$l))\
+            )))))) \
     )) \
     $$(if $$(strip $$(call hash-table.values,$2)),\
         $$(depdir)/$1$$(sysext))
@@ -3665,10 +3711,10 @@ $$(depdir)/$$(firstword $$(libdir))/$1$$(sysext): | $$(depdir)/./
 	
 	$$(call phony-ok,$$(MSG_LIB_SEARCH))
 endef
-$(foreach p,$(syslib),$(strip \
-    $(eval $(call library-dependency,$(patsubst lib%,%,\
-               $(notdir $(basename $(call not-extra-suffix,$p)))),$p,\
-               $(call not-extra-suffix,$p)))))
+$(foreach p,$(libpref),$(foreach l,$(filter $p%,$(syslib)),$(strip \
+    $(eval $(call library-dependency,$(patsubst $p%,%,\
+               $(notdir $(basename $(call not-extra-suffix,$l)))),$l,\
+               $(call not-extra-suffix,$l))))))
 
 #======================================================================#
 # Function: extern-dependency-target                                   #
@@ -4053,7 +4099,8 @@ $(foreach s,$(foreach E,$(cxxext),$(filter %$E,$(shrall))),\
 # @param  $1 Directory in which the lib may be put                     #
 # @param  $2 Subdirectories in which the lib may be put                #
 # @param  $3 File/dir basename that makes the name of the dir          #
-# @param  $4 Object dependencies of this static library                #
+# @param  $4 Comments to be used (C's, Fortran's or C++'s)             #
+# @param  $5 Compiler to be used (C's, Fortran's or C++'s)             #
 # @return Target to create a shared library from objects               #
 #======================================================================#
 define link-shrlib
@@ -4088,7 +4135,6 @@ $(foreach l,$(shrlib),\
 # @param  $1 Directory in which the lib may be put                     #
 # @param  $2 Subdirectories in which the lib may be put                #
 # @param  $3 File/dir basename that makes the name of the dir          #
-# @param  $4 Object dependencies of this static library                #
 # @return Target to create a static library from objects               #
 #======================================================================#
 define link-arlib
@@ -5100,7 +5146,7 @@ ifndef MORE
 define define-faketty
 faketty () { $(SCRIPT) /dev/null $(SCRIPTFLAGS) \
              $(SCRIPTQUOTE)"$$(printf "%s " "$$@")"$(SCRIPTQUOTE) \
-           | sed -e '$${/^\r*$$/d;}'; }
+           | sed '$${/^\r*$$/d;}'; }
 endef
 
 define apply-faketty
@@ -5116,10 +5162,10 @@ $(shell printf '%*s\n' "$${COLUMNS:-$$(tput cols)}" '' | tr ' ' '#')
 endef
 
 define ERROR
-2>&1 | sed -e '1 s/^/\'$$'\n\r''$(SEPARATOR)\'$$'\n\r''/' \
-           -e '1 s/^\$$//g' -e '1 s/#\$$/#/' \
-           -e '$$ s/$$/\'$$'\n\r''$(SEPARATOR)/' \
-           -e '$$ s/\$$\(.*\)#/\1#/g'
+2>&1 | sed '1 s/^/\'$$'\n\r''$(SEPARATOR)\'$$'\n\r''/' \
+     | sed '1 s/^\$$//g' | sed '1 s/#\$$/#/' \
+     | sed '$$ s/$$/\'$$'\n\r''$(SEPARATOR)/' \
+     | sed '$$ s/\$$\(.*\)#/\1#/g'
 endef
 #| sed '1 s/^/> stderr:\n/'                 # '> stderr:' in 1st line
 #| sed 's/^/> /'                            # Put '> ' before each line

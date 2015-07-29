@@ -1,35 +1,62 @@
 #!/usr/bin/env bash
 
+################################################################################
+##                                  VARIABLES                                 ##
+################################################################################
+
+# Programs
+OLD_PATH=$PATH
+export MAKE=${MAKE:-$(which make)};
+export SHELL=${SHELL:-$(which sh)};
+
+if ! which tput 1>/dev/null 2>/dev/null;
+    then export COLUMNS=80
+fi
+
+################################################################################
+##                                  LIBRARIES                                 ##
+################################################################################
+
+# Library options
 export STOP=1
+
+# Load libraries
 . test/assert.sh
 . test/helper.sh
 
-if which gmake 1>/dev/null 2>/dev/null;
-    then export MAKE=$(which gmake);
-    else export MAKE=$(which make);
-fi
+################################################################################
+##                                CONFIGURATION                               ##
+################################################################################
 
 function setup {
   rm -rf test/tmp
   mkdir test/tmp
   cd test/tmp
   ln -s ../../Makefile .
+  PATH=./lib:$PATH
   if ! [ -z "$CC" ];  then echo "CC  := ${CC}"  >> .compiler.mk; fi
   if ! [ -z "$FC"  ]; then echo "FC  := ${FC}"  >> .compiler.mk; fi
   if ! [ -z "$CXX" ]; then echo "CXX := ${CXX}" >> .compiler.mk; fi
 }
 
 function teardown {
+  PATH=$OLD_PATH
   cd ../..
   rm -rf test/tmp
 }
 
+################################################################################
+##                                    INFO                                    ##
+################################################################################
+
 # Programs
 printf "\nUsing make \"$MAKE\" (v%s)\n" \
-    `$MAKE --version | sed -e 's/[^0-9]\+\([0-9.]\+\).*/\1/g' | sed -n '/[0-9.]\+/{p;q;}'`
+    `$MAKE --version | sed -e 's/[^0-9]\+\([0-9.]\+\).*/\1/g' \
+                     | sed -n '/[0-9.]\+/{p;q;}'`
 
 printf "\nUsing shell \"$SHELL\" (v%s)\n" \
-    `$SHELL --version | sed -e 's/[^0-9]\+\([0-9.]\+\).*/\1/g' | sed -n '/[0-9.]\+/{p;q;}'`
+    `$SHELL --version | sed -e 's/[^0-9]\+\([0-9.]\+\).*/\1/g' \
+                      | sed -n '/[0-9.]\+/{p;q;}'`
 
 # Compilers
 echo
@@ -37,6 +64,10 @@ if ! [ -z "$CC" ];  then echo "CC  = \"$CC\" "; fi
 if ! [ -z "$FC"  ]; then echo "FC  = \"$FC\" "; fi
 if ! [ -z "$CXX" ]; then echo "CXX = \"$CXX\""; fi
 echo
+
+################################################################################
+##                                    TESTS                                   ##
+################################################################################
 
 # Targets
 echo -n "Testing Targets "
@@ -46,6 +77,7 @@ echo
 assert_end Targets
 echo
 
+# Languages
 for LANG in C C++ Fortran;
 do
     lang=`echo $LANG | tr '[:upper:]' '[:lower:]'`

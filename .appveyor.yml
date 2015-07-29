@@ -1,0 +1,31 @@
+environment:
+  matrix:
+  - APPVEYOR_BUILD_SYS: Cygwin
+    WIN_SHELL: C:\cygwin\bin\bash
+    WIN_MAKE:  C:\cygwin\bin\make
+    WIN_SETUP: C:\cygwin\setup-x86.exe
+    SHELL: /cygdrive/c/cygwin/bin/bash
+    MAKE:  /cygdrive/c/cygwin/bin/make
+    SETUP: /cygdrive/c/cygwin/bin/setup-x86.exe
+    CC:  /cygdrive/c/cygwin/bin/gcc
+    CXX: /cygdrive/c/cygwin/bin/g++
+    FC:  /cygdrive/c/cygwin/bin/gfortran
+
+init:
+  # Carriage returns are bad
+  - git config --global core.autocrlf input
+
+build: off
+
+install:
+  # coreutils (uname), findutils (find), util-linux (getopt)
+  # bc (calculator), gcc-fortran (gforgran)
+  - 'if "%APPVEYOR_BUILD_SYS%" == "Cygwin"
+       %WIN_SETUP% -q -P coreutils,findutils,util-linux,bc,gcc-core,gcc-g++,gcc-fortran'
+
+before_test:
+  - 'if "%APPVEYOR_BUILD_SYS%" == "Cygwin" set PATH=C:\cygwin\bin;%PATH%'
+
+test_script:
+  - '%WIN_SHELL% test/tests.sh'
+

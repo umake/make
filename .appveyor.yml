@@ -18,7 +18,7 @@ build: off
 install:
   # coreutils (uname), findutils (find), util-linux (getopt)
   # bc (calculator), gcc-fortran (gforgran)
-  - '%WIN_SETUP% -q -P coreutils,findutils,util-linux,bc,gcc-fortran'
+  - '%WIN_SETUP% -q -P coreutils,findutils,util-linux,bc,gcc-core,gcc-g++,gcc-fortran'
 
 before_test:
   - 'set PATH=%PATH:C:\MinGW\bin;=%'

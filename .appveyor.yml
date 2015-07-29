@@ -2,6 +2,7 @@ environment:
   matrix:
   - WIN_SHELL: C:\cygwin\bin\bash
     WIN_MAKE: C:\cygwin\bin\make
+    WIN_SETUP: C:\cygwin\setup-x86.exe
     SHELL: /cygdrive/c/cygwin/bin/bash
     MAKE: /cygdrive/c/cygwin/bin/make
     CC:  /cygdrive/c/cygwin/bin/gcc
@@ -13,6 +14,9 @@ init:
   - git config --global core.autocrlf input
 
 build: off
+
+install:
+  - '%WIN_SETUP% -q -P bc,gcc-fortran'
 
 test_script:
   - '%WIN_SHELL% test/tests.sh'

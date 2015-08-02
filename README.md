@@ -111,7 +111,7 @@ the same procedure will do it.
 #### Portability ####
 
 This Makefile is currently being tested under projects developed mainly
-in C++ within Ubuntu Linux, Arch Linux and MAC OS X. Tests have already
+in C++ within Ubuntu Linux, Arch Linux, MAC OS X and Windows. Tests have already
 been done in purely C and C/C++ projects. To report compatibility
 problems, check the session below.
 

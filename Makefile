@@ -101,7 +101,7 @@ FINDFLAGS    := -type d -print 2> /dev/null
 SCRIPTFLAGS  := -efc
 CTAGSFLAGS   :=
 ETAGSFLAGS   :=
-MAKEFLAGS    := --no-print-directory
+MAKEFLAGS    += --no-print-directory
 
 # Analysis lint options
 CALFLAGS     := --quiet --enable=style
@@ -489,7 +489,7 @@ CURL            := curl -o
 GIT             := git
 
 # Make
-MAKE            += -f $(firstword $(MAKEFILE_LIST)) $(MAKEFLAGS)
+MAKE            += -f $(firstword $(MAKEFILE_LIST))
 
 ########################################################################
 ##                              SWITCHES                              ##

@@ -162,7 +162,7 @@ FLIBS        :=
 # Program paths for include dirs
 LEXLIBS      :=
 YACCLIBS     :=
-ESQLLIBS     := $(if $(strip $(shell which pg_config)),\
+ESQLLIBS     := $(if $(strip $(shell which pg_config &>/dev/null)),\
                     $(shell pg_config --includedir))
 
 # Linker paths for library dirs

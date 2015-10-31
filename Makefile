@@ -98,7 +98,7 @@ ESQLFLAGS    :=
 COVFLAGS     := -q
 PROFFLAGS    :=
 FINDFLAGS    := -type d -print 2> /dev/null
-SCRIPTFLAGS  := -ec
+SCRIPTFLAGS  := -efc
 CTAGSFLAGS   :=
 ETAGSFLAGS   :=
 MAKEFLAGS    := --no-print-directory
@@ -551,7 +551,7 @@ SHREXT      := .dylib
 SHRFLAGS    := -fno-common
 LDSHR       := -dynamiclib -undefined dynamic_lookup
 
-SCRIPTFLAGS := $(empty)
+SCRIPTFLAGS := -t0
 define SCRIPTQUOTE
 "
 endef

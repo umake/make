@@ -5162,10 +5162,10 @@ $(shell printf '%*s\n' "$${COLUMNS:-$$(tput cols)}" '' | tr ' ' '#')
 endef
 
 define ERROR
-2>&1 | sed '1 s/^/\'$$'\n\r''$(SEPARATOR)\'$$'\n\r''/' \
-     | sed '1 s/^\$$//g' | sed '1 s/#\$$/#/' \
-     | sed '$$ s/$$/\'$$'\n\r''$(SEPARATOR)/' \
-     | sed '$$ s/\$$\(.*\)#/\1#/g'
+2>&1 | sed -e '1 s/^/\'$$'\n\r''$(SEPARATOR)\'$$'\n\r''/;' \
+           -e '1 s/^\$$//g;' -e '1 s/#\$$/#/;' \
+           -e '$$ s/$$/\'$$'\n\r''$(SEPARATOR)/;' \
+           -e '$$ s/\$$\(.*\)#/\1#/g;'
 endef
 #| sed '1 s/^/> stderr:\n/'                 # '> stderr:' in 1st line
 #| sed 's/^/> /'                            # Put '> ' before each line

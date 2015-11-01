@@ -657,7 +657,7 @@ MAKERAWREMOTE := \
 
 # Git remote path
 MAKEGITREMOTE := \
-    git@github.com:renatocf/make.git
+    https://github.com/renatocf/make.git
 
 # Make current directory
 MAKECURRENTDIR := \

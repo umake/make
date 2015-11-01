@@ -568,6 +568,16 @@ LDSHR        = -shared \
                -Wl,--enable-auto-image-base
 endif
 
+ifeq ($(PLAT_OS),Msys) # Windows with MSYS2
+SHREXT      := .dll
+SHRFLAGS    :=
+LDSHR        = -shared \
+               -Wl,--out-implib,$@$(arext) \
+               -Wl,--export-all-symbols \
+               -Wl,--enable-auto-import \
+               -Wl,--enable-auto-image-base
+endif
+
 # Include additional platform specific changes
 -include $(PLAT_KERNEL).$(PLAT_ARCH).mk
 -include $(PLAT_KERNEL).$(PLAT_ARCH).$(PLAT_RELEASE).mk

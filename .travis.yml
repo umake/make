@@ -1,7 +1,6 @@
 language: cpp
 
 os:
-  - osx
   - linux
 
 compiler:

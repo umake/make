@@ -1,15 +1,15 @@
 environment:
   matrix:
   - APPVEYOR_BUILD_SYS: Msys2
-    WIN_SHELL: C:\msys32\usr\bin\bash
-    WIN_MAKE:  C:\msys32\usr\bin\make
-    WIN_SETUP: C:\msys32\usr\bin\bash
+    WIN_SHELL: C:\msys64\usr\bin\bash
+    WIN_MAKE:  C:\msys64\usr\bin\make
+    WIN_SETUP: C:\msys64\usr\bin\bash
     SHELL: /usr/bin/bash
     MAKE:  /usr/bin/make
     SETUP: /usr/bin/bash
-    CC:  /c/msys32/mingw32/bin/gcc
-    CXX: /c/msys32/mingw32/bin/g++
-    FC:  /c/msys32/mingw32/bin/gfortran
+    CC:  /c/msys64/mingw64/bin/gcc
+    CXX: /c/msys64/mingw64/bin/g++
+    FC:  /c/msys64/mingw64/bin/gfortran
   - APPVEYOR_BUILD_SYS: Cygwin
     WIN_SHELL: C:\cygwin\bin\bash
     WIN_MAKE:  C:\cygwin\bin\make
@@ -32,18 +32,8 @@ install:
   # coreutils (uname), findutils (find), util-linux (getopt)
   # bc (calculator), gcc-fortran (gforgran)
   - cmd:
-      'if "%APPVEYOR_BUILD_SYS%" == "Msys2" (
-        cd C:/
-        & appveyor DownloadFile "http://kent.dl.sourceforge.net/project/msys2/Base/i686/msys2-base-i686-20150512.tar.xz" -FileName "msys2.tar.xz"
-        & 7z x msys2.tar.xz
-        & 7z x msys2.tar > NUL
-        & %WIN_SETUP% -lc "pacman --noconfirm -Syu"
-        & %WIN_SETUP% -lc "pacman --noconfirm -S bc"
-        & %WIN_SETUP% -lc "pacman --noconfirm -S make"
-        & %WIN_SETUP% -lc "pacman --noconfirm -S mingw-w64-i686-gcc"
-        & %WIN_SETUP% -lc "pacman --noconfirm -S mingw-w64-i686-gcc-fortran"
-        & cd %APPVEYOR_BUILD_FOLDER%
-      )'
+      'if "%APPVEYOR_BUILD_SYS%" == "Msys2"
+        %WIN_SETUP% -lc "pacman --noconfirm -S bc"'
   - cmd:
       'if "%APPVEYOR_BUILD_SYS%" == "Cygwin"
          %WIN_SETUP% -q -P coreutils,findutils,util-linux,bc,gcc-core,gcc-g++,gcc-fortran'
@@ -51,7 +41,7 @@ install:
 before_test:
   - cmd:
       'if "%APPVEYOR_BUILD_SYS%" == "Msys2"
-         set PATH=C:\msys32\usr\bin;C:\msys32\mingw32\bin;%PATH%'
+         set PATH=C:\msys64\usr\bin;C:\msys64\mingw64\bin;%PATH%'
   - cmd:
       'if "%APPVEYOR_BUILD_SYS%" == "Cygwin"
          set PATH=C:\cygwin\bin;%PATH%'

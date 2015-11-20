@@ -123,6 +123,7 @@
     [X] Add Makeball for Posix Threads library
     [X] Add Makeball for GMP (multiple precision arithmetic) library.
     [X] Add Makeball for MPFR (multiple precision float) library.
+    [X] Add Makeball for Sistmo PRNG (parallel RNG) Engine library.
     [ ] Add Makeball for wxWidgets GUI library
     [ ] Add Makeball for GTK+ GUI library
     [ ] Add Makeball for QT GUI library

@@ -441,14 +441,16 @@ YACC            := bison
 YACCCXX         := bisonc++
 
 # Analysis lint
-CALINT          := cppcheck
+CALINT           = cppcheck --enable=all $(addprefix -i,$(extdir))
 FALINT          :=
-CXXALINT        := cppcheck
+CXXALINT         = $(CALINT)
 
 # Syntax lint
 CSLINT          :=
 FSLINT          :=
-CXXSLINT        := cpplint.py
+CXXSLINT         = cpplint --extensions=$(subst .,,$(strip \
+                               $(subst $(space),$(comma),$(strip \
+                                     $(cxxext) $(hxxext) $(tlext)))))
 
 # Coverage
 COV             := lcov

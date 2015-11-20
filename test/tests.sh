@@ -78,7 +78,7 @@ assert_end Targets
 echo
 
 # Languages
-for LANG in C C++ Fortran;
+for LANG in ${LANGUAGE:-C C++ Fortran};
 do
     lang=`echo $LANG | tr '[:upper:]' '[:lower:]'`
 

@@ -441,14 +441,16 @@ YACC            := bison
 YACCCXX         := bisonc++
 
 # Analysis lint
-CALINT          := cppcheck
+CALINT           = cppcheck --enable=all $(addprefix -i,$(extdir))
 FALINT          :=
-CXXALINT        := cppcheck
+CXXALINT         = $(CALINT)
 
 # Syntax lint
 CSLINT          :=
 FSLINT          :=
-CXXSLINT        := cpplint.py
+CXXSLINT         = cpplint --extensions=$(subst .,,$(strip \
+                               $(subst $(space),$(comma),$(strip \
+                                     $(cxxext) $(hxxext) $(tlext)))))
 
 # Coverage
 COV             := lcov
@@ -2029,7 +2031,7 @@ lexall   := $(strip $(lexall))
 #------------------------------------------------------------------[ 6 ]
 lexinc   := $(call not-root,$(basename $(basename $(lexall))))
 lexinc   := $(addprefix $(firstword $(incdir))/,$(lexinc))
-lexinc   := $(addsuffix -yy/,$(lexinc))
+lexinc   := $(wildcard $(addsuffix -yy/,$(lexinc)))
 #------------------------------------------------------------------[ 7 ]
 lexinc   += $(if $(strip $(lexall)),$(strip $(LEXLIBS)))
 
@@ -2064,7 +2066,7 @@ yaccall   := $(strip $(yaccall))
 #------------------------------------------------------------------[ 6 ]
 yaccinc   := $(call not-root,$(basename $(basename $(yaccall))))
 yaccinc   := $(addprefix $(firstword $(incdir))/,$(yaccinc))
-yaccinc   := $(addsuffix -tab/,$(yaccinc))
+yaccinc   := $(wildcard $(addsuffix -tab/,$(yaccinc)))
 #------------------------------------------------------------------[ 7 ]
 yaccinc   += $(if $(strip $(yaccall)),$(strip $(YACCLIBS)))
 
@@ -2164,36 +2166,76 @@ execdep := $(addprefix $(depdir)/,\
 # 6) *libs   : Add subidirectories as paths to be searched for headers
 # 7) *inc    : Get all language specific headers from include dirs
 # 8) incall  : Get all headers from include dirs
+# #------------------------------------------------------------------[ 1 ]
+# aslibs  := $(call rm-trailing-bar,$(ASLIBS))
+# clibs   := $(call rm-trailing-bar,$(CLIBS))
+# flibs   := $(call rm-trailing-bar,$(FLIBS))
+# cxxlibs := $(call rm-trailing-bar,$(CXXLIBS))
+# #------------------------------------------------------------------[ 2 ]
+# userinc := $(call filter-ignored,\
+#                $(foreach i,$(incdir),$(call rsubdir,$i)))
+# #------------------------------------------------------------------[ 3 ]
+# userinc := $(foreach i,$(sort $(userinc)),\
+#                $(if $(filter $i/%,$(userinc)),$i,\
+#                    $(if $(call not-empty,$(foreach e,$(incext),\
+#                             $(call rwildcard,$i,*$e))),$i)))
+# #------------------------------------------------------------------[ 4 ]
+# autoinc := $(yaccinc) $(lexinc) $(esqlinc)
+# #------------------------------------------------------------------[ 5 ]
+# execinc := $(sort $(call rm-trailing-bar,$(userinc) $(autoinc)))
+# #------------------------------------------------------------------[ 6 ]
+# aslibs  += $(patsubst %,-I$(space)%,$(execinc))
+# clibs   += $(patsubst %,-I$(space)%,$(execinc))
+# flibs   += $(patsubst %,-I$(space)%,$(execinc))
+# cxxlibs += $(patsubst %,-I$(space)%,$(execinc))
+# #------------------------------------------------------------------[ 7 ]
+# cinc    := $(foreach d,$(incdir),$(foreach e,$(hext),\
+#                $(call rwildcard,$d,*$e)))
+# finc    := $(foreach d,$(incdir),$(foreach e,$(hfext),\
+#                $(call rwildcard,$d,*$e)))
+# cxxinc  := $(foreach d,$(incdir),$(foreach e,$(hxxext),\
+#                $(call rwildcard,$d,*$e)))
+# #------------------------------------------------------------------[ 8 ]
+# incall  := $(cinc) $(finc) $(cxxinc)
+
 #------------------------------------------------------------------[ 1 ]
 aslibs  := $(call rm-trailing-bar,$(ASLIBS))
 clibs   := $(call rm-trailing-bar,$(CLIBS))
 flibs   := $(call rm-trailing-bar,$(FLIBS))
 cxxlibs := $(call rm-trailing-bar,$(CXXLIBS))
 #------------------------------------------------------------------[ 2 ]
-userinc := $(call filter-ignored,\
+incsub  := $(call filter-ignored,\
                $(foreach i,$(incdir),$(call rsubdir,$i)))
 #------------------------------------------------------------------[ 3 ]
-userinc := $(foreach i,$(sort $(userinc)),\
-               $(if $(filter $i/%,$(userinc)),$i,\
+incsub  := $(foreach i,$(sort $(incsub)),\
+               $(if $(filter $i/%,$(incsub)),$i,\
                    $(if $(call not-empty,$(foreach e,$(incext),\
-                            $(call rwildcard,$i,*$e))),$i)))
+                       $(call rwildcard,$i,*$e))),$i)))
 #------------------------------------------------------------------[ 4 ]
-autoinc := $(yaccinc) $(lexinc) $(esqlinc)
+ifneq ($(incdir),.)
+userinc := $(sort $(call filter-ignored,\
+               $(foreach r,$(incdir),\
+                   $(foreach e,$(incext),\
+                       $(call rwildcard,$r,*$e)\
+           ))))
+else
+$(warning "Source directory is '.'. Deep search for source disabled")
+userall := $(sort $(foreach e,$(incext),$(wildcard *$e)))
+endif
 #------------------------------------------------------------------[ 5 ]
-execinc := $(sort $(call rm-trailing-bar,$(userinc) $(autoinc)))
+autoinc := $(yaccinc) $(lexinc) $(esqlinc)
 #------------------------------------------------------------------[ 6 ]
-aslibs  += $(patsubst %,-I$(space)%,$(execinc))
-clibs   += $(patsubst %,-I$(space)%,$(execinc))
-flibs   += $(patsubst %,-I$(space)%,$(execinc))
-cxxlibs += $(patsubst %,-I$(space)%,$(execinc))
+execinc := $(sort $(call rm-trailing-bar,$(userinc) $(autoinc)))
 #------------------------------------------------------------------[ 7 ]
-cinc    := $(foreach d,$(incdir),$(foreach e,$(hext),\
-               $(call rwildcard,$d,*$e)))
-finc    := $(foreach d,$(incdir),$(foreach e,$(hfext),\
-               $(call rwildcard,$d,*$e)))
-cxxinc  := $(foreach d,$(incdir),$(foreach e,$(hxxext),\
-               $(call rwildcard,$d,*$e)))
+aslibs  += $(patsubst %,-I$(space)%,$(incsub))
+clibs   += $(patsubst %,-I$(space)%,$(incsub))
+flibs   += $(patsubst %,-I$(space)%,$(incsub))
+cxxlibs += $(patsubst %,-I$(space)%,$(incsub))
 #------------------------------------------------------------------[ 8 ]
+cinc    := $(call rfilter,$(addprefix %,$(hext)),$(execinc))
+finc    := $(call rfilter,$(addprefix %,$(hfext)),$(execinc))
+cxxinc  := $(call rfilter,$(addprefix %,$(hxxext)),$(execinc))
+#------------------------------------------------------------------[ 9 ]
 incall  := $(cinc) $(finc) $(cxxinc)
 
 # Type-specific library flags
@@ -2457,9 +2499,10 @@ endif
 #    4.1) binary-name_src, for not-root binary's specific sources;
 #    4.2) binary-name_all, for complete path binary's specific sources;
 #    4.3) binary-name_obj, for binary's specific objects;
-#    4.4) binary-name_lib, for binary's specific libraries;
-#    4.5) binary-name_link, for binary's specific linker flags;
-#    4.6) binary-name_comall, for complete path binary's shared sources
+#    4.4) binary-name_inc, for binary's specific headers;
+#    4.5) binary-name_lib, for binary's specific libraries;
+#    4.6) binary-name_link, for binary's specific linker flags;
+#    4.7) binary-name_comall, for complete path binary's shared sources;
 #------------------------------------------------------------------[ 1 ]
 define binary-name
 $1 := $$(call rm-trailing-bar,$$(basename $2))
@@ -2481,10 +2524,13 @@ $(strip $(sort \
 $(foreach sep,/ .,$(foreach b,$(call corename,$(execbin)),$(or\
     $(eval $b_src  += $(filter $b$(sep)%,\
                           $(usersrc) $(autosrc) $(mainsrc))),\
-    $(eval $b_all  += $(sort $(call rfilter,$(addprefix %,$($b_src)),\
+    $(eval $b_all  := $(sort $(call rfilter,$(addprefix %,$($b_src)),\
                           $(userall) $(autoall) $(mainall)))),\
     $(eval $b_obj  += $(filter $(objdir)/$b$(sep)%,\
                           $(userobj) $(autoobj) $(mainobj))),\
+    $(eval $b_inc  := $(sort $(foreach f,$($b_src),\
+                          $(foreach d,$(incdir),$(foreach e,$(incext),\
+                              $(wildcard $d/$(basename $f)$e)))))),\
     $(eval $b_lib  += $(foreach d,$(libdir),\
                           $(filter $d/$b$(sep)%,$(execlib)))),\
     $(eval $b_link += $(foreach l,$(arlink) $(shrlink),\
@@ -2499,6 +2545,7 @@ endef
 comsrc  := $(call common-factory,src,$(usersrc) $(autosrc) $(mainsrc))
 comall  := $(call common-factory,all,$(userall) $(autoall) $(mainall))
 comobj  := $(call common-factory,obj,$(userobj) $(autoobj) $(mainobj))
+cominc  := $(call common-factory,inc,$(incall))
 comlib  := $(call common-factory,lib,$(lib))
 comlink := $(call common-factory,link,$(liblink)) \
            $(filter-out -l%,$(ldflags))
@@ -2507,6 +2554,7 @@ $(foreach b,$(call corename,$(execbin)),$(or\
     $(eval $b_src     := $(comsrc)  $($b_src)  ),\
     $(eval $b_all     := $(comall)  $($b_all)  ),\
     $(eval $b_obj     := $(comobj)  $($b_obj)  ),\
+    $(eval $b_inc     := $(cominc)  $($b_inc)  ),\
     $(eval $b_lib     := $(comlib)  $($b_lib)  ),\
     $(eval $b_link    := $($b_link) $(comlink) ),\
     $(eval $b_comall  := $(comall)             ),\
@@ -2547,9 +2595,11 @@ endif
 #     8.1) binary-name_src, for test not-root binary's sources;
 #     8.2) binary-name_all, for test complete path binary's sources;
 #     8.3) binary-name_obj, for test binary's specific objects;
-#     8.4) binary-name_lib, for test binary's specific libraries;
-#     8.5) binary-name_link, for test binary's specific linker flags;
-#     8.6) binary-name_comall, for complete path binary's shared sources;
+#     8.4) binary-name_inc, for test binary's specific headers;
+#     8.5) binary-name_lib, for test binary's specific libraries;
+#     8.6) binary-name_link, for test binary's specific linker flags;
+#     8.7) binary-name_comall, for test complete path binary's
+#                              shared sources;
 #  9) Check if test sources have test suffixes and a matching file
 # 10) testdep : Dependency files for tests
 #------------------------------------------------------------------[ 1 ]
@@ -2585,7 +2635,10 @@ $(foreach t,$(call corename,$(testbin)),$(or\
     $(eval $t_all += $(sort $(call rfilter,$(addprefix %,$($t_src)),\
                          $(testall) $(userall) $(autoall)))),\
     $(eval $t_obj := $(filter $(objdir)/$(testdir)/$t%,\
-                         $(testobj) $(userobj) $(autoobj)))\
+                         $(testobj) $(userobj) $(autoobj))),\
+    $(eval $t_inc := $(sort $(foreach f,$($t_src),\
+                         $(foreach d,$(incdir),$(foreach e,$(incext),\
+                             $(wildcard $d/$(basename $f)$e))))))\
 ))
 #------------------------------------------------------------------[ 7 ]
 define common-test-factory
@@ -2597,11 +2650,14 @@ comtestall := $(call common-test-factory,all,\
                   $(testall) $(userall) $(autoall))
 comtestobj := $(call common-test-factory,obj,\
                   $(testobj) $(userobj) $(autoobj))
+comtestinc := $(call common-test-factory,inc,\
+                  $(userinc) $(autoinc))
 #------------------------------------------------------------------[ 8 ]
 $(foreach t,$(call corename,$(testbin)),$(or\
     $(eval $t_src    := $(comtestsrc) $($t_src)),\
     $(eval $t_all    := $(comtestall) $($t_all)),\
     $(eval $t_obj    := $(comtestobj) $($t_obj)),\
+    $(eval $t_inc    := $(comtestinc) $($t_inc)),\
     $(eval $t_lib    := $(arlib) $(shrlib)),\
     $(eval $t_link   := $(liblink) $(filter-out -l%,$(ldflags))),\
     $(eval $t_comall := $(comtestall)),\
@@ -2634,9 +2690,10 @@ testdep := $(addprefix $(depdir)/$(testdir)/,\
 #     8.1) binary-name_src, for bench not-root binary's sources;
 #     8.2) binary-name_all, for bench complete path binary's sources;
 #     8.3) binary-name_obj, for bench binary's specific objects;
-#     8.4) binary-name_lib, for bench binary's specific libraries;
-#     8.5) binary-name_link, for bench binary's specific linker flags;
-#     8.5) binary-name_comall, for bench complete path binary's 
+#     8.4) binary-name_inc, for bench binary's specific headers;
+#     8.5) binary-name_lib, for bench binary's specific libraries;
+#     8.6) binary-name_link, for bench binary's specific linker flags;
+#     8.7) binary-name_comall, for bench complete path binary's
 #                              shared sources;
 #  9) Check if bench sources have benchmark suffixes and a matching file
 # 10) benchdep : Dependency files for benchmarks
@@ -2673,7 +2730,10 @@ $(foreach t,$(call corename,$(benchbin)),$(or\
     $(eval $t_all += $(sort $(call rfilter,$(addprefix %,$($t_src)),\
                          $(benchall) $(userall) $(autoall)))),\
     $(eval $t_obj := $(filter $(objdir)/$(benchdir)/$t%,\
-                         $(benchobj) $(userobj) $(autoobj)))\
+                         $(benchobj) $(userobj) $(autoobj))),\
+    $(eval $t_inc := $(sort $(foreach f,$($t_src),\
+                         $(foreach d,$(incdir),$(foreach e,$(incext),\
+                             $(wildcard $d/$(basename $f)$e))))))\
 ))
 #------------------------------------------------------------------[ 7 ]
 define common-bench-factory
@@ -2685,11 +2745,14 @@ combenchall := $(call common-bench-factory,all,\
                   $(benchall) $(userall) $(autoall))
 combenchobj := $(call common-bench-factory,obj,\
                   $(benchobj) $(userobj) $(autoobj))
+combenchinc := $(call common-test-factory,inc,\
+                  $(userinc) $(autoinc))
 #------------------------------------------------------------------[ 8 ]
 $(foreach t,$(call corename,$(benchbin)),$(or\
     $(eval $t_src    := $(combenchsrc) $($t_src)),\
     $(eval $t_all    := $(combenchall) $($t_all)),\
     $(eval $t_obj    := $(combenchobj) $($t_obj)),\
+    $(eval $t_inc    := $(combenchinc) $($t_inc)),\
     $(eval $t_lib    := $(arlib) $(shrlib)),\
     $(eval $t_link   := $(liblink) $(filter-out -l%,$(ldflags))),\
     $(eval $t_comall := $(combenchall)),\
@@ -4252,7 +4315,7 @@ $(foreach b,$(benchbin),$(eval $(call run-factory,$b,BENCH)))
 #======================================================================#
 define analysis-lint-factory
 $1: f=$2
-$1: $$($$(call corename,$2)_all)
+$1: $$($$(call corename,$2)_all) $$($$(call corename,$2)_inc)
 	$$(call phony-status,$$(MSG_ALINT))
 	$$(quiet) $$(call faketty) \
 	          $$($3ALINT) $$($$(call lc,$3)libs) \
@@ -4275,7 +4338,7 @@ $(foreach b,$(execbin) $(testbin) $(benchbin) $(arlib) $(shrlib),\
 #======================================================================#
 define style-lint-factory
 $1: f=$2
-$1: $$($$(call corename,$2)_all)
+$1: $$($$(call corename,$2)_all) $$($$(call corename,$2)_inc)
 	$$(call phony-status,$$(MSG_SLINT))
 	$$(quiet) $$(call faketty) \
 	          $$($3SLINT) $$($$(call lc,$3)slflags) $$^ $$(ERROR)
@@ -6624,6 +6687,7 @@ else
 	
 	$(call echo,"${WHITE}\nHEADERS                  ${RES}")
 	$(call echo,"-----------------------------------------")
+	$(call prompt,"incsub:        ",$(incsub)              )
 	$(call prompt,"userinc:       ",$(userinc)             )
 	$(call prompt,"autoinc:       ",$(autoinc)             )
 	$(call prompt,"execinc:       ",$(execinc)             )

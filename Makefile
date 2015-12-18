@@ -98,7 +98,7 @@ ESQLFLAGS    :=
 COVFLAGS     := -q
 PROFFLAGS    :=
 FINDFLAGS    := -type d -print 2> /dev/null
-SCRIPTFLAGS  := -efc
+SCRIPTFLAGS  := /dev/null -efc
 CTAGSFLAGS   :=
 ETAGSFLAGS   :=
 MAKEFLAGS    += --no-print-directory
@@ -553,7 +553,7 @@ SHREXT      := .dylib
 SHRFLAGS    := -fno-common
 LDSHR       := -dynamiclib -undefined dynamic_lookup
 
-SCRIPTFLAGS := -t0
+SCRIPTFLAGS := -t0 /dev/null
 define SCRIPTQUOTE
 "
 endef
@@ -5217,7 +5217,7 @@ ifndef SILENT
 ifndef MORE
 
 define define-faketty
-faketty () { $(SCRIPT) /dev/null $(SCRIPTFLAGS) \
+faketty () { $(SCRIPT) $(SCRIPTFLAGS) \
              $(SCRIPTQUOTE)"$$(printf "%s " "$$@")"$(SCRIPTQUOTE) \
            | sed '$${/^\r*$$/d;}'; }
 endef

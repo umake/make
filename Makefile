@@ -5800,7 +5800,7 @@ ifdef NMS_HEADER
 	$(call cat,''                                                      )
 	$(call cat,'// Internal headers'                                   )
 	$(call include-files,$(NMSH_FILES)                                 )
-	$(call cat,'#endif'                                                )
+	$(call cat,'#endif  // $(indef)$(call sfmt,$(NMSH_NAME))_'         )
 	
 	$(call select,stdout)
 endif
@@ -5837,7 +5837,7 @@ ifdef LIB_HEADER
 	$(call cat,''                                                      )
 	$(call cat,'// Internal headers'                                   )
 	$(call include-files,$(LIBH_FILES)                                 )
-	$(call cat,'#endif'                                                )
+	$(call cat,'#endif  // $(indef)$(call sfmt,$(LIBH_NAME))_'         )
 	
 	$(call select,stdout)
 endif
@@ -5852,7 +5852,7 @@ ifdef C_FILE
 	$(call cat,'#ifndef $(indef)$(call sfmt,$(C_FILE))_'               )
 	$(call cat,'#define $(indef)$(call sfmt,$(C_FILE))_'               )
 	$(call cat,''                                                      )
-	$(call cat,'#endif'                                                )
+	$(call cat,'#endif  /* $(indef)$(call sfmt,$(C_FILE))_ */'         )
 	
 	$(call invalid-ext,$(SRC_EXT),$(cext))
 	$(call touch,$(srcbase)/$(C_FILE)$(SRC_EXT),$(notice))
@@ -5893,7 +5893,7 @@ ifdef CXX_FILE
 	$(call cat,''                                                      )
 	$(call end-namespace                                               )
 	$(call cat,''                                                      )
-	$(call cat,'#endif'                                                )
+	$(call cat,'#endif  // $(indef)$(call sfmt,$(CXX_FILE))_'          )
 	
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	$(call touch,$(srcbase)/$(CXX_FILE)$(SRC_EXT),$(notice))
@@ -5915,7 +5915,7 @@ ifdef C_MODULE
 	$(call cat,'#ifndef $(indef)$(call sfmt,$(C_MODULE))_'             )
 	$(call cat,'#define $(indef)$(call sfmt,$(C_MODULE))_'             )
 	$(call cat,''                                                      )
-	$(call cat,'#endif'                                                )
+	$(call cat,'#endif  /* $(indef)$(call sfmt,$(C_MODULE))_ */'       )
 	
 	$(call mkdir,$(srcbase)/$(C_MODULE))
 	
@@ -5956,7 +5956,7 @@ ifdef CXX_MODULE
 	$(call cat,''                                                      )
 	$(call end-namespace                                               )
 	$(call cat,''                                                      )
-	$(call cat,'#endif'                                                )
+	$(call cat,'#endif  // $(indef)$(call sfmt,$(CXX_MODULE))_'        )
 	
 	$(call mkdir,$(srcbase)/$(CXX_MODULE))
 	
@@ -6023,7 +6023,7 @@ ifdef CLASS
 	$(call cat,''                                                      )
 	$(call end-namespace                                               )
 	$(call cat,''                                                      )
-	$(call cat,'#endif'                                                )
+	$(call cat,'#endif  // $(indef)$(call sfmt,$(CLASS))_'             )
 	
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	$(call touch,$(srcbase)/$(CLASS)$(SRC_EXT),$(notice))
@@ -6035,7 +6035,6 @@ ifdef CLASS
 	$(call start-namespace                                             )
 	$(call cat,''                                                      )
 	$(call end-namespace                                               )
-	$(call cat,''                                                      )
 	
 	$(call select,stdout)
 endif
@@ -6053,7 +6052,7 @@ ifdef TEMPLATE
 	$(call cat,''                                                      )
 	$(call end-namespace                                               )
 	$(call cat,''                                                      )
-	$(call cat,'#endif'                                                )
+	$(call cat,'#endif  // $(indef)$(call sfmt,$(TEMPLATE))_'          )
 	
 	$(call select,stdout)
 endif
@@ -6073,8 +6072,8 @@ ifdef NLS_HEADER
 	$(call touch,$(incbase)/$(NLS_HEADER)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(NLS_HEADER)$(INC_EXT))
 	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'#ifndef HPP_$(indef)$(call sfmt,$(NLS_HEADER))_DEFINED')
-	$(call cat,'#define HPP_$(indef)$(call sfmt,$(NLS_HEADER))_DEFINED')
+	$(call cat,'#ifndef $(indef)$(call sfmt,$(NLS_HEADER))_'           )
+	$(call cat,'#define $(indef)$(call sfmt,$(NLS_HEADER))_'           )
 	$(call cat,''                                                      )
 	$(call cat,'#ifdef ENABLE_NLS'                                     )
 	$(call cat,''                                                      )
@@ -6093,9 +6092,9 @@ ifdef NLS_HEADER
 	$(call cat,'#define gettext_noop(String) String'                   )
 	$(call cat,'#define N_(String) gettext_noop (String)'              )
 	$(call cat,''                                                      )
-	$(call cat,'#endif'                                                )
+	$(call cat,'#endif  /* ENABLE_NLS */'                              )
 	$(call cat,''                                                      )
-	$(call cat,'#endif'                                                )
+	$(call cat,'#endif  // $(indef)$(call sfmt,$(NLS_HEADER))_'        )
 	
 	$(call select,stdout)
 endif

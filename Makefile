@@ -5692,7 +5692,7 @@ override INC_EXT := $(strip $(if $(strip $(INC_EXT)),\
 # Format to make a preprocessor symbol
 # $1 File name
 define sfmt
-$(call uc,$1)
+$(call uc,$(call camel-to-snake-case,$1))
 endef
 
 # Function: invalid-ext

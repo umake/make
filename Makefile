@@ -912,6 +912,8 @@ endef
 # ===================
 # 1) lc: Returns $1 with lowecase letters only
 # 2) uc: Returns $1 with uppercase letters only
+# 2) camel-to-snake-case: Convert $1 from CamelCase to snake_case
+# 2) snake-to-camel-case: Convert $1 from snake_case to CamelCase
 
 define lc
 $(strip $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,\
@@ -929,6 +931,26 @@ $(strip $(subst a,A,$(subst b,B,$(subst c,C,$(subst d,D,$(subst e,E,\
         $(subst p,P,$(subst q,Q,$(subst r,R,$(subst s,S,$(subst t,T,\
         $(subst u,U,$(subst v,V,$(subst w,W,$(subst x,X,$(subst y,Y,\
         $(subst z,Z,$(strip $1))))))))))))))))))))))))))))
+endef
+
+define camel-to-snake-case
+$(strip $(patsubst _%,%,\
+    $(subst A,_a,$(subst B,_b,$(subst C,_c,$(subst D,_d,$(subst E,_e,\
+    $(subst F,_f,$(subst G,_g,$(subst H,_h,$(subst I,_i,$(subst J,_j,\
+    $(subst K,_k,$(subst L,_l,$(subst M,_m,$(subst N,_n,$(subst O,_o,\
+    $(subst P,_p,$(subst Q,_q,$(subst R,_r,$(subst S,_s,$(subst T,_t,\
+    $(subst U,_u,$(subst V,_v,$(subst W,_w,$(subst X,_x,$(subst Y,_y,\
+    $(subst Z,_z,$(strip $1)))))))))))))))))))))))))))))
+endef
+
+define snake-to-camel-case
+$(strip $(patsubst _%,%,\
+    $(subst _a,A,$(subst _b,B,$(subst _c,C,$(subst _d,D,$(subst _e,E,\
+    $(subst _f,F,$(subst _g,G,$(subst _h,H,$(subst _i,I,$(subst _j,J,\
+    $(subst _k,K,$(subst _l,L,$(subst _m,M,$(subst _n,N,$(subst _o,O,\
+    $(subst _p,P,$(subst _q,Q,$(subst _r,R,$(subst _s,S,$(subst _t,T,\
+    $(subst _u,U,$(subst _v,V,$(subst _w,W,$(subst _x,X,$(subst _y,Y,\
+    $(subst _z,Z,$(strip $1)))))))))))))))))))))))))))))
 endef
 
 # Lexical comparison functions

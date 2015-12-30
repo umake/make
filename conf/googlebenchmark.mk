@@ -31,6 +31,6 @@ LDLIBS          += -L external/gbenchmark/build/src
 
 # Flags
 # =======
-LDFLAGS         += -lbenchmark
+LDBENCH         += -lbenchmark
 
 endif # ifndef GOOGLE_BENCHMARK_MK

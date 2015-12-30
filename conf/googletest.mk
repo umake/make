@@ -33,11 +33,6 @@ LDLIBS          += -L external/gtest/build/googlemock/ \
 
 # Flags
 # =======
-CXXFLAGS        += -pthread
-LDFLAGS         += -pthread -lgmock -lgtest
-
-# Runtime
-# ========
-TEST_ENV        += GTEST_COLOR=yes
+LDTEST          += -lgmock -lgtest -pthread
 
 endif # ifndef GOOGLE_TEST_MK

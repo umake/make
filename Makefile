@@ -134,6 +134,8 @@ LDFLAGS      :=
 LDC          :=
 LDF          := -lgfortran
 LDCXX        :=
+LDTEST       :=
+LDBENCH      :=
 
 # Library options
 LDSHR        := -shared
@@ -1663,11 +1665,14 @@ ldcxx      := $(LDCXX)
 
 ldshr       = $(LDSHR)
 
+ldcov      := $(LDCOV)
+
 ldlex      := $(LDLEX)
 ldyacc     := $(LDYACC)
 ldesql     := $(LDESQL)
 
-ldcov      := $(LDCOV)
+ldtest     := $(LDTEST)
+ldbench    := $(LDBENCH)
 
 # Paths
 # =======
@@ -2681,7 +2686,8 @@ $(foreach t,$(call corename,$(testbin)),$(or\
     $(eval $t_obj    := $(comtestobj) $($t_obj)),\
     $(eval $t_inc    := $(comtestinc) $($t_inc)),\
     $(eval $t_lib    := $(arlib) $(shrlib)),\
-    $(eval $t_link   := $(liblink) $(filter-out -l%,$(ldflags))),\
+    $(eval $t_link   := $(liblink) $(ldtest) \
+                        $(filter-out -l%,$(ldflags))),\
     $(eval $t_comall := $(comtestall)),\
 ))
 #------------------------------------------------------------------[ 9 ]
@@ -2776,7 +2782,8 @@ $(foreach t,$(call corename,$(benchbin)),$(or\
     $(eval $t_obj    := $(combenchobj) $($t_obj)),\
     $(eval $t_inc    := $(combenchinc) $($t_inc)),\
     $(eval $t_lib    := $(arlib) $(shrlib)),\
-    $(eval $t_link   := $(liblink) $(filter-out -l%,$(ldflags))),\
+    $(eval $t_link   := $(liblink) $(ldbench) \
+                        $(filter-out -l%,$(ldflags))),\
     $(eval $t_comall := $(combenchall)),\
 ))
 #------------------------------------------------------------------[ 9 ]
@@ -6877,10 +6884,12 @@ else
 	$(call prompt,"ldf:           ",$(ldf)                 )
 	$(call prompt,"ldcxx:         ",$(ldcxx)               )
 	$(call prompt,"ldshr:         ",$(ldshr)               )
+	$(call prompt,"ldcov:         ",$(ldcov)               )
 	$(call prompt,"ldlex:         ",$(ldlex)               )
 	$(call prompt,"ldyacc:        ",$(ldyacc)              )
 	$(call prompt,"ldesql:        ",$(ldesql)              )
-	$(call prompt,"ldcov:         ",$(ldcov)               )
+	$(call prompt,"ldtest:        ",$(ldtest)              )
+	$(call prompt,"ldbench:       ",$(ldbench)             )
 	
 	$(call echo,"${WHITE}\nPATHS                    ${RES}")
 	$(call echo,"-----------------------------------------")

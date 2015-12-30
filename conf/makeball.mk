@@ -53,6 +53,8 @@ LDCXX           += # C++ linker flags
 LDLEX           += # Lexer linker flags
 LDYACC          += # Parser linker flags
 LDESQL          += # Embedded SQL linker flags
+LDTEST          += # Test binary linker flags
+LDBENCH         += # Benchmark binary linker flags
 
 # Library flags
 # ===============

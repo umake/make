@@ -5471,6 +5471,7 @@ GIT_SUBMODULE        := $(GIT) submodule -q
 GIT_SUBMODULE_ADD    := $(GIT_SUBMODULE) add -f
 GIT_SUBMODULE_INIT   := $(GIT_SUBMODULE) init
 GIT_TAG              := $(GIT) tag
+GIT_CONFIG           := $(GIT) config
 
 ifdef $(call version-gt,$(git_version),1.8.3)
 GIT_SUBMODULE_DEINIT := $(GIT_SUBMODULE) deinit -f
@@ -5487,7 +5488,8 @@ phony-git-$1 = \
 endef
 $(foreach c,\
     ADD CLONE COMMIT DIFF INIT LS_FILES PULL PUSH REMOTE REMOTE_ADD \
-    RM SUBMODULE SUBMODULE_ADD SUBMODULE_INIT SUBMODULE_DEINIT TAG, \
+    RM SUBMODULE SUBMODULE_ADD SUBMODULE_INIT SUBMODULE_DEINIT TAG \
+    CONFIG, \
     $(eval $(call git-cmd-factory,$(subst _,-,$(call lc,$c)),$c)))
 
 define git-clone
@@ -5568,6 +5570,12 @@ define git-submodule-rm
 	             cd $(dir $1);                                       \
 	             $(call model-git-submodule-deinit,$(notdir $1));    \
 	             $(call model-git-rm,--cached $(notdir $1));         \
+	             $(call model-git-config,-f .gitmodules              \
+	                 --remove-section "submodule.$(notdir $1)");     \
+	             if [ -z "$$(cat .gitmodules)" ];                    \
+	                 then $(call model-git-rm,.gitmodules);          \
+	                 else $(call model-git-add,.gitmodules);         \
+	             fi;                                                 \
 	             $(call model-git-commit,"Remove $(notdir $1)");     \
 	             $(RMDIR) $1 $(ERROR);                               \
 	             cd $(MAKECURRENTDIR);                               \
@@ -5577,6 +5585,12 @@ define git-submodule-rm
 	         else \
 	             $(call model-git-submodule-deinit,$1);              \
 	             $(call model-git-rm,--cached $1);                   \
+	             $(call model-git-config,-f .gitmodules              \
+	                 --remove-section "submodule.$1");               \
+	             if [ -z "$$(cat .gitmodules)" ];                    \
+	                 then $(call model-git-rm,.gitmodules);          \
+	                 else $(call model-git-add,.gitmodules);         \
+	             fi;                                                 \
 	             $(call model-git-commit,"Remove submodule $1");     \
 	             $(RMDIR) $1 $(ERROR);                               \
 	             $(RMDIR) .git/modules/$1 $(ERROR);                  \

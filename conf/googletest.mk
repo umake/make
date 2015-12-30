@@ -21,16 +21,15 @@ override GOOGLE_TEST_MK := T
 # Dependencies
 # ==============
 GIT_DEPENDENCY  += \
-    gmock => https://chromium.googlesource.com/external/googlemock.git\
-             cd make && make -s gmock.a GTEST_DIR=../../gtest\
-                     && mv gmock.a libgmock.a,\
-    gtest => https://chromium.googlesource.com/external/googletest.git\
-             cd make && make -s gtest.a && mv gtest.a libgtest.a\
+    gtest => https://github.com/google/googletest.git \
+             mkdir -p build && cd build && cmake .. && make
 
 # Paths
 # =======
-CXXLIBS         += -I external/gmock/include/ -I external/gtest/include/
-LDLIBS          += -L external/gtest/make/ -L external/gmock/make/
+CXXLIBS         += -I external/gtest/googlemock/include/ \
+                   -I external/gtest/googletest/include/
+LDLIBS          += -L external/gtest/build/googlemock/ \
+                   -L external/gtest/build/googlemock/gtest/
 
 # Flags
 # =======

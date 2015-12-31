@@ -5552,12 +5552,18 @@ define git-submodule-add
 	             $(call model-git-submodule-add,$1 $(notdir $2));  \
 	             $(call model-git-submodule-init,$(notdir $2));    \
 	             $(call model-git-commit,"Add $(notdir $2)");      \
+	             $(call model-git-config,-f .gitmodules            \
+	                 --add submodule.$(notdir $2).ignore 'dirty'); \
+	             $(call model-git-add,.gitmodules);                \
 	             cd $(MAKECURRENTDIR);                             \
 	             $(call model-git-add,$(dir $2));                  \
 	             $(call model-git-commit,"Add sub-submodule $2");  \
 	         else \
 	             $(call model-git-submodule-add,$1 $2);            \
 	             $(call model-git-submodule-init,$2);              \
+	             $(call model-git-config,-f .gitmodules            \
+	                 --add submodule.$2.ignore 'dirty');           \
+	             $(call model-git-add,.gitmodules);                \
 	             $(call model-git-commit,"Add submodule $2");      \
 	         fi
 	$(call phony-ok,$(MSG_GIT_SUB_ADD))

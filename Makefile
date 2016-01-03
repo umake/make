@@ -327,7 +327,7 @@ HXXEXT  := .H .hh .hpp .HPP .hxx .h++ .ih
 CEXT    := .c
 FEXT    := .f .FOR .for .f77 .f90 .f95 .F .fpp .FPP
 CXXEXT  := .C .cc .cpp .CPP .cxx .c++
-TLEXT   := .tcc .icc
+INLEXT  := .inl .tcc .icc .ixx
 
 # Library extensions
 LIBEXT  := .a .so .dll .dylib
@@ -453,7 +453,7 @@ CSLINT          :=
 FSLINT          :=
 CXXSLINT         = cpplint --extensions=$(subst .,,$(strip \
                                $(subst $(space),$(comma),$(strip \
-                                     $(cxxext) $(hxxext) $(tlext)))))
+                                     $(cxxext) $(hxxext) $(inlext)))))
 
 # Coverage
 GCOV            := gcov
@@ -1795,7 +1795,7 @@ hxxext  := $(strip $(sort $(HXXEXT)))
 cext    := $(strip $(sort $(CEXT)))
 fext    := $(strip $(sort $(FEXT)))
 cxxext  := $(strip $(sort $(CXXEXT)))
-tlext   := $(strip $(sort $(TLEXT)))
+inlext  := $(strip $(sort $(INLEXT)))
 asmext  := $(strip $(sort $(ASMEXT)))
 libext  := $(strip $(sort $(LIBEXT)))
 arext   := $(strip $(sort $(AREXT)))
@@ -1829,7 +1829,7 @@ dviext  := $(strip $(sort $(DVIEXT)))
 pdfext  := $(strip $(sort $(PDFEXT)))
 psext   := $(strip $(sort $(PSEXT)))
 
-incext := $(hext) $(hxxext) $(tlext) $(hfext)
+incext := $(hext) $(hxxext) $(inlext) $(hfext)
 srcext := $(cext) $(cxxext) $(fext) $(asmext)
 docext := $(texiext) $(infoext) $(htmlext) $(dviext) $(pdfext) $(psext)
 
@@ -5889,7 +5889,7 @@ ifdef LIBRARY
 	$(call mkdir,$(incbase)/$(subst ::,/,$(LIBRARY)))
 endif
 ifdef LIB_HEADER
-	$(if $(INC_EXT),,$(eval override INC_EXT := .tcc))
+	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
 	
 	@# LIBH: Library directory
 	$(eval LIBH       := $(subst ::,/,$(LIB_HEADER)))
@@ -6123,9 +6123,10 @@ ifdef CLASS
 	$(call select,stdout)
 endif
 ifdef TEMPLATE
-	$(if $(INC_EXT),,$(eval override INC_EXT := .tcc))
+	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .inl))
 	
-	$(call invalid-ext,$(INC_EXT),$(tlext))
+	$(call invalid-ext,$(INC_EXT),$(hxxext))
 	$(call touch,$(incbase)/$(TEMPLATE)$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$(TEMPLATE)$(INC_EXT))
 	$(if $(wildcard $(notice)),$(call cat,''))
@@ -6136,7 +6137,18 @@ ifdef TEMPLATE
 	$(call cat,''                                                      )
 	$(call end-namespace                                               )
 	$(call cat,''                                                      )
+	$(call cat,'// Implementation'                                     )
+	$(call cat,'#include "$(TEMPLATE)$(INC_EXT)"'                      )
+	$(call cat,''                                                      )
 	$(call cat,'#endif  // $(indef)$(call sfmt,$(TEMPLATE))_'          )
+	
+	$(call invalid-ext,$(SRC_EXT),$(tlext))
+	$(call touch,$(incbase)/$(TEMPLATE)$(SRC_EXT),$(notice))
+	$(call select,$(incbase)/$(TEMPLATE)$(SRC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call start-namespace                                             )
+	$(call cat,''                                                      )
+	$(call end-namespace                                               )
 	
 	$(call select,stdout)
 endif
@@ -6709,7 +6721,7 @@ else
 	$(call prompt,"hext:          ",$(hext)                )
 	$(call prompt,"hfext:         ",$(hfext)               )
 	$(call prompt,"hxxext:        ",$(hxxext)              )
-	$(call prompt,"tlext:         ",$(tlext)               )
+	$(call prompt,"inlext:        ",$(inlext)              )
 	$(call prompt,"libext:        ",$(libext)              )
 	$(call prompt,"arext:         ",$(arext)               )
 	$(call prompt,"shrext:        ",$(shrext)              )

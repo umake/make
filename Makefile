@@ -5926,7 +5926,7 @@ ifdef C_FILE
 	$(call touch,$(srcbase)/$(C_FILE)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(C_FILE)$(SRC_EXT))
 	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'/* Internal headers */'                                )
+	$(call cat,'/* Interface header */'                                )
 	$(call cat,'#include "$(C_FILE)$(INC_EXT)"'                        )
 	$(call cat,''                                                      )
 	
@@ -5967,7 +5967,7 @@ ifdef CXX_FILE
 	$(call touch,$(srcbase)/$(CXX_FILE)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(CXX_FILE)$(SRC_EXT))
 	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'// Internal headers'                                   )
+	$(call cat,'// Interface header'                                   )
 	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"'                      )
 	$(call cat,''                                                      )
 	
@@ -6097,7 +6097,7 @@ ifdef CLASS
 	$(call touch,$(srcbase)/$(CLASS)$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$(CLASS)$(SRC_EXT))
 	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'// Internal headers'                                   )
+	$(call cat,'// Interface header'                                   )
 	$(call cat,'#include "$(CLASS)$(INC_EXT)"'                         )
 	$(call cat,''                                                      )
 	$(call start-namespace                                             )

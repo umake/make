@@ -5241,6 +5241,17 @@ endef
 
 endif # ifndef SILENT
 
+## SED FUNCTIONS #######################################################
+
+define sed
+sed -i -e $1 $(strip $2)
+endef
+
+define sedln
+$(call sed,$(subst $(dquote),$(squote),\
+               $(call join-strings,$1'{'$2'}')),$(strip $3))
+endef
+
 ## ERROR SHELL #########################################################
 ifndef SILENT
 ifndef MORE
@@ -5433,6 +5444,12 @@ endef
 define cat
 $(quiet) $(call printf,"%b\n",$1,\
                        $(if $(strip $(ostream)),>> $(ostream)))
+endef
+
+# Function: eat
+# Remove text of the last line of a ostream
+define eat
+$(quiet) $(call sedln,'$$',$1,$(strip $(ostream)))
 endef
 
 # Function: touch
@@ -5736,21 +5753,23 @@ endef
 # If there are 'n' namespaces, put the first 'n-1' with open
 # curly-braces in the same line, and the last one in the last line
 define start-namespace
-$(if $(innms),\
-    $(call cat,"$(\
+$(if $(call is-empty,$(innms)),$(\
+    )$(call eat,'/^\s*$$/d'),$(\
+    )$(call cat,"$(\
         )$(patsubst %,namespace % {\\n,$(call rcdr,$(innms)))$(\
-        )$(patsubst %,namespace % {,$(call rcar,$(innms)))$(\
-)"))
+        )$(patsubst %,namespace % {,$(call rcar,$(innms)))")$(\
+))
 endef
 
 # Function: end-namespace
 # End the namespaces using the IN variable for namespace depth
 define end-namespace
-$(if $(innms),\
-    $(call cat,"$(\
+$(if $(call is-empty,$(innms)),$(\
+    )$(call eat,'/^\s*$$/d'),$(\
+    )$(call cat,"$(\
         )$(patsubst %,}  // namespace %\\n,$(call cdr,$(innms)))$(\
-        )$(patsubst %,}  // namespace %,$(call car,$(innms)))$(\
-)"))
+        )$(patsubst %,}  // namespace %,$(call car,$(innms)))")$(\
+))
 endef
 
 # Function: include-files

@@ -5970,6 +5970,9 @@ ifdef CXX_FILE
 	$(call cat,'// Interface header'                                   )
 	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"'                      )
 	$(call cat,''                                                      )
+	$(call start-namespace                                             )
+	$(call cat,''                                                      )
+	$(call end-namespace                                               )
 	
 	$(call select,stdout)
 endif

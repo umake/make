@@ -4937,12 +4937,10 @@ MSG_EXT_BUILD     = "${YELLOW}Building dependency ${WHITE}$d${RES}"
 MSG_EXT_BUILD_ERR = "${DEF}Failed compiling ${WHITE}$d${RES}"
 
 MSG_TOUCH         = "${PURPLE}Creating new file ${DEF}$1${RES}"
-MSG_UPDATE_NMSH   = "${YELLOW}Updating namespace${DEF}"\
-                    "$(subst /,::,${NMS_HEADER})"
-MSG_UPDATE_LIBH   = "${YELLOW}Updating library${DEF}"\
-                    "$(subst /,::,${LIB_HEADER})"
+MSG_UPDATE_GROUP  = "${YELLOW}Updating group of headers ${DEF}"\
+                    "$(subst /,::,${CXX_GROUP})"
 MSG_NEW_EXT       = "${RED}Extension '$1' invalid${RES}"
-MSG_DELETE_WARN   = "${RED}Are you sure you want to do deletes?${RES}"
+MSG_DELETE_WARN   = "${RED}Are you sure you want to delete it?${RES}"
 MSG_DELETE_ALT    = "${DEF}Run ${BLUE}'make delete FLAGS D=1'${RES}"
 
 MSG_WARNCLEAN_BEG = "${RED}This command is intended for maintainers"\
@@ -5690,7 +5688,7 @@ define web-submodule-rm
 endef
 
 ########################################################################
-##                           MANAGEMENT                               ##
+##                          FILE GENERATION                           ##
 ########################################################################
 
 # Executes iff one of the make goals is 'new' or 'delete'
@@ -5700,7 +5698,7 @@ ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,new delete update)))
 # ===========
 # 1) Remove trailing bars if it is a directory-only name
 # 2) Substitute C++ namespace style (::) by path style (/)
-# 3) If the name includes a root src/inc directory, remove-it.
+# 3) If the name includes a root src/inc directory, remove it.
 ifdef IN
 #------------------------------------------------------------------[ 1 ]
 override IN := $(strip $(call rm-trailing-bar,$(IN)))
@@ -5738,33 +5736,76 @@ inusing       := $(strip $(subst $(space),::,$(innms)))
 #------------------------------------------------------------------[ 7 ]
 idnt          := $(empty)  $(empty)
 
-# Extension variables
-# =====================
+# Variables for extensions
+# =========================
+override INC_EXT := $(strip $(if $(strip $(INC_EXT)),\
+	$(or $(filter .%,$(INC_EXT)),.$(INC_EXT))))
 override SRC_EXT := $(strip $(if $(strip $(SRC_EXT)),\
     $(or $(filter .%,$(SRC_EXT)),.$(SRC_EXT))))
-override INC_EXT := $(strip $(if $(strip $(INC_EXT)),\
-    $(or $(filter .%,$(INC_EXT)),.$(INC_EXT))))
+override INL_EXT := $(strip $(if $(strip $(INL_EXT)),\
+    $(or $(filter .%,$(INL_EXT)),.$(INL_EXT))))
 
-# Function: sfmt
-# Format to make a preprocessor symbol
-# $1 File name
+# Helper functions
+# =================
+
+########################################################################
+# Function: sfmt                                                       #
+# @brief Format to make a preprocessor symbol                          #
+# @param $1 File name                                                  #
+########################################################################
 define sfmt
 $(call uc,$(call camel-to-snake-case,$1))
 endef
 
-# Function: invalid-ext
-# $1 File extension
-# $2 List of extensions to validate as correct $1, if it is not empty
+########################################################################
+# Function: invalid-ext                                                #
+# @param $1 File extension                                             #
+# @param $2 List of extensions to validate $1, if it is not empty      #
+########################################################################
 define invalid-ext
 $(if $(strip $1),$(if $(findstring $(strip $1),$2),,\
     $(call phony-error,$(MSG_NEW_EXT))\
 ))
 endef
 
-# Function: start-namespace
-# Create new namespaces from the IN variable
-# If there are 'n' namespaces, put the first 'n-1' with open
-# curly-braces in the same line, and the last one in the last line
+########################################################################
+# Function: include-standard-headers                                   #
+# @brief Create include directives for all standard headers in $1      #
+########################################################################
+define include-standard-headers
+$(if $(call is-empty,$1),$(\
+    )$(call eat,'/^\s*$$/d'),$(\
+    )$(call cat,'// $(or $(strip $2),Standard headers)')$(newline)$(\
+    )$(foreach f,$1,$(call cat,'#include <$f>')$(newline)))
+endef
+
+########################################################################
+# Function: include-internal-headers                                   #
+# @brief Create include directives for all internal headers in $1      #
+########################################################################
+define include-internal-headers
+$(if $(call is-empty,$1),$(\
+    )$(call eat,'/^\s*$$/d'),$(\
+    )$(call cat,'// $(or $(strip $2),Internal headers)')$(newline)$(\
+    )$(foreach f,$1,$(call cat,'#include "$f"')$(newline)))
+endef
+
+########################################################################
+# Function: include-implementation-header                              #
+# @briefs Create include directive for implementation header $1        #
+########################################################################
+define include-implementation-header
+$(if $(call is-empty,$1),$(\
+    )$(call eat,'/^\s*$$/d'),$(\
+    )$(call cat,'// $(or $(strip $2),Implementation header)')$(\
+    )$(newline)$(\
+    )$(call cat,'#include "$(strip $1)"')$(newline))
+endef
+
+########################################################################
+# Function: start-namespace                                            #
+# @brief Create new namespaces from the IN variable                    #
+########################################################################
 define start-namespace
 $(if $(call is-empty,$(innms)),$(\
     )$(call eat,'/^\s*$$/d'),$(\
@@ -5774,8 +5815,10 @@ $(if $(call is-empty,$(innms)),$(\
 ))
 endef
 
-# Function: end-namespace
-# End the namespaces using the IN variable for namespace depth
+########################################################################
+# Function: end-namespace                                              #
+# @brief End the namespaces using the IN variable for namespace depth  #
+########################################################################
 define end-namespace
 $(if $(call is-empty,$(innms)),$(\
     )$(call eat,'/^\s*$$/d'),$(\
@@ -5785,15 +5828,276 @@ $(if $(call is-empty,$(innms)),$(\
 ))
 endef
 
-# Function: include-files
-# Create include directives (#include) for all files in $1
-define include-files
-$(call cat,$(subst \\n ,\\n,\
-    $(patsubst %,'#include "%"'\\n,$(sort $1))))
+########################################################################
+# Function: declare-data-structure                                     #
+# @brief Declare new data structure for C/C++                          #
+########################################################################
+define declare-data-structure
+$(if $(call is-empty,$1),$(\
+    )$(call eat,'/^\s*$$/d'),$(\
+    )$(if $(call not-empty,$3),$(\
+        )$(call cat,'template <typename T>')$(newline))$(\
+    )$(call cat,'$1 $2 {')$(newline)$(\
+    )$(call cat,'};'))
+endef
+
+# File templates
+# ===============
+
+define c-header
+	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
+	$(call invalid-ext,$(INC_EXT),$(hext))
+	
+	$(call touch,$(incbase)/$1$(INC_EXT),$(notice))
+	$(call select,$(incbase)/$1$(INC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'#ifndef $(indef)$(call sfmt,$1)_'                      )
+	$(call cat,'#define $(indef)$(call sfmt,$1)_'                      )
+	$(call cat,''                                                      )
+	$(call declare-data-structure,$2,$1,                               )
+	$(call cat,''                                                      )
+	$(call cat,'#endif  /* $(indef)$(call sfmt,$1)_ */'                )
+	
+	$(call select,stdout)
+endef
+
+define c-source
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
+	$(call invalid-ext,$(SRC_EXT),$(cext))
+	
+	$(call touch,$(srcbase)/$1$(SRC_EXT),$(notice))
+	$(call select,$(srcbase)/$1$(SRC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'/* Interface header */'                                )
+	$(call cat,'#include "$(C_FILE)$(INC_EXT)"'                        )
+	
+	$(call select,stdout)
+endef
+
+define c-main
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
+	$(call invalid-ext,$(SRC_EXT),$(cext))
+	
+	$(call touch,$(srcbase)/$1$(SRC_EXT),$(notice))
+	$(call select,$(srcbase)/$1$(SRC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'/* Standard headers */'                                )
+	$(call cat,''                                                      )
+	$(call cat,'int main(int argc, char **argv) {'                     )
+	$(call cat,'$(idnt)return 0;'                                      )
+	$(call cat,'}'                                                     )
+	
+	$(call select,stdout)
+endef
+
+define f-source
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
+	$(call invalid-ext,$(SRC_EXT),$(fext))
+	
+	$(call touch,$(srcbase)/$1$(SRC_EXT),$(notice),| sed 's/\//!/g')
+	$(call select,$(srcbase)/$1$(SRC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	
+	$(call select,stdout)
+endef
+
+define f-module
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
+	$(call invalid-ext,$(SRC_EXT),$(fext))
+	
+	$(call touch,$(srcbase)/$1$(SRC_EXT),$(notice),| sed 's/\//!/g')
+	$(call select,$(srcbase)/$1$(SRC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'module $1'                                             )
+	$(call cat,''                                                      )
+	$(call cat,'$(idnt)implicit none'                                  )
+	$(call cat,''                                                      )
+	$(call cat,'$(idnt)private'                                        )
+	$(call cat,'$(idnt)public'                                         )
+	$(call cat,''                                                      )
+	$(call cat,'contains'                                              )
+	$(call cat,''                                                      )
+	$(call cat,'end module $1'                                         )
+	
+	$(call select,stdout)
+endef
+
+define f-program
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
+	
+	$(call invalid-ext,$(SRC_EXT),$(fext))
+	$(call touch,$(srcbase)/$1$(SRC_EXT),$(notice),| sed 's/\//!/g')
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call select,$(srcbase)/$1$(SRC_EXT))
+	$(call cat,'program $1'                                            )
+	$(call cat,'end program $1'                                        )
+	
+	$(call select,stdout)
+endef
+
+define f-submodule
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
+	$(call invalid-ext,$(SRC_EXT),$(fext))
+	
+	$(call touch,$(srcbase)/$1$(SRC_EXT),$(notice),| sed 's/\//!/g')
+	$(call select,$(srcbase)/$1$(SRC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'submodule () $1'                                       )
+	$(call cat,''                                                      )
+	$(call cat,'contains'                                              )
+	$(call cat,''                                                      )
+	$(call cat,'end submodule $1'                                      )
+	
+	$(call select,stdout)
+endef
+
+define cxx-header
+	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
+	$(call invalid-ext,$(INC_EXT),$(hxxext))
+	
+	$(if $(INL_EXT),,$(eval override INL_EXT := .ipp))
+	$(call invalid-ext,$(INL_EXT),$(inlext))
+	
+	@# INL_FILE: File name for the inline header
+	$(eval INL_FILE  := $(call not-root,$(incbase)/$1$(INL_EXT)))
+	
+	$(call touch,$(incbase)/$1$(INC_EXT),$(notice))
+	$(call select,$(incbase)/$1$(INC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'#ifndef $(indef)$(call sfmt,$1)_'                      )
+	$(call cat,'#define $(indef)$(call sfmt,$1)_'                      )
+	$(call cat,''                                                      )
+	$(call start-namespace                                             )
+	$(call cat,''                                                      )
+	$(call declare-data-structure,$2,$1,$(strip $3),                   )
+	$(call cat,''                                                      )
+	$(call end-namespace                                               )
+	$(call cat,''                                                      )
+	$(call include-implementation-header,$(if $(strip $3),$(INL_FILE)),)
+	$(call cat,''                                                      )
+	$(call cat,'#endif  // $(indef)$(call sfmt,$1)_'                   )
+	
+	$(call select,stdout)
+endef
+
+define cxx-source
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
+	$(call invalid-ext,$(SRC_EXT),$(cxxext))
+	
+	$(call touch,$(srcbase)/$1$(SRC_EXT),$(notice))
+	$(call select,$(srcbase)/$1$(SRC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'// Interface header'                                   )
+	$(call cat,'#include "$1$(inc_ext)"'                               )
+	$(call cat,''                                                      )
+	$(call start-namespace                                             )
+	$(call cat,''                                                      )
+	$(call end-namespace                                               )
+	
+	$(call select,stdout)
+endef
+
+define cxx-inline
+	$(if $(INL_EXT),,$(eval override INL_EXT := .inl))
+	$(call invalid-ext,$(INL_EXT),$(inlext))
+	
+	$(call touch,$(incbase)/$1$(INL_EXT),$(notice))
+	$(call select,$(incbase)/$1$(INL_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call start-namespace                                             )
+	$(call cat,''                                                      )
+	$(call end-namespace                                               )
+	
+	$(call select,stdout)
+endef
+
+define cxx-group
+	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
+	
+	@# GROUP: Group directory
+	$(eval GROUP       := $(subst ::,/,$1))
+	$(eval GROUP       := $(if $(strip $(IN)),$(IN)/)$(GROUP))
+	$(eval GROUP       := $(firstword $(filter %$(GROUP)/,\
+	                         $(sort $(dir $(execinc))))))
+	$(eval GROUP       := $(call rm-trailing-bar,$(GROUP)))
+	
+	@# GROUP_NAME: File name for the group header
+	$(eval GROUP_NAME  := $(notdir $(basename $(GROUP))))
+	
+	@# GROUP_FILES: Files to be put in the group header
+	$(eval GROUP_FILES := $(filter $(GROUP)/%,$(execinc)))
+	$(eval GROUP_FILES := $(call not-root,\
+	    $(filter-out $(GROUP)/$(GROUP_NAME).%,\
+	        $(foreach f,$(GROUP_FILES),\
+	            $(firstword $(filter %$f,$(execinc)))\
+	))))
+	
+	$(call invalid-ext,$(INC_EXT),$(hxxext))
+	$(call touch,$(GROUP)/$(GROUP_NAME)$(INC_EXT),$(notice))
+	$(call select,$(GROUP)/$(GROUP_NAME)$(INC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'#ifndef $(indef)$(call sfmt,$(GROUP_NAME))_'           )
+	$(call cat,'#define $(indef)$(call sfmt,$(GROUP_NAME))_'           )
+	$(call cat,''                                                      )
+	$(call include-internal-headers,$(GROUP_FILES)                     )
+	$(call cat,''                                                      )
+	$(call cat,'#endif  // $(indef)$(call sfmt,$(GROUP_NAME))_'        )
+	
+	$(call select,stdout)
+endef
+
+define cxx-main
+	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
+	
+	$(call invalid-ext,$(SRC_EXT),$(cxxext))
+	$(call touch,$(srcbase)/$1$(SRC_EXT),$(notice))
+	$(call select,$(srcbase)/$1$(SRC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'// Standard headers'                                   )
+	$(call cat,''                                                      )
+	$(call cat,'int main(int argc, char **argv) {'                     )
+	$(call cat,'$(idnt)return 0;'                                      )
+	$(call cat,'}'                                                     )
+	
+	$(call select,stdout)
+endef
+
+define nls-header
+	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
+	$(call invalid-ext,$(INC_EXT),$(hext))
+	
+	$(call touch,$(incbase)/$1$(INC_EXT),$(notice))
+	$(call select,$(incbase)/$1$(INC_EXT))
+	$(if $(wildcard $(notice)),$(call cat,''))
+	$(call cat,'#ifndef $(indef)$(call sfmt,$1)_'                      )
+	$(call cat,'#define $(indef)$(call sfmt,$1)_'                      )
+	$(call cat,''                                                      )
+	$(call cat,'#ifdef ENABLE_NLS'                                     )
+	$(call cat,''                                                      )
+	$(call cat,'/* I18n libraries */'                                  )
+	$(foreach l,$(NLSREQINC),$(call cat,'#include <$l>')$(newline))
+	$(call cat,''                                                      )
+	$(call cat,'/* I18n macros */'                                     )
+	$(call cat,'#define _(String) gettext(String)'                     )
+	$(call cat,'#define gettext_noop(String) String'                   )
+	$(call cat,'#define N_(String) gettext_noop(String)'               )
+	$(call cat,''                                                      )
+	$(call cat,'#else'                                                 )
+	$(call cat,''                                                      )
+	$(call cat,'/* I18n macros */'                                     )
+	$(call cat,'#define _(String) String'                              )
+	$(call cat,'#define gettext_noop(String) String'                   )
+	$(call cat,'#define N_(String) gettext_noop(String)'               )
+	$(call cat,''                                                      )
+	$(call cat,'#endif  /* ENABLE_NLS */'                              )
+	$(call cat,''                                                      )
+	$(call cat,'#endif  // $(indef)$(call sfmt,$1)_'                   )
+	
+	$(call select,stdout)
 endef
 
 # Path variables
-# ================
+# ===============
 # Auxiliar variables to the default place to create/remove
 # files created by this makefile (usually the first inc/src dirs)
 override incbase := $(strip $(firstword $(incdir)))$(if $(IN),/$(IN))
@@ -5806,395 +6110,155 @@ $(if $(findstring $(IN),$(call rsubdir,$(incbase) $(srcbase))),,\
 endif
 
 # Artifacts
-# ===========
-# C/C++ Artifacts that may be created by this Makefile
-override NAMESPACE     := $(strip $(notdir $(NAMESPACE)))
-override NMS_HEADER    := $(strip $(basename $(notdir $(NMS_HEADER))))
-override LIBRARY       := $(strip $(notdir $(LIBRARY)))
-override LIB_HEADER    := $(strip $(basename $(notdir $(LIB_HEADER))))
-override C_FILE        := $(strip $(basename $(notdir $(C_FILE))))
-override F_FILE        := $(strip $(basename $(notdir $(F_FILE))))
-override CXX_FILE      := $(strip $(basename $(notdir $(CXX_FILE))))
-override C_MODULE      := $(strip $(basename $(notdir $(C_MODULE))))
-override F_MODULE      := $(strip $(basename $(notdir $(F_MODULE))))
-override CXX_MODULE    := $(strip $(basename $(notdir $(CXX_MODULE))))
-override C_MAIN        := $(strip $(basename $(notdir $(C_MAIN))))
-override F_MAIN        := $(strip $(basename $(notdir $(F_MAIN))))
-override CXX_MAIN      := $(strip $(basename $(notdir $(CXX_MAIN))))
-override CLASS         := $(strip $(basename $(notdir $(CLASS))))
-override TEMPLATE      := $(strip $(basename $(notdir $(TEMPLATE))))
-override TRANSLATION   := $(strip $(basename $(notdir $(TRANSLATION))))
-override NLS_HEADER    := $(strip $(basename $(notdir $(NLS_HEADER))))
-override MAJOR_RELEASE := $(strip $(basename $(notdir $(MAJOR_RELEASE))))
-override MINOR_RELEASE := $(strip $(basename $(notdir $(MINOR_RELEASE))))
-override PATCH_RELEASE := $(strip $(basename $(notdir $(PATCH_RELEASE))))
+# ==========
+# C/C++/Fortran files that may be created by this Makefile
 
-$(foreach f,ALPHA BETA TIMESTAMP,\
-    $(if $($f),$(eval $f := $(call lc,$f))))
+filetypes := \
+    C_HEADER C_SOURCE C_MODULE C_FILE C_MAIN C_ENUM C_UNION   \
+    C_STRUCT C_LIBRARY                                        \
+    F_SOURCE F_MODULE F_FILE F_LIBRARY F_PROGRAM F_SUBMODULE  \
+    CXX_NAMESPACE CXX_HEADER CXX_SOURCE CXX_INLINE CXX_MODULE \
+    CXX_GROUP CXX_FILE CXX_MAIN CXX_ENUM CXX_UNION CXX_CLASS  \
+    CXX_STRUCT CXX_LIBRARY CXX_TEMPLATE CXX_ENUM_CLASS        \
+    NLS_HEADER NLS_TRANSLATION                                \
+    MAJOR_RELEASE MINOR_RELEASE PATCH_RELEASE
+
+modifiers := \
+    ALPHA BETA TIMESTAMP TEMPLATE
+
+$(foreach f,$(filetypes),\
+    $(eval override $f := $(strip $(basename $(notdir $($f))))))
+
+$(foreach f,$(modifiers),\
+    $(if $(WITH_$f),$(eval $f := $(strip $(call lc,$(WITH_$f))))))
 
 # Check if there is at least one artifact to be created/deleted
-$(if $(strip \
-    $(or $(NAMESPACE),$(NMS_HEADER),\
-         $(LIBRARY),$(LIB_HEADER),\
-         $(C_FILE),$(F_FILE),$(CXX_FILE),\
-         $(C_MODULE),$(F_MODULE),$(CXX_MODULE),\
-         $(C_MAIN),$(F_MAIN),$(CXX_MAIN),\
-         $(CLASS),$(TEMPLATE),\
-         $(TRANSLATION),$(NLS_HEADER),\
-         $(MAJOR_RELEASE),$(MINOR_RELEASE),$(PATCH_RELEASE),\
-     )),,\
+$(if $(call is-empty,$(foreach f,$(filetypes),$($f))),\
      $(error No filetype defined. Type 'make projecthelp' for info))
 
 .PHONY: new
 new: | $(call root,$(incbase))/./ $(call root,$(srcbase))/./
-ifdef NAMESPACE
-	$(call mkdir,$(incbase)/$(subst ::,/,$(NAMESPACE)))
-	$(call mkdir,$(srcbase)/$(subst ::,/,$(NAMESPACE)))
+	
+ifdef C_HEADER
+	$(call c-header,$(C_HEADER))
 endif
-ifdef NMS_HEADER
-	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
-	
-	@# NMSH: Namespace directory
-	$(eval NMSH       := $(subst ::,/,$(NMS_HEADER)))
-	$(eval NMSH       := $(if $(strip $(IN)),$(IN)/)$(NMSH))
-	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
-	                         $(sort $(dir $(execinc))))))
-	$(eval NMSH       := $(call rm-trailing-bar,$(NMSH)))
-	
-	@# NMSH_NAME: File name for the Namespace header
-	$(eval NMSH_NAME  := $(notdir $(basename $(NMSH))))
-	
-	@# NMSH_FILES: Files to be put in the Namespace Header
-	$(eval NMSH_FILES := $(filter $(NMSH)/%,$(execinc)))
-	$(eval NMSH_FILES := $(call not-root,\
-	    $(filter-out $(NMSH)/$(NMSH_NAME).%,\
-	        $(foreach f,$(NMSH_FILES),\
-	            $(firstword $(filter %$f,$(execinc)))\
-	))))
-	
-	$(call invalid-ext,$(INC_EXT),$(hxxext))
-	$(call touch,$(NMSH)/$(NMSH_NAME)$(INC_EXT),$(notice))
-	$(call select,$(NMSH)/$(NMSH_NAME)$(INC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'#ifndef $(indef)$(call sfmt,$(NMSH_NAME))_'            )
-	$(call cat,'#define $(indef)$(call sfmt,$(NMSH_NAME))_'            )
-	$(call cat,''                                                      )
-	$(call cat,'// Internal headers'                                   )
-	$(call include-files,$(NMSH_FILES)                                 )
-	$(call cat,'#endif  // $(indef)$(call sfmt,$(NMSH_NAME))_'         )
-	
-	$(call select,stdout)
-endif
-ifdef LIBRARY
-	$(call mkdir,$(incbase)/$(subst ::,/,$(LIBRARY)))
-endif
-ifdef LIB_HEADER
-	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
-	
-	@# LIBH: Library directory
-	$(eval LIBH       := $(subst ::,/,$(LIB_HEADER)))
-	$(eval LIBH       := $(if $(strip $(IN)),$(IN)/)$(LIBH))
-	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
-	                         $(sort $(dir $(execinc))))))
-	$(eval LIBH       := $(call rm-trailing-bar,$(LIBH)))
-	
-	@# LIBH_NAME: File name for the Library header
-	$(eval LIBH_NAME  := $(notdir $(basename $(LIBH))))
-	
-	@# LIBH_FILES: Files to be put in the Library header
-	$(eval LIBH_FILES := $(filter $(LIBH)/%,$(execinc)))
-	$(eval LIBH_FILES := $(call not-root,\
-	    $(filter-out $(LIBH)/$(LIBH_NAME).%,\
-	        $(foreach f,$(LIBH_FILES),\
-	            $(firstword $(filter %$f,$(execinc)))\
-	))))
-	
-	$(call invalid-ext,$(INC_EXT),$(tlext))
-	$(call touch,$(LIBH)/$(LIBH_NAME)$(INC_EXT),$(notice))
-	$(call select,$(LIBH)/$(LIBH_NAME)$(INC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'#ifndef $(indef)$(call sfmt,$(LIBH_NAME))_'            )
-	$(call cat,'#define $(indef)$(call sfmt,$(LIBH_NAME))_'            )
-	$(call cat,''                                                      )
-	$(call cat,'// Internal headers'                                   )
-	$(call include-files,$(LIBH_FILES)                                 )
-	$(call cat,'#endif  // $(indef)$(call sfmt,$(LIBH_NAME))_'         )
-	
-	$(call select,stdout)
-endif
-ifdef C_FILE
-	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
-	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
-	
-	$(call invalid-ext,$(INC_EXT),$(hext))
-	$(call touch,$(incbase)/$(C_FILE)$(INC_EXT),$(notice))
-	$(call select,$(incbase)/$(C_FILE)$(INC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'#ifndef $(indef)$(call sfmt,$(C_FILE))_'               )
-	$(call cat,'#define $(indef)$(call sfmt,$(C_FILE))_'               )
-	$(call cat,''                                                      )
-	$(call cat,'#endif  /* $(indef)$(call sfmt,$(C_FILE))_ */'         )
-	
-	$(call invalid-ext,$(SRC_EXT),$(cext))
-	$(call touch,$(srcbase)/$(C_FILE)$(SRC_EXT),$(notice))
-	$(call select,$(srcbase)/$(C_FILE)$(SRC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'/* Interface header */'                                )
-	$(call cat,'#include "$(C_FILE)$(INC_EXT)"'                        )
-	$(call cat,''                                                      )
-	
-	$(call select,stdout)
-endif
-ifdef F_FILE
-	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
-	
-	$(call invalid-ext,$(SRC_EXT),$(fext))
-	$(call touch,$(srcbase)/$(F_FILE)$(SRC_EXT),$(notice),\
-                 | sed 's/\//!/g')
-	$(call select,$(srcbase)/$(F_FILE)$(SRC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,''                                                      )
-	$(call cat,'$(idnt)'                                               )
-	$(call cat,''                                                      )
-	
-	$(call select,stdout)
-endif
-ifdef CXX_FILE
-	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
-	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
-	
-	$(call invalid-ext,$(INC_EXT),$(hxxext))
-	$(call touch,$(incbase)/$(CXX_FILE)$(INC_EXT),$(notice))
-	$(call select,$(incbase)/$(CXX_FILE)$(INC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'#ifndef $(indef)$(call sfmt,$(CXX_FILE))_'             )
-	$(call cat,'#define $(indef)$(call sfmt,$(CXX_FILE))_'             )
-	$(call cat,''                                                      )
-	$(call start-namespace                                             )
-	$(call cat,''                                                      )
-	$(call end-namespace                                               )
-	$(call cat,''                                                      )
-	$(call cat,'#endif  // $(indef)$(call sfmt,$(CXX_FILE))_'          )
-	
-	$(call invalid-ext,$(SRC_EXT),$(cxxext))
-	$(call touch,$(srcbase)/$(CXX_FILE)$(SRC_EXT),$(notice))
-	$(call select,$(srcbase)/$(CXX_FILE)$(SRC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'// Interface header'                                   )
-	$(call cat,'#include "$(CXX_FILE)$(INC_EXT)"'                      )
-	$(call cat,''                                                      )
-	$(call start-namespace                                             )
-	$(call cat,''                                                      )
-	$(call end-namespace                                               )
-	
-	$(call select,stdout)
+ifdef C_SOURCE
+	$(call c-source,$(C_SOURCE))
 endif
 ifdef C_MODULE
-	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
-	
-	$(call invalid-ext,$(INC_EXT),$(hext))
-	$(call touch,$(incbase)/$(C_MODULE)$(INC_EXT),$(notice))
-	$(call select,$(incbase)/$(C_MODULE)$(INC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'#ifndef $(indef)$(call sfmt,$(C_MODULE))_'             )
-	$(call cat,'#define $(indef)$(call sfmt,$(C_MODULE))_'             )
-	$(call cat,''                                                      )
-	$(call cat,'#endif  /* $(indef)$(call sfmt,$(C_MODULE))_ */'       )
-	
+	$(call c-header,$(C_MODULE))
 	$(call mkdir,$(srcbase)/$(C_MODULE))
-	
-	$(call select,stdout)
 endif
-ifdef F_MODULE
-	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
-	
-	$(call invalid-ext,$(SRC_EXT),$(fext))
-	$(call touch,$(srcbase)/$(F_MODULE)$(SRC_EXT),$(notice),\
-                 | sed 's/\//!/g')
-	$(call select,$(srcbase)/$(F_MODULE)$(SRC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'module $(F_MODULE)'                                    )
-	$(call cat,''                                                      )
-	$(call cat,'$(idnt)implicit none'                                  )
-	$(call cat,''                                                      )
-	$(call cat,'$(idnt)private'                                        )
-	$(call cat,'$(idnt)public'                                         )
-	$(call cat,''                                                      )
-	$(call cat,'contains'                                              )
-	$(call cat,''                                                      )
-	$(call cat,'end module $(F_MODULE)'                                )
-	
-	$(call select,stdout)
-endif
-ifdef CXX_MODULE
-	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
-	
-	$(call invalid-ext,$(INC_EXT),$(hxxext))
-	$(call touch,$(incbase)/$(CXX_MODULE)$(INC_EXT),$(notice))
-	$(call select,$(incbase)/$(CXX_MODULE)$(INC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'#ifndef $(indef)$(call sfmt,$(CXX_MODULE))_'           )
-	$(call cat,'#define $(indef)$(call sfmt,$(CXX_MODULE))_'           )
-	$(call cat,''                                                      )
-	$(call start-namespace                                             )
-	$(call cat,''                                                      )
-	$(call end-namespace                                               )
-	$(call cat,''                                                      )
-	$(call cat,'#endif  // $(indef)$(call sfmt,$(CXX_MODULE))_'        )
-	
-	$(call mkdir,$(srcbase)/$(CXX_MODULE))
-	
-	$(call select,stdout)
+ifdef C_FILE
+	$(call c-header,$(C_FILE))
+	$(call c-source,$(C_FILE))
 endif
 ifdef C_MAIN
-	$(if $(SRC_EXT),,$(eval override SRC_EXT := .c))
-	
-	$(call invalid-ext,$(SRC_EXT),$(cext))
-	$(call touch,$(srcbase)/$(C_MAIN)$(SRC_EXT),$(notice))
-	$(call select,$(srcbase)/$(C_MAIN)$(SRC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'/* Standard headers */'                                )
-	$(call cat,''                                                      )
-	$(call cat,'int main(int argc, char **argv) {'                     )
-	$(call cat,'$(idnt)return 0;'                                      )
-	$(call cat,'}'                                                     )
-	
-	$(call select,stdout)
+	$(call c-main,$(C_MAIN))
 endif
-ifdef F_MAIN
-	$(if $(SRC_EXT),,$(eval override SRC_EXT := .f))
+ifdef C_ENUM
+	$(call c-header,$(C_ENUM),enum)
+endif
+ifdef C_UNION
+	$(call c-header,$(C_UNION),union)
+	$(call c-source,$(C_UNION))
+endif
+ifdef C_STRUCT
+	$(call c-header,$(C_STRUCT),struct)
+	$(call c-source,$(C_STRUCT))
+endif
+ifdef C_LIBRARY
+	$(call c-header,$(C_LIBRARY))
+	$(call c-source,$(C_LIBRARY))
+endif
 	
-	$(call invalid-ext,$(SRC_EXT),$(fext))
-	$(call touch,$(srcbase)/$(F_MAIN)$(SRC_EXT),$(notice),\
-                 | sed 's/\//!/g')
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call select,$(srcbase)/$(F_MAIN)$(SRC_EXT))
-	$(call cat,'program $(F_MAIN)'                                     )
-	$(call cat,'end program $(F_MAIN)'                                 )
+ifdef F_SOURCE
+	$(call f-source,$(F_SOURCE))
+endif
+ifdef F_MODULE
+	$(call f-module,$(F_MODULE))
+endif
+ifdef F_FILE
+	$(call f-source,$(F_FILE))
+endif
+ifdef F_LIBRARY
+	$(call f-source,$(F_LIBRARY))
+endif
+ifdef F_PROGRAM
+	$(call f-program,$(F_PROGRAM))
+endif
+ifdef F_SUBMODULE
+	$(call f-submodule,$(F_SUBMODULE))
+endif
 	
-	$(call select,stdout)
+ifdef CXX_NAMESPACE
+	$(call mkdir,$(incbase)/$(subst ::,/,$(CXX_NAMESPACE)))
+	$(call mkdir,$(srcbase)/$(subst ::,/,$(CXX_NAMESPACE)))
+endif
+ifdef CXX_HEADER
+	$(call cxx-header,$(CXX_HEADER))
+endif
+ifdef CXX_SOURCE
+	$(call cxx-source,$(CXX_SOURCE))
+endif
+ifdef CXX_INLINE
+	$(call cxx-inline,$(CXX_INLINE))
+endif
+ifdef CXX_MODULE
+	$(call cxx-header,$(CXX_MODULE))
+	$(call mkdir,$(srcbase)/$(CXX_MODULE))
+endif
+ifdef CXX_GROUP
+	$(call cxx-group,$(CXX_GROUP))
+endif
+ifdef CXX_FILE
+	$(call cxx-header,$(CXX_FILE))
+	$(call cxx-source,$(CXX_FILE))
 endif
 ifdef CXX_MAIN
-	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
-	
-	$(call invalid-ext,$(SRC_EXT),$(cxxext))
-	$(call touch,$(srcbase)/$(CXX_MAIN)$(SRC_EXT),$(notice))
-	$(call select,$(srcbase)/$(CXX_MAIN)$(SRC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'// Standard headers'                                   )
-	$(call cat,''                                                      )
-	$(call cat,'int main(int argc, char **argv) {'                     )
-	$(call cat,'$(idnt)return 0;'                                      )
-	$(call cat,'}'                                                     )
-	
-	$(call select,stdout)
+	$(call cxx-main,$(CXX_MAIN))
 endif
-ifdef CLASS
-	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
-	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
-	
-	$(call invalid-ext,$(INC_EXT),$(hxxext))
-	$(call touch,$(incbase)/$(CLASS)$(INC_EXT),$(notice))
-	$(call select,$(incbase)/$(CLASS)$(INC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'#ifndef $(indef)$(call sfmt,$(CLASS))_'                )
-	$(call cat,'#define $(indef)$(call sfmt,$(CLASS))_'                )
-	$(call cat,''                                                      )
-	$(call start-namespace                                             )
-	$(call cat,''                                                      )
-	$(call cat,'class $(CLASS) {'                                      )
-	$(call cat,'};'                                                    )
-	$(call cat,''                                                      )
-	$(call end-namespace                                               )
-	$(call cat,''                                                      )
-	$(call cat,'#endif  // $(indef)$(call sfmt,$(CLASS))_'             )
-	
-	$(call invalid-ext,$(SRC_EXT),$(cxxext))
-	$(call touch,$(srcbase)/$(CLASS)$(SRC_EXT),$(notice))
-	$(call select,$(srcbase)/$(CLASS)$(SRC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'// Interface header'                                   )
-	$(call cat,'#include "$(CLASS)$(INC_EXT)"'                         )
-	$(call cat,''                                                      )
-	$(call start-namespace                                             )
-	$(call cat,''                                                      )
-	$(call end-namespace                                               )
-	
-	$(call select,stdout)
+ifdef CXX_ENUM
+	$(call cxx-header,$(CXX_ENUM),enum)
 endif
-ifdef TEMPLATE
-	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
-	$(if $(SRC_EXT),,$(eval override SRC_EXT := .inl))
-	
-	$(call invalid-ext,$(INC_EXT),$(hxxext))
-	$(call touch,$(incbase)/$(TEMPLATE)$(INC_EXT),$(notice))
-	$(call select,$(incbase)/$(TEMPLATE)$(INC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'#ifndef $(indef)$(call sfmt,$(TEMPLATE))_'             )
-	$(call cat,'#define $(indef)$(call sfmt,$(TEMPLATE))_'             )
-	$(call cat,''                                                      )
-	$(call start-namespace                                             )
-	$(call cat,''                                                      )
-	$(call end-namespace                                               )
-	$(call cat,''                                                      )
-	$(call cat,'// Implementation'                                     )
-	$(call cat,'#include "$(TEMPLATE)$(INC_EXT)"'                      )
-	$(call cat,''                                                      )
-	$(call cat,'#endif  // $(indef)$(call sfmt,$(TEMPLATE))_'          )
-	
-	$(call invalid-ext,$(SRC_EXT),$(tlext))
-	$(call touch,$(incbase)/$(TEMPLATE)$(SRC_EXT),$(notice))
-	$(call select,$(incbase)/$(TEMPLATE)$(SRC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call start-namespace                                             )
-	$(call cat,''                                                      )
-	$(call end-namespace                                               )
-	
-	$(call select,stdout)
+ifdef CXX_UNION
+	$(call cxx-header,$(CXX_UNION),union,$(TEMPLATE))
+	$(call cxx-source,$(CXX_UNION))
+	$(if $(TEMPLATE),$(call cxx-inline,$(CXX_UNION)))
 endif
+ifdef CXX_CLASS
+	$(call cxx-header,$(CXX_CLASS),class,$(TEMPLATE))
+	$(call cxx-source,$(CXX_CLASS))
+	$(if $(TEMPLATE),$(call cxx-inline,$(CXX_CLASS)))
+endif
+ifdef CXX_STRUCT
+	$(call cxx-header,$(CXX_STRUCT),struct,$(TEMPLATE))
+	$(call cxx-source,$(CXX_STRUCT))
+	$(if $(TEMPLATE),$(call cxx-inline,$(CXX_STRUCT)))
+endif
+ifdef CXX_LIBRARY
+	$(call cxx-header,$(CXX_LIBRARY),$(TEMPLATE))
+	$(call cxx-source,$(CXX_LIBRARY))
+	$(if $(TEMPLATE),$(call cxx-inline,$(CXX_LIBRARY)))
+endif
+ifdef CXX_TEMPLATE
+	$(call cxx-header,$(CXX_TEMPLATE),,T)
+	$(call cxx-inline,$(CXX_TEMPLATE))
+endif
+ifdef CXX_ENUM_CLASS
+	$(call cxx-header,$(CXX_ENUM_CLASS),enum class)
+endif
+	
 ifdef ENABLE_NLS
-ifdef TRANSLATION
-new: $(foreach t,$(intltl),$(foreach e,$(firstword $(poext)),\
-        $(localedir)/$(TRANSLATION)$d/$(call not-root,$(basename $t))$e))
-endif
 ifdef NLS_HEADER
-	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
-	$(if $(call not-empty,$(call)),\
-	    $(if $(INC_EXT),,$(eval override INC_EXT := .h)))
-	$(if $(call not-empty,$(cxxall)),\
-	    $(if $(INC_EXT),,$(eval override INC_EXT := .hpp)))
-	
-	$(call invalid-ext,$(INC_EXT),$(hext) $(hxxext))
-	$(call touch,$(incbase)/$(NLS_HEADER)$(INC_EXT),$(notice))
-	$(call select,$(incbase)/$(NLS_HEADER)$(INC_EXT))
-	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'#ifndef $(indef)$(call sfmt,$(NLS_HEADER))_'           )
-	$(call cat,'#define $(indef)$(call sfmt,$(NLS_HEADER))_'           )
-	$(call cat,''                                                      )
-	$(call cat,'#ifdef ENABLE_NLS'                                     )
-	$(call cat,''                                                      )
-	$(call cat,'/* I18n libraries */'                                  )
-	$(foreach l,$(NLSREQINC),$(call cat,'#include <$l>')$(newline))
-	$(call cat,''                                                      )
-	$(call cat,'/* I18n macros */'                                     )
-	$(call cat,'#define _(String) gettext (String)'                    )
-	$(call cat,'#define gettext_noop(String) String'                   )
-	$(call cat,'#define N_(String) gettext_noop (String)'              )
-	$(call cat,''                                                      )
-	$(call cat,'#else'                                                 )
-	$(call cat,''                                                      )
-	$(call cat,'/* I18n macros */'                                     )
-	$(call cat,'#define _(String) String'                              )
-	$(call cat,'#define gettext_noop(String) String'                   )
-	$(call cat,'#define N_(String) gettext_noop (String)'              )
-	$(call cat,''                                                      )
-	$(call cat,'#endif  /* ENABLE_NLS */'                              )
-	$(call cat,''                                                      )
-	$(call cat,'#endif  // $(indef)$(call sfmt,$(NLS_HEADER))_'        )
-	
-	$(call select,stdout)
+	$(call nls-header,$(NLS_HEADER))
+endif
+ifdef NLS_TRANSLATION
+new: $(foreach t,$(intltl),$(foreach e,$(firstword $(poext)),\
+        $(localedir)/$(NLS_TRANSLATION)$d/$(call not-root,$(basename $t))$e))
 endif
 endif
+	
 ifdef MAJOR_RELEASE
 	$(eval override version := \
 	$(call inc-version,$(version),major,$(ALPHA) $(BETA),$(TIMESTAMP)))
@@ -6222,15 +6286,10 @@ endif
 
 .PHONY: update
 update:
-ifdef NMS_HEADER
+ifdef CXX_GROUP
 	$(call phony-status,$(MSG_UPDATE_NMSH))
-	@$(MAKE) delete new NMS_HEADER=$(NMS_HEADER) D=1 SILENT=1
+	@$(MAKE) delete new CXX_GROUP=$(CXX_GROUP) D=1 SILENT=1
 	$(call phony-ok,$(MSG_UPDATE_NMSH))
-endif
-ifdef LIB_HEADER
-	$(call phony-status,$(MSG_UPDATE_LIBH))
-	@$(MAKE) delete new LIB_HEADER=$(LIB_HEADER) D=1 SILENT=1
-	$(call phony-ok,$(MSG_UPDATE_LIBH))
 endif
 
 # Function: delete-file
@@ -6247,81 +6306,135 @@ ifndef D
 	@$(call println,$(MSG_DELETE_WARN))
 	@$(call println,$(MSG_DELETE_ALT))
 else
-ifdef NAMESPACE
-	$(call rm-if-empty,$(incbase)/$(subst ::,/,$(NAMESPACE)))
-	$(call rm-if-empty,$(srcbase)/$(subst ::,/,$(NAMESPACE)))
-endif
-ifdef NMS_HEADER
-	@# NMSH: Namespace directory
-	$(eval NMSH       := $(subst ::,/,$(NMS_HEADER)))
-	$(eval NMSH       := $(if $(strip $(IN)),$(IN)/)$(NMSH))
-	$(eval NMSH       := $(firstword $(filter %$(NMSH)/,\
-	                         $(sort $(dir $(execinc))))))
-	$(eval NMSH       := $(call rm-trailing-bar,$(NMSH)))
 	
-	@# NMSH_NAME: Namespace include files
-	$(eval NMSH_NAME  := $(notdir $(basename $(NMSH))))
-	
-	$(call delete-file,$(NMSH)/$(NMSH_NAME),$(INC_EXT) $(hxxext))
+ifdef C_HEADER
+	$(call delete-file,$(incbase)/$(C_HEADER),$(INC_EXT) $(hext))
 endif
-ifdef LIBRARY
-	$(call rm-if-empty,$(incbase)/$(subst ::,/,$(LIBRARY)))
-endif
-ifdef LIB_HEADER
-	@# LIBH: Namespace directory
-	$(eval LIBH       := $(subst ::,/,$(LIB_HEADER)))
-	$(eval LIBH       := $(if $(strip $(IN)),$(IN)/)$(LIBH))
-	$(eval LIBH       := $(firstword $(filter %$(LIBH)/,\
-	                         $(sort $(dir $(execinc))))))
-	$(eval LIBH       := $(call rm-trailing-bar,$(LIBH)))
-	
-	@# LIBH_NAME: Namespace include files
-	$(eval LIBH_NAME  := $(notdir $(basename $(LIBH))))
-	
-	$(call delete-file,$(LIBH)/$(LIBH_NAME),$(INC_EXT) $(tlext))
-endif
-ifdef C_FILE
-	$(call delete-file,$(incbase)/$(C_FILE),$(INC_EXT) $(hext))
-	$(call delete-file,$(srcbase)/$(C_FILE),$(SRC_EXT) $(cext))
-endif
-ifdef F_FILE
-	$(call delete-file,$(srcbase)/$(F_FILE),$(SRC_EXT) $(fext))
-endif
-ifdef CXX_FILE
-	$(call delete-file,$(incbase)/$(CXX_FILE),$(INC_EXT) $(hxxext))
-	$(call delete-file,$(srcbase)/$(CXX_FILE),$(SRC_EXT) $(cxxext))
+ifdef C_SOURCE
+	$(call delete-file,$(srcbase)/$(C_SOURCE),$(SRC_EXT) $(cext))
 endif
 ifdef C_MODULE
 	$(call delete-file,$(incbase)/$(C_MODULE),$(INC_EXT) $(hext))
 	$(call rm-if-empty,$(srcbase)/$(C_MODULE))
 endif
+ifdef C_FILE
+	$(call delete-file,$(incbase)/$(C_FILE),$(INC_EXT) $(hext))
+	$(call delete-file,$(srcbase)/$(C_FILE),$(SRC_EXT) $(cext))
+endif
+ifdef C_MAIN
+	$(call delete-file,$(srcbase)/$(C_MAIN),$(SRC_EXT) $(cext))
+endif
+ifdef C_ENUM
+	$(call delete-file,$(incbase)/$(C_ENUM),$(INC_EXT) $(hext))
+endif
+ifdef C_UNION
+	$(call delete-file,$(incbase)/$(C_UNION),$(INC_EXT) $(hext))
+	$(call delete-file,$(srcbase)/$(C_UNION),$(SRC_EXT) $(cext))
+endif
+ifdef C_STRUCT
+	$(call delete-file,$(incbase)/$(C_STRUCT),$(INC_EXT) $(hext))
+	$(call delete-file,$(srcbase)/$(C_STRUCT),$(SRC_EXT) $(cext))
+endif
+ifdef C_LIBRARY
+	$(call delete-file,$(incbase)/$(C_LIBRARY),$(INC_EXT) $(hext))
+	$(call delete-file,$(srcbase)/$(C_LIBRARY),$(SRC_EXT) $(cext))
+endif
+	
+ifdef F_SOURCE
+	$(call delete-file,$(srcbase)/$(F_SOURCE),$(SRC_EXT) $(fext))
+endif
 ifdef F_MODULE
 	$(call delete-file,$(srcbase)/$(F_MODULE),$(SRC_EXT) $(fext))
+endif
+ifdef F_FILE
+	$(call delete-file,$(srcbase)/$(F_FILE),$(SRC_EXT) $(fext))
+endif
+ifdef F_LIBRARY
+	$(call delete-file,$(srcbase)/$(F_LIBRARY),$(SRC_EXT) $(fext))
+endif
+ifdef F_PROGRAM
+	$(call delete-file,$(srcbase)/$(F_PROGRAM),$(SRC_EXT) $(fext))
+endif
+ifdef F_SUBMODULE
+	$(call delete-file,$(srcbase)/$(F_SUBMODULE),$(SRC_EXT) $(fext))
+endif
+	
+ifdef CXX_NAMESPACE
+	$(call rm-if-empty,$(incbase)/$(subst ::,/,$(CXX_NAMESPACE)))
+	$(call rm-if-empty,$(srcbase)/$(subst ::,/,$(CXX_NAMESPACE)))
+endif
+ifdef CXX_HEADER
+	$(call delete-file,$(incbase)/$(CXX_HEADER),$(INC_EXT) $(hxxext))
+endif
+ifdef CXX_SOURCE
+	$(call delete-file,$(srcbase)/$(CXX_SOURCE),$(SRC_EXT) $(cxxext))
+endif
+ifdef CXX_INLINE
+	$(call delete-file,$(incbase)/$(CXX_INLINE),$(INC_EXT) $(inlext))
 endif
 ifdef CXX_MODULE
 	$(call delete-file,$(incbase)/$(CXX_MODULE),$(INC_EXT) $(hxxext))
 	$(call rm-if-empty,$(srcbase)/$(CXX_MODULE))
 endif
-ifdef C_MAIN
-	$(call delete-file,$(srcbase)/$(C_MAIN),$(SRC_EXT) $(cext))
+ifdef CXX_GROUP
+	@# NMSH: Namespace directory
+	$(eval GROUP := $(subst ::,/,$(CXX_GROUP)))
+	$(eval GROUP := $(if $(strip $(IN)),$(IN)/)$(GROUP))
+	$(eval GROUP := $(firstword $(filter %$(GROUP)/,\
+	                   $(sort $(dir $(execinc))))))
+	$(eval GROUP := $(call rm-trailing-bar,$(GROUP)))
+	
+	@# GROUP_NAME: Namespace include files
+	$(eval GROUP_NAME := $(notdir $(basename $(GROUP))))
+	
+	$(call delete-file,$(GROUP)/$(GROUP_NAME),$(INC_EXT) $(hxxext))
 endif
-ifdef F_MAIN
-	$(call delete-file,$(srcbase)/$(F_MAIN),$(SRC_EXT) $(fext))
+ifdef CXX_FILE
+	$(call delete-file,$(incbase)/$(CXX_FILE),$(INC_EXT) $(hxxext))
+	$(call delete-file,$(srcbase)/$(CXX_FILE),$(SRC_EXT) $(cxxext))
 endif
 ifdef CXX_MAIN
 	$(call delete-file,$(srcbase)/$(CXX_MAIN),$(SRC_EXT) $(cxxext))
 endif
-ifdef CLASS
-	$(call delete-file,$(incbase)/$(CLASS),$(INC_EXT) $(hxxext))
-	$(call delete-file,$(srcbase)/$(CLASS),$(SRC_EXT) $(cxxext))
+ifdef CXX_ENUM
+	$(call delete-file,$(incbase)/$(CXX_ENUM),$(INC_EXT) $(hxxext))
 endif
-ifdef TEMPLATE
-	$(call delete-file,$(incbase)/$(TEMPLATE),$(INC_EXT) $(tlext))
+ifdef CXX_UNION
+	$(call delete-file,$(incbase)/$(CXX_UNION),$(INC_EXT) $(hxxext))
+	$(call delete-file,$(srcbase)/$(CXX_UNION),$(SRC_EXT) $(cxxext))
+	$(call delete-file,$(incbase)/$(CXX_UNION),$(INC_EXT) $(inlext))
 endif
+ifdef CXX_CLASS
+	$(call delete-file,$(incbase)/$(CXX_CLASS),$(INC_EXT) $(hxxext))
+	$(call delete-file,$(srcbase)/$(CXX_CLASS),$(SRC_EXT) $(cxxext))
+	$(call delete-file,$(incbase)/$(CXX_CLASS),$(INC_EXT) $(inlext))
+endif
+ifdef CXX_STRUCT
+	$(call delete-file,$(incbase)/$(CXX_STRUCT),$(INC_EXT) $(hxxext))
+	$(call delete-file,$(srcbase)/$(CXX_STRUCT),$(SRC_EXT) $(cxxext))
+	$(call delete-file,$(incbase)/$(CXX_STRUCT),$(INC_EXT) $(inlext))
+endif
+ifdef CXX_LIBRARY
+	$(call delete-file,$(incbase)/$(CXX_LIBRARY),$(INC_EXT) $(hxxext))
+	$(call delete-file,$(srcbase)/$(CXX_LIBRARY),$(SRC_EXT) $(cxxext))
+	$(call delete-file,$(incbase)/$(CXX_LIBRARY),$(INC_EXT) $(inlext))
+endif
+ifdef CXX_TEMPLATE
+	$(call delete-file,$(incbase)/$(CXX_TEMPLATE),$(INC_EXT) $(hxxext))
+	$(call delete-file,$(incbase)/$(CXX_TEMPLATE),$(INC_EXT) $(inlext))
+endif
+ifdef CXX_ENUM_CLASS
+	$(call delete-file,$(incbase)/$(CXX_ENUM_CLASS),$(INC_EXT) $(hxxext))
+endif
+	
 ifdef ENABLE_NLS
-ifdef TRANSLATION
+ifdef NLS_HEADER
+	$(call delete-file,$(incbase)/$(NLS_HEADER),\
+	                   $(INC_EXT) $(hext) $(hxxext))
+endif
+ifdef NLS_TRANSLATION
 delete: r := $(localedir)
-delete: d := $(TRANSLATION)
+delete: d := $(NLS_TRANSLATION)
 delete:
 	$(foreach t,$(intltl),$(call delete-file,\
 	    $r/$d/$(call not-root,$(basename $b)),$(poext)))
@@ -6330,16 +6443,11 @@ delete:
 	$(call rm-if-empty,$r/$d/LC_MESSAGES)
 	$(call rm-if-empty,$r/$d)
 endif
-ifdef NLS_HEADER
-	$(call delete-file,$(incbase)/$(NLS_HEADER),\
-	                   $(INC_EXT) $(hext) $(hxxext))
-endif
-endif
+endif	
+
 endif # Check if D was defined
 
 endif # Check if one goal is 'new', 'delete' or 'update'
-
-########################################################################
 ##                         CONFIGURATION FILES                        ##
 ########################################################################
 
@@ -6510,8 +6618,8 @@ projecthelp:
 	@echo " * upgrade:          Upgrades Makefile from remote repo     "
 	@echo " * version:          Outputs current version in .version.mk "
 	@echo "                                                            "
-	@echo "Management targets:                                         "
-	@echo "--------------------                                        "
+	@echo "File generation targets:                                    "
+	@echo "-------------------------                                   "
 	@echo " * new:              Creates C/C++/Fortran artifact         "
 	@echo " * delete:           Removes C/C++/Fortran artifact         "
 	@echo " * update:           Updates C/C++/Fortran artifact         "
@@ -6569,37 +6677,53 @@ projecthelp:
 	@echo " * NO_COLORS:        Outputs are made without any color     "
 	@echo " * ENABLE_NLS:       Allows internationalization            "
 	@echo "                                                            "
-	@echo "Management auxiliars:                                       "
-	@echo "----------------------                                      "
-	@echo " * IN:               Directory for 'new' files              "
-	@echo " * INC_EXT:          Include extension for 'new' files      "
-	@echo " * SRC_EXT:          Source extension for 'new' files       "
-	@echo " * ALPHA:            Make 'new' release an alpha release    "
-	@echo " * BETA:             Make 'new' release a beta release      "
-	@echo " * TIMESTAMP:        Add timestamp metadata in 'new' release"
-	@echo "                                                            "
-	@echo "Management flags:                                           "
-	@echo "------------------                                          "
-	@echo " * NAMESPACE:        Directories for namespace (src/inc)    "
-	@echo " * NMS_HEADER:       Header with all includes in a namespace"
-	@echo " * LIBRARY:          Directory for library (of templates)   "
-	@echo " * LIB_HEADER:       Header with all includes in a library  "
-	@echo " * C_FILE:           Ordinary C source and header           "
-	@echo " * F_FILE:           Ordinary C file                        "
-	@echo " * CXX_FILE:         Ordinary C++ source and header         "
-	@echo " * C_MODULE:         C header and dir for its sources       "
+	@echo "File generation flags:                                      "
+	@echo "-----------------------                                     "
+	@echo " * C_HEADER:         C source file                          "
+	@echo " * C_SOURCE:         C header file                          "
+	@echo " * C_MODULE:         C header for multiple sources in dir   "
+	@echo " * C_FILE:           C pair of header/source files          "
+	@echo " * C_MAIN:           C main (program entry point)           "
+	@echo " * C_ENUM:           C enum (symbolic alias for numbers)    "
+	@echo " * C_UNION:          C union (mutually exclusive var set)   "
+	@echo " * C_STRUCT:         C struct (coexisting var set)          "
+	@echo " * C_LIBRARY:        C library of functions                 "
+	@echo " * F_SOURCE:         Fortran source file                    "
 	@echo " * F_MODULE:         Fortran module                         "
-	@echo " * CXX_MODULE:       C++ header and dif for its sources     "
-	@echo " * C_MAIN:           Ordinary C main                        "
-	@echo " * F_MAIN:           Ordinary Fortran program               "
-	@echo " * CXX_MAIN:         Ordinary C++ main                      "
-	@echo " * CLASS:            New file for a C++ class               "
-	@echo " * TEMPLATE:         C++ template file                      "
-	@echo " * TRANSLATION:      Portable object translation            "
+	@echo " * F_FILE:           Fortran source file                    "
+	@echo " * F_PROGRAM:        Fortran program (program entry point)  "
+	@echo " * F_LIBRARY:        Fortran library of functions           "
+	@echo " * F_SUBMODULE:      Fortran 2008 submodule                 "
+	@echo " * CXX_NAMESPACE:    C++ namespace directory                "
+	@echo " * CXX_HEADER:       C++ source file                        "
+	@echo " * CXX_SOURCE:       C++ header file                        "
+	@echo " * CXX_INLINE:       C++ inline file                        "
+	@echo " * CXX_MODULE:       C++ header for multiple sources in dir "
+	@echo " * CXX_GROUP:        C++ header with headers of a namespace "
+	@echo " * CXX_FILE:         C++ pair of header/source files        "
+	@echo " * CXX_MAIN:         C++ main (program entry point)         "
+	@echo " * CXX_ENUM:         C++ enum (symbolic alias for numbers)  "
+	@echo " * CXX_UNION:        C++ union (mutually exclusive var set) "
+	@echo " * CXX_CLASS:        C++ class (struct + member functions)  "
+	@echo " * CXX_STRUCT:       C++ struct (coexisting var set)        "
+	@echo " * CXX_LIBRARY:      C++ library of functions               "
+	@echo " * CXX_TEMPLATE:     C++ template (parameterized elements)  "
+	@echo " * CXX_ENUM_CLASS:   C++ enum class (strongly typed enum)   "
 	@echo " * NLS_HEADER:       Header with i18n headers and macros    "
-	@echo " * MAJOR_RELEASE:    Projetc major release                  "
+	@echo " * NLS_TRANSLATION:  Portable object translation            "
+	@echo " * MAJOR_RELEASE:    Project major release                  "
 	@echo " * MINOR_RELEASE:    Project minor release                  "
 	@echo " * PATCH_RELEASE:    Project patch release                  "
+	@echo "                                                            "
+	@echo "File generation options:                                    "
+	@echo "-------------------------                                   "
+	@echo " * IN:               Directory for 'new' files              "
+	@echo " * INC_EXT:          Header extension for 'new' files       "
+	@echo " * SRC_EXT:          Source extension for 'new' files       "
+	@echo " * WITH_ALPHA:       Make 'new' release an alpha release    "
+	@echo " * WITH_BETA:        Make 'new' release a beta release      "
+	@echo " * WITH_TIMESTAMP:   Make 'new' release with timestamp      "
+	@echo " * WITH_TEMPLATE:    Parameterize 'new' C++ data structure  "
 	@echo "                                                            "
 
 .PHONY: coffee

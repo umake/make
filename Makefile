@@ -27,9 +27,11 @@ $(error "All-in-One Makefile requires GNU Make. Please install it.")
 endif
 
 #//////////////////////////////////////////////////////////////////////#
-#----------------------------------------------------------------------#
-#                          USER DEFINITIONS                            #
-#----------------------------------------------------------------------#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''#
+#                          USER CONFIGURATION                          #
+#......................................................................#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 ########################################################################
@@ -234,83 +236,6 @@ SYSBINDIR  := /bin     /usr/bin     /usr/local/bin
 SYSSBINDIR := /sbin    /usr/sbin    /usr/local/sbin
 SYSEXECDIR := /libexec /usr/libexec /usr/local/libexec
 
-## INSTALLATION ########################################################
-
-### PREFIXES
-# * prefix:        Default prefix for variables below
-# * exec_prefix:   Prefix for machine-specific files (bins and libs)
-prefix         := /usr/local
-exec_prefix    := $(prefix)
-
-### EXECUTABLES AND LIBRARIES
-# * bindir:        Programs that user can run
-# * sbindir:       Runnable by shell, useful by sysadmins
-# * libexecdir:    Executables for being run only by other programs
-# * libdir         Object and libraries of object code
-install_dirs   := bindir sbindir libexecdir libdir
-bindir         := $(exec_prefix)/bin
-sbindir        := $(exec_prefix)/sbin
-libexecdir     := $(exec_prefix)/libexec
-libdir         := $(exec_prefix)/lib
-
-### DATA PREFIXES
-# * datarootdir:   Read-only machine-independent files (docs and data)
-# * datadir:       Read-only machine-independent files (data, no docs)
-# * sysconfdir:    Read-only single-machine files (as server configs)
-# * localstatedir: Exec-modifiable single-machine single-exec files
-# * runstatedir:   Exec-modifiable single-machine run-persistent files
-install_dirs   += datarootdir datadir sysconfdir
-install_dirs   += sharedstatedir localstatedir runstatedir
-datarootdir    := $(prefix)/share
-datadir        := $(datarootdir)
-sysconfdir     := $(prefix)/etc
-sharedstatedir := $(prefix)/com
-localstatedir  := $(prefix)/var
-runstatedir    := $(localstatedir)/run
-
-### HEADER FILES
-# * includedir:    Includable (header) files for use by GCC
-# * oldincludedir: Includable (header) files for GCC and othe compilers
-install_dirs   += includedir oldincludedir
-includedir     := $(prefix)/include
-oldincludedir  := /usr/include
-
-### DOCUMENTATION FILES
-# * infodir:       Doc directory for info files
-# * docdir:        Doc directory for files other than info
-# * htmldir:       Doc directory for HTML files (with subdir for locale)
-# * dvidir:        Doc directory for DVI files (with subdir for locale)
-# * pdfdir:        Doc directory for PDF files (with subdir for locale)
-# * psdir:         Doc directory for PS files (with subdir for locale)
-install_dirs   += docdir infodir htmldir dvidir pdfdir psdir
-docdir         := $(datarootdir)/doc/$(PROJECT)/$(VERSION)
-infodir        := $(datarootdir)/info
-htmldir        := $(docdir)
-dvidir         := $(docdir)
-pdfdir         := $(docdir)
-psdir          := $(docdir)
-
-### MAN FILES
-# * mandir:       Manual main directory
-# * manXdir:      Manual section X (X from 1 to 7)
-install_dirs   += mandir man1dir man2dir man3dir
-install_dirs   += man4dir man5dir man6dir man7dir
-mandir         := $(datarootdir)/man
-man1dir        := $(mandir)/man1
-man2dir        := $(mandir)/man2
-man3dir        := $(mandir)/man3
-man4dir        := $(mandir)/man4
-man5dir        := $(mandir)/man5
-man6dir        := $(mandir)/man6
-man7dir        := $(mandir)/man7
-
-### OTHERS
-# * lispdir:      Emacs Lisp files in this package
-# * localedir:    Locale-specific message catalogs for the package
-install_dirs   += lispdir localedir
-lispdir        := $(datarootdir)/emacs/site-lisp
-localedir      := $(datarootdir)/locale
-
 ########################################################################
 ##                            EXTENSIONS                              ##
 ########################################################################
@@ -498,22 +423,87 @@ GIT             := git
 MAKE            += -f $(firstword $(MAKEFILE_LIST))
 
 ########################################################################
-##                              SWITCHES                              ##
+#                             INSTALLATION                             #
 ########################################################################
 
-ifndef COVERAGE
-COVERAGE := $(if $(filter %coverage %clean,$(MAKECMDGOALS)),T)
-endif
+### PREFIXES
+# * prefix:        Default prefix for variables below
+# * exec_prefix:   Prefix for machine-specific files (bins and libs)
+prefix         := /usr/local
+exec_prefix    := $(prefix)
 
-ifndef PROFILE
-PROFILE := $(if $(filter %profile %clean,$(MAKECMDGOALS)),T)
-endif
+### EXECUTABLES AND LIBRARIES
+# * bindir:        Programs that user can run
+# * sbindir:       Runnable by shell, useful by sysadmins
+# * libexecdir:    Executables for being run only by other programs
+# * libdir         Object and libraries of object code
+install_dirs   := bindir sbindir libexecdir libdir
+bindir         := $(exec_prefix)/bin
+sbindir        := $(exec_prefix)/sbin
+libexecdir     := $(exec_prefix)/libexec
+libdir         := $(exec_prefix)/lib
 
-export COVERAGE PROFILE
+### DATA PREFIXES
+# * datarootdir:   Read-only machine-independent files (docs and data)
+# * datadir:       Read-only machine-independent files (data, no docs)
+# * sysconfdir:    Read-only single-machine files (as server configs)
+# * localstatedir: Exec-modifiable single-machine single-exec files
+# * runstatedir:   Exec-modifiable single-machine run-persistent files
+install_dirs   += datarootdir datadir sysconfdir
+install_dirs   += sharedstatedir localstatedir runstatedir
+datarootdir    := $(prefix)/share
+datadir        := $(datarootdir)
+sysconfdir     := $(prefix)/etc
+sharedstatedir := $(prefix)/com
+localstatedir  := $(prefix)/var
+runstatedir    := $(localstatedir)/run
+
+### HEADER FILES
+# * includedir:    Includable (header) files for use by GCC
+# * oldincludedir: Includable (header) files for GCC and othe compilers
+install_dirs   += includedir oldincludedir
+includedir     := $(prefix)/include
+oldincludedir  := /usr/include
+
+### DOCUMENTATION FILES
+# * infodir:       Doc directory for info files
+# * docdir:        Doc directory for files other than info
+# * htmldir:       Doc directory for HTML files (with subdir for locale)
+# * dvidir:        Doc directory for DVI files (with subdir for locale)
+# * pdfdir:        Doc directory for PDF files (with subdir for locale)
+# * psdir:         Doc directory for PS files (with subdir for locale)
+install_dirs   += docdir infodir htmldir dvidir pdfdir psdir
+docdir         := $(datarootdir)/doc/$(PROJECT)/$(VERSION)
+infodir        := $(datarootdir)/info
+htmldir        := $(docdir)
+dvidir         := $(docdir)
+pdfdir         := $(docdir)
+psdir          := $(docdir)
+
+### MAN FILES
+# * mandir:       Manual main directory
+# * manXdir:      Manual section X (X from 1 to 7)
+install_dirs   += mandir man1dir man2dir man3dir
+install_dirs   += man4dir man5dir man6dir man7dir
+mandir         := $(datarootdir)/man
+man1dir        := $(mandir)/man1
+man2dir        := $(mandir)/man2
+man3dir        := $(mandir)/man3
+man4dir        := $(mandir)/man4
+man5dir        := $(mandir)/man5
+man6dir        := $(mandir)/man6
+man7dir        := $(mandir)/man7
+
+### OTHERS
+# * lispdir:      Emacs Lisp files in this package
+# * localedir:    Locale-specific message catalogs for the package
+install_dirs   += lispdir localedir
+lispdir        := $(datarootdir)/emacs/site-lisp
+localedir      := $(datarootdir)/locale
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
-#                     PLATFORM SPECIFIC DEFINITIONS                    #
+#                     PLATFORM-SPECIFIC DEFINITIONS                    #
 #----------------------------------------------------------------------#
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
@@ -521,7 +511,7 @@ export COVERAGE PROFILE
 # standard Linux environment. Here we present changes required to
 # the code work in different OSs.
 
-ifdef $(call is-empty,$(shell which uname 2>/dev/null)) # exists 'uname'
+ifeq ($(or $(shell which uname 2>/dev/null),empty),empty) # exists 'uname'
 
 $(warning "Platform-specific support unavailable: 'uname' required")
 
@@ -591,14 +581,38 @@ endif
 endif # exists 'uname'
 
 #//////////////////////////////////////////////////////////////////////#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''#
+#                         USER CONFIGURATIONS                          #
+#......................................................................#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                           AUTOMATIC FLAGS                            #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
+ifndef COVERAGE
+COVERAGE := $(if $(filter %coverage %clean,$(MAKECMDGOALS)),T)
+endif
+
+ifndef PROFILE
+PROFILE := $(if $(filter %profile %clean,$(MAKECMDGOALS)),T)
+endif
+
+ifndef DEPLOY
+DEPLOY := $(if $(filter deploy,$(MAKECMDGOALS)),T)
+endif
+
+export COVERAGE PROFILE DEPLOY
+
+#//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#
 #                          CONFIGURATION FILES                         #
 #----------------------------------------------------------------------#
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
-
-MAKEBALLDIR := \
-    $(addsuffix $(firstword $(CONFDIR)),\
-        $(dir $(abspath $(firstword $(MAKEFILE_LIST)))))
 
 # Include configuration file if exists
 -include .version.mk
@@ -658,14 +672,12 @@ override CPPFLAGS += -DNDEBUG
 endif # ifdef DEPLOY
 
 #//////////////////////////////////////////////////////////////////////#
-#----------------------------------------------------------------------#
-#                        DEVELOPER DEFINITIONS                         #
-#----------------------------------------------------------------------#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''#
+#                       MAKEFILE CONFIGURATIONS                        #
+#......................................................................#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
-
-########################################################################
-##                  MAKEFILE BASIC CONFIGURATIONS                     ##
-########################################################################
 
 # Remote path
 MAKERAWREMOTE := \
@@ -682,8 +694,16 @@ MAKECURRENTDIR := \
 # Define the shell to be used
 SHELL = /bin/sh
 
+#//////////////////////////////////////////////////////////////////////#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''#
+#                         COMPILE-TIME LIBRARY                         #
+#......................................................................#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
 ########################################################################
-##                         USEFUL DEFINITIONS                         ##
+##                            DEFINITIONS                             ##
 ########################################################################
 
 T     := 1
@@ -737,6 +757,7 @@ endef
 # 1) not: Returns empty if arg is not empty, and not empty otherwise
 # 2) eq:  Returns not empty if $1 == $2, and empty otherwise
 # 3) ne:  Returns not empty if $1 != $2, and empty otherwise
+
 define not
 $(strip $(if $1,,T))
 endef
@@ -754,6 +775,7 @@ endef
 # ===============
 # 1) union:        Returns union of 2 lists
 # 2) intersection: Returns intersection of 2 lists
+
 define union
 $1 $(foreach e,$2,$(if $(filter $e,$1),,$e))
 endef
@@ -769,6 +791,7 @@ endef
 # 3) rcar:   Gets last element of a list
 # 4) rcdr:   Gets all but last element of a list
 # 5) invert: Inverts a list
+
 define car
 $(strip $(firstword $(strip $1)))
 endef
@@ -1563,9 +1586,19 @@ define extract-section-or-all
 $(or $(call extract-section,$1,$2),$2)
 endef
 
-########################################################################
-##                       USER INPUT VALIDATION                        ##
-########################################################################
+#//////////////////////////////////////////////////////////////////////#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''#
+#                          COMPILATION MODULE                          #
+#......................................................................#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                           INPUT VALIDATION                           #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 # Project settings
 # ==================
@@ -1887,9 +1920,11 @@ programs := \
 
 phony_targets := $(targets) library git web
 
-########################################################################
-##                              PATHS                                 ##
-########################################################################
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                          DEPENDENCY SEARCH                           #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 # Paths
 # ======
@@ -1905,9 +1940,11 @@ $(foreach s,$(srcdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 $(foreach s,$(testdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 $(foreach s,$(benchdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 
-########################################################################
-##                              FILES                                 ##
-########################################################################
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                          DERIVED VARIABLES                           #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 # Default variable names
 # ========================
@@ -2471,7 +2508,7 @@ ldlibs  += $(sort $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,\
 # 3) Create object file from each library source file
 # 4) Create object file from each main file
 # 5) Join all object files from above
-define all-to-obj 
+define all-to-obj
 $1 := $$(addsuffix $$(firstword $$(objext)),$$(basename $2))
 $1 := $$(addprefix $$(objdir)/,$$(call not-root,$$($1)))
 endef
@@ -2823,7 +2860,7 @@ libdep := $(addprefix $(depdir)/,$(addsuffix $(sysext),\
 # ==================
 # 2) execrun  : Alias to execute tests, prefixing run_ in $(execbin)
 # 2) testrun  : Alias to execute tests, prefixing run_ in $(testbin)
-# 3) benchrun : Alias to execute benchmarks, prefixing run_ 
+# 3) benchrun : Alias to execute benchmarks, prefixing run_
 #               in $(benchbin)
 #------------------------------------------------------------------[ 1 ]
 execrun   := $(addprefix run_,$(execbin))
@@ -2963,9 +3000,11 @@ deball := changelog compat control copyright
 deball += rules source/format $(deb_project).dirs
 deball := $(sort $(strip $(addprefix $(debdir)/,$(deball))))
 
-########################################################################
-##                            VERSION                                 ##
-########################################################################
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                            SANITY CHECKS                             #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 # Version check
 # ===============
@@ -2996,8 +3035,14 @@ $(foreach n,program library,\
                 $(call rcar,$($n_version.$p))))\
 ))
 
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                                GOALS                                 #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
 ########################################################################
-##                              BUILD                                 ##
+##                               BUILD                                ##
 ########################################################################
 
 build_dependency := \
@@ -3023,42 +3068,7 @@ depend: builddep librarydep gitdep webdep
 nothing:
 
 ########################################################################
-##                        REMOTE REPOSITORIES                         ##
-########################################################################
-
-remote_dependency := \
-    GIT      => $(and $(call not-empty,$(GIT_REMOTE_PATH)),$(strip \
-                      $(call is-empty,$(NO_GIT))))
-
-.PHONY: sync
-sync: remotedep
-	$(call git-pull,$(REMOTE),$(BRANCH))
-
-.PHONY: deploy
-deploy: remotedep
-	$(call git-push,$(REMOTE),$(BRANCH))
-
-########################################################################
-##                             UPGRADE                                ##
-########################################################################
-
-upgrade_dependency := \
-    CURL     => $(firstword $(MAKEFILE_LIST)),\
-    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),T)
-
-.PHONY: upgrade
-upgrade: upgradedep
-ifdef $(call not-empty,$(wildcard $(makedir)/*))
-	$(call git-pull,origin,master,$(makedir))
-	$(call git-add-commit,$(makedir),"Upgrade submodule $(makedir)")
-else
-	$(call web-clone,$(MAKERAWREMOTE),$(firstword $(MAKEFILE_LIST)))
-	$(call git-add-commit,$(firstword $(MAKEFILE_LIST)),\
-                          "Upgrade $(firstword $(MAKEFILE_LIST))")
-endif
-
-########################################################################
-##                          INITIALIZATION                            ##
+##                           INITIALIZATION                           ##
 ########################################################################
 
 init_dependency := \
@@ -3113,28 +3123,7 @@ standard: init
 	$(call mv,$(yaccext) $(yaxxext),$(srcdir),"parser")
 
 ########################################################################
-##                               TAGS                                 ##
-########################################################################
-
-tags_dependency := \
-    CTAGS => ctags,\
-    ETAGS => etags
-
-.PHONY: TAGS
-TAGS: tagsdep ctags etags
-
-ctags: $(execinc) $(execall)
-	$(call phony-status,$(MSG_CTAGS))
-	$(quiet) $(CTAGS) $(ctagsflags) $^ -o $@ $(ERROR)
-	$(call phony-ok,$(MSG_CTAGS))
-
-etags: $(execinc) $(execall)
-	$(call phony-status,$(MSG_ETAGS))
-	$(quiet) $(ETAGS) $(etagsflags) $^ -o $@ $(ERROR)
-	$(call phony-ok,$(MSG_ETAGS))
-
-########################################################################
-##                                RUN                                 ##
+##                             EXECUTION                              ##
 ########################################################################
 
 define search-run
@@ -3161,35 +3150,6 @@ eval benchmark: depend $(call search-run,$(BENCH),$(benchrun))
 	    $(if $(filter-out $<,$^),\
 	        $(call phony-ok,$(MSG_BENCH_SUCCESS)),\
 	        $(call phony-error,$(MSG_BENCH_NONE))))
-
-########################################################################
-##                                LINT                                ##
-########################################################################
-
-ifneq (,$(call rfilter,analysis-lint lint,$(MAKECMDGOALS)))
-lint_dependency += \
-    CALINT   => $(call),\
-    FALINT   => $(fall),\
-    CXXALINT => $(cxxall)
-endif
-
-ifneq (,$(call rfilter,style-lint lint,$(MAKECMDGOALS)))
-lint_dependency += \
-    CSLINT   => $(call),\
-    FSLINT   => $(fall),\
-    CXXSLINT => $(cxxall)
-endif
-
-.PHONY: analysis-lint
-analysis-lint: lintdep $(alintrun)
-	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_ALINT_SUCCESS)))
-
-.PHONY: style-lint
-style-lint: lintdep $(slintrun)
-	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_SLINT_SUCCESS)))
-
-.PHONY: lint
-lint: analysis-lint style-lint
 
 ########################################################################
 ##                              COVERAGE                              ##
@@ -3225,37 +3185,49 @@ check-profile test-profile: profiledep check $(proftestshow)
 eval-profile benchmark-profile: profiledep eval $(profbenchshow)
 
 ########################################################################
-##                             STATISTICS                             ##
+##                                LINT                                ##
 ########################################################################
 
-define statistic-count
-$(words $1) $(if $(call ne,$(words $1),0),$(strip \
-    $(foreach n,$(call rcar,$(call rcdr,$(shell wc -l $1))),$(strip \
-        $(if $(call eq,1,$n),($n line),($n lines))\
-))))
-endef
+ifneq (,$(call rfilter,analysis-lint lint,$(MAKECMDGOALS)))
+lint_dependency += \
+    CALINT   => $(call),\
+    FALINT   => $(fall),\
+    CXXALINT => $(cxxall)
+endif
 
-.PHONY: statistics
-statistics:
-	@echo "                                                            "
-	@echo "$(project)-$(version)                                       "
-	@echo "=============================                               "
-	@echo "                                                            "
-	@echo "C            : $(call statistic-count,$(call))              "
-	@echo "C++          : $(call statistic-count,$(cxxall))            "
-	@echo "Fortran      : $(call statistic-count,$(fall))              "
-	@echo "Assembly     : $(call statistic-count,$(asmall))            "
-	@echo "Libraries    : $(call statistic-count,$(liball))            "
-	@echo "Headers      : $(call statistic-count,$(incall))            "
-	@echo "Lexers       : $(call statistic-count,$(alllexer))          "
-	@echo "Parsers      : $(call statistic-count,$(allparser))         "
-	@echo "Embedded SQL : $(call statistic-count,$(cesql))             "
-	@echo "Tests        : $(call statistic-count,$(testall))           "
-	@echo "-----------------------------------                         "
-	@echo "Total        :"\
-          "$(call statistic-count,$(userall) $(liball) $(mainall)      \
-           $(incall) $(alllexer) $(allparser) $(cesql) $(testall))     "
-	@echo "                                                            "
+ifneq (,$(call rfilter,style-lint lint,$(MAKECMDGOALS)))
+lint_dependency += \
+    CSLINT   => $(call),\
+    FSLINT   => $(fall),\
+    CXXSLINT => $(cxxall)
+endif
+
+.PHONY: analysis-lint
+analysis-lint: lintdep $(alintrun)
+	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_ALINT_SUCCESS)))
+
+.PHONY: style-lint
+style-lint: lintdep $(slintrun)
+	$(if $(filter-out $<,$^),$(call phony-ok,$(MSG_SLINT_SUCCESS)))
+
+.PHONY: lint
+lint: analysis-lint style-lint
+
+########################################################################
+##                        REMOTE COMMUNICATION                        ##
+########################################################################
+
+remote_dependency := \
+    GIT      => $(and $(call not-empty,$(GIT_REMOTE_PATH)),$(strip \
+                      $(call is-empty,$(NO_GIT))))
+
+.PHONY: sync
+sync: remotedep
+	$(call git-pull,$(REMOTE),$(BRANCH))
+
+.PHONY: deploy
+deploy: remotedep
+	$(call git-push,$(REMOTE),$(BRANCH))
 
 ########################################################################
 ##                        INTERNATIONALIZATION                        ##
@@ -3271,7 +3243,7 @@ translation_dependency := \
 translation: translationdep $(intltl) $(intlobj)
 
 ########################################################################
-##                          DOCUMENTATION                             ##
+##                           DOCUMENTATION                            ##
 ########################################################################
 
 docs_dependency := \
@@ -3448,6 +3420,122 @@ $(debdir)/$(deb_project).dirs: | $(firstword $(debdir))/./
 endif
 
 ########################################################################
+##                              CLEAN                                 ##
+########################################################################
+
+.PHONY: mostlyclean
+mostlyclean:
+	$(call rm-if-empty,$(objdir),\
+	    $(execobj) $(testobj) $(benchobj)\
+	    $(covdata) $(covtestdata) $(covbenchdata)\
+	    $(profdata) $(proftestdata) $(profbenchdata))
+	$(foreach d,$(call invert,$(sort $(dir $(finc)))),\
+	    $(call rm-if-empty,$d,$(filter $d%,$(finc)))$(newline))
+
+.PHONY: clean
+clean: mostlyclean
+	$(call rm-if-empty,$(bindir),$(bin) $(testbin) $(benchbin))
+	$(call rm-if-empty,$(sbindir),$(sbin))
+	$(call rm-if-empty,$(execdir),$(libexec))
+
+.PHONY: distclean
+distclean: clean
+	$(call rm-if-empty,$(depdir),$(depall))
+	$(call rm-if-empty,$(distdir))
+	$(call rm-if-empty,$(firstword $(libdir)),$(execlib))
+	$(call rm-if-empty,$(covdir),\
+	    $(covrep) $(covtestrep) $(covbenchrep))
+	$(call rm-if-empty,$(profdir),\
+	    $(profrep) $(proftestrep) $(profbenchrep))
+
+ifdef ENABLE_NLS
+.PHONY: translationclean
+translationclean:
+	$(call rm-if-exists,$(intltl),$(MSG_INTLTL_NONE))
+	$(call rm-if-exists,$(intlall),$(MSG_INTLALL_NONE))
+	$(call rm-if-exists,$(intlobj),$(MSG_INTLOBJ_NONE))
+	$(call rm-if-empty,$(localedir))
+endif
+
+.PHONY: docclean
+docclean:
+	$(call rm-if-empty,$(docdir)/doxygen)
+	$(call rm-if-exists,$(docdir)/Doxyfile.mk,$(MSG_DOXY_NONE))
+	$(call rm-if-empty,$(docdir)/info,$(texiinfo))
+	$(call rm-if-empty,$(docdir)/html,$(texihtml))
+	$(call rm-if-empty,$(docdir)/dvi,$(texidvi))
+	$(call rm-if-empty,$(docdir)/pdf,$(texipdf))
+	$(call rm-if-empty,$(docdir)/ps,$(texips))
+	$(call rm-if-empty,$(docdir))
+
+.PHONY: packageclean
+packageclean:
+	$(call rm-if-empty,$(distdir)/$(deb_project)-$(version))
+	$(call rm-if-empty,$(debdir),$(deball))
+
+.PHONY: externalclean
+externalclean:
+	$(foreach d,$(call invert,$(call hash-table.keys,git_dependency)),\
+	    $(if $(wildcard $(extdir)/$d),\
+	        $(call git-submodule-rm,$(extdir)/$d)$(newline)))
+	$(foreach d,$(call invert,$(call hash-table.keys,web_dependency)),\
+	    $(if $(wildcard $(extdir)/$d),\
+	        $(call web-submodule-rm,$(extdir)/$d)$(newline)))
+	$(call rm-if-empty,$(extdir),$(call rwildcard,*,$(externreq)))
+
+.PHONY: realclean
+ifndef D
+realclean:
+	@$(call println,$(MSG_WARNCLEAN_BEG))
+	@$(call println,$(MSG_WARNCLEAN_END))
+	@$(call println,$(MSG_WARNCLEAN_ALT))
+else
+realclean: distclean docclean packageclean externalclean \
+           $(if $(ENABLE_NLS),translationclean)
+	$(call rm-if-exists,$(lexall),$(MSG_LEX_NONE))
+	$(foreach d,$(lexinc),$(call rm-if-empty,$d)$(newline))
+	$(call rm-if-exists,$(yaccall),$(MSG_YACC_NONE))
+	$(foreach d,$(yaccinc),$(call rm-if-empty,$d)$(newline))
+	$(call rm-if-exists,$(esqlall),$(MSG_ESQL_NONE))
+	$(call rm-if-exists,ctags,$(MSG_CTAGS_NONE))
+	$(call rm-if-exists,etags,$(MSG_ETAGS_NONE))
+endif
+
+.PHONY: mainteiner-clean
+ifndef D
+mainteiner-clean:
+	@$(call println,$(MSG_WARNCLEAN_BEG))
+	@$(call println,$(MSG_WARNCLEAN_END))
+	@$(call println,$(MSG_WARNCLEAN_ALT))
+else
+mainteiner-clean:
+	@$(MAKE) realclean MAINTEINER_CLEAN=1 D=1
+endif
+
+.PHONY: uninitialize
+ifndef U
+uninitialize:
+	@$(call println,$(MSG_UNINIT_WARN))
+	@$(call println,$(MSG_UNINIT_ALT))
+else
+uninitialize:
+	@$(MAKE) mainteiner-clean D=1
+	$(call rm-if-empty,$(srcdir),$(execall))
+	$(call rm-if-empty,$(incdir),$(execinc))
+	$(call rm-if-empty,$(docdir),$(texiall))
+	$(call rm-if-exists,Config.mk)
+	$(call rm-if-exists,config.mk)
+	$(call rm-if-exists,.config.mk)
+	$(call rm-if-exists,Config_os.mk)
+	$(call rm-if-exists,config_os.mk)
+	$(call rm-if-exists,.config_os.mk)
+	$(call rm-if-exists,.version.mk)
+	$(call rm-if-exists,.gitignore)
+	$(call rm-if-exists,.gitmodules)
+	$(call rm-if-empty,.git)
+endif
+
+########################################################################
 ##                           INSTALLATION                             ##
 ########################################################################
 
@@ -3529,8 +3617,417 @@ uninstall-info:
 	))
 
 ########################################################################
-##                              RULES                                 ##
+##                                TAGS                                ##
 ########################################################################
+
+tags_dependency := \
+    CTAGS => ctags,\
+    ETAGS => etags
+
+.PHONY: TAGS
+TAGS: tagsdep ctags etags
+
+ctags: $(execinc) $(execall)
+	$(call phony-status,$(MSG_CTAGS))
+	$(quiet) $(CTAGS) $(ctagsflags) $^ -o $@ $(ERROR)
+	$(call phony-ok,$(MSG_CTAGS))
+
+etags: $(execinc) $(execall)
+	$(call phony-status,$(MSG_ETAGS))
+	$(quiet) $(ETAGS) $(etagsflags) $^ -o $@ $(ERROR)
+	$(call phony-ok,$(MSG_ETAGS))
+
+########################################################################
+##                               UPGRADE                              ##
+########################################################################
+
+upgrade_dependency := \
+    CURL     => $(firstword $(MAKEFILE_LIST)),\
+    GIT      => $(or $(filter-out undefined,$(origin NO_GIT)),T)
+
+.PHONY: upgrade
+upgrade: upgradedep
+ifdef $(call not-empty,$(wildcard $(makedir)/*))
+	$(call git-pull,origin,master,$(makedir))
+	$(call git-add-commit,$(makedir),"Upgrade submodule $(makedir)")
+else
+	$(call web-clone,$(MAKERAWREMOTE),$(firstword $(MAKEFILE_LIST)))
+	$(call git-add-commit,$(firstword $(MAKEFILE_LIST)),\
+                          "Upgrade $(firstword $(MAKEFILE_LIST))")
+endif
+
+########################################################################
+##                             STATISTICS                             ##
+########################################################################
+
+define statistic-count
+$(words $1) $(if $(call ne,$(words $1),0),$(strip \
+    $(foreach n,$(call rcar,$(call rcdr,$(shell wc -l $1))),$(strip \
+        $(if $(call eq,1,$n),($n line),($n lines))\
+))))
+endef
+
+.PHONY: statistics
+statistics:
+	@echo "                                                            "
+	@echo "$(project)-$(version)                                       "
+	@echo "=============================                               "
+	@echo "                                                            "
+	@echo "C            : $(call statistic-count,$(call))              "
+	@echo "C++          : $(call statistic-count,$(cxxall))            "
+	@echo "Fortran      : $(call statistic-count,$(fall))              "
+	@echo "Assembly     : $(call statistic-count,$(asmall))            "
+	@echo "Libraries    : $(call statistic-count,$(liball))            "
+	@echo "Headers      : $(call statistic-count,$(incall))            "
+	@echo "Lexers       : $(call statistic-count,$(alllexer))          "
+	@echo "Parsers      : $(call statistic-count,$(allparser))         "
+	@echo "Embedded SQL : $(call statistic-count,$(cesql))             "
+	@echo "Tests        : $(call statistic-count,$(testall))           "
+	@echo "-----------------------------------                         "
+	@echo "Total        :"\
+          "$(call statistic-count,$(userall) $(liball) $(mainall)      \
+           $(incall) $(alllexer) $(allparser) $(cesql) $(testall))     "
+	@echo "                                                            "
+
+########################################################################
+##                           CONFIGURATION                            ##
+########################################################################
+
+.PHONY: config
+config:
+	@echo ""
+	@echo "############################################################"
+	@echo "##     UNCOMMENT ANY TARGET TO OVERWRITE THE DEFAULT!     ##"
+	@echo "############################################################"
+	@echo ""
+	@echo "# Project info"
+	@echo "# ==============="
+	@echo "# PROJECT         := # Project name (def: Default)"
+	@echo "# VERSION         := # Version (def: 1.0.0)"
+	@echo "# STD_NAMESPACE   := # Project namespace for C/C++"
+	@echo "# GIT_REMOTE_PATH := # Remote path for git repository"
+	@echo "# MAINTEINER_NAME := # Your name"
+	@echo "# MAINTEINER_MAIL := # your_name@mail.com"
+	@echo "# COPYRIGHT       := # Copyright Holder"
+	@echo "# SYNOPSIS        := # One-line description of the program"
+	@echo "# DESCRIPTION     := # Longer description of the program"
+	@echo ""
+	@echo "# Program settings"
+	@echo "# =================="
+	@echo "# BIN             := # Binaries' names. If a subdir of any"
+	@echo "                     # src dir has the same name of this bin"
+	@echo "                     # it and all its subdir will be compiled"
+	@echo "                     # only for this specific binary"
+	@echo "# ARLIB           := # Static/Shared libraries' names. If"
+	@echo "# SHRLIB          := # one is a dir, all srcs within will"
+	@echo "                     # make the lib"
+	@echo ""
+	@echo "# Dependencies"
+	@echo "# =============="
+	@echo "# GIT_DEPENDENCY  := # List of git dependencies in the form: "
+	@echo "#                    # DEP_NAME => dep_path build_cmd        "
+	@echo "# WEB_DEPENDENCY  := # Same as above, but for URL downloads  "
+	@echo "#                    # with 'curl -o' (default) or 'wget -O' "
+	@echo ""
+	@echo "# Paths"
+	@echo "# ======="
+	@echo "# ASLIBS          := # Assembly paths"
+	@echo "# CLIBS           := # C paths"
+	@echo "# CXXLIBS         := # C++ paths"
+	@echo "# LDLIBS          := # Linker paths"
+	@echo ""
+	@echo "# Flags"
+	@echo "# ======="
+	@echo "# CPPFLAGS        := # Precompiler Flags"
+	@echo "# ASFLAGS         := # Assembly Flags"
+	@echo "# CFLAGS          := # C Flags"
+	@echo "# CXXFLAGS        := # C++ Flags"
+	@echo "# LDFLAGS         := # Linker flags"
+	@echo ""
+	@echo "# Documentation"
+	@echo "# ==============="
+	@echo "# LICENSE         := # File with a License (def: LICENSE)"
+	@echo "# NOTICE          := # Notice of the License, to be put in "
+	@echo "#                    # the top of any file (def: NOTICE)."
+	@echo "# DOXYFILE        := # Dxygen config file (def: Doxyfile)"
+	@echo ""
+	@echo "# Makeball list"
+	@echo "# ==============="
+	@echo "# 'include conf/makeball.mk' for pre-configured options"
+	@echo "# to use the library 'makeball'"
+	@echo ""
+
+.PHONY: version
+version:
+	@echo "override version := $(version)"
+
+.PHONY: compiler
+compiler:
+	@echo ""
+	@echo "############################################################"
+	@echo "##     UNCOMMENT ANY TARGET TO OVERWRITE THE DEFAULT!     ##"
+	@echo "############################################################"
+	@echo ""
+	@echo "# AR     := # Create static libraries (default: ar)"
+	@echo "# AS     := # Compile assembly        (default: nasm)"
+	@echo "# CC     := # Compile C               (default: gcc)"
+	@echo "# FC     := # Compile C++             (default: gfortran)"
+	@echo "# CXX    := # Compile Fortran         (default: g++)"
+	@echo "# RANLIB := # Update static libraries (default: ranlib)"
+
+.PHONY: gitignore
+gitignore:
+	@echo ""
+	@echo "# Automatically generated directories"
+	@echo "#======================================"
+	@$(foreach d,$(depdir),echo $d/; )
+	@$(foreach d,$(objdir),echo $d/; )
+	@$(foreach d,$(covdir),echo $d/; )
+	@$(foreach d,$(bindir),echo $d/; )
+	@$(foreach d,$(sbindir),echo $d/; )
+	@$(foreach d,$(execdir),echo $d/; )
+	@$(foreach d,$(distdir),echo $d/; )
+	@$(foreach d,$(extdir),echo $d/; )
+	@echo $(addsuffix /,$(firstword $(libdir)))
+	@echo ""
+	@echo "# Objects, Libraries and Binaries"
+	@echo "#=================================="
+	@$(foreach e,$(moext),echo *$e; )
+	@$(foreach e,$(objext),echo *$e; )
+	@$(foreach e,$(libext),echo *$e; )
+	@$(foreach e,$(binext),echo *$e; )
+	@echo ""
+	@echo "# Make auxiliars"
+	@echo "#================="
+	@echo "make.debug"
+	@$(if $(strip $(doxyfile)),echo $(docdir)/doxygen/)
+	@$(if $(strip $(doxyfile)),echo $(docdir)/$(doxyfile).mk)
+	@$(foreach e,$(depext) $(sysext),echo *$e; )
+	@echo ""
+
+########################################################################
+#                                 HELP                                 #
+########################################################################
+
+.PHONY: help
+help:
+	@echo "                                                            "
+	@echo "AIO Makefile for C/C++/Fortran by Renato Cordeiro Ferreira. "
+	@echo "Type 'make projecthelp' for additional info.                "
+	@echo "                                                            "
+
+.PHONY: projecthelp
+projecthelp:
+	@echo "                                                            "
+	@echo "All-in-One Makefile                                         "
+	@echo "=====================                                       "
+	@echo "                                                            "
+	@echo "Default targets:                                            "
+	@echo "-----------------                                           "
+	@echo " * all:              Generates all executables              "
+	@echo " * analysis-lint:    Runs analysis lint on binary sources   "
+	@echo " * benchmark:        Compiles and runs Benchmarks           "
+	@echo " * check:            Compiles and runs Unit Tests           "
+	@echo " * compiler:         Outputs Compiler.mk to define compilers"
+	@echo " * config:           Outputs Config.mk for user's options   "
+	@echo " * coverage:         Creates coverage analysis information  "
+	@echo " * *-coverage:       As 'coverage' for tests and benchmarks "
+	@echo " * depend:           Checks all dependencies needed to build"
+	@echo " * deploy:           Deploys changes in BRANCH to REMOTE    "
+	@echo " * dist-*:           As 'dist', with many compressions      "
+	@echo " * dist:             Creates .tar.gz with bins and libs     "
+	@echo " * docs:             Generates all available doc formats    "
+	@echo " * doxy:             Creates Doxygen docs                   "
+	@echo " * dpkg:             Creates the project's debian package   "
+	@echo " * eval:             Same as 'benchmark'                    "
+	@echo " * gitignore:        Outputs .gitignore model for user      "
+	@echo " * init:             Creates dirs for beggining projects    "
+	@echo " * install-*:        Installs one info/html/dvi/pdf/ps docs "
+	@echo " * install-docs:     Installs documentation in all formats  "
+	@echo " * install:          Installs executables and libraries     "
+	@echo " * installcheck:     Runs installation tests (if available) "
+	@echo " * lint:             Runs analysis and style lints          "
+	@echo " * package-*:        As 'package', with many compressions   "
+	@echo " * package:          As 'dist', but also with src and data  "
+	@echo " * profile:          Creates profile analysis information   "
+	@echo " * *-profile:        As 'profile' for tests and benchmarks  "
+	@echo " * run:              Run EXEC executable from BIN           "
+	@echo " * standard:         Moves files to standard directories    "
+	@echo " * statistics:       Outputs file countage and LOC          "
+	@echo " * style-lint:       Runs style lint on binary sources      "
+	@echo " * sync:             Synchronizes from REMOTE to BRANCH     "
+	@echo " * tar:              Creates .tar with bins and libs        "
+	@echo " * test:             Same as 'check'                        "
+	@echo " * translation:      Creates files for internationalization "
+	@echo " * uninstall-*:      Uninstalls info/html/dvi/pdf/ps docs   "
+	@echo " * uninstall:        Uninstalls anything created by installs"
+	@echo " * upgrade:          Upgrades Makefile from remote repo     "
+	@echo " * version:          Outputs current version in .version.mk "
+	@echo "                                                            "
+	@echo "File generation targets:                                    "
+	@echo "-------------------------                                   "
+	@echo " * new:              Creates C/C++/Fortran artifact         "
+	@echo " * delete:           Removes C/C++/Fortran artifact         "
+	@echo " * update:           Updates C/C++/Fortran artifact         "
+	@echo "                                                            "
+	@echo "Tags targets:                                               "
+	@echo "--------------                                              "
+	@echo " * ctags:            Creates tags for VI/Vim editor         "
+	@echo " * etags:            Creates tags for Emacs editor          "
+	@echo " * TAGS:             Creates tags for both VI/Vim and Emacs "
+	@echo "                                                            "
+	@echo "Debug targets:                                              "
+	@echo "---------------                                             "
+	@echo " * debug:            Output 'dump' content in 'make.debug'  "
+	@echo " * dump:             Output main variables of this Makefile "
+	@echo " * coffee:           Best debug tool against sleepy hours   "
+	@echo " * nothing:          Self-explicative, huh?                 "
+	@echo "                                                            "
+	@echo "Cleaning targets:                                           "
+	@echo "------------------                                          "
+	@echo " * mostlyclean:      Cleans all object files                "
+	@echo " * clean:            Above and all types of binaries        "
+	@echo " * distclean:        Above and libraries, .tar and .tar.gz  "
+	@echo " * docclean:         Removes all documentation files        "
+	@echo " * packageclean:     Removes all debian and RPM packages    "
+	@echo " * coverageclean:    Removes all coverage analysis info     "
+	@echo " * translationclean: Removes all debian and RPM packages    "
+	@echo " * realclean:        Above, auto-generated source and docs  "
+	@echo " * uninitialize:     Above and source/include directories   "
+	@echo "                                                            "
+	@echo "Help targets:                                               "
+	@echo "--------------                                              "
+	@echo " * help:             Info about this Makefile               "
+	@echo " * projecthelp:      Perharps you kwnow if you are here...  "
+	@echo "                                                            "
+	@echo "Compilation options:                                        "
+	@echo "---------------------                                       "
+	@echo " * COVERAGE:         Enable compilation with coverage       "
+	@echo " * PROFILE:          Enable compilation with profile        "
+	@echo "                                                            "
+	@echo "Runtime options:                                            "
+	@echo "------------------                                          "
+	@echo " * *_ENV:            EXEC/TEST/BENCH binary environment     "
+	@echo " * *_WRAP:           EXEC/TEST/BENCH wrapper commands       "
+	@echo " * *_ARGS:           EXEC/TEST/BENCH binary arguments       "
+	@echo "                                                            "
+	@echo "Special flags:                                              "
+	@echo "---------------                                             "
+	@echo " * D:                Allows deletion of a C/C++ artifact    "
+	@echo " * U:                Allows uninitilization of the project  "
+	@echo " * V:                Allows printing the command line rules "
+	@echo " * EXEC:             Binary to be run, profiled or covered  "
+	@echo " * MORE:             With errors, use 'more' to read stderr "
+	@echo " * SILENT:           Outputs no messages in execution       "
+	@echo " * NO_GIT:           Disables git commands executed by make "
+	@echo " * NO_COLORS:        Outputs are made without any color     "
+	@echo " * ENABLE_NLS:       Allows internationalization            "
+	@echo "                                                            "
+	@echo "File generation flags:                                      "
+	@echo "-----------------------                                     "
+	@echo " * C_HEADER:         C source file                          "
+	@echo " * C_SOURCE:         C header file                          "
+	@echo " * C_MODULE:         C header for multiple sources in dir   "
+	@echo " * C_FILE:           C pair of header/source files          "
+	@echo " * C_MAIN:           C main (program entry point)           "
+	@echo " * C_ENUM:           C enum (symbolic alias for numbers)    "
+	@echo " * C_UNION:          C union (mutually exclusive var set)   "
+	@echo " * C_STRUCT:         C struct (coexisting var set)          "
+	@echo " * C_LIBRARY:        C library of functions                 "
+	@echo " * F_SOURCE:         Fortran source file                    "
+	@echo " * F_MODULE:         Fortran module                         "
+	@echo " * F_FILE:           Fortran source file                    "
+	@echo " * F_PROGRAM:        Fortran program (program entry point)  "
+	@echo " * F_LIBRARY:        Fortran library of functions           "
+	@echo " * F_SUBMODULE:      Fortran 2008 submodule                 "
+	@echo " * CXX_NAMESPACE:    C++ namespace directory                "
+	@echo " * CXX_HEADER:       C++ source file                        "
+	@echo " * CXX_SOURCE:       C++ header file                        "
+	@echo " * CXX_INLINE:       C++ inline file                        "
+	@echo " * CXX_MODULE:       C++ header for multiple sources in dir "
+	@echo " * CXX_GROUP:        C++ header with headers of a namespace "
+	@echo " * CXX_FILE:         C++ pair of header/source files        "
+	@echo " * CXX_MAIN:         C++ main (program entry point)         "
+	@echo " * CXX_ENUM:         C++ enum (symbolic alias for numbers)  "
+	@echo " * CXX_UNION:        C++ union (mutually exclusive var set) "
+	@echo " * CXX_CLASS:        C++ class (struct + member functions)  "
+	@echo " * CXX_STRUCT:       C++ struct (coexisting var set)        "
+	@echo " * CXX_LIBRARY:      C++ library of functions               "
+	@echo " * CXX_TEMPLATE:     C++ template (parameterized elements)  "
+	@echo " * CXX_ENUM_CLASS:   C++ enum class (strongly typed enum)   "
+	@echo " * NLS_HEADER:       Header with i18n headers and macros    "
+	@echo " * NLS_TRANSLATION:  Portable object translation            "
+	@echo " * MAJOR_RELEASE:    Project major release                  "
+	@echo " * MINOR_RELEASE:    Project minor release                  "
+	@echo " * PATCH_RELEASE:    Project patch release                  "
+	@echo "                                                            "
+	@echo "File generation options:                                    "
+	@echo "-------------------------                                   "
+	@echo " * IN:               Directory for 'new' files              "
+	@echo " * INC_EXT:          Header extension for 'new' files       "
+	@echo " * SRC_EXT:          Source extension for 'new' files       "
+	@echo " * WITH_ALPHA:       Make 'new' release an alpha release    "
+	@echo " * WITH_BETA:        Make 'new' release a beta release      "
+	@echo " * WITH_TIMESTAMP:   Make 'new' release with timestamp      "
+	@echo " * WITH_TEMPLATE:    Parameterize 'new' C++ data structure  "
+	@echo "                                                            "
+
+.PHONY: coffee
+ifndef YES
+coffee:
+	@echo "                                                            "
+	@echo "                                     _________              "
+	@echo "       .--.---------.--------.      /'''''\   \             "
+	@echo "      /  /          |        /     /\\     \   \            "
+	@echo "     |--|-----------|        /    / //      \   \           "
+	@echo "      \  \         /|       /    / //________\___\          "
+	@echo "       \  \       / |       /   / //|         |             "
+	@echo "        \--\-----/  |      /    \//=|      :  |             "
+	@echo "          ::  :     |      |        |      :  |             "
+	@echo "        \__|_____/  |      |        |      :  |             "
+	@echo "   ||''''' (     )  |''''''\        |      :  |             "
+	@echo "   || |'('(       ) |       \       |      :  |             "
+	@echo "   ||_|(~~(~~~~~~~~)|  :[ ] \       |      :  |   \''''//   "
+	@echo "        ( (       ) |  :[ ]  \      |      :  |   \''''//   "
+	@echo "         (_(_____)__|________\      |      :  |   \''''//   "
+	@echo "        /  |                  \     |_________|   \''''//   "
+	@echo "       /___|___________________\    \_________/    \__//    "
+	@echo "                                                            "
+	@echo "           .------------------------------------.           "
+	@echo "           |  Do you want some coffee? [YES=1]  |           "
+	@echo "           '------------------------------------'           "
+	@echo "                                                            "
+else
+coffee:
+	@echo "                                                            "
+	@echo "                                                            "
+	@echo "                                                            "
+	@echo "                          ^^^^^^^^^                         "
+	@echo "                         ^^^^^^^^^                          "
+	@echo "                        ^^^^^^^^^                           "
+	@echo "                         ^^^^^^^^                           "
+	@echo "                          ^^^^^^^^^                         "
+	@echo "                         ^^^^^^^^^                          "
+	@echo "                ........^^^^^^^^^.......                    "
+	@echo "               /       ^^^^^^^^^        \-----.             "
+	@echo "              |\        ^^^^^^^^^       /-----|             "
+	@echo "               \''''''''''''''''''''''''/ ... |             "
+	@echo "                \                      /  |_| |             "
+	@echo "                 \                    /_______|             "
+	@echo "                  \                  /                      "
+	@echo "                   \________________/                       "
+	@echo "                                                            "
+	@echo "           .------------------------------------.           "
+	@echo "           |           Enjoy your cup!          |           "
+	@echo "           '------------------------------------'           "
+	@echo "                                                            "
+endif
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                                RULES                                 #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 # Include dependencies for each src extension, unless cleaning files
 ifneq ($(patsubst %clean,clean,$(MAKECMDGOALS)),clean)
@@ -3709,7 +4206,7 @@ define program-dependency-target
 # Creates hash from hash-key
 $$(call hash-table.new,$2)
 
-# Verifies if programs of $1dep are the same. If they changed, deletes 
+# Verifies if programs of $1dep are the same. If they changed, deletes
 # old program dependency file and checks if the new is available.
 .PHONY: $1dep
 $1dep: \
@@ -4725,135 +5222,15 @@ endef
 $(foreach e,tar.gz tar.bz2 tar zip tgz tbz2,\
     $(eval $(call dist-factory,$e)))
 
-########################################################################
-##                              CLEAN                                 ##
-########################################################################
-.PHONY: mostlyclean
-mostlyclean:
-	$(call rm-if-empty,$(objdir),\
-	    $(execobj) $(testobj) $(benchobj)\
-	    $(covdata) $(covtestdata) $(covbenchdata)\
-	    $(profdata) $(proftestdata) $(profbenchdata))
-	$(foreach d,$(call invert,$(sort $(dir $(finc)))),\
-	    $(call rm-if-empty,$d,$(filter $d%,$(finc)))$(newline))
-
-.PHONY: clean
-clean: mostlyclean
-	$(call rm-if-empty,$(bindir),$(bin) $(testbin) $(benchbin))
-	$(call rm-if-empty,$(sbindir),$(sbin))
-	$(call rm-if-empty,$(execdir),$(libexec))
-
-.PHONY: distclean
-distclean: clean
-	$(call rm-if-empty,$(depdir),$(depall))
-	$(call rm-if-empty,$(distdir))
-	$(call rm-if-empty,$(firstword $(libdir)),$(execlib))
-	$(call rm-if-empty,$(covdir),\
-	    $(covrep) $(covtestrep) $(covbenchrep))
-	$(call rm-if-empty,$(profdir),\
-	    $(profrep) $(proftestrep) $(profbenchrep))
-
-ifdef ENABLE_NLS
-.PHONY: translationclean
-translationclean:
-	$(call rm-if-exists,$(intltl),$(MSG_INTLTL_NONE))
-	$(call rm-if-exists,$(intlall),$(MSG_INTLALL_NONE))
-	$(call rm-if-exists,$(intlobj),$(MSG_INTLOBJ_NONE))
-	$(call rm-if-empty,$(localedir))
-endif
-
-.PHONY: docclean
-docclean:
-	$(call rm-if-empty,$(docdir)/doxygen)
-	$(call rm-if-exists,$(docdir)/Doxyfile.mk,$(MSG_DOXY_NONE))
-	$(call rm-if-empty,$(docdir)/info,$(texiinfo))
-	$(call rm-if-empty,$(docdir)/html,$(texihtml))
-	$(call rm-if-empty,$(docdir)/dvi,$(texidvi))
-	$(call rm-if-empty,$(docdir)/pdf,$(texipdf))
-	$(call rm-if-empty,$(docdir)/ps,$(texips))
-	$(call rm-if-empty,$(docdir))
-
-.PHONY: packageclean
-packageclean:
-	$(call rm-if-empty,$(distdir)/$(deb_project)-$(version))
-	$(call rm-if-empty,$(debdir),$(deball))
-
-.PHONY: externalclean
-externalclean:
-	$(foreach d,$(call invert,$(call hash-table.keys,git_dependency)),\
-	    $(if $(wildcard $(extdir)/$d),\
-	        $(call git-submodule-rm,$(extdir)/$d)$(newline)))
-	$(foreach d,$(call invert,$(call hash-table.keys,web_dependency)),\
-	    $(if $(wildcard $(extdir)/$d),\
-	        $(call web-submodule-rm,$(extdir)/$d)$(newline)))
-	$(call rm-if-empty,$(extdir),$(call rwildcard,*,$(externreq)))
-
-.PHONY: realclean
-ifndef D
-realclean:
-	@$(call println,$(MSG_WARNCLEAN_BEG))
-	@$(call println,$(MSG_WARNCLEAN_END))
-	@$(call println,$(MSG_WARNCLEAN_ALT))
-else
-realclean: distclean docclean packageclean externalclean \
-           $(if $(ENABLE_NLS),translationclean)
-	$(call rm-if-exists,$(lexall),$(MSG_LEX_NONE))
-	$(foreach d,$(lexinc),$(call rm-if-empty,$d)$(newline))
-	$(call rm-if-exists,$(yaccall),$(MSG_YACC_NONE))
-	$(foreach d,$(yaccinc),$(call rm-if-empty,$d)$(newline))
-	$(call rm-if-exists,$(esqlall),$(MSG_ESQL_NONE))
-	$(call rm-if-exists,ctags,$(MSG_CTAGS_NONE))
-	$(call rm-if-exists,etags,$(MSG_ETAGS_NONE))
-endif
-
-.PHONY: mainteiner-clean
-ifndef D
-mainteiner-clean:
-	@$(call println,$(MSG_WARNCLEAN_BEG))
-	@$(call println,$(MSG_WARNCLEAN_END))
-	@$(call println,$(MSG_WARNCLEAN_ALT))
-else
-mainteiner-clean:
-	@$(MAKE) realclean MAINTEINER_CLEAN=1 D=1
-endif
-
-.PHONY: uninitialize
-ifndef U
-uninitialize:
-	@$(call println,$(MSG_UNINIT_WARN))
-	@$(call println,$(MSG_UNINIT_ALT))
-else
-uninitialize:
-	@$(MAKE) mainteiner-clean D=1
-	$(call rm-if-empty,$(srcdir),$(execall))
-	$(call rm-if-empty,$(incdir),$(execinc))
-	$(call rm-if-empty,$(docdir),$(texiall))
-	$(call rm-if-exists,Config.mk)
-	$(call rm-if-exists,config.mk)
-	$(call rm-if-exists,.config.mk)
-	$(call rm-if-exists,Config_os.mk)
-	$(call rm-if-exists,config_os.mk)
-	$(call rm-if-exists,.config_os.mk)
-	$(call rm-if-exists,.version.mk)
-	$(call rm-if-exists,.gitignore)
-	$(call rm-if-exists,.gitmodules)
-	$(call rm-if-empty,.git)
-endif
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                                OUTPUT                                #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 ########################################################################
-##                              OUTPUT                                ##
+##                               COLORS                               ##
 ########################################################################
-
-# Hide command execution details
-V   ?= 0
-Q_0 := @
-quiet := $(Q_$V)
-
-O_0 := 1> /dev/null
-E_0 := 2> /dev/null
-NO_OUTPUT    := $(O_$V)
-NO_ERROR     := $(E_$V)
-NO_OPERATION := :
 
 # ANSII Escape Colors
 ifndef NO_COLORS
@@ -4868,6 +5245,10 @@ WHITE   := \033[1;37m
 RES     := \033[0m
 ERR     := \033[0;37m
 endif
+
+########################################################################
+##                              MESSAGES                              ##
+########################################################################
 
 MSG_UNINIT_WARN   = "${RED}Are you sure you want to delete all"\
                     "sources, headers and configuration files?"
@@ -5067,11 +5448,35 @@ MSG_CXX_NO_FILE   = "${DEF}No files for C++ executable ${GREEN}$@${RES}"
 MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
                     "${YELLOW}$@${RES}"
 
+#//////////////////////////////////////////////////////////////////////#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''#
+#                           RUNTIME LIBRARY                            #
+#......................................................................#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
+########################################################################
+##                            DEFINITIONS                             ##
+########################################################################
+
+# Hide command execution details
+V   ?= 0
+Q_0 := @
+quiet := $(Q_$V)
+
+O_0 := 1> /dev/null
+E_0 := 2> /dev/null
+NO_OUTPUT    := $(O_$V)
+NO_ERROR     := $(E_$V)
+NO_OPERATION := :
+
 ########################################################################
 ##                            FUNCTIONS                               ##
 ########################################################################
 
 ## TARGET FILES ########################################################
+
 define make-create
 $(if $(and $(call is-empty,$3),$(wildcard $2)),,\
 	$(call phony-status,$(MSG_MAKE_CREATE))$(newline)\
@@ -5080,10 +5485,13 @@ $(if $(and $(call is-empty,$3),$(wildcard $2)),,\
 endef
 
 ## DEPENDENCIES ########################################################
-# Functions: *-depend
-# @param $1 Source name (with path)
-# @param $2 Main target to be analised
-# @param $3 Dependency file name
+
+#======================================================================#
+# Functions: *-depend                                                  #
+# @param $1 Source name (with path)                                    #
+# @param $2 Main target to be analised                                 #
+# @param $3 Dependency file name                                       #
+#======================================================================#
 
 define c-depend
 $(CC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 $(cppflags) \
@@ -5102,16 +5510,19 @@ $(FC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 \
 endef
 
 ## SYNCHRONIZATION #####################################################
-# Functions: exec-sync
-# Synchronze executables (bin/lib) previously compiled with other set
-# of flags (to avoid their recompilation in a 2nd run of make)
 
+#======================================================================#
+# Function: exec-sync                                                  #
+# @brief Synchronze executables (bin/lib) previously compiled with     #
+# other set of flags (to avoid recompilation in a 2nd run of make)     #
+#======================================================================#
 define exec-sync
 $(foreach d,$(bindir) $(libdir),\
     $(foreach f,$(call rwildcard,$d,*),touch $f;))
 endef
 
 ## DIRECTORIES #########################################################
+
 define mkdir
 $(if $(shell if ! [ -d $(strip $(patsubst .,,$1)) ]; then echo 1; fi),\
 	$(if $(strip $(patsubst .,,$1)), $(call phony-status,$(MSG_MKDIR)) )
@@ -5150,6 +5561,7 @@ $(if $(strip $(foreach e,$(strip $1),$(wildcard *$e))),\
 endef
 
 ## REMOTION ############################################################
+
 define srm
 	$(quiet) $(RM) $1 $(NO_ERROR);
 endef
@@ -5225,7 +5637,8 @@ $(if $(wildcard $1),\
     $(call rm,$1),$(if $(strip $2),$(call phony-ok,$(strip $2))))
 endef
 
-## PRINT FUNCTIONS #####################################################
+## PRINT ###############################################################
+
 ifndef SILENT
 
 define printf
@@ -5252,7 +5665,7 @@ endef
 
 endif # ifndef SILENT
 
-## SED FUNCTIONS #######################################################
+## STREAM EDITION ######################################################
 
 define sed
 sed -i -e $1 $(strip $2)
@@ -5263,7 +5676,8 @@ $(call sed,$(subst $(dquote),$(squote),\
                $(call join-strings,$1'{'$2'}')),$(strip $3))
 endef
 
-## ERROR SHELL #########################################################
+## SHELL ERROR #########################################################
+
 ifndef SILENT
 ifndef MORE
 
@@ -5304,7 +5718,8 @@ endef
 endif # ifndef MORE
 endif # ifndef SILENT
 
-## ERROR MAKEFILE ######################################################
+## MAKEFILE ERROR ######################################################
+
 ifndef SILENT
 
 define model-error_impl
@@ -5354,6 +5769,7 @@ endef
 endif # ifndef SILENT
 
 ## STATUS PERSISTENCE ##################################################
+
 ifndef SILENT
 
 define store-status
@@ -5369,6 +5785,7 @@ endef
 endif # ifndef SILENT
 
 ## STATUS ##############################################################
+
 ifdef $(and $(call is-empty,$(SILENT)),$(call not-empty,$(quiet)))
 
 define model-status
@@ -5408,6 +5825,7 @@ endef
 endif # if empty $(SILENT) and not empty $(quiet)
 
 ## ACKNOWLEDGMENT ######################################################
+
 ifndef SILENT
 
 define model-ok
@@ -5438,36 +5856,46 @@ endif # ifndef SILENT
 
 ## TEXT ################################################################
 
-# Function: shstring
-# Transforms a text valid inside make in a valid for shell
+#======================================================================#
+# Function: shstring                                                   #
+# @brief Transforms a text valid inside make in a valid for shell      #
+#======================================================================#
 define shstring
 $(strip $(subst $(space),\$(space),$(strip $1)))
 endef
 
-# Function: select
-# Define which ostream should be used
+#======================================================================#
+# Function: select                                                     #
+# @brief Define which ostream should be used                           #
+#======================================================================#
 define select
 $(eval ostream = $(strip $(if $(call not-empty,$1),$1)))
 endef
 
-# Function: cat
-# Add a text in the end of a ostream
+#======================================================================#
+# Function: cat                                                        #
+# @brief Add a text in the end of a ostream                            #
+#======================================================================#
 define cat
 $(quiet) $(call printf,"%b\n",$1,\
                        $(if $(strip $(ostream)),>> $(ostream)))
 endef
 
-# Function: eat
-# Remove text of the last line of a ostream
+#======================================================================#
+# Function: eat                                                        #
+# @brief Remove text of the last line of a ostream                     #
+#======================================================================#
 define eat
 $(quiet) $(call sedln,'$$',$1,$(strip $(ostream)))
 endef
 
-# Function: touch
-# Create a new file based on a model
-# @param $1 File to be created
-# @param $2 Model to be used in the creation (optional)
-# @param $3 Command to postprocess $1 content (with pipe)
+#======================================================================#
+# Function: touch                                                      #
+# @brief Create a new file based on a model                            #
+# @param $1 File to be created                                         #
+# @param $2 Model to be used in the creation (optional)                #
+# @param $3 Command to postprocess $1 content (with pipe)              #
+#======================================================================#
 define touch
 $(if $(wildcard $1*),,\
     $(call phony-status,$(MSG_TOUCH)))
@@ -5479,8 +5907,19 @@ $(if $(wildcard $1*),,\
     $(call phony-ok,$(MSG_TOUCH)))
 endef
 
-## VERSIONMENT #########################################################
+#//////////////////////////////////////////////////////////////////////#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''#
+#                         RUNTIME GIT LIBRARY                          #
+#......................................................................#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
 ifndef NO_GIT
+
+########################################################################
+##                            DEFINITIONS                             ##
+########################################################################
 
 git_version          := $(subst git version,,$(shell git --version))
 
@@ -5488,10 +5927,10 @@ GIT_ADD              := $(GIT) add -f
 GIT_CLONE            := $(GIT) clone -q --recursive
 GIT_COMMIT           := $(GIT) commit -q -m
 GIT_DIFF             := $(GIT) diff --quiet
-GIT_INIT             := $(GIT) init -q  
+GIT_INIT             := $(GIT) init -q
 GIT_LS_FILES         := $(GIT) ls-files --error-unmatch 2>/dev/null 1>&2
-GIT_PULL             := $(GIT) pull -q  
-GIT_PUSH             := $(GIT) push -q  
+GIT_PULL             := $(GIT) pull -q
+GIT_PUSH             := $(GIT) push -q
 GIT_REMOTE           := $(GIT) remote
 GIT_REMOTE_ADD       := $(GIT_REMOTE) add
 GIT_RM               := $(GIT) rm -q
@@ -5519,6 +5958,10 @@ $(foreach c,\
     RM SUBMODULE SUBMODULE_ADD SUBMODULE_INIT SUBMODULE_DEINIT TAG \
     CONFIG, \
     $(eval $(call git-cmd-factory,$(subst _,-,$(call lc,$c)),$c)))
+
+########################################################################
+##                             FUNCTIONS                              ##
+########################################################################
 
 define git-clone
 	$(call phony-status,$(MSG_GIT_CLONE))
@@ -5628,7 +6071,7 @@ define git-submodule-rm
 	             $(call model-git-commit,"Remove submodule $1");     \
 	             $(RMDIR) $1 $(ERROR);                               \
 	             $(RMDIR) .git/modules/$1 $(ERROR);                  \
-	         fi 
+	         fi
 	$(call phony-ok,$(MSG_GIT_SUB_RM))
 endef
 
@@ -5664,7 +6107,18 @@ endif # not empty GIT_REMOTE_PATH
 
 endif # ifndef NO_GIT
 
-## WEB DEPENDENCIES ####################################################
+#//////////////////////////////////////////////////////////////////////#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''#
+#                         RUNTIME WEB LIBRARY                          #
+#......................................................................#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
+########################################################################
+##                             FUNCTIONS                              ##
+########################################################################
+
 define web-clone
 	$(call phony-status,$(MSG_WEB_CLONE))
 	$(quiet) $(CURL) $2 $1 $(NO_OUTPUT) $(NO_ERROR)
@@ -5687,12 +6141,22 @@ define web-submodule-rm
 	$(call phony-ok,$(MSG_WEB_SUB_RM))
 endef
 
-########################################################################
-##                          FILE GENERATION                           ##
-########################################################################
+#//////////////////////////////////////////////////////////////////////#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''#
+#                        FILE GENERATION MODULE                        #
+#......................................................................#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
-# Executes iff one of the make goals is 'new' or 'delete'
+# Executes iff one of the make goals is 'new', 'delete' or 'update'
 ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,new delete update)))
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                           INPUT VALIDATION                           #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 # File path
 # ===========
@@ -5736,42 +6200,91 @@ inusing       := $(strip $(subst $(space),::,$(innms)))
 #------------------------------------------------------------------[ 7 ]
 idnt          := $(empty)  $(empty)
 
-# Variables for extensions
-# =========================
+# Extensions
+# ============
+# 1) Header file extension
+# 2) Source file extension
+# 3) Inline file extension
+#------------------------------------------------------------------[ 1 ]
 override INC_EXT := $(strip $(if $(strip $(INC_EXT)),\
 	$(or $(filter .%,$(INC_EXT)),.$(INC_EXT))))
+#------------------------------------------------------------------[ 2 ]
 override SRC_EXT := $(strip $(if $(strip $(SRC_EXT)),\
     $(or $(filter .%,$(SRC_EXT)),.$(SRC_EXT))))
+#------------------------------------------------------------------[ 3 ]
 override INL_EXT := $(strip $(if $(strip $(INL_EXT)),\
     $(or $(filter .%,$(INL_EXT)),.$(INL_EXT))))
 
-# Helper functions
-# =================
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                          DERIVED VARIABLES                           #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
+filetypes := \
+    C_HEADER C_SOURCE C_MODULE C_FILE C_MAIN C_ENUM C_UNION   \
+    C_STRUCT C_LIBRARY                                        \
+    F_SOURCE F_MODULE F_FILE F_LIBRARY F_PROGRAM F_SUBMODULE  \
+    CXX_NAMESPACE CXX_HEADER CXX_SOURCE CXX_INLINE CXX_MODULE \
+    CXX_GROUP CXX_FILE CXX_MAIN CXX_ENUM CXX_UNION CXX_CLASS  \
+    CXX_STRUCT CXX_LIBRARY CXX_TEMPLATE CXX_ENUM_CLASS        \
+    NLS_HEADER NLS_TRANSLATION                                \
+    MAJOR_RELEASE MINOR_RELEASE PATCH_RELEASE
+
+modifiers := \
+    ALPHA BETA TIMESTAMP TEMPLATE
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                            SANITY CHECKS                             #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
+$(foreach f,$(filetypes),\
+    $(eval override $f := $(strip $(basename $(notdir $($f))))))
+
+$(foreach f,$(modifiers),\
+    $(if $(WITH_$f),$(eval $f := $(strip $(call lc,$(WITH_$f))))))
+
+# Check if there is at least one artifact to be created/deleted
+$(if $(call is-empty,$(foreach f,$(filetypes),$($f))),\
+     $(error No filetype defined. Type 'make projecthelp' for info))
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                         COMPILE-TIME LIBRARY                         #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 ########################################################################
+##                             FUNCTIONS                              ##
+########################################################################
+
+#======================================================================#
 # Function: sfmt                                                       #
 # @brief Format to make a preprocessor symbol                          #
 # @param $1 File name                                                  #
-########################################################################
+#======================================================================#
 define sfmt
 $(call uc,$(call camel-to-snake-case,$1))
 endef
 
-########################################################################
+#======================================================================#
 # Function: invalid-ext                                                #
 # @param $1 File extension                                             #
 # @param $2 List of extensions to validate $1, if it is not empty      #
-########################################################################
+#======================================================================#
 define invalid-ext
 $(if $(strip $1),$(if $(findstring $(strip $1),$2),,\
     $(call phony-error,$(MSG_NEW_EXT))\
 ))
 endef
 
-########################################################################
+#======================================================================#
 # Function: include-standard-headers                                   #
 # @brief Create include directives for all standard headers in $1      #
-########################################################################
+#======================================================================#
 define include-standard-headers
 $(if $(call is-empty,$1),$(\
     )$(call eat,'/^\s*$$/d'),$(\
@@ -5779,10 +6292,10 @@ $(if $(call is-empty,$1),$(\
     )$(foreach f,$1,$(call cat,'#include <$f>')$(newline)))
 endef
 
-########################################################################
+#======================================================================#
 # Function: include-internal-headers                                   #
 # @brief Create include directives for all internal headers in $1      #
-########################################################################
+#======================================================================#
 define include-internal-headers
 $(if $(call is-empty,$1),$(\
     )$(call eat,'/^\s*$$/d'),$(\
@@ -5790,10 +6303,10 @@ $(if $(call is-empty,$1),$(\
     )$(foreach f,$1,$(call cat,'#include "$f"')$(newline)))
 endef
 
-########################################################################
+#======================================================================#
 # Function: include-implementation-header                              #
-# @briefs Create include directive for implementation header $1        #
-########################################################################
+# @brief Create include directive for implementation header $1         #
+#======================================================================#
 define include-implementation-header
 $(if $(call is-empty,$1),$(\
     )$(call eat,'/^\s*$$/d'),$(\
@@ -5802,10 +6315,10 @@ $(if $(call is-empty,$1),$(\
     )$(call cat,'#include "$(strip $1)"')$(newline))
 endef
 
-########################################################################
+#======================================================================#
 # Function: start-namespace                                            #
 # @brief Create new namespaces from the IN variable                    #
-########################################################################
+#======================================================================#
 define start-namespace
 $(if $(call is-empty,$(innms)),$(\
     )$(call eat,'/^\s*$$/d'),$(\
@@ -5815,10 +6328,10 @@ $(if $(call is-empty,$(innms)),$(\
 ))
 endef
 
-########################################################################
+#======================================================================#
 # Function: end-namespace                                              #
 # @brief End the namespaces using the IN variable for namespace depth  #
-########################################################################
+#======================================================================#
 define end-namespace
 $(if $(call is-empty,$(innms)),$(\
     )$(call eat,'/^\s*$$/d'),$(\
@@ -5828,10 +6341,10 @@ $(if $(call is-empty,$(innms)),$(\
 ))
 endef
 
-########################################################################
+#======================================================================#
 # Function: declare-data-structure                                     #
 # @brief Declare new data structure for C/C++                          #
-########################################################################
+#======================================================================#
 define declare-data-structure
 $(if $(call is-empty,$1),$(\
     )$(call eat,'/^\s*$$/d'),$(\
@@ -5841,8 +6354,9 @@ $(if $(call is-empty,$1),$(\
     )$(call cat,'};'))
 endef
 
-# File templates
-# ===============
+########################################################################
+##                           FILE TEMPLATES                           ##
+########################################################################
 
 define c-header
 	$(if $(INC_EXT),,$(eval override INC_EXT := .h))
@@ -6109,32 +6623,15 @@ $(if $(findstring $(IN),$(call rsubdir,$(incbase) $(srcbase))),,\
     $(error Namespace "$(IN)" does not exist))
 endif
 
-# Artifacts
-# ==========
-# C/C++/Fortran files that may be created by this Makefile
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                                GOALS                                 #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
-filetypes := \
-    C_HEADER C_SOURCE C_MODULE C_FILE C_MAIN C_ENUM C_UNION   \
-    C_STRUCT C_LIBRARY                                        \
-    F_SOURCE F_MODULE F_FILE F_LIBRARY F_PROGRAM F_SUBMODULE  \
-    CXX_NAMESPACE CXX_HEADER CXX_SOURCE CXX_INLINE CXX_MODULE \
-    CXX_GROUP CXX_FILE CXX_MAIN CXX_ENUM CXX_UNION CXX_CLASS  \
-    CXX_STRUCT CXX_LIBRARY CXX_TEMPLATE CXX_ENUM_CLASS        \
-    NLS_HEADER NLS_TRANSLATION                                \
-    MAJOR_RELEASE MINOR_RELEASE PATCH_RELEASE
-
-modifiers := \
-    ALPHA BETA TIMESTAMP TEMPLATE
-
-$(foreach f,$(filetypes),\
-    $(eval override $f := $(strip $(basename $(notdir $($f))))))
-
-$(foreach f,$(modifiers),\
-    $(if $(WITH_$f),$(eval $f := $(strip $(call lc,$(WITH_$f))))))
-
-# Check if there is at least one artifact to be created/deleted
-$(if $(call is-empty,$(foreach f,$(filetypes),$($f))),\
-     $(error No filetype defined. Type 'make projecthelp' for info))
+########################################################################
+##                                NEW                                 ##
+########################################################################
 
 .PHONY: new
 new: | $(call root,$(incbase))/./ $(call root,$(srcbase))/./
@@ -6255,8 +6752,20 @@ ifdef NLS_HEADER
 endif
 ifdef NLS_TRANSLATION
 new: $(foreach t,$(intltl),$(foreach e,$(firstword $(poext)),\
-        $(localedir)/$(NLS_TRANSLATION)$d/$(call not-root,$(basename $t))$e))
+        $(localedir)/$(NLS_TRANSLATION)$d/$(call corename,$t)$e))
 endif
+endif
+
+########################################################################
+##                               UPDATE                               ##
+########################################################################
+
+.PHONY: update
+update:
+ifdef CXX_GROUP
+	$(call phony-status,$(MSG_UPDATE_NMSH))
+	@$(MAKE) delete new CXX_GROUP=$(CXX_GROUP) D=1 SILENT=1
+	$(call phony-ok,$(MSG_UPDATE_NMSH))
 endif
 	
 ifdef MAJOR_RELEASE
@@ -6284,13 +6793,9 @@ ifdef PATCH_RELEASE
 	$(call git-tag,"v$(version)")
 endif
 
-.PHONY: update
-update:
-ifdef CXX_GROUP
-	$(call phony-status,$(MSG_UPDATE_NMSH))
-	@$(MAKE) delete new CXX_GROUP=$(CXX_GROUP) D=1 SILENT=1
-	$(call phony-ok,$(MSG_UPDATE_NMSH))
-endif
+########################################################################
+##                               DELETE                               ##
+########################################################################
 
 # Function: delete-file
 # $1 File basename to be deleted
@@ -6437,7 +6942,7 @@ delete: r := $(localedir)
 delete: d := $(NLS_TRANSLATION)
 delete:
 	$(foreach t,$(intltl),$(call delete-file,\
-	    $r/$d/$(call not-root,$(basename $b)),$(poext)))
+	    $r/$d/$(call corename,$b),$(poext)))
 	$(foreach t,$(intltl),$(call delete-file,\
 	    $r/$d/LC_MESSAGES/$(call not-root,$b),$(moext)))
 	$(call rm-if-empty,$r/$d/LC_MESSAGES)
@@ -6448,347 +6953,39 @@ endif
 endif # Check if D was defined
 
 endif # Check if one goal is 'new', 'delete' or 'update'
-##                         CONFIGURATION FILES                        ##
-########################################################################
 
-.PHONY: config
-config:
-	@echo ""
-	@echo "############################################################"
-	@echo "##     UNCOMMENT ANY TARGET TO OVERWRITE THE DEFAULT!     ##"
-	@echo "############################################################"
-	@echo ""
-	@echo "# Project info"
-	@echo "# ==============="
-	@echo "# PROJECT         := # Project name (def: Default)"
-	@echo "# VERSION         := # Version (def: 1.0.0)"
-	@echo "# STD_NAMESPACE   := # Project namespace for C/C++"
-	@echo "# GIT_REMOTE_PATH := # Remote path for git repository"
-	@echo "# MAINTEINER_NAME := # Your name"
-	@echo "# MAINTEINER_MAIL := # your_name@mail.com"
-	@echo "# COPYRIGHT       := # Copyright Holder"
-	@echo "# SYNOPSIS        := # One-line description of the program"
-	@echo "# DESCRIPTION     := # Longer description of the program"
-	@echo ""
-	@echo "# Program settings"
-	@echo "# =================="
-	@echo "# BIN             := # Binaries' names. If a subdir of any"
-	@echo "                     # src dir has the same name of this bin"
-	@echo "                     # it and all its subdir will be compiled"
-	@echo "                     # only for this specific binary"
-	@echo "# ARLIB           := # Static/Shared libraries' names. If"
-	@echo "# SHRLIB          := # one is a dir, all srcs within will"
-	@echo "                     # make the lib"
-	@echo ""
-	@echo "# Dependencies"
-	@echo "# =============="
-	@echo "# GIT_DEPENDENCY  := # List of git dependencies in the form: "
-	@echo "#                    # DEP_NAME => dep_path build_cmd        "
-	@echo "# WEB_DEPENDENCY  := # Same as above, but for URL downloads  "
-	@echo "#                    # with 'curl -o' (default) or 'wget -O' "
-	@echo ""
-	@echo "# Paths"
-	@echo "# ======="
-	@echo "# ASLIBS          := # Assembly paths"
-	@echo "# CLIBS           := # C paths"
-	@echo "# CXXLIBS         := # C++ paths"
-	@echo "# LDLIBS          := # Linker paths"
-	@echo ""
-	@echo "# Flags"
-	@echo "# ======="
-	@echo "# CPPFLAGS        := # Precompiler Flags"
-	@echo "# ASFLAGS         := # Assembly Flags"
-	@echo "# CFLAGS          := # C Flags"
-	@echo "# CXXFLAGS        := # C++ Flags"
-	@echo "# LDFLAGS         := # Linker flags"
-	@echo ""
-	@echo "# Documentation"
-	@echo "# ==============="
-	@echo "# LICENSE         := # File with a License (def: LICENSE)"
-	@echo "# NOTICE          := # Notice of the License, to be put in "
-	@echo "#                    # the top of any file (def: NOTICE)."
-	@echo "# DOXYFILE        := # Dxygen config file (def: Doxyfile)"
-	@echo ""
-	@echo "# Makeball list"
-	@echo "# ==============="
-	@echo "# 'include conf/makeball.mk' for pre-configured options"
-	@echo "# to use the library 'makeball'"
-	@echo ""
+#//////////////////////////////////////////////////////////////////////#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''#
+#                             DEBUG MODULE                             #
+#......................................................................#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
-.PHONY: version
-version:
-	@echo "override version := $(version)"
-
-.PHONY: compiler
-compiler:
-	@echo ""
-	@echo "############################################################"
-	@echo "##     UNCOMMENT ANY TARGET TO OVERWRITE THE DEFAULT!     ##"
-	@echo "############################################################"
-	@echo ""
-	@echo "# AR     := # Create static libraries (default: ar)"
-	@echo "# AS     := # Compile assembly        (default: nasm)"
-	@echo "# CC     := # Compile C               (default: gcc)"
-	@echo "# FC     := # Compile C++             (default: gfortran)"
-	@echo "# CXX    := # Compile Fortran         (default: g++)"
-	@echo "# RANLIB := # Update static libraries (default: ranlib)"
-
-.PHONY: gitignore
-gitignore:
-	@echo ""
-	@echo "# Automatically generated directories"
-	@echo "#======================================"
-	@$(foreach d,$(depdir),echo $d/; )
-	@$(foreach d,$(objdir),echo $d/; )
-	@$(foreach d,$(covdir),echo $d/; )
-	@$(foreach d,$(bindir),echo $d/; )
-	@$(foreach d,$(sbindir),echo $d/; )
-	@$(foreach d,$(execdir),echo $d/; )
-	@$(foreach d,$(distdir),echo $d/; )
-	@$(foreach d,$(extdir),echo $d/; )
-	@echo $(addsuffix /,$(firstword $(libdir)))
-	@echo ""
-	@echo "# Objects, Libraries and Binaries"
-	@echo "#=================================="
-	@$(foreach e,$(moext),echo *$e; )
-	@$(foreach e,$(objext),echo *$e; )
-	@$(foreach e,$(libext),echo *$e; )
-	@$(foreach e,$(binext),echo *$e; )
-	@echo ""
-	@echo "# Make auxiliars"
-	@echo "#================="
-	@echo "make.debug"
-	@$(if $(strip $(doxyfile)),echo $(docdir)/doxygen/)
-	@$(if $(strip $(doxyfile)),echo $(docdir)/$(doxyfile).mk)
-	@$(foreach e,$(depext) $(sysext),echo *$e; )
-	@echo ""
-
-.PHONY: help
-help:
-	@echo "                                                            "
-	@echo "AIO Makefile for C/C++/Fortran by Renato Cordeiro Ferreira. "
-	@echo "Type 'make projecthelp' for additional info.                "
-	@echo "                                                            "
-
-.PHONY: projecthelp
-projecthelp:
-	@echo "                                                            "
-	@echo "All-in-One Makefile                                         "
-	@echo "=====================                                       "
-	@echo "                                                            "
-	@echo "Default targets:                                            "
-	@echo "-----------------                                           "
-	@echo " * all:              Generates all executables              "
-	@echo " * analysis-lint:    Runs analysis lint on binary sources   "
-	@echo " * benchmark:        Compiles and runs Benchmarks           "
-	@echo " * check:            Compiles and runs Unit Tests           "
-	@echo " * compiler:         Outputs Compiler.mk to define compilers"
-	@echo " * config:           Outputs Config.mk for user's options   "
-	@echo " * coverage:         Creates coverage analysis information  "
-	@echo " * *-coverage:       As 'coverage' for tests and benchmarks "
-	@echo " * depend:           Checks all dependencies needed to build"
-	@echo " * deploy:           Deploys changes in BRANCH to REMOTE    "
-	@echo " * dist-*:           As 'dist', with many compressions      "
-	@echo " * dist:             Creates .tar.gz with bins and libs     "
-	@echo " * docs:             Generates all available doc formats    "
-	@echo " * doxy:             Creates Doxygen docs                   "
-	@echo " * dpkg:             Creates the project's debian package   "
-	@echo " * eval:             Same as 'benchmark'                    "
-	@echo " * gitignore:        Outputs .gitignore model for user      "
-	@echo " * init:             Creates dirs for beggining projects    "
-	@echo " * install-*:        Installs one info/html/dvi/pdf/ps docs "
-	@echo " * install-docs:     Installs documentation in all formats  "
-	@echo " * install:          Installs executables and libraries     "
-	@echo " * installcheck:     Runs installation tests (if available) "
-	@echo " * lint:             Runs analysis and style lints          "
-	@echo " * package-*:        As 'package', with many compressions   "
-	@echo " * package:          As 'dist', but also with src and data  "
-	@echo " * profile:          Creates profile analysis information   "
-	@echo " * *-profile:        As 'profile' for tests and benchmarks  "
-	@echo " * run:              Run EXEC executable from BIN           "
-	@echo " * standard:         Moves files to standard directories    "
-	@echo " * statistics:       Outputs file countage and LOC          "
-	@echo " * style-lint:       Runs style lint on binary sources      "
-	@echo " * sync:             Synchronizes from REMOTE to BRANCH     "
-	@echo " * tar:              Creates .tar with bins and libs        "
-	@echo " * test:             Same as 'check'                        "
-	@echo " * translation:      Creates files for internationalization "
-	@echo " * uninstall-*:      Uninstalls info/html/dvi/pdf/ps docs   "
-	@echo " * uninstall:        Uninstalls anything created by installs"
-	@echo " * upgrade:          Upgrades Makefile from remote repo     "
-	@echo " * version:          Outputs current version in .version.mk "
-	@echo "                                                            "
-	@echo "File generation targets:                                    "
-	@echo "-------------------------                                   "
-	@echo " * new:              Creates C/C++/Fortran artifact         "
-	@echo " * delete:           Removes C/C++/Fortran artifact         "
-	@echo " * update:           Updates C/C++/Fortran artifact         "
-	@echo "                                                            "
-	@echo "Tags targets:                                               "
-	@echo "--------------                                              "
-	@echo " * ctags:            Creates tags for VI/Vim editor         "
-	@echo " * etags:            Creates tags for Emacs editor          "
-	@echo " * TAGS:             Creates tags for both VI/Vim and Emacs "
-	@echo "                                                            "
-	@echo "Debug targets:                                              "
-	@echo "---------------                                             "
-	@echo " * debug:            Output 'dump' content in 'make.debug'  "
-	@echo " * dump:             Output main variables of this Makefile "
-	@echo " * coffee:           Best debug tool against sleepy hours   "
-	@echo " * nothing:          Self-explicative, huh?                 "
-	@echo "                                                            "
-	@echo "Cleaning targets:                                           "
-	@echo "------------------                                          "
-	@echo " * mostlyclean:      Cleans all object files                "
-	@echo " * clean:            Above and all types of binaries        "
-	@echo " * distclean:        Above and libraries, .tar and .tar.gz  "
-	@echo " * docclean:         Removes all documentation files        "
-	@echo " * packageclean:     Removes all debian and RPM packages    "
-	@echo " * coverageclean:    Removes all coverage analysis info     "
-	@echo " * translationclean: Removes all debian and RPM packages    "
-	@echo " * realclean:        Above, auto-generated source and docs  "
-	@echo " * uninitialize:     Above and source/include directories   "
-	@echo "                                                            "
-	@echo "Help targets:                                               "
-	@echo "--------------                                              "
-	@echo " * help:             Info about this Makefile               "
-	@echo " * projecthelp:      Perharps you kwnow if you are here...  "
-	@echo "                                                            "
-	@echo "Compilation options:                                        "
-	@echo "---------------------                                       "
-	@echo " * COVERAGE:         Enable compilation with coverage       "
-	@echo " * PROFILE:          Enable compilation with profile        "
-	@echo "                                                            "
-	@echo "Runtime options:                                            "
-	@echo "------------------                                          "
-	@echo " * *_ENV:            EXEC/TEST/BENCH binary environment     "
-	@echo " * *_WRAP:           EXEC/TEST/BENCH wrapper commands       "
-	@echo " * *_ARGS:           EXEC/TEST/BENCH binary arguments       "
-	@echo "                                                            "
-	@echo "Special flags:                                              "
-	@echo "---------------                                             "
-	@echo " * D:                Allows deletion of a C/C++ artifact    "
-	@echo " * U:                Allows uninitilization of the project  "
-	@echo " * V:                Allows printing the command line rules "
-	@echo " * EXEC:             Binary to be run, profiled or covered  "
-	@echo " * MORE:             With errors, use 'more' to read stderr "
-	@echo " * SILENT:           Outputs no messages in execution       "
-	@echo " * NO_GIT:           Disables git commands executed by make "
-	@echo " * NO_COLORS:        Outputs are made without any color     "
-	@echo " * ENABLE_NLS:       Allows internationalization            "
-	@echo "                                                            "
-	@echo "File generation flags:                                      "
-	@echo "-----------------------                                     "
-	@echo " * C_HEADER:         C source file                          "
-	@echo " * C_SOURCE:         C header file                          "
-	@echo " * C_MODULE:         C header for multiple sources in dir   "
-	@echo " * C_FILE:           C pair of header/source files          "
-	@echo " * C_MAIN:           C main (program entry point)           "
-	@echo " * C_ENUM:           C enum (symbolic alias for numbers)    "
-	@echo " * C_UNION:          C union (mutually exclusive var set)   "
-	@echo " * C_STRUCT:         C struct (coexisting var set)          "
-	@echo " * C_LIBRARY:        C library of functions                 "
-	@echo " * F_SOURCE:         Fortran source file                    "
-	@echo " * F_MODULE:         Fortran module                         "
-	@echo " * F_FILE:           Fortran source file                    "
-	@echo " * F_PROGRAM:        Fortran program (program entry point)  "
-	@echo " * F_LIBRARY:        Fortran library of functions           "
-	@echo " * F_SUBMODULE:      Fortran 2008 submodule                 "
-	@echo " * CXX_NAMESPACE:    C++ namespace directory                "
-	@echo " * CXX_HEADER:       C++ source file                        "
-	@echo " * CXX_SOURCE:       C++ header file                        "
-	@echo " * CXX_INLINE:       C++ inline file                        "
-	@echo " * CXX_MODULE:       C++ header for multiple sources in dir "
-	@echo " * CXX_GROUP:        C++ header with headers of a namespace "
-	@echo " * CXX_FILE:         C++ pair of header/source files        "
-	@echo " * CXX_MAIN:         C++ main (program entry point)         "
-	@echo " * CXX_ENUM:         C++ enum (symbolic alias for numbers)  "
-	@echo " * CXX_UNION:        C++ union (mutually exclusive var set) "
-	@echo " * CXX_CLASS:        C++ class (struct + member functions)  "
-	@echo " * CXX_STRUCT:       C++ struct (coexisting var set)        "
-	@echo " * CXX_LIBRARY:      C++ library of functions               "
-	@echo " * CXX_TEMPLATE:     C++ template (parameterized elements)  "
-	@echo " * CXX_ENUM_CLASS:   C++ enum class (strongly typed enum)   "
-	@echo " * NLS_HEADER:       Header with i18n headers and macros    "
-	@echo " * NLS_TRANSLATION:  Portable object translation            "
-	@echo " * MAJOR_RELEASE:    Project major release                  "
-	@echo " * MINOR_RELEASE:    Project minor release                  "
-	@echo " * PATCH_RELEASE:    Project patch release                  "
-	@echo "                                                            "
-	@echo "File generation options:                                    "
-	@echo "-------------------------                                   "
-	@echo " * IN:               Directory for 'new' files              "
-	@echo " * INC_EXT:          Header extension for 'new' files       "
-	@echo " * SRC_EXT:          Source extension for 'new' files       "
-	@echo " * WITH_ALPHA:       Make 'new' release an alpha release    "
-	@echo " * WITH_BETA:        Make 'new' release a beta release      "
-	@echo " * WITH_TIMESTAMP:   Make 'new' release with timestamp      "
-	@echo " * WITH_TEMPLATE:    Parameterize 'new' C++ data structure  "
-	@echo "                                                            "
-
-.PHONY: coffee
-ifndef YES
-coffee:
-	@echo "                                                            "
-	@echo "                                     _________              "
-	@echo "       .--.---------.--------.      /¨¨¨¨¨\   \             "
-	@echo "      /  /          |        /     /\\     \   \            "
-	@echo "     |--|-----------|        /    / //      \   \           "
-	@echo "      \  \         /|       /    / //________\___\          "
-	@echo "       \  \       / |       /   / //|         |             "
-	@echo "        \--\-----/  |      /    \//=|      :  |             "
-	@echo "          ::  :     |      |        |      :  |             "
-	@echo "        \__|_____/  |      |        |      :  |             "
-	@echo "   ||¨¨¨¨¨ (     )  |¨¨¨¨¨¨\        |      :  |             "
-	@echo "   || |¨(¨(       ) |       \       |      :  |             "
-	@echo "   ||_|(~~(~~~~~~~~)|  :[ ] \       |      :  |   \¨¨¨¨//   "
-	@echo "        ( (       ) |  :[ ]  \      |      :  |   \¨¨¨¨//   "
-	@echo "         (_(_____)__|________\      |      :  |   \¨¨¨¨//   "
-	@echo "        /  |                  \     |_________|   \¨¨¨¨//   "
-	@echo "       /___|___________________\    \_________/    \__//    "
-	@echo "                                                            "
-	@echo "           .------------------------------------.           "
-	@echo "           |  Do you want some coffee? [YES=1]  |           "
-	@echo "           '------------------------------------'           "
-	@echo "                                                            "
-else
-coffee:
-	@echo "                                                            "
-	@echo "                                                            "
-	@echo "                                                            "
-	@echo "                          ^^^^^^^^^                         "
-	@echo "                         ^^^^^^^^^                          "
-	@echo "                        ^^^^^^^^^                           "
-	@echo "                         ^^^^^^^^                           "
-	@echo "                          ^^^^^^^^^                         "
-	@echo "                         ^^^^^^^^^                          "
-	@echo "                ........^^^^^^^^^.......                    "
-	@echo "               /       ^^^^^^^^^        \-----.             "
-	@echo "              |\        ^^^^^^^^^       /-----|             "
-	@echo "               \¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨/ ... |             "
-	@echo "                \                      /  |_| |             "
-	@echo "                 \                    /_______|             "
-	@echo "                  \                  /                      "
-	@echo "                   \________________/                       "
-	@echo "                                                            "
-	@echo "           .------------------------------------.           "
-	@echo "           |           Enjoy your cup!          |           "
-	@echo "           '------------------------------------'           "
-	@echo "                                                            "
-endif
-
-########################################################################
-##                            DEBUGGING                               ##
-########################################################################
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                         RUNTIME SHELL LIBRARY                        #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 define echo
-@$(call println,$1)
+	@$(call println,$1)
 endef
 
 define prompt
-@$(call printf,"%b%b\n","${YELLOW}"$1"${RES}" \
-                        "$(or $(strip $2),${RED}Empty${RES})")
+	@$(call printf,"%b%b\n","${YELLOW}"$1"${RES}" \
+	                        "$(or $(strip $2),${RED}Empty${RES})")
 endef
+
+#//////////////////////////////////////////////////////////////////////#
+#----------------------------------------------------------------------#
+#                                GOALS                                 #
+#----------------------------------------------------------------------#
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
+
+########################################################################
+#                                 TEST                                 #
+########################################################################
 
 .PHONY: is-empty
 is-empty:
@@ -6801,6 +6998,10 @@ not-empty:
 ifdef VAR ####
 	@$(if $(call not-empty,$($(VAR))),true,false) $(NO_ERROR)
 endif
+
+########################################################################
+#                                OUTPUT                                #
+########################################################################
 
 .PHONY: debug
 debug:

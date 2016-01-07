@@ -18,13 +18,13 @@
 # limitations under the License.                                       #
 ########################################################################
 
-# Default target
-all:
-
 # Make version
 ifneq ($(firstword $(shell $(firstword $(MAKE)) --version)),GNU)
 $(error "All-in-One Makefile requires GNU Make. Please install it.")
 endif
+
+# Default goal
+.DEFAULT_GOAL := all
 
 #//////////////////////////////////////////////////////////////////////#
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#

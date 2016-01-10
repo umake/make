@@ -4522,10 +4522,11 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(call status,$$(MSG_ASM_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call c-depend,$$<,$$@,$$(call not-root,$1/$$*))
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
+	
 	$$(quiet) $$(call faketty) \
-	          $$(AS) $$(cppflags) $$(asflags) $$(aslibs) \
+	          $$(AS) $$(call dep-flags,$$@,$$(call not-root,$1/$$*)) \
+	                 $$(cppflags) $$(asflags) $$(aslibs) \
 	                 $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_ASM_COMPILE),$$@)
@@ -4547,11 +4548,11 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(call status,$$(MSG_C_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call c-depend,$$<,$$@,$$(call not-root,$1/$$*))
-	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
+	
 	$$(quiet) $$(call faketty) \
-	          $$(CC) $$(cppflags) $$(cflags) $$(clibs) \
+	          $$(CC) $$(call dep-flags,$$@,$$(call not-root,$1/$$*)) \
+	                 $$(cppflags) $$(cflags) $$(clibs) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_COMPILE),$$@)
@@ -4575,11 +4576,11 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call mksubdir,$$(incdir),$$@)
-	$$(quiet) $$(call fortran-depend,$$<,$$@,$$(call not-root,$3/$$*))
-	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
+	
 	$$(quiet) $$(call faketty) \
-	          $$(FC) $$(cppflags) $$(fflags) $$(flibs) \
+	          $$(FC) $$(call dep-flags,$$@,$$(call not-root,$1/$$*)) \
+	                 $$(cppflags) $$(fflags) $$(flibs) \
 	                 -J $$(firstword $$(incdir))/$$(dir $$*) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
@@ -4603,11 +4604,11 @@ $1/%$$(firstword $$(objext)): $2/%$3 | $$(depdir)/./
 	$$(call status,$$(MSG_CXX_COMPILE))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call cpp-depend,$$<,$$@,$$(call not-root,$1/$$*))
-	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
+	
 	$$(quiet) $$(call faketty) \
-	          $$(CXX) $$(cppflags) $$(cxxlibs) $$(cxxflags) \
+	          $$(CXX) $$(call dep-flags,$$@,$$(call not-root,$1/$$*)) \
+	                  $$(cppflags) $$(cxxlibs) $$(cxxflags) \
 	                  -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_COMPILE),$$@)
@@ -4629,11 +4630,11 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(call status,$$(MSG_C_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call c-depend,$$<,$$@,$2)
-	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
+	
 	$$(quiet) $$(call faketty) \
-	          $$(CC) $$(cppflags) $$(clibs) $$(shrflags) $$(cflags) \
+	          $$(CC) $$(call dep-flags,$$@,$2) \
+	                 $$(cppflags) $$(clibs) $$(shrflags) $$(cflags) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_C_LIBCOMP),$$@)
@@ -4656,11 +4657,11 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
 	$$(quiet) $$(call mksubdir,$$(incdir),$$@)
-	$$(quiet) $$(call fortran-depend,$$<,$$@,$2)
-	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
+	
 	$$(quiet) $$(call faketty) \
-	          $$(FC) $$(cppflags) $$(flibs) $$(shrflags) $$(fflags) \
+	          $$(FC) $$(call dep-flags,$$@,$2) \
+	                 $$(cppflags) $$(flibs) $$(shrflags) $$(fflags) \
 	                 -J $$(firstword $$(incdir))/$$(dir $2) \
 	                 -c $$< -o $$@ $$(ERROR)
 	
@@ -4683,11 +4684,11 @@ $$(objdir)/$2$$(firstword $$(objext)): $1$2$3 | $$(depdir)/./
 	$$(call status,$$(MSG_CXX_LIBCOMP))
 	
 	$$(quiet) $$(call mksubdir,$$(depdir),$$@)
-	$$(quiet) $$(call cpp-depend,$$<,$$@,$2)
-	
 	$$(quiet) $$(call mksubdir,$$(objdir),$$@)
+	
 	$$(quiet) $$(call faketty) \
-	          $$(CXX) $$(cppflags) $$(cxxlibs) \
+	          $$(CXX) $$(call dep-flags,$$@,$2) \
+	                  $$(cppflags) $$(cxxlibs) \
 	                  $$(shrflags) $$(cxxflags) -c $$< -o $$@ $$(ERROR)
 	
 	$$(call ok,$$(MSG_CXX_LIBCOMP),$$@)
@@ -5487,26 +5488,13 @@ endef
 ## DEPENDENCIES ########################################################
 
 #======================================================================#
-# Functions: *-depend                                                  #
-# @param $1 Source name (with path)                                    #
-# @param $2 Main target to be analised                                 #
-# @param $3 Dependency file name                                       #
+# Functions: dep-flags                                                 #
+# @param $1 Main target to be analised                                 #
+# @param $2 Dependency file name                                       #
 #======================================================================#
 
-define c-depend
-$(CC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 $(cppflags) \
-      $(clibs) $(filter-out $(ccovflags),$(cflags)) $1
-endef
-
-define cpp-depend
-$(CXX) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 $(cppflags) \
-       $(cxxlibs) $(filter-out $(cxxcovflags),$(cxxflags)) $1
-endef
-
-define fortran-depend
-$(FC) -MM -MF $(depdir)/$3$(depext) -MP -MT $2 \
-      -J $(firstword $(incdir))/$(dir $3) $(cppflags) \
-      $(flibs) $(filter-out $(fcovflags),$(fflags)) $1
+define dep-flags
+-MT $1 -MMD -MP -MF $(depdir)/$(call corename,$1)$(depext)
 endef
 
 ## SYNCHRONIZATION #####################################################

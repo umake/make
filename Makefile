@@ -325,9 +325,9 @@ HXXEXT  := .H .hh .hpp .HPP .hxx .h++ .ih
 
 # Source extensions
 CEXT    := .c
-FEXT    := .f .FOR .for .f77 .f90 .f95 .F .fpp .FPP
-CXXEXT  := .C .cc .cpp .CPP .cxx .c++
-INLEXT  := .inl .tcc .icc .ixx
+FEXT    := .f .f77 .f90 .f95 .for .fpp .F .FOR .FPP
+CXXEXT  := .cc .cxx .cpp .c++ .C .CPP
+INLEXT  := .ii .ixx .ipp .i++ .inl
 
 # Library extensions
 LIBEXT  := .a .so .dll .dylib
@@ -5998,7 +5998,7 @@ define cxx-source
 endef
 
 define cxx-inline
-	$(if $(INL_EXT),,$(eval override INL_EXT := .inl))
+	$(if $(INL_EXT),,$(eval override INL_EXT := .ipp))
 	$(call invalid-ext,$(INL_EXT),$(inlext))
 	
 	$(call touch,$(incbase)/$1$(INL_EXT),$(notice))

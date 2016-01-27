@@ -22,15 +22,16 @@ override GOOGLE_BENCHMARK_MK := T
 # ==============
 GIT_DEPENDENCY  += \
     gbenchmark => https://github.com/google/benchmark.git \
-                  mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make
+                  mkdir -p build && cd build \
+                  && cmake -DCMAKE_BUILD_TYPE=Release .. && make
 
 # Paths
 # =======
 CXXLIBS         += -I external/gbenchmark/include/
-LDLIBS          += -L external/gbenchmark/build/src
+LDLIBS          += -L external/gbenchmark/build/src/
 
 # Flags
 # =======
-LDBENCH         += -lbenchmark
+LDBENCH         += -lbenchmark -pthread
 
 endif # ifndef GOOGLE_BENCHMARK_MK

@@ -22,7 +22,7 @@ override GOOGLE_BENCHMARK_MK := T
 # ==============
 GIT_DEPENDENCY  += \
     gbenchmark => https://github.com/google/benchmark.git \
-                  mkdir -p build && cd build && cmake .. && make
+                  mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make
 
 # Paths
 # =======

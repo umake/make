@@ -95,7 +95,8 @@ SHRFLAGS     := -fPIC
 LEXFLAGS     :=
 YACCFLAGS    :=
 ESQLFLAGS    :=
-COVFLAGS     := -q
+GCOVFLAGS    :=
+LCOVFLAGS    := -q
 PROFFLAGS    :=
 FINDFLAGS    := -type d -print 2> /dev/null
 SCRIPTFLAGS  := /dev/null -efc
@@ -455,7 +456,8 @@ CXXSLINT         = cpplint --extensions=$(subst .,,$(strip \
                                      $(cxxext) $(hxxext) $(tlext)))))
 
 # Coverage
-COV             := lcov
+GCOV            := gcov
+LCOV            := lcov
 
 # Profiler
 PROF            := gprof
@@ -1635,7 +1637,8 @@ shrflags    := $(SHRFLAGS)
 lexflags    := $(LEXFLAGS)
 yaccflags   := $(YACCFLAGS)
 esqlflags   := $(ESQLFLAGS)
-covflags    := $(COVFLAGS)
+gcovflags   := $(GCOVFLAGS)
+lcovflags   := $(LCOVFLAGS)
 findflags   := $(FINDFLAGS)
 ctagsflags  := $(CTAGSFLAGS)
 etagsflags  := $(ETAGSFLAGS)
@@ -1727,10 +1730,10 @@ override localedir := $(call rm-trailing-bar,$(LOCALEDIR))
 
 # All directories
 alldir := $(strip\
-    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir)       \
-    $(libdir) $(extdir) $(srpdir) $(imgdir) $(bindir) $(sbindir)      \
-    $(execdir) $(distdir) $(profdir) $(confdir) $(datadir) $(makedir) \
-    $(testdir) $(benchdir) $(localedir) \
+    $(srcdir) $(depdir) $(incdir) $(docdir) $(debdir) $(objdir) \
+    $(covdir) $(libdir) $(extdir) $(srpdir) $(imgdir) $(bindir) \
+    $(sbindir) $(execdir) $(distdir) $(profdir) $(confdir)      \
+    $(datadir) $(makedir) $(testdir) $(benchdir) $(localedir)   \
 )
 
 # Check if directory variable is non-empty
@@ -1877,7 +1880,7 @@ targets := \
 programs := \
     AR AS CC FC CXX RANLIB INSTALL INSTALL_DATA INSTALL_PROGRAM CP MV \
     RM TAR ZIP GZIP BZIP2 MKDIR RMDIR FIND LEX LEXCXX YACC YACCCXX    \
-    CALINT FALINT CXXALINT CSLINT FSLINT CXXSLINT COV PROF ESQL       \
+    CALINT FALINT CXXALINT CSLINT FSLINT CXXSLINT GCOV LCOV PROF ESQL \
     CTAGS ETAGS DOXYGEN MAKEINFO INSTALL_INFO TEXI2HTML TEXI2DVI      \
     TEXI2PDF TEXI2PS  XGETTEXT MSGINIT MSGMERGE MSGFMT DCH DEBUILD    \
     CURL GIT
@@ -3193,7 +3196,8 @@ lint: analysis-lint style-lint
 ########################################################################
 
 coverage_dependency := \
-    COV => $(execbin) $(testbin) $(benchbin)
+    GCOV => $(execbin) $(testbin) $(benchbin),\
+    LCOV => $(execbin) $(testbin) $(benchbin)
 
 .PHONY: coverage
 coverage: coveragedep run $(filter $(addprefix %,$(EXEC)),$(covshow))
@@ -4389,23 +4393,32 @@ $(foreach b,$(execbin) $(testbin) $(benchbin) $(arlib) $(shrlib),\
 ifndef DEPLOY
 ifdef COVERAGE
 define coverage-factory
-$1: $2 $$(call rwildcard,$$(addprefix *,$$(covext)),$$(objdir))
+$1: $2 | $$(firstword $$(covdir))/./
 	$$(call status,$$(MSG_COV_COMPILE))
+	
+	$$(call srm,$$(covdir)/gcov-tool.sh)
+	$$(call select,$$(covdir)/gcov-tool.sh)
+	$$(call cat,'#!/usr/bin/sh')
+	$$(call cat,'exec $$(GCOV) $$(gcovflags) "$$$$@"')
+	$$(quiet) chmod u+x $$(covdir)/gcov-tool.sh
 	
 	$$(call mksubdir,$$(covdir),$$@)
 	$$(quiet) $$(call faketty) \
-	          $$(COV) $$(covflags) -o $$@ -c \
-	                  -b $$(firstword $$(covdir)) \
-	                  -d $$(firstword $$(objdir)) \
-	                  -d $$(firstword $$(libdir)) $$(ERROR)
+	          $$(LCOV) -c $$(lcovflags) \
+	                   --gcov-tool $$(covdir)/gcov-tool.sh \
+	                   -b $$(firstword $$(covdir)) \
+	                   -d $$(firstword $$(objdir)) \
+	                   -o $$@ $$(ERROR)
 
 	$$(quiet) if [ -s $$@ ]; \
 	          then \
 	              $$(foreach p,$$(patsubst %,'%',$$(covignore) \
 	                  $$(addsuffix /*,$$(sysincdir) $$(extdir) \
 	                                  $$(testdir) $$(benchdir))),\
-	                      $$(COV) $$(covflags) -o $$@ -r $$@ $$p;) \
+	                      $$(LCOV) $$(lcovflags) -o $$@ -r $$@ $$p;) \
 	          fi
+	
+	$$(call srm,$$(covdir)/gcov-tool.sh)
 	
 	$$(call ok,$$(MSG_COV_COMPILE))
 
@@ -4414,7 +4427,7 @@ cov_$2: $1
 	$$(call phony-status,$$(MSG_COV))
 	$$(quiet) if [ -s $$< ]; \
 	          then \
-	              $$(call faketty) $$(COV) -l $$< $$(ERROR); \
+	              $$(call faketty) $$(LCOV) -l $$< $$(ERROR); \
 	              $$(call model-ok,$$(MSG_COV)); \
 	          else \
 	              $$(call model-ok,$$(MSG_COV_NONE)); \

@@ -1,14 +1,14 @@
-All-in-One Makefile
-=====================
+Ultimate Makefile
+==================
 
-[![Build Status](https://img.shields.io/travis/renatocf/make/master.svg)]
-                (https://travis-ci.org/renatocf/make)
-[![Build status](https://ci.appveyor.com/api/projects/status/github/renatocf/make?branch=master&svg=true)]
-                (https://ci.appveyor.com/project/renatocf/make)
-[![Release](https://img.shields.io/github/tag/renatocf/make.svg)]
-           (https://github.com/renatocf/make/releases/latest)
-[![License](https://img.shields.io/github/license/renatocf/make.svg)]
-           (https://github.com/renatocf/make/blob/master/LICENSE)
+[![Build Status](https://img.shields.io/travis/umakefile/make/master.svg)]
+                (https://travis-ci.org/umakefile/make)
+[![Build status](https://ci.appveyor.com/api/projects/status/github/umakefile/make?branch=master&svg=true)]
+                (https://ci.appveyor.com/project/umakefile/make)
+[![Release](https://img.shields.io/github/tag/umakefile/make.svg)]
+           (https://github.com/umakefile/make/releases/latest)
+[![License](https://img.shields.io/github/license/umakefile/make.svg)]
+           (https://github.com/umakefile/make/blob/master/LICENSE)
 
 A single Makefile to compile all your projects: in C, C++, Assembly
 and Fortran.
@@ -28,7 +28,7 @@ that's the aim of AIO Makefile.
 
 In order to start, just download the Makefile:
 
-    curl -O https://raw.githubusercontent.com/renatocf/make/master/Makefile
+    curl -O https://raw.githubusercontent.com/umakefile/make/master/Makefile
 
 To begin a new project, just type:
 
@@ -58,7 +58,7 @@ files in our default directory structure. Improve your organization
 To keep a copy of this project as a submodule, just clone it in your
 working directory:
 
-    git clone https://github.com/renatocf/make.git
+    git clone https://github.com/umakefile/make.git
 
 Then, create a symbolic link:
 

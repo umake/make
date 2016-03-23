@@ -33,6 +33,6 @@ LDLIBS          += -L external/chaiscript/build
 
 # Linker flags
 # ==============
-LDCXX           += -ldl -lchaiscript_stdlib-5.7.2
+LDCXX           += -ldl -lchaiscript_stdlib-5.8.1
 
 endif # ifndef CHAISCRIPT_MK

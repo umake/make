@@ -2737,7 +2737,8 @@ $(foreach s,$(comtestsrc),\
     $(if $(filter-out %$(testsuf),$(basename $s)),\
         $(error "Test $(testdir)/$s have no suffix $(testsuf)")))
 $(foreach s,$(comtestsrc),\
-    $(if $(filter $(subst $(testsuf).,.,$s)%,$(execsrc)),,\
+    $(if $(filter $(patsubst %$(testsuf),%,$(basename $s)).%,\
+		     $(call not-root,$(execinc) $(execall))),,\
         $(error "Test $(testdir)/$s has no matching source file")))
 endif
 endif
@@ -2833,7 +2834,8 @@ $(foreach s,$(combenchsrc),\
     $(if $(filter-out %$(benchsuf),$(basename $s)),\
         $(error "Benchmark $(benchdir)/$s have no suffix $(benchsuf)")))
 $(foreach s,$(combenchsrc),\
-    $(if $(filter $(subst $(benchsuf).,.,$s)%,$(execsrc)),,\
+    $(if $(filter $(patsubst %$(benchsuf),%,$(basename $s)).%,\
+		     $(call not-root,$(execinc) $(execall))),,\
         $(error "Benchmark $(benchdir)/$s has no matching source file")))
 endif
 endif

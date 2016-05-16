@@ -4162,6 +4162,7 @@ $$(depdir)/$1/$2$$(sysext): | $$(depdir)/./
 	          ))
 	
 	@# Create flags for compilation of this dependency's binary
+	$$(call srm,$$@)
 	$$(call select,$$@)
 	$$(call cat,'override old_$2_flags := \')
 	$$(foreach k,$$(call hash-table.keys,flag_dependency),\

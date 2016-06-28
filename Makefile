@@ -681,11 +681,11 @@ endif # ifdef DEPLOY
 
 # Remote path
 MAKERAWREMOTE := \
-    https://raw.githubusercontent.com/umakefile/make/master/Makefile
+    https://raw.githubusercontent.com/umake/make/master/Makefile
 
 # Git remote path
 MAKEGITREMOTE := \
-    https://github.com/umakefile/make.git
+    https://github.com/umake/make.git
 
 # Make current directory
 MAKECURRENTDIR := \

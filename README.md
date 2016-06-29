@@ -126,4 +126,4 @@ For all avaliable targets, type:
 
     make projecthelp
 
-And it will print a list with all Ultimate Makefile avaliable options.
+And it will print a list with all Ultimate Makefile available options.

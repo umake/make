@@ -1422,7 +1422,7 @@ endef
 define has-c-main
 $(if $(call has-c,$1),$(strip \
     $(if $(shell cat $1 | sed 's/a/aA/g; s/__/aB/g; s/#/aC/g' \
-                        | $(CC) $2 -P -E - \
+                        | $(CC) $(CFLAGS) $2 -P -E - \
                         | sed 's/aC/#/g; s/aB/__/g; s/aA/a/g' \
                         | grep "^\ *int \+main *(.*)"),T)))
 endef
@@ -1434,7 +1434,8 @@ endef
 
 define has-cxx-main
 $(if $(call has-cxx,$1),$(strip \
-    $(if $(shell $(CXX) $2 -P -E $1 | grep "^\ *int \+main *(.*)"),T)))
+    $(if $(shell $(CXX) $(CXXFLAGS) $2 -P -E $1 \
+                 | grep "^\ *int \+main *(.*)"),T)))
 endef
 
 define has-main

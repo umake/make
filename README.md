@@ -13,18 +13,18 @@ Ultimate Makefile
 A single Makefile to compile all your projects: in C, C++, Assembly
 and Fortran.
 
-Tired of installing tools to compile your projects? (Automake, CMake
-and Ant). Seeking to go back to the old days, when all you needed 
-was typing `make`? Here is the solution! A single generalized Makefile 
-which aims to compile and mix almost everything related to C, C++, 
-Assembly and Fortran projects - with support to many executables, static
-and shared libraries, lexer and parser generators, dependency management,
-file creation and much more! Everything just 4 letters away from you.
+Tired of installing aditional tools to compile your projects? (Automake,
+CMake and Ant). Missing the old days, when all you needed to do was typing
+`make`? Here is the solution! A single generalized Makefile which aims to
+compile and mix almost everything related to C, C++, Assembly and Fortran
+projects - with support to many executables, static and shared libraries,
+lexer and parser generators, dependency management,file creation and much
+more! Everything just 4 letters away from you.
 
 ## Starting ##
 
 Good tools are simple. That's why `make` is so successful. And
-that's the aim of Ultimate Makefile.
+that's the goal of Ultimate Makefile.
 
 In order to start, just download the Makefile:
 
@@ -37,13 +37,13 @@ To begin a new project, just type:
 A group of directories and a git repository are now ready for you!
 
 But how about configuring your project settings? `Config.mk` presents a
-self-explanatory set of variables used by Ultimate Makefile to do all its
-magic. And the best: everything within the Make language - no 
+self-explanatory set of variables used by Ultimate Makefile to perform all
+its magic. And the best: everything within the Make language - no 
 extra parsers nor extra programs. Just one single Makefile.
 
 In order to make your very first compilation, just create a .c, .cpp,
-.asm or .f (or any of the many source extensions avaiable) and *voilà*:
-it will compile everything perfectly (at least as perfect as your
+.asm or .f (or any of the many source extensions available) and *voilà*:
+it will compile everything perfectly ( or at least as perfect as your
 program is...)
 
 #### Single-directory projects ####
@@ -68,14 +68,15 @@ Then, create a symbolic link:
 
 ## Makeballs ##
 
-Using frameworks or libraries may be tricky, even with a simple-of-use
+Using frameworks or libraries may be tricky, even with a easy-to-use
 tool as Ultimate Makefile. We need to read documentations and find where
-headers and libraries are located, in a world of complicated and almost no
-standardized projects. So, why not reusing these flags? `Makeballs` 
-are meant for that!
+headers and libraries are located in a world of complicated and almost no
+standardized projects. So why not reusing these flags? That's where `Makeballs`
+come in!
+
 
 To start using Makeballs, create a `conf` directory and download one
-of the `conf/makeball.mk` available. Then add it in the end of 
+of the `conf/makeball.mk` available. Then add it in the end of your
 `Config.mk`:
 
 ```make
@@ -87,7 +88,7 @@ include conf/makeball_2.mk
 ```
 
 If you cloned `make` to be used as a git submodule, all Makeballs are 
-already avaiable for you! Just create a symbolic link:
+already available for you! Just create a symbolic link:
 
     ln -s make/conf/
 
@@ -122,7 +123,7 @@ contribute, make a pull request.
 
 ## More info ##
 
-For all avaliable targets, type:
+For all available targets, type:
 
     make projecthelp
 

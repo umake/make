@@ -4327,13 +4327,13 @@ $$(depdir)/$$(firstword $$(extdir))/$1$$(sysext): $$(extdir)/$1
 	              if [ -f $$d/[Mm]akefile ]; \
 	              then \
 	                  cd $$d                                            \
-	                  && $$(call store-status,$$(MAKE) -f [Mm]akefile)  \
+	                  && $$(call store-status,make -f [Mm]akefile)      \
 	                     $$(ERROR)                                      \
 	                  && $$(call model-error,$$(MSG_EXT_BUILD_ERR));    \
 	              elif [ -f $$d/$$(makedir)/[Mm]akefile ]; \
 	              then \
 	                  cd $$d/$$(makedir)                                \
-	                  && $$(call store-status,$$(MAKE) -f [Mm]akefile)  \
+	                  && $$(call store-status,make -f [Mm]akefile)      \
 	                     $$(ERROR)                                      \
 	                  && $$(call model-error,$$(MSG_EXT_BUILD_ERR));    \
 	              else \

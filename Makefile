@@ -5885,7 +5885,7 @@ GIT_REMOTE_ADD       := $(GIT_REMOTE) add
 GIT_RM               := $(GIT) rm -q
 GIT_SUBMODULE        := $(GIT) submodule -q
 GIT_SUBMODULE_ADD    := $(GIT_SUBMODULE) add -f
-GIT_SUBMODULE_INIT   := $(GIT_SUBMODULE) init
+GIT_SUBMODULE_INIT   := $(GIT_SUBMODULE) update --init
 GIT_TAG              := $(GIT) tag
 GIT_CONFIG           := $(GIT) config
 

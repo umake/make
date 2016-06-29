@@ -6100,7 +6100,7 @@ endef
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 # Executes iff one of the make goals is 'new', 'delete' or 'update'
-ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,new delete update)))
+ifdef $(call not-empty,$(call rfilter,new delete update,$(MAKECMDGOALS)))
 
 #//////////////////////////////////////////////////////////////////////#
 #----------------------------------------------------------------------#

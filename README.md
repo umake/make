@@ -1,17 +1,16 @@
 Ultimate Makefile
 ==================
 
-[![Build Status](https://img.shields.io/travis/umakefile/make/master.svg)]
-                (https://travis-ci.org/umakefile/make)
-[![Build status](https://ci.appveyor.com/api/projects/status/github/umakefile/make?branch=master&svg=true)]
-                (https://ci.appveyor.com/project/umakefile/make)
-[![Release](https://img.shields.io/github/tag/umakefile/make.svg)]
-           (https://github.com/umakefile/make/releases/latest)
-[![License](https://img.shields.io/github/license/umakefile/make.svg)]
-           (https://github.com/umakefile/make/blob/master/LICENSE)
+[![Build Status](https://img.shields.io/travis/umake/make/master.svg)]
+                (https://travis-ci.org/umake/make)
+[![Build status](https://img.shields.io/appveyor/ci/umake/make/master.svg)]
+                (https://ci.appveyor.com/project/umake/make)
+[![Release](https://img.shields.io/github/tag/umake/make.svg)]
+           (https://github.com/umake/make/releases/latest)
+[![License](https://img.shields.io/github/license/umake/make.svg)]
+           (https://github.com/umake/make/blob/master/LICENSE)
 
-A single Makefile to compile all your projects: in C, C++, Assembly
-and Fortran.
+The Ultimate Makefile to compile all your C, C++, Assembly and Fortran projects.
 
 Tired of installing aditional tools to compile your projects? (Automake,
 CMake and Ant). Missing the old days, when all you needed to do was typing

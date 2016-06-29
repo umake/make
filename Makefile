@@ -5243,7 +5243,7 @@ MSG_GIT_COMMIT    = "${YELLOW}[$(GIT)]${BLUE}"\
                     "Commiting message ${DEF}\"$(strip $2)\"${RES}"
 MSG_GIT_REM_ADD   = "${YELLOW}[$(GIT)]${BLUE} Setting ${DEF}$(strip $1)"\
                     "${BLUE}to remote ${DEF}$(strip $2)${RES}"
-MSG_GIT_PULL      = "${YELLOW}[$(GIT)]${BLUE} Receiveing in${DEF}"\
+MSG_GIT_PULL      = "${YELLOW}[$(GIT)]${BLUE} Receiving in${DEF}"\
                     "$(or $(strip $1),origin)${BLUE} from remote"\
                     "repository ${DEF}$(or $(strip $2),master)${RES}"
 MSG_GIT_PUSH      = "${YELLOW}[$(GIT)]${BLUE} Sending from${DEF}"\

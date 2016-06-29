@@ -2702,7 +2702,7 @@ $(foreach t,$(call corename,$(testbin)),$(or\
 ))
 #------------------------------------------------------------------[ 9 ]
 ifneq (,$(comtestsrc))
-ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,check test)))
+ifdef $(call not-emtpy,$(call rfilter,check test,$(MAKECMDGOALS)))
 $(foreach s,$(comtestsrc),\
     $(if $(filter-out %$(testsuf),$(basename $s)),\
         $(error "Test $(testdir)/$s have no suffix $(testsuf)")))
@@ -2800,7 +2800,7 @@ $(foreach t,$(call corename,$(benchbin)),$(or\
 ))
 #------------------------------------------------------------------[ 9 ]
 ifneq (,$(combenchsrc))
-ifneq (,$(foreach g,$(MAKECMDGOALS),$(filter $g,eval benchmark)))
+ifdef $(call not-emtpy,$(call rfilter,eval benchmark,$(MAKECMDGOALS)))
 $(foreach s,$(combenchsrc),\
     $(if $(filter-out %$(benchsuf),$(basename $s)),\
         $(error "Benchmark $(benchdir)/$s have no suffix $(benchsuf)")))

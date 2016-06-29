@@ -144,9 +144,9 @@ LDBENCH      :=
 LDSHR        := -shared
 
 # Program options
-LDLEX        := -lfl
+LDLEX        :=
 LDYACC       :=
-LDESQL       := -lecpg
+LDESQL       :=
 
 # Coverage options
 LDCOV        := --coverage
@@ -167,8 +167,7 @@ FLIBS        :=
 # Program paths for include dirs
 LEXLIBS      :=
 YACCLIBS     :=
-ESQLLIBS     := $(if $(strip $(shell which pg_config &>/dev/null)),\
-                    $(shell pg_config --includedir))
+ESQLLIBS     :=
 
 # Linker paths for library dirs
 LDLIBS       :=

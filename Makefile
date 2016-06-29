@@ -1422,7 +1422,7 @@ endef
 define has-c-main
 $(if $(call has-c,$1),$(strip \
     $(if $(shell cat $1 | sed 's/a/aA/g; s/__/aB/g; s/#/aC/g' \
-                        | $(CC) -P -E - \
+                        | $(CC) $2 -P -E - \
                         | sed 's/aC/#/g; s/aB/__/g; s/aA/a/g' \
                         | grep "^\ *int \+main *(.*)"),T)))
 endef
@@ -1434,17 +1434,14 @@ endef
 
 define has-cxx-main
 $(if $(call has-cxx,$1),$(strip \
-    $(if $(shell cat $1 | sed 's/a/aA/g; s/__/aB/g; s/#/aC/g' \
-                        | $(CXX) -P -E - \
-                        | sed 's/aC/#/g; s/aB/__/g; s/aA/a/g' \
-                        | grep "^\ *int \+main *(.*)"),T)))
+    $(if $(shell $(CXX) $2 -P -E $1 | grep "^\ *int \+main *(.*)"),T)))
 endef
 
 define has-main
 $(if $(or $(strip \
-         $(call has-c-main,$s)),$(strip \
-         $(call has-f-main,$s)),$(strip \
-         $(call has-cxx-main,$s))),T)
+         $(call has-c-main,$1,$2)),$(strip \
+         $(call has-f-main,$1,$2)),$(strip \
+         $(call has-cxx-main,$1,$2))),T)
 endef
 
 # Language precedence functions
@@ -2254,7 +2251,8 @@ $(foreach l,$(lib_in),\
         $(error "Library file/directory '$l' not found")\
 ))
 #------------------------------------------------------------------[ 4 ]
-mainall := $(foreach s,$(userall) $(autoall),$(if $(call has-main,$s),$s))
+mainall := $(foreach s,$(userall) $(autoall),\
+               $(if $(call has-main,$s,$(libsall)),$s))
 #------------------------------------------------------------------[ 5 ]
 userall := $(call rfilter-out,$(liball) $(mainall),$(userall))
 autoall := $(call rfilter-out,$(liball) $(mainall),$(autoall))
@@ -2663,8 +2661,9 @@ testbin := \
 $(strip $(sort \
     $(testbin) \
     $(patsubst %,$(bindir)/$(testdir)/%$(binext),$(call corename,\
-        $(foreach s,$(testall),$(if $(call has-main,$s),$s)))) \
-))
+        $(foreach s,$(filter-out %$(testsuf),$(testall)),\
+            $(if $(call has-main,$s,$(libsall)),$s))\
+))))
 #------------------------------------------------------------------[ 6 ]
 $(foreach t,$(call corename,$(testbin)),$(or\
     $(eval $t_src := $(filter $(call not-root,$t)%,\
@@ -2760,8 +2759,9 @@ benchbin := \
 $(strip $(sort \
     $(benchbin) \
     $(patsubst %,$(bindir)/$(benchdir)/%$(binext),$(call corename,\
-        $(foreach s,$(benchall),$(if $(call has-main,$s),$s)))) \
-))
+        $(foreach s,$(filter-out $(benchsuf),$(benchall)),\
+            $(if $(call has-main,$s,$(libsall)),$s))\
+))))
 #------------------------------------------------------------------[ 6 ]
 $(foreach t,$(call corename,$(benchbin)),$(or\
     $(eval $t_src := $(filter $(call not-root,$t)%,\

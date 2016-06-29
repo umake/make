@@ -19,16 +19,16 @@ was typing `make`? Here is the solution! A single generalized Makefile
 which aims to compile and mix almost everything related to C, C++, 
 Assembly and Fortran projects - with support to many executables, static
 and shared libraries, lexer and parser generators, dependency management,
-file creation and much more! Everything just 4 letters far from you.
+file creation and much more! Everything just 4 letters away from you.
 
 ## Starting ##
 
 Good tools are simple. That's why `make` is so successful. And
-that's the aim of AIO Makefile.
+that's the aim of Ultimate Makefile.
 
 In order to start, just download the Makefile:
 
-    curl -O https://raw.githubusercontent.com/umakefile/make/master/Makefile
+    curl -O https://raw.githubusercontent.com/umake/make/master/Makefile
 
 To begin a new project, just type:
 
@@ -37,14 +37,14 @@ To begin a new project, just type:
 A group of directories and a git repository are now ready for you!
 
 But how about configuring your project settings? `Config.mk` presents a
-self-explanatory set of variables used by AIO Makefile to do all its
-magic. And the best: everything within the own Make language - no 
-extra parsers, neither extra programs. Just one single Makefile.
+self-explanatory set of variables used by Ultimate Makefile to do all its
+magic. And the best: everything within the Make language - no 
+extra parsers nor extra programs. Just one single Makefile.
 
 In order to make your very first compilation, just create a .c, .cpp,
 .asm or .f (or any of the many source extensions avaiable) and *voilà*:
 it will compile everything perfectly (at least as perfect as your
-program...)
+program is...)
 
 #### Single-directory projects ####
 
@@ -58,7 +58,7 @@ files in our default directory structure. Improve your organization
 To keep a copy of this project as a submodule, just clone it in your
 working directory:
 
-    git clone https://github.com/umakefile/make.git
+    git clone https://github.com/umake/make.git
 
 Then, create a symbolic link:
 
@@ -69,13 +69,13 @@ Then, create a symbolic link:
 ## Makeballs ##
 
 Using frameworks or libraries may be tricky, even with a simple-of-use
-tool as AIO Makefile. We need to read documentations and find where
-headers and libraries are located, in a world of complicated and no
-standardized projects. So, why not to reuse these flags? `Makeballs` 
+tool as Ultimate Makefile. We need to read documentations and find where
+headers and libraries are located, in a world of complicated and almost no
+standardized projects. So, why not reusing these flags? `Makeballs` 
 are meant for that!
 
 To start using Makeballs, create a `conf` directory and download one
-of the `conf/makeball.mk` avaiable. Then, add it in the end of 
+of the `conf/makeball.mk` available. Then add it in the end of 
 `Config.mk`:
 
 ```make
@@ -96,13 +96,13 @@ And include them as above.
 #### Didn't find your favorite library? ####
 
 Then just create you own `Makeball`! `conf/makeball.mk` provides the
-most complete set of variables that could be used to add funcionalities
-to AIO Makefile. Even better: make a pull request and **contribute**
+most complete set of variables that could be used to add functionalities
+to Ultimate Makefile. Even better: make a pull request and **contribute**
 reducing the work of others (and yourself) in the future.
 
 ## Administrative Issues ##
 
-#### Getting the lastest version ####
+#### Getting the latest version ####
 
 To get the latest version, just type `make upgrade` and the newest 
 Makefile will be automatically downloaded. If it is a submodule,
@@ -122,8 +122,8 @@ contribute, make a pull request.
 
 ## More info ##
 
-For all avaiable targets, type:
+For all avaliable targets, type:
 
     make projecthelp
 
-And it will print a list with all AIO Makefile avaiable options.
+And it will print a list with all Ultimate Makefile avaliable options.

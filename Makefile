@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# All-in-One Makefile
+# Ultimate Makefile
 
 ########################################################################
 # Copyright 2015 RCF                                                   #
@@ -20,7 +20,7 @@
 
 # Make version
 ifneq ($(firstword $(shell $(firstword $(MAKE)) --version)),GNU)
-$(error "All-in-One Makefile requires GNU Make. Please install it.")
+$(error "Ultimate Makefile requires GNU Make. Please install it.")
 endif
 
 # Default goal
@@ -44,9 +44,9 @@ VERSION         := 1.0.0
 
 # Package info
 AUXFILES        :=
-MAINTEINER_NAME := Your Name
-MAINTEINER_MAIL := your_mail@mail.com
-COPYRIGHT       := $(MAINTEINER_NAME)
+MAINTAINER_NAME := Your Name
+MAINTAINER_MAIL := your_mail@mail.com
+COPYRIGHT       := $(MAINTAINER_NAME)
 SYNOPSIS        := default short synopsis
 DESCRIPTION     := default long description
 
@@ -460,7 +460,7 @@ runstatedir    := $(localstatedir)/run
 
 ### HEADER FILES
 # * includedir:    Includable (header) files for use by GCC
-# * oldincludedir: Includable (header) files for GCC and othe compilers
+# * oldincludedir: Includable (header) files for GCC and other compilers
 install_dirs   += includedir oldincludedir
 includedir     := $(prefix)/include
 oldincludedir  := /usr/include
@@ -508,8 +508,8 @@ localedir      := $(datarootdir)/locale
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\#
 
 # The default definitions presented above area all set to work in a
-# standard Linux environment. Here we present changes required to
-# the code work in different OSs.
+# standard Linux environment. Here we present changes required for
+# the code to work in different OSs.
 
 ifeq ($(or $(shell which uname 2>/dev/null),empty),empty) # exists 'uname'
 
@@ -937,7 +937,7 @@ endef
 
 # Lexical functions
 # ===================
-# 1) lc: Returns $1 with lowecase letters only
+# 1) lc: Returns $1 with lowercase letters only
 # 2) uc: Returns $1 with uppercase letters only
 # 2) camel-to-snake-case: Convert $1 from CamelCase to snake_case
 # 2) snake-to-camel-case: Convert $1 from snake_case to CamelCase
@@ -1953,7 +1953,7 @@ $(foreach s,$(benchdir),$(foreach e,$(srcext),$(eval vpath %$e $s)))
 # foopat: incomplete paths WITH root directories
 # foolib: library names WITHOUT root directories
 
-# Auxiliar Files
+# Auxiliary Files
 # ================
 # 1) Configuration files to store status of executed command
 statusfile := $(MAKECURRENTDIR)/.status.mk
@@ -3375,7 +3375,7 @@ $(debdir)/control: | $(firstword $(debdir))/./
 	$(call select,$@)
 	@echo " "                                                 >> $@
 	@echo "Source: $(deb_project)"                            >> $@
-	@echo "Maintainer: $(mainteiner_name) $(mainteiner_mail)" >> $@
+	@echo "Maintainer: $(maintainer_name) $(maintainer_mail)" >> $@
 	@echo "Section: misc"                                     >> $@
 	@echo "Priority: $(deb_priority)"                         >> $@
 	@echo "Standards-Version: $(version)"                     >> $@
@@ -3708,8 +3708,8 @@ config:
 	@echo "# VERSION         := # Version (def: 1.0.0)"
 	@echo "# STD_NAMESPACE   := # Project namespace for C/C++"
 	@echo "# GIT_REMOTE_PATH := # Remote path for git repository"
-	@echo "# MAINTEINER_NAME := # Your name"
-	@echo "# MAINTEINER_MAIL := # your_name@mail.com"
+	@echo "# MAINTAINER_NAME := # Your name"
+	@echo "# MAINTAINER_MAIL := # your_name@mail.com"
 	@echo "# COPYRIGHT       := # Copyright Holder"
 	@echo "# SYNOPSIS        := # One-line description of the program"
 	@echo "# DESCRIPTION     := # Longer description of the program"
@@ -3799,7 +3799,7 @@ gitignore:
 	@$(foreach e,$(libext),echo *$e; )
 	@$(foreach e,$(binext),echo *$e; )
 	@echo ""
-	@echo "# Make auxiliars"
+	@echo "# Make auxiliaries"
 	@echo "#================="
 	@echo "make.debug"
 	@$(if $(strip $(doxyfile)),echo $(docdir)/doxygen/)
@@ -3814,14 +3814,14 @@ gitignore:
 .PHONY: help
 help:
 	@echo "                                                            "
-	@echo "AIO Makefile for C/C++/Fortran by Renato Cordeiro Ferreira. "
+	@echo "Ultimate Makefile for C/C++/Fortran by Renato Cordeiro Ferreira. "
 	@echo "Type 'make projecthelp' for additional info.                "
 	@echo "                                                            "
 
 .PHONY: projecthelp
 projecthelp:
 	@echo "                                                            "
-	@echo "All-in-One Makefile                                         "
+	@echo "Ultimate Makefile                                         "
 	@echo "=====================                                       "
 	@echo "                                                            "
 	@echo "Default targets:                                            "
@@ -3883,7 +3883,7 @@ projecthelp:
 	@echo " * debug:            Output 'dump' content in 'make.debug'  "
 	@echo " * dump:             Output main variables of this Makefile "
 	@echo " * coffee:           Best debug tool against sleepy hours   "
-	@echo " * nothing:          Self-explicative, huh?                 "
+	@echo " * nothing:          Self-explainatory,huh?                 "
 	@echo "                                                            "
 	@echo "Cleaning targets:                                           "
 	@echo "------------------                                          "
@@ -3900,7 +3900,7 @@ projecthelp:
 	@echo "Help targets:                                               "
 	@echo "--------------                                              "
 	@echo " * help:             Info about this Makefile               "
-	@echo " * projecthelp:      Perharps you kwnow if you are here...  "
+	@echo " * projecthelp:      Perharps you know if you are here...   "
 	@echo "                                                            "
 	@echo "Compilation options:                                        "
 	@echo "---------------------                                       "
@@ -4210,7 +4210,7 @@ define program-dependency-target
 $$(call hash-table.new,$2)
 
 # Verifies if programs of $1dep are the same. If they changed, deletes
-# old program dependency file and checks if the new is available.
+# old program dependency file and checks if the new program is available.
 .PHONY: $1dep
 $1dep: \
     $$(foreach k,$$(call hash-table.keys,$2),$$(if \
@@ -4424,7 +4424,7 @@ $(foreach d,git web,\
 #======================================================================#
 # Function: scanner-factory                                            #
 # @param  $1 Basename of the lex file                                  #
-# @param  $2 Extesion depending on the parser type (C/C++)             #
+# @param  $2 Extension depending on the parser type (C/C++)            #
 # @param  $3 Program to be used depending on the parser type (C/C++)   #
 # @return Target to generate source files according to its type        #
 #======================================================================#
@@ -4462,7 +4462,7 @@ $(foreach s,$(cxxlexer),$(eval\
 #======================================================================#
 # Function: parser-factory                                             #
 # @param  $1 Basename of the yacc file                                 #
-# @param  $2 Extesion depending on the parser type (C/C++)             #
+# @param  $2 Extension depending on the parser type (C/C++)            #
 # @param  $3 Program to be used depending on the parser type (C/C++)   #
 # @return Target to generate source files accordingly to their types   #
 #======================================================================#
@@ -5147,7 +5147,7 @@ $(foreach t,bin sbin libexec,$(foreach b,$($t),\
 #======================================================================#
 # Function: packsyst-factory                                           #
 # @param  $1 Extension of the file package system                      #
-# @param  $2 Part of the name of the var with text to be outputed      #
+# @param  $2 Part of the name of the var with text to be outputted     #
 # @param  $3 Program to be used to generate the package                #
 # @return Target to create a package with dirs specified by 'dirs' var #
 #======================================================================#
@@ -5176,7 +5176,7 @@ $(eval $(call packsyst-factory,zip,ZIP,$(ZIP)))
 # Function: compression-factory                                        #
 # @param  $1 Extension to be added in the compressed file              #
 # @param  $2 Extension of the uncompressed file (for dependency)       #
-# @param  $3 Part of the name of the var with text to be outputed      #
+# @param  $3 Part of the name of the var with text to be outputted     #
 # @param  $4 Program to be used to generate the compressed package     #
 # @return Target to create a compressed package from uncompressed one  #
 #======================================================================#
@@ -5193,7 +5193,7 @@ $(eval $(call compression-factory,tar.bz2,tar,TBZ2,$(BZIP2)))
 # Function: compression-shortcut                                       #
 # @param  $1 Default extension generated by a compression tool         #
 # @param  $2 Shortcut extension to be put in the file above            #
-# @param  $3 Part of the name of the var with text to be outputed      #
+# @param  $3 Part of the name of the var with text to be outputted     #
 # @return Target to create a compressed extension from another one     #
 #======================================================================#
 define compression-shortcut
@@ -5492,7 +5492,7 @@ endef
 
 #======================================================================#
 # Functions: dep-flags                                                 #
-# @param $1 Main target to be analised                                 #
+# @param $1 Main target to be analyzed                                 #
 # @param $2 Dependency file name                                       #
 #======================================================================#
 
@@ -5504,7 +5504,7 @@ endef
 
 #======================================================================#
 # Function: exec-sync                                                  #
-# @brief Synchronze executables (bin/lib) previously compiled with     #
+# @brief Synchronize executables (bin/lib) previously compiled with    #
 # other set of flags (to avoid recompilation in a 2nd run of make)     #
 #======================================================================#
 define exec-sync
@@ -5577,7 +5577,7 @@ endef
 
 #======================================================================#
 # Function: rm-if-empty                                                #
-# If MAINTEINER_CLEAN is setted, or there is no $2 arg, the function   #
+# If MAINTAINER_CLEAN is set, or there is no $2 arg, the function      #
 # does not test for extra files in the directory (see below)           #
 # @param $1 Directory name                                             #
 # @param $2 Files in $1 that should be removed from within $1          #
@@ -5621,7 +5621,7 @@ endef
 #======================================================================#
 # Function: rm-if-exists                                               #
 # @param $1 File to be removed                                         #
-# @param $1 Message to be outputed if the file was not found           #
+# @param $1 Message to be outputted if the file was not found          #
 #======================================================================#
 define rm-if-exists
 $(if $(wildcard $1),\
@@ -6603,7 +6603,7 @@ endef
 
 # Path variables
 # ===============
-# Auxiliar variables to the default place to create/remove
+# Auxiliary variables for the default place to create/remove
 # files created by this makefile (usually the first inc/src dirs)
 override incbase := $(strip $(firstword $(incdir)))$(if $(IN),/$(IN))
 override srcbase := $(strip $(firstword $(srcdir)))$(if $(IN),/$(IN))

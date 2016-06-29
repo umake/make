@@ -2156,6 +2156,59 @@ esqlall   := $(strip $(esqlall))
 #------------------------------------------------------------------[ 4 ]
 esqlinc   := $(if $(strip $(esqlall)),$(strip $(ESQLLIBS)))
 
+# Header files
+# ==============
+# 1) *libs   : Get headers from external variables
+# 2) incsub  : Get all subdirectories able to be included
+# 3) incsub  : Get all non-empty subdirectories to be included
+# 4) userinc : Remove empty directories in the leaves of userinc tree
+# 5) autoinc : Join automatically generated include files
+# 6) execinc : Get all subdirectories of the included dirs
+# 7) *libs   : Add subidirectories as paths to be searched for headers
+# 8) *inc    : Get all language specific headers from include dirs
+# 9) *all    : Get all subdirectories and header files for include dirs
+#------------------------------------------------------------------[ 1 ]
+aslibs  := $(call rm-trailing-bar,$(ASLIBS))
+clibs   := $(call rm-trailing-bar,$(CLIBS))
+flibs   := $(call rm-trailing-bar,$(FLIBS))
+cxxlibs := $(call rm-trailing-bar,$(CXXLIBS))
+#------------------------------------------------------------------[ 2 ]
+incsub  := $(call filter-ignored,\
+               $(foreach i,$(incdir),$(call rsubdir,$i)))
+#------------------------------------------------------------------[ 3 ]
+incsub  := $(foreach i,$(sort $(incsub)),\
+               $(if $(filter $i/%,$(incsub)),$i,\
+                   $(if $(call not-empty,$(foreach e,$(incext),\
+                       $(call rwildcard,$i,*$e))),$i)))
+#------------------------------------------------------------------[ 4 ]
+ifneq ($(incdir),.)
+userinc := $(sort $(call filter-ignored,\
+               $(foreach r,$(incdir),\
+                   $(foreach e,$(incext),\
+                       $(call rwildcard,$r,*$e)\
+           ))))
+else
+$(warning "Source directory is '.'. Deep search for source disabled")
+userall := $(sort $(foreach e,$(incext),$(wildcard *$e)))
+endif
+#------------------------------------------------------------------[ 5 ]
+autoinc := $(yaccinc) $(lexinc) $(esqlinc)
+#------------------------------------------------------------------[ 6 ]
+execinc := $(sort $(call rm-trailing-bar,$(userinc) $(autoinc)))
+#------------------------------------------------------------------[ 7 ]
+aslibs  += $(patsubst %,-I$(space)%,$(incsub))
+clibs   += $(patsubst %,-I$(space)%,$(incsub))
+flibs   += $(patsubst %,-I$(space)%,$(incsub))
+cxxlibs += $(patsubst %,-I$(space)%,$(incsub))
+#------------------------------------------------------------------[ 8 ]
+cinc    := $(call rfilter,$(addprefix %,$(hext)),$(execinc))
+finc    := $(call rfilter,$(addprefix %,$(hfext)),$(execinc))
+cxxinc  := $(call rfilter,$(addprefix %,$(hxxext)),$(execinc))
+#------------------------------------------------------------------[ 9 ]
+libsall := $(aslibs) $(clibs) $(flibs) $(cxxlibs) \
+           $(lexlibs) $(yacclibs) $(esqllibs)
+incall  := $(cinc) $(finc) $(cxxinc) $(lexinc) $(yaccinc) $(esqlinc)
+
 # Source files
 # ==============
 # 1) userall : Find in the dir trees all source files (with dir names)
@@ -2221,88 +2274,6 @@ cxxall  := $(call rfilter,$(addprefix %,$(cxxext)),$(execall))
 #------------------------------------------------------------------[ 10 ]
 execdep := $(addprefix $(depdir)/,\
                $(addsuffix $(depext),$(basename $(execsrc))))
-
-# Header files
-# ==============
-# 1) *libs   : Get headers from external variables
-# 2) userinc : Get all directories able to be included
-# 3) userinc : Remove empty directories in the leaves of userinc tree
-# 4) autoinc : Join automatically generated include files
-# 5) execinc : Get all subdirectories of the included dirs
-# 6) *libs   : Add subidirectories as paths to be searched for headers
-# 7) *inc    : Get all language specific headers from include dirs
-# 8) incall  : Get all headers from include dirs
-# #------------------------------------------------------------------[ 1 ]
-# aslibs  := $(call rm-trailing-bar,$(ASLIBS))
-# clibs   := $(call rm-trailing-bar,$(CLIBS))
-# flibs   := $(call rm-trailing-bar,$(FLIBS))
-# cxxlibs := $(call rm-trailing-bar,$(CXXLIBS))
-# #------------------------------------------------------------------[ 2 ]
-# userinc := $(call filter-ignored,\
-#                $(foreach i,$(incdir),$(call rsubdir,$i)))
-# #------------------------------------------------------------------[ 3 ]
-# userinc := $(foreach i,$(sort $(userinc)),\
-#                $(if $(filter $i/%,$(userinc)),$i,\
-#                    $(if $(call not-empty,$(foreach e,$(incext),\
-#                             $(call rwildcard,$i,*$e))),$i)))
-# #------------------------------------------------------------------[ 4 ]
-# autoinc := $(yaccinc) $(lexinc) $(esqlinc)
-# #------------------------------------------------------------------[ 5 ]
-# execinc := $(sort $(call rm-trailing-bar,$(userinc) $(autoinc)))
-# #------------------------------------------------------------------[ 6 ]
-# aslibs  += $(patsubst %,-I$(space)%,$(execinc))
-# clibs   += $(patsubst %,-I$(space)%,$(execinc))
-# flibs   += $(patsubst %,-I$(space)%,$(execinc))
-# cxxlibs += $(patsubst %,-I$(space)%,$(execinc))
-# #------------------------------------------------------------------[ 7 ]
-# cinc    := $(foreach d,$(incdir),$(foreach e,$(hext),\
-#                $(call rwildcard,$d,*$e)))
-# finc    := $(foreach d,$(incdir),$(foreach e,$(hfext),\
-#                $(call rwildcard,$d,*$e)))
-# cxxinc  := $(foreach d,$(incdir),$(foreach e,$(hxxext),\
-#                $(call rwildcard,$d,*$e)))
-# #------------------------------------------------------------------[ 8 ]
-# incall  := $(cinc) $(finc) $(cxxinc)
-
-#------------------------------------------------------------------[ 1 ]
-aslibs  := $(call rm-trailing-bar,$(ASLIBS))
-clibs   := $(call rm-trailing-bar,$(CLIBS))
-flibs   := $(call rm-trailing-bar,$(FLIBS))
-cxxlibs := $(call rm-trailing-bar,$(CXXLIBS))
-#------------------------------------------------------------------[ 2 ]
-incsub  := $(call filter-ignored,\
-               $(foreach i,$(incdir),$(call rsubdir,$i)))
-#------------------------------------------------------------------[ 3 ]
-incsub  := $(foreach i,$(sort $(incsub)),\
-               $(if $(filter $i/%,$(incsub)),$i,\
-                   $(if $(call not-empty,$(foreach e,$(incext),\
-                       $(call rwildcard,$i,*$e))),$i)))
-#------------------------------------------------------------------[ 4 ]
-ifneq ($(incdir),.)
-userinc := $(sort $(call filter-ignored,\
-               $(foreach r,$(incdir),\
-                   $(foreach e,$(incext),\
-                       $(call rwildcard,$r,*$e)\
-           ))))
-else
-$(warning "Source directory is '.'. Deep search for source disabled")
-userall := $(sort $(foreach e,$(incext),$(wildcard *$e)))
-endif
-#------------------------------------------------------------------[ 5 ]
-autoinc := $(yaccinc) $(lexinc) $(esqlinc)
-#------------------------------------------------------------------[ 6 ]
-execinc := $(sort $(call rm-trailing-bar,$(userinc) $(autoinc)))
-#------------------------------------------------------------------[ 7 ]
-aslibs  += $(patsubst %,-I$(space)%,$(incsub))
-clibs   += $(patsubst %,-I$(space)%,$(incsub))
-flibs   += $(patsubst %,-I$(space)%,$(incsub))
-cxxlibs += $(patsubst %,-I$(space)%,$(incsub))
-#------------------------------------------------------------------[ 8 ]
-cinc    := $(call rfilter,$(addprefix %,$(hext)),$(execinc))
-finc    := $(call rfilter,$(addprefix %,$(hfext)),$(execinc))
-cxxinc  := $(call rfilter,$(addprefix %,$(hxxext)),$(execinc))
-#------------------------------------------------------------------[ 9 ]
-incall  := $(cinc) $(finc) $(cxxinc)
 
 # Type-specific library flags
 # =============================
@@ -7270,6 +7241,7 @@ else
 	$(call prompt,"lexlibs:       ",$(lexlibs)             )
 	$(call prompt,"yacclibs:      ",$(yacclibs)            )
 	$(call prompt,"esqllibs:      ",$(esqllibs)            )
+	$(call prompt,"libsall:       ",$(libsall)             )
 	$(call prompt,"ldlibs:        ",$(ldlibs)              )
 
 endif #### ifdef VAR

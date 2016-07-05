@@ -3,8 +3,8 @@ Ultimate Makefile
 
 [![Build Status](https://img.shields.io/travis/umake/make/master.svg)]
                 (https://travis-ci.org/umake/make)
-[![Build status](https://img.shields.io/appveyor/ci/umake/make/master.svg)]
-                (https://ci.appveyor.com/project/umake/make)
+[![Build status](https://img.shields.io/appveyor/ci/renatocf/make/master.svg)]
+                (https://ci.appveyor.com/project/renatocf/make)
 [![Release](https://img.shields.io/github/tag/umake/make.svg)]
            (https://github.com/umake/make/releases/latest)
 [![License](https://img.shields.io/github/license/umake/make.svg)]
@@ -19,6 +19,16 @@ compile and mix almost everything related to C, C++, Assembly and Fortran
 projects - with support to many executables, static and shared libraries,
 lexer and parser generators, dependency management,file creation and much
 more! Everything just 4 letters away from you.
+
+## TL;DR
+
+```
+$ mkdir my_project
+$ cd my_project
+$ git clone https://github.com/umake/make.git
+$ ln -s make/Makefile
+$ make init
+```
 
 ## Starting ##
 

@@ -3061,9 +3061,6 @@ init: initdep
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
 	$(call mkdir,$(docdir))
-
-	$(if $(wildcard $(makedir)/$(confdir)),\
-	    $(call ln,$(makedir)/$(confdir),.))
 	
 	$(call make-create,config,Config.mk)
 	$(call make-create,version,.version.mk)
@@ -3071,12 +3068,15 @@ init: initdep
 	
 	$(call git-add-commit,Makefile Config.mk,\
 	       "Add Makefile and Config.mk")
-	$(call git-add-commit,$(confdir),\
-	       "Add link to Makeball directory")
 	$(call git-add-commit,.git[a-z]*,\
 	       "Add git configuration files")
 	$(call git-add-commit,.version.mk,\
 	       "Add versioning control file .version.mk")
+
+	$(if $(wildcard $(makedir)/$(confdir)/*),\
+	    $(call ln,$(makedir)/$(confdir),.)\
+	    $(call git-add-commit,$(confdir),\
+	           "Add link to Makeball directory"))
 
 	$(call git-tag,"v$(strip $(version))")
 

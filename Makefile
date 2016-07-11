@@ -352,6 +352,7 @@ INSTALL_PROGRAM := $(INSTALL) -m 644
 CP              := cp -a
 MV              := mv
 RM              := rm -f
+LN              := ln -s
 TAR             := tar -cvf
 ZIP             := zip
 GZIP            := gzip
@@ -1909,7 +1910,7 @@ targets := \
 # Get all existent programs
 programs := \
     AR AS CC FC CXX RANLIB INSTALL INSTALL_DATA INSTALL_PROGRAM CP MV \
-    RM TAR ZIP GZIP BZIP2 MKDIR RMDIR FIND LEX LEXCXX YACC YACCCXX    \
+    RM LN TAR ZIP GZIP BZIP2 MKDIR RMDIR FIND LEX LEXCXX YACC YACCCXX \
     CALINT FALINT CXXALINT CSLINT FSLINT CXXSLINT GCOV LCOV PROF ESQL \
     CTAGS ETAGS DOXYGEN MAKEINFO INSTALL_INFO TEXI2HTML TEXI2DVI      \
     TEXI2PDF TEXI2PS  XGETTEXT MSGINIT MSGMERGE MSGFMT DCH DEBUILD    \
@@ -5294,6 +5295,8 @@ MSG_WARNCLEAN_END = "${RED}deletes files that may need special tools"\
 MSG_WARNCLEAN_ALT = "${RED}Run ${BLUE}'make $@ D=1'${RED} to confirm."\
                     "${RES}"
 
+MSG_LN            = "${CYAN}Creating link from"\
+                    "$(call rm-trailing-bar,$1) to $(or $2,.)${RES}"
 MSG_MKDIR         = "${CYAN}Creating directory"\
                     "$(call rm-trailing-bar,$1)${RES}"
 MSG_RM            = "${BLUE}Removing ${RES}$1${RES}"
@@ -5469,6 +5472,14 @@ endef
 define exec-sync
 $(foreach d,$(bindir) $(libdir),\
     $(foreach f,$(call rwildcard,$d,*),touch $f;))
+endef
+
+## LINKS ###############################################################
+
+define ln
+	$(if $(strip $(patsubst .,,$1)), $(call phony-status,$(MSG_LN)) )
+	$(if $(strip $(patsubst .,,$1)), $(quiet) $(LN) $1 $(or $2,.)   )
+	$(if $(strip $(patsubst .,,$1)), $(call phony-ok,$(MSG_LN))     )
 endef
 
 ## DIRECTORIES #########################################################

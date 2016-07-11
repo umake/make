@@ -5644,6 +5644,8 @@ endef
 ifndef SILENT
 ifndef MORE
 
+ifndef NO_COLORS
+
 define define-faketty
 faketty () { $(SCRIPT) $(SCRIPTFLAGS) \
              $(SCRIPTQUOTE)"$$(printf "%s " "$$@")"$(SCRIPTQUOTE) \
@@ -5657,6 +5659,8 @@ endef
 define faketty
 $(call define-faketty); $(call apply-faketty)
 endef
+
+endif # NO_COLORS
 
 define SEPARATOR
 $(shell printf '%*s\n' "$${COLUMNS:-$$(tput cols)}" '' | tr ' ' '#')

@@ -6,7 +6,7 @@
 
 # Programs
 OLD_PATH=$PATH
-export MAKE=${MAKE:-$(which make)};
+export MAKE=${MAKE:-$(which make)} NO_COLORS=1;
 export SHELL=${SHELL:-$(which sh)};
 
 if ! which tput 1>/dev/null 2>/dev/null;

@@ -1,6 +1,6 @@
 #!/bin/bash
-# assert.sh 1.0 - bash unit testing framework
-# Copyright (C) 2009, 2010, 2011, 2012 Robert Lehmann
+# assert.sh 1.1 - bash unit testing framework
+# Copyright (C) 2009-2015 Robert Lehmann
 #
 # http://github.com/lehmannro/assert.sh
 #
@@ -61,24 +61,30 @@ EOF
     esac
 done
 
-printf -v _indent "\n\t" # local format helper
+_indent=$'\n\t' # local format helper
 
 _assert_reset() {
     tests_ran=0
     tests_failed=0
     tests_errors=()
-    tests_starttime="$(date +%s.%N)" # seconds_since_epoch.nanoseconds
+    tests_starttime="$(date +%s%N)" # nanoseconds_since_epoch
 }
 
 assert_end() {
     # assert_end [suite ..]
-    tests_endtime="$(date +%s.%N)"
+    tests_endtime="$(date +%s%N)"
+    # required visible decimal place for seconds (leading zeros if needed)
+    local tests_time="$( \
+        printf "%010d" "$(( ${tests_endtime/%N/000000000}
+                            - ${tests_starttime/%N/000000000} ))")"  # in ns
     tests="$tests_ran ${*:+$* }tests"
     [[ -n "$DISCOVERONLY" ]] && echo "collected $tests." && _assert_reset && return
     [[ -n "$DEBUG" ]] && echo
-    [[ -z "$INVARIANT" ]] && report_time=" in $(bc \
-        <<< "${tests_endtime%.N} - ${tests_starttime%.N}" \
-        | sed -e 's/\.\([0-9]\{0,3\}\)[0-9]*/.\1/' -e 's/^\./0./')s" \
+    # to get report_time split tests_time on 2 substrings:
+    #   ${tests_time:0:${#tests_time}-9} - seconds
+    #   ${tests_time:${#tests_time}-9:3} - milliseconds
+    [[ -z "$INVARIANT" ]] \
+        && report_time=" in ${tests_time:0:${#tests_time}-9}.${tests_time:${#tests_time}-9:3}s" \
         || report_time=
 
     if [[ "$tests_failed" -eq 0 ]]; then
@@ -90,19 +96,16 @@ assert_end() {
     tests_failed_previous=$tests_failed
     [[ $tests_failed -gt 0 ]] && tests_suite_status=1
     _assert_reset
-    return $tests_failed_previous
 }
 
 assert() {
     # assert <command> <expected stdout> [stdin]
     (( tests_ran++ )) || :
-    [[ -n "$DISCOVERONLY" ]] && return || true
-    # printf required for formatting
-    printf -v expected "x${2:-}" # x required to overwrite older results
-    result="$(eval 2>/dev/null $1 <<< ${3:-} | sed -e 's/\r$//')" || true
-    # Note: $expected is already decorated
-    if [[ "x$result" == "$expected" ]]; then
-        [[ -n "$DEBUG" ]] && echo -n . || true
+    [[ -z "$DISCOVERONLY" ]] || return
+    expected=$(echo -ne "${2:-}")
+    result="$(eval 2>/dev/null $1 <<< ${3:-})" || true
+    if [[ "$result" == "$expected" ]]; then
+        [[ -z "$DEBUG" ]] || echo -n .
         return
     fi
     result="$(sed -e :a -e '$!N;s/\n/\\n/;ta' <<< "$result")"
@@ -114,12 +117,12 @@ assert() {
 assert_raises() {
     # assert_raises <command> <expected code> [stdin]
     (( tests_ran++ )) || :
-    [[ -n "$DISCOVERONLY" ]] && return || true
+    [[ -z "$DISCOVERONLY" ]] || return
     status=0
     (eval $1 <<< ${3:-}) > /dev/null 2>&1 || status=$?
     expected=${2:-0}
     if [[ "$status" -eq "$expected" ]]; then
-        [[ -n "$DEBUG" ]] && echo -n . || true
+        [[ -z "$DEBUG" ]] || echo -n .
         return
     fi
     _assert_fail "program terminated with code $status instead of $expected" "$1" "$3"
@@ -131,18 +134,47 @@ _assert_fail() {
     report="test #$tests_ran \"$2${3:+ <<< $3}\" failed:${_indent}$1"
     if [[ -n "$STOP" ]]; then
         [[ -n "$DEBUG" ]] && echo
-        
-        echo
-        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
-        eval $2 <<< ${3:-} || true;
-        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
-        
         echo "$report"
         exit 1
     fi
     tests_errors[$tests_failed]="$report"
     (( tests_failed++ )) || :
 }
+
+skip_if() {
+    # skip_if <command ..>
+    (eval $@) > /dev/null 2>&1 && status=0 || status=$?
+    [[ "$status" -eq 0 ]] || return
+    skip
+}
+
+skip() {
+    # skip  (no arguments)
+    shopt -q extdebug && tests_extdebug=0 || tests_extdebug=1
+    shopt -q -o errexit && tests_errexit=0 || tests_errexit=1
+    # enable extdebug so returning 1 in a DEBUG trap handler skips next command
+    shopt -s extdebug
+    # disable errexit (set -e) so we can safely return 1 without causing exit
+    set +o errexit
+    tests_trapped=0
+    trap _skip DEBUG
+}
+_skip() {
+    if [[ $tests_trapped -eq 0 ]]; then
+        # DEBUG trap for command we want to skip.  Do not remove the handler
+        # yet because *after* the command we need to reset extdebug/errexit (in
+        # another DEBUG trap.)
+        tests_trapped=1
+        [[ -z "$DEBUG" ]] || echo -n s
+        return 1
+    else
+        trap - DEBUG
+        [[ $tests_extdebug -eq 0 ]] || shopt -u extdebug
+        [[ $tests_errexit -eq 1 ]] || set -o errexit
+        return 0
+    fi
+}
+
 
 _assert_reset
 : ${tests_suite_status:=0}  # remember if any of the tests failed so far

@@ -3,26 +3,18 @@
 test() {
   echo -n .
   setup
-  assert_type=ls
-  assert_value=ls
-  cmd=ls
-  last_cmd=ls
-  i=0
-  test_name=0
-  for arg
-  do
-    if [ $i -eq 0 ]
-    then
-      test_name=$arg
-      i=1
-    else
-      eval $cmd &> /dev/null
-      cmd=$assert_type
-      assert_type=$assert_value
-      assert_value=$arg
-    fi
+
+  test_behavior=$1
+
+  for cmd in "${@:2:$#-4}"; do
+    eval $cmd &> /dev/null
   done
-  eval $assert_type "'"$cmd \# test $test_name"'" "'"$assert_value"'"
+
+  assert_cmd="${@:$#-2:1}"
+  assert_type="${@:$#-1:1}"
+  assert_value="${@:$#-0:1}"
+
+  eval $assert_type "'"$assert_cmd \# test $test_name"'" "'"$assert_value"'"
   teardown
 }
 

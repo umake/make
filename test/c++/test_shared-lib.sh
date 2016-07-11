@@ -2,11 +2,11 @@
 
 test "if \"$MAKE\" builds the shared library" \
   "$MAKE init" \
-  "cp ../resources/shared_lib.cpp.mk Config.mk" \
-  "cp ../resources/simple_calc.dat ." \
-  "cp ../resources/simple_calc.cpp ." \
-  "cp ../resources/mathlib.cpp ." \
-  "cp ../resources/mathlib.hpp ." \
+  "cp ../assets/shared_lib.cpp.mk Config.mk" \
+  "cp ../assets/simple_calc.dat ." \
+  "cp ../assets/simple_calc.cpp ." \
+  "cp ../assets/mathlib.cpp ." \
+  "cp ../assets/mathlib.hpp ." \
   "$MAKE standard" \
   "$MAKE" \
   "./bin/simple_calc < ./data/simple_calc.dat" \

@@ -1,35 +1,35 @@
 #!/usr/bin/env bash
 
 test "if \"$MAKE\" builds shared files with different flags" \
-  "cp ../resources/shared_file.cpp.mk Config.mk" \
-  "cp ../resources/say_hello.cpp hello1.cpp" \
-  "cp ../resources/say_hello.cpp hello2.cpp" \
-  "cp ../resources/say_hello.cpp hello3.cpp" \
-  "cp ../resources/greetings.hpp ." \
-  "cp ../resources/greetings.cpp ." \
+  "cp ../assets/shared_file.cpp.mk Config.mk" \
+  "cp ../assets/say_hello.cpp hello1.cpp" \
+  "cp ../assets/say_hello.cpp hello2.cpp" \
+  "cp ../assets/say_hello.cpp hello3.cpp" \
+  "cp ../assets/greetings.hpp ." \
+  "cp ../assets/greetings.cpp ." \
   "$MAKE standard" \
   "$MAKE | grep greetings.o | wc -l" \
   should_output "3"
 
 test "if \"$MAKE\" builds shared files with different flags" \
-  "cp ../resources/shared_file.cpp.mk Config.mk" \
-  "cp ../resources/say_hello.cpp hello1.cpp" \
-  "cp ../resources/say_hello.cpp hello2.cpp" \
-  "cp ../resources/say_hello.cpp hello3.cpp" \
-  "cp ../resources/greetings.hpp ." \
-  "cp ../resources/greetings.cpp ." \
+  "cp ../assets/shared_file.cpp.mk Config.mk" \
+  "cp ../assets/say_hello.cpp hello1.cpp" \
+  "cp ../assets/say_hello.cpp hello2.cpp" \
+  "cp ../assets/say_hello.cpp hello3.cpp" \
+  "cp ../assets/greetings.hpp ." \
+  "cp ../assets/greetings.cpp ." \
   "$MAKE standard" \
   "$MAKE" \
   "$MAKE | grep \"is up to date\" | wc -l" \
   should_output "3"
 
 test "if \"$MAKE\" rebuilds only the touched main in 2nd recompilation" \
-  "cp ../resources/shared_file.cpp.mk Config.mk" \
-  "cp ../resources/say_hello.cpp hello1.cpp" \
-  "cp ../resources/say_hello.cpp hello2.cpp" \
-  "cp ../resources/say_hello.cpp hello3.cpp" \
-  "cp ../resources/greetings.hpp ." \
-  "cp ../resources/greetings.cpp ." \
+  "cp ../assets/shared_file.cpp.mk Config.mk" \
+  "cp ../assets/say_hello.cpp hello1.cpp" \
+  "cp ../assets/say_hello.cpp hello2.cpp" \
+  "cp ../assets/say_hello.cpp hello3.cpp" \
+  "cp ../assets/greetings.hpp ." \
+  "cp ../assets/greetings.cpp ." \
   "$MAKE standard" \
   "$MAKE" \
   "touch src/hello1.cpp" \
@@ -42,12 +42,12 @@ test "if \"$MAKE\" rebuilds only the touched main in 2nd recompilation" \
   should_output "2\n2\n2"
 
 test "if \"$MAKE\" rebuilds the touched shared file in 2nd recompilation" \
-  "cp ../resources/shared_file.cpp.mk Config.mk" \
-  "cp ../resources/say_hello.cpp hello1.cpp" \
-  "cp ../resources/say_hello.cpp hello2.cpp" \
-  "cp ../resources/say_hello.cpp hello3.cpp" \
-  "cp ../resources/greetings.hpp ." \
-  "cp ../resources/greetings.cpp ." \
+  "cp ../assets/shared_file.cpp.mk Config.mk" \
+  "cp ../assets/say_hello.cpp hello1.cpp" \
+  "cp ../assets/say_hello.cpp hello2.cpp" \
+  "cp ../assets/say_hello.cpp hello3.cpp" \
+  "cp ../assets/greetings.hpp ." \
+  "cp ../assets/greetings.cpp ." \
   "$MAKE standard" \
   "$MAKE" \
   "touch src/greetings.cpp" \
@@ -55,12 +55,12 @@ test "if \"$MAKE\" rebuilds the touched shared file in 2nd recompilation" \
   should_output "3"
 
 test "if \"$MAKE\" rebuilds correctly in 2nd recompilation with args" \
-  "cp ../resources/shared_file.cpp.mk Config.mk" \
-  "cp ../resources/say_hello.cpp hello1.cpp" \
-  "cp ../resources/say_hello.cpp hello2.cpp" \
-  "cp ../resources/say_hello.cpp hello3.cpp" \
-  "cp ../resources/greetings.hpp ." \
-  "cp ../resources/greetings.cpp ." \
+  "cp ../assets/shared_file.cpp.mk Config.mk" \
+  "cp ../assets/say_hello.cpp hello1.cpp" \
+  "cp ../assets/say_hello.cpp hello2.cpp" \
+  "cp ../assets/say_hello.cpp hello3.cpp" \
+  "cp ../assets/greetings.hpp ." \
+  "cp ../assets/greetings.cpp ." \
   "$MAKE standard" \
   "$MAKE" \
   "$MAKE CPPFLAGS=-Dbla | grep \"is up to date\" | wc -l >> results.txt" \

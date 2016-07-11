@@ -2,20 +2,20 @@
 
 test "$MAKE with multiple files" \
   "$MAKE init" \
-  "cp ../resources/simple_calc.dat ." \
-  "cp ../resources/simple_calc.cpp ." \
-  "cp ../resources/mathlib.cpp ." \
-  "cp ../resources/mathlib.hpp ." \
+  "cp ../assets/simple_calc.dat ." \
+  "cp ../assets/simple_calc.cpp ." \
+  "cp ../assets/mathlib.cpp ." \
+  "cp ../assets/mathlib.hpp ." \
   "$MAKE standard" \
   "$MAKE" \
   should_raise 0
 
 test "if \"$MAKE\" builds the project" \
   "$MAKE init" \
-  "cp ../resources/simple_calc.dat ." \
-  "cp ../resources/simple_calc.cpp ." \
-  "cp ../resources/mathlib.cpp ." \
-  "cp ../resources/mathlib.hpp ." \
+  "cp ../assets/simple_calc.dat ." \
+  "cp ../assets/simple_calc.cpp ." \
+  "cp ../assets/mathlib.cpp ." \
+  "cp ../assets/mathlib.hpp ." \
   "$MAKE standard" \
   "$MAKE" \
   "./bin/simple_calc < ./data/simple_calc.dat" \

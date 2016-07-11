@@ -2,10 +2,10 @@
 
 test "if \"$MAKE\" builds the static library" \
   "$MAKE init" \
-  "cp ../resources/static_lib.f.mk Config.mk" \
-  "cp ../resources/simple_calc.dat ." \
-  "cp ../resources/simple_calc.f ." \
-  "cp ../resources/mathlib.f ." \
+  "cp ../assets/static_lib.f.mk Config.mk" \
+  "cp ../assets/simple_calc.dat ." \
+  "cp ../assets/simple_calc.f ." \
+  "cp ../assets/mathlib.f ." \
   "$MAKE standard" \
   "$MAKE" \
   "./bin/simple_calc < ./data/simple_calc.dat" \

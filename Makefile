@@ -3061,7 +3061,9 @@ init: initdep
 	$(call mkdir,$(srcdir))
 	$(call mkdir,$(incdir))
 	$(call mkdir,$(docdir))
-	$(call ln,$(makedir)/$(confdir),.)
+
+	$(if $(wildcard $(makedir)/$(confdir)),\
+	    $(call ln,$(makedir)/$(confdir),.))
 	
 	$(call make-create,config,Config.mk)
 	$(call make-create,version,.version.mk)

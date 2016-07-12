@@ -17,6 +17,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+RES=$(tput sgr0)
+BOLD=$(tput bold)
+
+BLACK=${BOLD}$(tput setaf 0)
+RED=${BOLD}$(tput setaf 1)
+GREEN=${BOLD}$(tput setaf 2)
+YELLOW=${BOLD}$(tput setaf 3)
+BLUE=${BOLD}$(tput setaf 4)
+PURPLE=${BOLD}$(tput setaf 5)
+CYAN=${BOLD}$(tput setaf 6)
+WHITE=${BOLD}$(tput setaf 7)
+
 export DISCOVERONLY=${DISCOVERONLY:-}
 export DEBUG=${DEBUG:-}
 export STOP=${STOP:-}
@@ -61,13 +73,18 @@ EOF
     esac
 done
 
-_indent=$'\n\t' # local format helper
-
 _assert_reset() {
     tests_ran=0
     tests_failed=0
     tests_errors=()
     tests_starttime="$(date +%s%N)" # nanoseconds_since_epoch
+}
+
+assert_begin() {
+    # assert_begin [suite ..]
+    intro="Testing ${*:+$*}"
+    echo -e "${BLUE}$intro${RES}"
+    printf "${BLUE}%*s=${RES}\n" "${COLUMNS:-${#intro}}" '' | tr ' ' =
 }
 
 assert_end() {
@@ -78,8 +95,10 @@ assert_end() {
         printf "%010d" "$(( ${tests_endtime/%N/000000000}
                             - ${tests_starttime/%N/000000000} ))")"  # in ns
     tests="$tests_ran ${*:+$* }tests"
-    [[ -n "$DISCOVERONLY" ]] && echo "collected $tests." && _assert_reset && return
-    [[ -n "$DEBUG" ]] && echo
+    [[ -n "$DISCOVERONLY" ]] \
+        && echo "${YELLOW}collected $tests.${RES}" \
+        && _assert_reset \
+        && return
     # to get report_time split tests_time on 2 substrings:
     #   ${tests_time:0:${#tests_time}-9} - seconds
     #   ${tests_time:${#tests_time}-9:3} - milliseconds
@@ -88,10 +107,9 @@ assert_end() {
         || report_time=
 
     if [[ "$tests_failed" -eq 0 ]]; then
-        echo "all $tests passed$report_time."
+        echo -e "${GREEN}all $tests passed$report_time.${RES}"
     else
-        for error in "${tests_errors[@]}"; do echo "$error"; done
-        echo "$tests_failed of $tests failed$report_time."
+        echo -e "${RED}$tests_failed of $tests failed$report_time.${RES}"
     fi
     tests_failed_previous=$tests_failed
     [[ $tests_failed -gt 0 ]] && tests_suite_status=1
@@ -99,51 +117,65 @@ assert_end() {
 }
 
 assert() {
-    # assert <command> <expected stdout> [stdin]
+    # assert <behavior> <command> <expected stdout> [stdin]
     (( tests_ran++ )) || :
     [[ -z "$DISCOVERONLY" ]] || return
-    expected=$(echo -ne "${2:-}")
-    result="$(eval 2>/dev/null $1 <<< ${3:-} | sed -e 's/\r$//')" || true
+    _assert_prepare "$1"
+
+    expected=$(echo -ne "${3:-}")
+    result="$(eval 2>/dev/null $2 <<< ${4:-} | sed -e 's/\r$//')" || true
     if [[ "$result" == "$expected" ]]; then
-        [[ -z "$DEBUG" ]] || echo -n .
+        _assert_success "$1"
         return
     fi
     result="$(sed -e :a -e '$!N;s/\n/\\n/;ta' <<< "$result")"
+
     [[ -z "$result" ]] && result="nothing" || result="\"$result\""
-    [[ -z "$2" ]] && expected="nothing" || expected="\"$2\""
-    _assert_fail "expected $expected${_indent}got $result" "$1" "$3"
+    [[ -z "$3" ]] && expected="nothing" || expected="\"$3\""
+
+    _assert_fail "result" "$1" "$2" "$4"
 }
 
 assert_raises() {
-    # assert_raises <command> <expected code> [stdin]
+    # assert_raises <behavior> <command> <expected code> [stdin]
     (( tests_ran++ )) || :
     [[ -z "$DISCOVERONLY" ]] || return
+    _assert_prepare "$1"
+
     status=0
-    (eval $1 <<< ${3:-}) > /dev/null 2>&1 || status=$?
-    expected=${2:-0}
+    (eval $2 <<< ${4:-}) > /dev/null 2>&1 || status=$?
+    expected=${3:-0}
     if [[ "$status" -eq "$expected" ]]; then
-        [[ -z "$DEBUG" ]] || echo -n .
+        _assert_success "$1"
         return
     fi
-    _assert_fail "program terminated with code $status instead of $expected" "$1" "$3"
+
+    _assert_fail "status" "$1" "$2" "$4"
+}
+
+_assert_prepare() {
+    # _assert_prepare <behavior>
+    echo -en "test ${WHITE}$1${RES}..."
+}
+
+_assert_success() {
+    # _assert_start <behavior>
+    echo -e "\r${GREEN}[ OK ]${RES} test ${WHITE}$1${RES}"
 }
 
 _assert_fail() {
-    # _assert_fail <failure> <command> <stdin>
-    [[ -n "$DEBUG" ]] && echo -n X
-    report="test #$tests_ran \"$2${3:+ <<< $3}\" failed:${_indent}$1"
+    # _assert_fail <error_type> <behavior> <command> <stdin>
+    echo -e "\r${RED}[FAIL]${RES} test ${WHITE}$2${RES}"
+    cat <<EOM
+         ${YELLOW}${1}   ${PURPLE}${!1}${RES}
+         ${YELLOW}expected ${PURPLE}$expected${RES}
+         ${BLACK}Command '$3' failed${RES}
+EOM
     if [[ -n "$STOP" ]]; then
-        [[ -n "$DEBUG" ]] && echo
-
         echo
-        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
-        eval $2 <<< ${3:-} || true;
-        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' =
-
-        echo "$report"
+        echo -e "${RED}Test #$tests_ran failed with stop enabled. Aborting.${RES}"
         exit 1
     fi
-    tests_errors[$tests_failed]="$report"
     (( tests_failed++ )) || :
 }
 

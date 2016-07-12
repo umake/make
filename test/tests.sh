@@ -100,7 +100,8 @@ echo
 ################################################################################
 
 # Targets
-echo -n "Testing Targets "
+assert_begin "Targets"
+echo
 . test/targets/test_init.sh
 . test/targets/test_standard.sh
 echo
@@ -112,7 +113,8 @@ for LANG in ${LANGUAGE:-C C++ Fortran};
 do
     lang=`echo $LANG | tr '[:upper:]' '[:lower:]'`
 
-    echo -n "Testing $LANG "
+    assert_begin "$LANG"
+    echo
     . test/$lang/test_single-file.sh
     . test/$lang/test_multiple-file.sh
     . test/$lang/test_static-lib.sh

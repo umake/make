@@ -1,10 +1,9 @@
 #!/bin/bash
 
 test() {
-  echo -n .
   setup
 
-  test_behavior=$1
+  test_behavior="$1"
 
   for cmd in "${@:2:$#-4}"; do
     eval $cmd &> /dev/null
@@ -14,14 +13,15 @@ test() {
   assert_type="${@:$#-1:1}"
   assert_value="${@:$#-0:1}"
 
-  eval $assert_type "'"$assert_cmd \# test $test_name"'" "'"$assert_value"'"
+  eval $assert_type "\""$test_behavior"\"" "'"$assert_cmd"'" "'"$assert_value"'"
+
   teardown
 }
 
 should_output() {
-  eval assert "'"$1"'" "'"$2"'"
+  assert "$@"
 }
 
 should_raise() {
-  eval assert_raises "'"$1"'" "'"$2"'"
+  assert_raises "$@"
 }

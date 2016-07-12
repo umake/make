@@ -2,6 +2,7 @@ language: cpp
 
 os:
   - linux
+  - osx
 
 compiler:
   - clang
@@ -9,47 +10,56 @@ compiler:
 
 env:
   global:
+    - export GCC_VERSION=5
+    - export CLANG_VERSION=3.4
     - export FC=gfortran
 
 before_install:
-  # gcc/g++ 4.8.1, clang/clang++ 3.4 and gfortran 4.8
-  - if [ "$TRAVIS_OS_NAME" = "linux" ];
-    then
-      sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; 
-      sudo add-apt-repository -y ppa:h-rayflood/llvm; 
-      sudo apt-get update -qq;
-    fi
+  # gcc/g++, clang/clang++ and gfortran
+  - case "$TRAVIS_OS_NAME" in
+      linux)
+        sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test;
+        sudo add-apt-repository -y ppa:h-rayflood/llvm;
+        sudo apt-get update -qq;
+      ;;
+      osx)
+        brew update;
+      ;;
+    esac
 
 install:
-  - sudo apt-get install -qq bc
+  - case "$TRAVIS_OS_NAME" in
+      linux)
+        sudo apt-get install -qq bc;
+        sudo apt-get install -qq g++-$GCC_VERSION;
+        sudo apt-get install -qq gfortran-$GCC_VERSION;
+        sudo apt-get install -qq clang-$CLANG_VERSION;
 
-  # gfortran 4.8
-  - if [ "$TRAVIS_OS_NAME" = "linux" ];
-    then
-      sudo apt-get install -qq gfortran-4.8;
-      sudo update-alternatives
-           --install /usr/bin/gfortran gfortran /usr/bin/gfortran-4.8 90;
-    fi
+        sudo update-alternatives --install
+             /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 90;
+        sudo update-alternatives --install
+             /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION 90;
+        sudo update-alternatives --install
+             /usr/bin/gfortran gfortran /usr/bin/gfortran-$GCC_VERSION 90;
 
-  # gcc/g++ 4.8.1
-  - if [ "$TRAVIS_OS_NAME" = "linux" ];
-    then
-      sudo apt-get install -qq g++-4.8;
-      sudo update-alternatives
-           --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90;
-      sudo update-alternatives
-           --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90;
-    fi
+        sudo update-alternatives --install
+             /usr/bin/clang clang /usr/bin/clang-$CLANG_VERSION 90;
+        sudo update-alternatives --install
+             /usr/bin/clang++ clang++ /usr/bin/clang++-$CLANG_VERSION 90;
+      ;;
+      osx)
+        brew install bc;
+        brew install gcc$GCC_VERSION;
+        brew install gfortran$GCC_VERSION;
+        brew install gfortran$GCC_VERSION;
+        brew info llvm --with-clang --with-asan --HEAD;
 
-  # clang/clang++ 3.4
-  - if [ "$TRAVIS_OS_NAME" = "linux" ];
-    then 
-      sudo apt-get install --allow-unauthenticated -qq clang-3.4;
-      sudo update-alternatives
-           --install /usr/bin/clang clang /usr/bin/clang-3.4 90;
-      sudo update-alternatives
-           --install /usr/bin/clang++ clang++ /usr/bin/clang++-3.4 90;
-    fi
+        alias gcc=gcc-$GCC_VERSION;
+        alias g++=g++-$GCC_VERSION;
+        alias clang=clang-$CLANG_VERSION;
+        alias clang++=clang++-$CLANG_VERSION;
+      ;;
+    esac
 
 script:
   - ./test/tests.sh

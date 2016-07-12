@@ -11,4 +11,4 @@ test "if \"$MAKE\" builds the project with a single file" \
   "cp ../assets/hello.f src/hello.f" \
   "$MAKE" \
   "./bin/hello" \
-  should_output " Hello, World!"
+  should_output "Hello, World!"

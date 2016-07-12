@@ -26,7 +26,7 @@ module greetings
 contains
 
   subroutine greet()
-    print *, "Hello, World!"
+    print '(A)', "Hello, World!"
   end subroutine greet
 
 end module greetings

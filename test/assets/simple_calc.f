@@ -33,11 +33,11 @@ program simple_calc
     endif
 
     if (io > 0) then
-      write (*,*) "Problem on reading!"
+      print '(A)', "Problem on reading!"
       exit
     endif
     
-    write (*,fmt='(I2)') calculate(op, lhs, rhs)
+    print '(I2)', calculate(op, lhs, rhs)
   end do
   
 contains

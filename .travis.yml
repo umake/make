@@ -52,4 +52,4 @@ install:
     fi
 
 script:
-  - ./test/tests.sh
+  - ./test/tests.sh -x

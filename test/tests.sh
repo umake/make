@@ -22,9 +22,6 @@ fi
 ##                                  LIBRARIES                                 ##
 ################################################################################
 
-# Library options
-export STOP=1
-
 # Load libraries
 . test/assert.sh
 . test/helper.sh

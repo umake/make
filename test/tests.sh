@@ -6,8 +6,13 @@
 
 # Programs
 OLD_PATH=$PATH
+
 export MAKE=${MAKE:-$(which make)} NO_COLORS=1;
 export SHELL=${SHELL:-$(which sh)};
+
+export CC=${CC:-$(which gcc)}
+export FC=${FC:-$(which gfortran)}
+export CXX=${CXX:-$(which g++)}
 
 if ! which tput 1>/dev/null 2>/dev/null;
     then export COLUMNS=80

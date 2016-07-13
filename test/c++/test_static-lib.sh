@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-test "if \"$MAKE\" builds the static library" \
+test "the compilation of a static library" \
   "$MAKE init" \
   "cp ../assets/static_lib.cpp.mk Config.mk" \
   "cp ../assets/simple_calc.dat ." \

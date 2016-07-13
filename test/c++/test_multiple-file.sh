@@ -1,16 +1,6 @@
 #!/usr/bin/env bash
 
-test "$MAKE with multiple files" \
-  "$MAKE init" \
-  "cp ../assets/simple_calc.dat ." \
-  "cp ../assets/simple_calc.cpp ." \
-  "cp ../assets/mathlib.cpp ." \
-  "cp ../assets/mathlib.hpp ." \
-  "$MAKE standard" \
-  "$MAKE" \
-  should_raise 0
-
-test "if \"$MAKE\" builds the project" \
+test "the compilation of multiple files" \
   "$MAKE init" \
   "cp ../assets/simple_calc.dat ." \
   "cp ../assets/simple_calc.cpp ." \

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-test "if \"$MAKE\" builds the shared library" \
+test "the compilation of a shared library" \
   "$MAKE init" \
   "cp ../assets/shared_lib.cpp.mk Config.mk" \
   "cp ../assets/simple_calc.dat ." \

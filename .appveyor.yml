@@ -10,31 +10,6 @@ environment:
     CC:  /cygdrive/c/cygwin/bin/gcc
     CXX: /cygdrive/c/cygwin/bin/g++
     FC:  /cygdrive/c/cygwin/bin/gfortran
-    LANGUAGE: C
-
-  - APPVEYOR_BUILD_SYS: Cygwin
-    WIN_SHELL: C:\cygwin\bin\bash
-    WIN_MAKE:  C:\cygwin\bin\make
-    WIN_SETUP: C:\cygwin\setup-x86.exe
-    SHELL: /cygdrive/c/cygwin/bin/bash
-    MAKE:  /cygdrive/c/cygwin/bin/make
-    SETUP: /cygdrive/c/cygwin/bin/setup-x86.exe
-    CC:  /cygdrive/c/cygwin/bin/gcc
-    CXX: /cygdrive/c/cygwin/bin/g++
-    FC:  /cygdrive/c/cygwin/bin/gfortran
-    LANGUAGE: C++
-
-  - APPVEYOR_BUILD_SYS: Cygwin
-    WIN_SHELL: C:\cygwin\bin\bash
-    WIN_MAKE:  C:\cygwin\bin\make
-    WIN_SETUP: C:\cygwin\setup-x86.exe
-    SHELL: /cygdrive/c/cygwin/bin/bash
-    MAKE:  /cygdrive/c/cygwin/bin/make
-    SETUP: /cygdrive/c/cygwin/bin/setup-x86.exe
-    CC:  /cygdrive/c/cygwin/bin/gcc
-    CXX: /cygdrive/c/cygwin/bin/g++
-    FC:  /cygdrive/c/cygwin/bin/gfortran
-    LANGUAGE: Fortran
 
   - APPVEYOR_BUILD_SYS: Msys2
     WIN_SHELL: C:\msys64\usr\bin\bash
@@ -46,31 +21,6 @@ environment:
     CC:  /c/msys64/mingw64/bin/gcc
     CXX: /c/msys64/mingw64/bin/g++
     FC:  /c/msys64/mingw64/bin/gfortran
-    LANGUAGE: C
-
-  - APPVEYOR_BUILD_SYS: Msys2
-    WIN_SHELL: C:\msys64\usr\bin\bash
-    WIN_MAKE:  C:\msys64\usr\bin\make
-    WIN_SETUP: C:\msys64\usr\bin\bash
-    SHELL: /usr/bin/bash
-    MAKE:  /usr/bin/make
-    SETUP: /usr/bin/bash
-    CC:  /c/msys64/mingw64/bin/gcc
-    CXX: /c/msys64/mingw64/bin/g++
-    FC:  /c/msys64/mingw64/bin/gfortran
-    LANGUAGE: C++
-
-  - APPVEYOR_BUILD_SYS: Msys2
-    WIN_SHELL: C:\msys64\usr\bin\bash
-    WIN_MAKE:  C:\msys64\usr\bin\make
-    WIN_SETUP: C:\msys64\usr\bin\bash
-    SHELL: /usr/bin/bash
-    MAKE:  /usr/bin/make
-    SETUP: /usr/bin/bash
-    CC:  /c/msys64/mingw64/bin/gcc
-    CXX: /c/msys64/mingw64/bin/g++
-    FC:  /c/msys64/mingw64/bin/gfortran
-    LANGUAGE: Fortran
 
 init:
   # Carriage returns are bad

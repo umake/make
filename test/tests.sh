@@ -98,12 +98,12 @@ echo
 
 # Targets
 assert_begin "Targets"
-echo
+echo -e ""
 . test/targets/test_init.sh
 . test/targets/test_standard.sh
-echo
+echo -e ""
 assert_end Targets
-echo
+echo -e ""
 
 # Languages
 for LANG in ${LANGUAGE:-C C++ Fortran};
@@ -111,13 +111,13 @@ do
     lang=`echo $LANG | tr '[:upper:]' '[:lower:]'`
 
     assert_begin "$LANG"
-    echo
+    echo -e ""
     . test/$lang/test_single-file.sh
     . test/$lang/test_multiple-file.sh
     . test/$lang/test_static-lib.sh
     . test/$lang/test_shared-lib.sh
     . test/$lang/test_shared-file.sh
-    echo
+    echo -e ""
     assert_end "$LANG"
-    echo
+    echo -e ""
 done

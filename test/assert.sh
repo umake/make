@@ -84,7 +84,8 @@ assert_begin() {
     # assert_begin [suite ..]
     intro="Testing ${*:+$*}"
     echo -e "${BLUE}$intro${RES}"
-    printf "${BLUE}%*s=${RES}\n" "${COLUMNS:-${#intro}}" '' | tr ' ' =
+    printf "${BLUE}%*s=${RES}" "${COLUMNS:-${#intro}}" '' | tr ' ' =
+    echo -e ""
 }
 
 assert_end() {

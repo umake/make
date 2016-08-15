@@ -19,13 +19,14 @@ override LIBLBFGS_MK := T
 
 # Dependencies
 # ==============
-CURL = curl -sLo
-
-LIBTOOLIZE := libtoolize
 
 ifeq ($(PLAT_KERNEL),Darwin)
 
 LIBTOOLIZE := glibtoolize
+
+else
+
+LIBTOOLIZE := libtoolize
 
 endif # ifeq ($(PLAT_KERNEL),Darwin)
 

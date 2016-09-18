@@ -2203,10 +2203,12 @@ cxxlibs += $(patsubst %,-I$(space)%,$(incsub))
 cinc    := $(call rfilter,$(addprefix %,$(hext)),$(execinc))
 finc    := $(call rfilter,$(addprefix %,$(hfext)),$(execinc))
 cxxinc  := $(call rfilter,$(addprefix %,$(hxxext)),$(execinc))
+inlinc  := $(call rfilter,$(addprefix %,$(inlext)),$(execinc))
 #------------------------------------------------------------------[ 9 ]
 libsall := $(aslibs) $(clibs) $(flibs) $(cxxlibs) \
            $(lexlibs) $(yacclibs) $(esqllibs)
-incall  := $(cinc) $(finc) $(cxxinc) $(lexinc) $(yaccinc) $(esqlinc)
+incall  := $(cinc) $(finc) $(cxxinc) $(inlinc) \
+           $(lexinc) $(yaccinc) $(esqlinc)
 
 # Source files
 # ==============

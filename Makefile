@@ -6354,7 +6354,7 @@ define c-source
 	$(call select,$(srcbase)/$1$(SRC_EXT))
 	$(if $(wildcard $(notice)),$(call cat,''))
 	$(call cat,'/* Interface header */'                                )
-	$(call cat,'#include "$(C_FILE)$(INC_EXT)"'                        )
+	$(call cat,'#include "$(call not-root,$(incbase)/$1$(INC_EXT))"'   )
 	
 	$(call select,stdout)
 endef

@@ -6275,6 +6275,18 @@ $(if $(call is-empty,$1),$(\
 endef
 
 #======================================================================#
+# Function: include-interface-header                                   #
+# @brief Create include directive for interface header $1              #
+#======================================================================#
+define include-interface-header
+$(if $(call is-empty,$1),$(\
+    )$(call eat,'/^\s*$$/d'),$(\
+    )$(call cat,'// $(or $(strip $2),Interface header)')$(\
+    )$(newline)$(\
+    )$(call cat,'#include "$(strip $1)"')$(newline))
+endef
+
+#======================================================================#
 # Function: include-implementation-header                              #
 # @brief Create include directive for implementation header $1         #
 #======================================================================#
@@ -6469,11 +6481,13 @@ define cxx-source
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	
+	@# ITF_FILE: File name for the interface header
+	$(eval ITF_FILE  := $(call not-root,$(incbase)/$1$(INC_EXT)))
+	
 	$(call touch,$(srcbase)/$1$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$1$(SRC_EXT))
 	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call cat,'// Interface header'                                   )
-	$(call cat,'#include "$1$(inc_ext)"'                               )
+	$(call include-interface-header,$(if $(strip $3),$(ITF_FILE)),     )
 	$(call cat,''                                                      )
 	$(call start-namespace                                             )
 	$(call cat,''                                                      )

@@ -7,8 +7,6 @@ Ultimate Makefile
                 (https://ci.appveyor.com/project/renatocf/make)
 [![Release](https://img.shields.io/github/tag/umake/make.svg)]
            (https://github.com/umake/make/releases/latest)
-[![License](https://img.shields.io/github/license/umake/make.svg)]
-           (https://github.com/umake/make/blob/master/LICENSE)
 
 The Ultimate Makefile to compile all your C, C++, Assembly and Fortran projects.
 

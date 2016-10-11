@@ -6456,7 +6456,8 @@ define cxx-header
 	$(call invalid-ext,$(INL_EXT),$(inlext))
 	
 	@# INL_FILE: File name for the inline header
-	$(eval INL_FILE  := $(call not-root,$(incbase)/$1$(INL_EXT)))
+	$(if $(call not-empty,$3),\
+	    $(eval INL_FILE := $(call not-root,$(incbase)/$1$(INL_EXT))))
 	
 	$(call touch,$(incbase)/$1$(INC_EXT),$(notice))
 	$(call select,$(incbase)/$1$(INC_EXT))
@@ -6470,7 +6471,7 @@ define cxx-header
 	$(call cat,''                                                      )
 	$(call end-namespace                                               )
 	$(call cat,''                                                      )
-	$(call include-implementation-header,$(if $(strip $3),$(INL_FILE)),)
+	$(call include-implementation-header,$(INL_FILE),                  )
 	$(call cat,''                                                      )
 	$(call cat,'#endif  // $(indef)$(call sfmt,$1)_'                   )
 	
@@ -6478,6 +6479,9 @@ define cxx-header
 endef
 
 define cxx-source
+	$(if $(INC_EXT),,$(eval override INC_EXT := .hpp))
+	$(call invalid-ext,$(INC_EXT),$(hxxext))
+	
 	$(if $(SRC_EXT),,$(eval override SRC_EXT := .cpp))
 	$(call invalid-ext,$(SRC_EXT),$(cxxext))
 	
@@ -6487,7 +6491,7 @@ define cxx-source
 	$(call touch,$(srcbase)/$1$(SRC_EXT),$(notice))
 	$(call select,$(srcbase)/$1$(SRC_EXT))
 	$(if $(wildcard $(notice)),$(call cat,''))
-	$(call include-interface-header,$(if $(strip $3),$(ITF_FILE)),     )
+	$(call include-interface-header,$(ITF_FILE),                       )
 	$(call cat,''                                                      )
 	$(call start-namespace                                             )
 	$(call cat,''                                                      )
@@ -6538,7 +6542,7 @@ define cxx-group
 	$(call cat,'#ifndef $(indef)$(call sfmt,$(GROUP_NAME))_'           )
 	$(call cat,'#define $(indef)$(call sfmt,$(GROUP_NAME))_'           )
 	$(call cat,''                                                      )
-	$(call include-internal-headers,$(GROUP_FILES)                     )
+	$(call include-internal-headers,$(GROUP_FILES),                    )
 	$(call cat,''                                                      )
 	$(call cat,'#endif  // $(indef)$(call sfmt,$(GROUP_NAME))_'        )
 	

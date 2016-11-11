@@ -1614,8 +1614,8 @@ export version
 # Package info
 # ==================
 auxfiles        := $(strip $(AUXFILES))
-mainteiner_name := $(strip $(MAINTEINER_NAME))
-mainteiner_mail := $(strip $(MAINTEINER_MAIL))
+maintainer_name := $(strip $(MAINTAINER_NAME))
+maintainer_mail := $(strip $(MAINTAINER_MAIL))
 copyright       := $(strip $(COPYRIGHT))
 synopsis        := $(strip $(SYNOPSIS))
 description     := $(strip $(DESCRIPTION))
@@ -3470,15 +3470,15 @@ realclean: distclean docclean packageclean externalclean \
 	$(call rm-if-exists,etags,$(MSG_ETAGS_NONE))
 endif
 
-.PHONY: mainteiner-clean
+.PHONY: maintainer-clean
 ifndef D
-mainteiner-clean:
+maintainer-clean:
 	@$(call println,$(MSG_WARNCLEAN_BEG))
 	@$(call println,$(MSG_WARNCLEAN_END))
 	@$(call println,$(MSG_WARNCLEAN_ALT))
 else
-mainteiner-clean:
-	@$(MAKE) realclean MAINTEINER_CLEAN=1 D=1
+maintainer-clean:
+	@$(MAKE) realclean MAINTAINER_CLEAN=1 D=1
 endif
 
 .PHONY: uninitialize
@@ -3488,7 +3488,7 @@ uninitialize:
 	@$(call println,$(MSG_UNINIT_ALT))
 else
 uninitialize:
-	@$(MAKE) mainteiner-clean D=1
+	@$(MAKE) maintainer-clean D=1
 	$(call rm-if-empty,$(srcdir),$(execall))
 	$(call rm-if-empty,$(incdir),$(execinc))
 	$(call rm-if-empty,$(docdir),$(texiall))
@@ -3565,9 +3565,9 @@ $(if $(strip $(i_$1)),\
 ))
 endef
 
-.PHONY: mainteiner-uninstall
-mainteiner-uninstall:
-	@$(MAKE) uninstall DESTDIR=$(destdir) MAINTEINER_CLEAN=1
+.PHONY: maintainer-uninstall
+maintainer-uninstall:
+	@$(MAKE) uninstall DESTDIR=$(destdir) MAINTAINER_CLEAN=1
 
 .PHONY: uninstall
 uninstall:
@@ -4961,7 +4961,7 @@ $1/$2$$(firstword $$(potext)): $$($2_all) | $1/./
 	$$(quiet) $$(call mksubdir,$1,$$@)
 	$$(quiet) $$(call faketty) $$(XGETTEXT)\
 	          --copyright-holder=$$(call shstring,$$(copyright))\
-	          --msgid-bugs-address=$$(call shstring,$$(mainteiner_mail))\
+	          --msgid-bugs-address=$$(call shstring,$$(maintainer_mail))\
 	          --package-name=$$(call shstring,$$(project))\
 	          --package-version=$$(version)\
 	          -d $2 -k_ -kN_ -s $$^ -o $$@
@@ -5567,7 +5567,7 @@ define rm-if-empty
 	$(foreach d,$(strip $(call rm-trailing-bar,$1)),\
 	    $(if $(strip $(call rwildcard,$d,*)),\
 	        $(if $(strip $2),
-	            $(if $(strip $(MAINTEINER_CLEAN)),\
+	            $(if $(strip $(MAINTAINER_CLEAN)),\
 	                $(call rmdir,$d),\
 	                $(if $(strip \
 	                  $(call rfilter-out,$(call rsubdir,$d),\

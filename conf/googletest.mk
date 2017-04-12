@@ -26,8 +26,8 @@ GIT_DEPENDENCY  += \
 
 # Paths
 # =======
-CXXLIBS         += -I external/gtest/googlemock/include/ \
-                   -I external/gtest/googletest/include/
+CXXLIBS         += -isystem external/gtest/googlemock/include/ \
+                   -isystem external/gtest/googletest/include/
 LDLIBS          += -L external/gtest/build/googlemock/ \
                    -L external/gtest/build/googlemock/gtest/
 

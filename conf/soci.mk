@@ -29,9 +29,9 @@ GIT_DEPENDENCY  += \
 
 # Paths
 # =======
-CXXLIBS         += -I /usr/include/postgresql/ \
-                   -I external/soci/src/core/  \
-                   -I external/soci/src/backends/postgresql/
+CXXLIBS         += -isystem /usr/include/postgresql/ \
+                   -isystem external/soci/src/core/  \
+                   -isystem external/soci/src/backends/postgresql/
 LDLIBS          += -L external/soci/build/lib/
 
 # Flags

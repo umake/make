@@ -35,6 +35,6 @@ WEB_DEPENDENCY  += \
 
 # Paths
 # =======
-CXXLIBS         += -I external/sitmo_prng_engine
+CXXLIBS         += -isystem external/sitmo_prng_engine
 
 endif # ifndef SISTMO_PRNG_ENGINE_MK

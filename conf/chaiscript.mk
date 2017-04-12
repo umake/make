@@ -28,7 +28,7 @@ GIT_DEPENDENCY  += \
 
 # Paths
 # =======
-CXXLIBS         += -I external/chaiscript/include
+CXXLIBS         += -isystem external/chaiscript/include
 LDLIBS          += -L external/chaiscript/build
 
 # Linker flags

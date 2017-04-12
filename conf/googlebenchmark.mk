@@ -27,7 +27,7 @@ GIT_DEPENDENCY  += \
 
 # Paths
 # =======
-CXXLIBS         += -I external/gbenchmark/include/
+CXXLIBS         += -isystem external/gbenchmark/include/
 LDLIBS          += -L external/gbenchmark/build/src/
 
 # Flags

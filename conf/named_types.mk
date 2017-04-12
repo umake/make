@@ -27,6 +27,6 @@ GIT_DEPENDENCY  += \
 
 # Paths
 # =======
-CXXLIBS         += -I external/named_types/includes
+CXXLIBS         += -isystem external/named_types/includes
 
 endif # ifndef NAMED_TYPES_MK

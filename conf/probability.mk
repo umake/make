@@ -23,6 +23,6 @@ GIT_DEPENDENCY  += \
 
 # Paths
 # =======
-CXXLIBS         += -I external/probability/include
+CXXLIBS         += -isystem external/probability/include
 
 endif # ifndef PROBABILITY_MK

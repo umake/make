@@ -35,10 +35,10 @@ WEB_DEPENDENCY  += \
 
 # Paths
 # =======
-ASLIBS          += -I external/mpfr/
-CLIBS           += -I external/mpfr/
-FLIBS           += -I external/mpfr/
-CXXLIBS         += -I external/mpfr/
+ASLIBS          += -isystem external/mpfr/
+CLIBS           += -isystem external/mpfr/
+FLIBS           += -isystem external/mpfr/
+CXXLIBS         += -isystem external/mpfr/
 LDLIBS          += -L external/mpfr/.libs/
 
 endif # ifdef $(call exists-lib,mpfr)

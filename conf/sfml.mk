@@ -26,7 +26,7 @@ GIT_DEPENDENCY  += \
 
 # Paths
 # =======
-CXXLIBS         += -I external/sfml/include/
+CXXLIBS         += -isystem external/sfml/include/
 LDLIBS          += -L external/sfml/build/lib/
 
 # Linker flags

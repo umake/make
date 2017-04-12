@@ -32,10 +32,10 @@ WEB_DEPENDENCY  += \
 
 # Paths
 # =======
-ASLIBS          += -I external/gmp/
-CLIBS           += -I external/gmp/
-FLIBS           += -I external/gmp/
-CXXLIBS         += -I external/gmp/
+ASLIBS          += -isystem external/gmp/
+CLIBS           += -isystem external/gmp/
+FLIBS           += -isystem external/gmp/
+CXXLIBS         += -isystem external/gmp/
 LDLIBS          += -L external/gmp/.libs/
 
 endif # ifdef $(call exists-lib,gmp)

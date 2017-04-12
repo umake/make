@@ -21,7 +21,7 @@ GIT_DEPENDENCY  += \
 
 # Paths
 # =======
-CXXLIBS         += -I external/optimus/include/
+CXXLIBS         += -isystem external/optimus/include/
 LDLIBS          += -L external/optimus/lib/
 
 # Linker flags

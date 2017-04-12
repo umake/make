@@ -26,6 +26,6 @@ WEB_DEPENDENCY  += \
 
 # Paths
 # =======
-CXXLIBS         += -I external/eigen
+CXXLIBS         += -isystem external/eigen
 
 endif # ifndef EIGEN_MK

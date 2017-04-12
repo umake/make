@@ -38,7 +38,7 @@ GIT_DEPENDENCY  += \
 
 # Paths
 # =======
-CXXLIBS         += -I external/liblbfgs/build/include
+CXXLIBS         += -isystem external/liblbfgs/build/include
 LDLIBS          += -L external/liblbfgs/build/lib
 LDFLAGS         += -llbfgs
 

@@ -20,6 +20,10 @@
 ifndef CHAISCRIPT_MK
 override CHAISCRIPT_MK := T
 
+# Requirements
+# ==============
+include $(MAKEBALLDIR)/pthread.mk
+
 # Dependencies
 # ==============
 GIT_DEPENDENCY  += \

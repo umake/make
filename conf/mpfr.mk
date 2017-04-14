@@ -21,7 +21,7 @@ override MPFR_MK := T
 
 # Requirements
 # ==============
-include $(MAKEBALLDIR)/gmp.mk
+include $(CONFDIR)/gmp.mk
 
 ifdef $(call not,$(call exists-lib,mpfr))
 

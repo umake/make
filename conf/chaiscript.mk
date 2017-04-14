@@ -22,7 +22,7 @@ override CHAISCRIPT_MK := T
 
 # Requirements
 # ==============
-include $(MAKEBALLDIR)/pthread.mk
+include $(CONFDIR)/pthread.mk
 
 # Dependencies
 # ==============

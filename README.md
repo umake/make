@@ -1,12 +1,9 @@
 Ultimate Makefile
 ==================
 
-[![Build Status](https://img.shields.io/travis/umake/make/master.svg)]
-                (https://travis-ci.org/umake/make)
-[![Build status](https://img.shields.io/appveyor/ci/renatocf/make/master.svg)]
-                (https://ci.appveyor.com/project/renatocf/make)
-[![Release](https://img.shields.io/github/tag/umake/make.svg)]
-           (https://github.com/umake/make/releases/latest)
+[![Build Status](https://img.shields.io/travis/umake/make/master.svg)](https://travis-ci.org/umake/make)
+[![Build status](https://img.shields.io/appveyor/ci/renatocf/make/master.svg)](https://ci.appveyor.com/project/renatocf/make)
+[![Release](https://img.shields.io/github/tag/umake/make.svg)](https://github.com/umake/make/releases/latest)
 
 The Ultimate Makefile to compile all your C, C++, Assembly and Fortran projects.
 

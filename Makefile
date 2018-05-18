@@ -3879,6 +3879,7 @@ projecthelp:
 	@echo " * SILENT:           Outputs no messages in execution       "
 	@echo " * NO_GIT:           Disables git commands executed by make "
 	@echo " * NO_COLORS:        Outputs are made without any color     "
+	@echo " * COMPATIBLE:       Outputs messages like a simple makefile"
 	@echo " * ENABLE_NLS:       Allows internationalization            "
 	@echo "                                                            "
 	@echo "File generation flags:                                      "
@@ -5422,16 +5423,22 @@ MSG_CXX_LIBCOMP   = "${DEF}Generating C++ library artifact"\
 ##                            DEFINITIONS                             ##
 ########################################################################
 
-# Hide command execution details
-V   ?= 0
-Q_0 := @
-quiet := $(Q_$V)
-
-O_0 := 1> /dev/null
-E_0 := 2> /dev/null
-NO_OUTPUT    := $(O_$V)
-NO_ERROR     := $(E_$V)
 NO_OPERATION := :
+
+ifdef COMPATIBLE
+V := 1
+SILENT := 1
+endif
+
+# Hide command execution details
+ifndef V
+
+quiet := @
+
+NO_OUTPUT := 1> /dev/null
+NO_ERROR := 2> /dev/null
+
+endif # ifndef SILENT
 
 ########################################################################
 ##                            FUNCTIONS                               ##

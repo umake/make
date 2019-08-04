@@ -98,7 +98,7 @@ LEXFLAGS     :=
 YACCFLAGS    :=
 ESQLFLAGS    :=
 GCOVFLAGS    :=
-LCOVFLAGS    := -q
+LCOVFLAGS    := -q --rc lcov_branch_coverage=1
 PROFFLAGS    :=
 FINDFLAGS    := -type d -print 2> /dev/null
 SCRIPTFLAGS  := /dev/null -efc
@@ -4854,29 +4854,20 @@ define coverage-factory
 $1: $2 | $$(firstword $$(covdir))/./
 	$$(call status,$$(MSG_COV_COMPILE))
 	
-	$$(call srm,$$(covdir)/gcov-tool.sh)
-	$$(call select,$$(covdir)/gcov-tool.sh)
-	$$(call cat,'#!/usr/bin/sh')
-	$$(call cat,'exec $$(GCOV) $$(gcovflags) "$$$$@"')
-	$$(quiet) chmod u+x $$(covdir)/gcov-tool.sh
-	
 	$$(call mksubdir,$$(covdir),$$@)
 	$$(quiet) $$(call faketty) \
 	          $$(LCOV) -c $$(lcovflags) \
-	                   --gcov-tool $$(covdir)/gcov-tool.sh \
-	                   -b $$(firstword $$(covdir)) \
 	                   -d $$(firstword $$(objdir)) \
+	                   $$(foreach d,$$(abspath \
+	                                  $$(covignore) \
+	                                  $$(sysincdir) $$(extdir) \
+	                                  $$(testdir) $$(benchdir)),\
+	                     $$(if $$(call not-empty,\
+	                             $$(wildcard $$(addsuffix /*,$$d))),\
+	                       $$(addprefix --exclude$$(space)$$(squote),\
+	                         $$(addsuffix /\*$$(squote),$$d)) \
+	                   )) \
 	                   -o $$@ $$(ERROR)
-
-	$$(quiet) if [ -s $$@ ]; \
-	          then \
-	              $$(foreach p,$$(patsubst %,'%',$$(covignore) \
-	                  $$(addsuffix /*,$$(sysincdir) $$(extdir) \
-	                                  $$(testdir) $$(benchdir))),\
-	                      $$(LCOV) $$(lcovflags) -o $$@ -r $$@ $$p;) \
-	          fi
-	
-	$$(call srm,$$(covdir)/gcov-tool.sh)
 	
 	$$(call ok,$$(MSG_COV_COMPILE))
 

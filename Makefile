@@ -4777,7 +4777,7 @@ run_$1: $1
 	$$(call phony-status,$$(MSG_$2_RUN))
 	
 	$$(quiet) $$(call store-status, \
-	              $$(call define-faketty);\
+	              $$(call define-faketty) \
 	              $$($2_ENV) $$(call apply-faketty) \
 	              $$($2_WRAP) ./$$< $$($2_ARGS)) $$(ERROR) \
 	          && $$(call model-error,$$(MSG_$2_ERROR))
@@ -5650,7 +5650,7 @@ ifndef NO_COLORS
 define define-faketty
 faketty () { $(SCRIPT) $(SCRIPTFLAGS) \
              $(SCRIPTQUOTE)"$$(printf "%s " "$$@")"$(SCRIPTQUOTE) \
-           | sed '$${/^\r*$$/d;}'; }
+           | sed '$${/^\r*$$/d;}'; };
 endef
 
 define apply-faketty
@@ -5658,7 +5658,7 @@ faketty
 endef
 
 define faketty
-$(call define-faketty); $(call apply-faketty)
+$(call define-faketty) $(call apply-faketty)
 endef
 
 endif # NO_COLORS

@@ -24,7 +24,7 @@ GIT_DEPENDENCY  += \
     gbenchmark => https://github.com/google/benchmark.git \
                   mkdir -p build && cd build \
                   && cmake -DCMAKE_BUILD_TYPE=Release \
-                           -DBENCHMARK_DOWNLOAD_DEPENDENCIES=ON .. \
+													 -DBENCHMARK_ENABLE_TESTING=OFF .. \
                   && make
 
 # Paths

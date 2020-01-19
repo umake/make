@@ -28,8 +28,7 @@ GIT_DEPENDENCY  += \
 # =======
 CXXLIBS         += -isystem external/gtest/googlemock/include/ \
                    -isystem external/gtest/googletest/include/
-LDLIBS          += -L external/gtest/build/googlemock/ \
-                   -L external/gtest/build/googlemock/gtest/
+LDLIBS          += -L external/gtest/build/lib/ \
 
 # Flags
 # =======
